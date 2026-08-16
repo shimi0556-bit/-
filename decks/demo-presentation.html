@@ -40,11 +40,16 @@
 
   .slide{
     position:absolute; inset:0;
-    display:none;
+    display:flex; flex-direction:column;
     padding:96px 120px;
     direction:rtl;
+    opacity:0; visibility:hidden; pointer-events:none;
+    transition:opacity .3s ease, visibility 0s linear .3s;
   }
-  .slide.active{ display:flex; flex-direction:column; }
+  .slide.active{
+    opacity:1; visibility:visible; pointer-events:auto;
+    transition:opacity .3s ease, visibility 0s linear 0s;
+  }
 
   /* ambient background texture, shared */
   .bg-img{
@@ -142,15 +147,19 @@
     padding:8px 14px; font-family:'Consolas','Courier New',monospace; font-size:20px; color:var(--text); font-weight:700; }
   .keycap span{ font-size:20px; color:var(--sub); font-weight:600; }
   .cta-btn{ margin-top:60px; display:inline-flex; align-items:center; gap:14px; background:var(--grad); color:#0b0e17;
-    font-size:28px; font-weight:800; padding:22px 48px; border-radius:999px; z-index:1; }
+    font-size:28px; font-weight:800; padding:22px 48px; border-radius:999px; z-index:1; align-self:center; }
+  .cta-btn span{ display:inline-block; animation:ctaBounce 1.4s ease-in-out infinite; }
+  @keyframes ctaBounce{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(6px); } }
 
   /* ---------- Nav chrome ---------- */
   #nav{ position:absolute; bottom:44px; left:50%; transform:translateX(-50%); display:flex; gap:14px; z-index:5; }
-  .nav-dot{ width:12px; height:12px; border-radius:50%; background:rgba(255,255,255,.25); cursor:pointer; transition:.2s; }
+  .nav-dot{ width:12px; height:12px; border-radius:50%; background:rgba(255,255,255,.25); cursor:pointer; transition:.2s;
+    border:none; padding:0; font:inherit; }
   .nav-dot.on{ background:var(--grad); width:34px; border-radius:8px; }
   .nav-btn{ position:absolute; top:50%; transform:translateY(-50%); width:64px; height:64px; border-radius:50%;
-    background:rgba(255,255,255,.06); border:1px solid var(--line); color:var(--text); font-size:26px;
+    background:rgba(255,255,255,.06); border:1px solid var(--line); color:var(--text); font-size:26px; font-family:inherit;
     display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:5; backdrop-filter:blur(6px); }
+  .nav-btn:focus-visible, .nav-dot:focus-visible{ outline:2px solid var(--cyan); outline-offset:3px; }
   .nav-btn:hover{ background:rgba(255,255,255,.14); }
   #btn-prev{ right:28px; } #btn-next{ left:28px; }
   #slide-counter{ position:absolute; top:44px; left:56px; font-size:20px; color:var(--sub); z-index:5; font-weight:700; direction:ltr; unicode-bidi:isolate; }
@@ -160,10 +169,10 @@
   .anim{ opacity:0; transform:translateY(24px); animation:rise .6s cubic-bezier(.2,.7,.3,1) forwards; }
   @keyframes rise{ to{ opacity:1; transform:translateY(0);} }
 
-/* ===== BRAIN DECK · EDIT MODE UI v2 (additive) ===== */
-#ed-fab{position:fixed;bottom:24px;right:24px;z-index:9998;background:linear-gradient(135deg,#5f3698,#8f4fd7);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:50px;padding:13px 24px;font-size:16px;font-weight:900;cursor:pointer;box-shadow:0 14px 40px rgba(143,79,215,.45);font-family:'Futurism',sans-serif;transition:transform .15s;}
-#ed-fab:hover{transform:translateY(-2px);}
-#ed-toolbar{position:fixed;top:14px;right:14px;z-index:9999;display:none;flex-direction:column;gap:7px;background:rgba(13,15,36,.96);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:9px 11px;box-shadow:0 18px 50px rgba(0,0,0,.6);font-family:'Futurism',sans-serif;direction:rtl;max-width:96vw;}
+/* ===== BRAIN DECK · EDIT MODE UI v3 (additive) ===== */
+#ed-fab{position:fixed;bottom:16px;right:16px;z-index:9998;width:38px;height:38px;padding:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#5f3698,#8f4fd7);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:50%;font-size:17px;cursor:pointer;box-shadow:0 10px 28px rgba(143,79,215,.4);font-family:'Futurism',sans-serif;opacity:.55;transition:opacity .15s,transform .15s;}
+#ed-fab:hover,#ed-fab:focus-visible{opacity:1;transform:translateY(-2px) scale(1.06);}
+#ed-toolbar{position:fixed;top:14px;right:14px;z-index:9999;display:none;flex-direction:column;gap:7px;background:rgba(13,15,36,.96);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:9px 11px;box-shadow:0 18px 50px rgba(0,0,0,.6);font-family:'Futurism',sans-serif;direction:rtl;max-width:96vw;max-height:92vh;overflow-y:auto;}
 #ed-toolbar.on{display:flex;}
 #ed-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
 #ed-ctx{display:none;gap:7px;align-items:center;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.1);padding-top:8px;}
@@ -172,6 +181,8 @@
 .ed-btn:hover{background:rgba(98,170,191,.18);border-color:rgba(98,170,191,.5);color:#fff;}
 .ed-btn.primary{background:linear-gradient(135deg,#5f3698,#8f4fd7);border-color:rgba(143,79,215,.5);color:#fff;}
 .ed-btn.danger:hover{background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.5);color:#fff;}
+.ed-select{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#dfe0e6;border-radius:10px;padding:8px 10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;direction:rtl;}
+.ed-select:hover{border-color:rgba(98,170,191,.5);}
 .ed-sep{width:1px;height:24px;background:rgba(255,255,255,.14);margin:0 3px;}
 .ed-dot{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.25);cursor:pointer;padding:0;transition:transform .12s;}
 .ed-dot:hover{transform:scale(1.18);border-color:#fff;}
@@ -186,16 +197,32 @@ body.ed-on #ed-hint{display:block;}
 body.ed-on .ed-hover{outline:1.5px dashed rgba(98,170,191,.6) !important;outline-offset:3px;cursor:move;}
 body.ed-on .ed-selected{outline:2px solid #8f4fd7 !important;outline-offset:3px;}
 [contenteditable=true]{cursor:text !important;outline:2px solid #62aabf !important;outline-offset:3px;user-select:text !important;-webkit-user-select:text !important;}
-.ed-img,.ed-blur,.ed-shape,.ed-textbox,.ed-clone{position:absolute;z-index:50;}
+.ed-img,.ed-blur,.ed-shape,.ed-textbox,.ed-clone,.ed-line,.ed-arrow{position:absolute;z-index:50;}
 .ed-img img{width:100%;height:100%;display:block;object-fit:cover;border-radius:6px;pointer-events:none;}
 .ed-blur{backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);background:rgba(20,22,48,.16);border-radius:10px;}
 .ed-blur.ed-opaque{background:#14163a !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;border:1px solid rgba(255,255,255,.06);}
 .ed-shape{background:rgba(143,79,215,.22);border:2px solid rgba(143,79,215,.6);border-radius:12px;}
+.ed-shape.ed-circle{border-radius:50%;}
+.ed-line{background:rgba(255,255,255,.85);border-radius:3px;}
+.ed-arrow{background:rgba(255,255,255,.85);clip-path:polygon(0 35%,78% 35%,78% 10%,100% 50%,78% 90%,78% 65%,0 65%);}
 .ed-textbox{font-family:'Futurism',sans-serif;font-weight:900;font-size:40px;color:#fff;min-width:60px;line-height:1.1;}
-body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textbox,body.ed-on .ed-clone{cursor:move;}
+body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textbox,body.ed-on .ed-clone,body.ed-on .ed-line,body.ed-on .ed-arrow{cursor:move;}
+body.ed-on .ed-locked{cursor:not-allowed;}
 .ed-handle{position:absolute;z-index:60;width:20px;height:20px;border-radius:50%;background:#8f4fd7;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.5);}
 .ed-handle.br{cursor:nwse-resize;right:-10px;bottom:-10px;}
 .ed-del{position:absolute;z-index:61;top:-15px;right:-15px;width:28px;height:28px;border-radius:50%;background:#ef4444;color:#fff;border:2px solid #fff;font-size:17px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;}
+
+/* entrance-animation presets available from the toolbar's "כניסה" picker */
+@keyframes edFade{from{opacity:0}to{opacity:1}}
+@keyframes edRise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes edInR{from{opacity:0;transform:translateX(60px)}to{opacity:1;transform:translateX(0)}}
+@keyframes edInL{from{opacity:0;transform:translateX(-60px)}to{opacity:1;transform:translateX(0)}}
+@keyframes edScale{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+.ed-anim-fade{animation:edFade .6s ease both;}
+.ed-anim-rise{animation:edRise .6s cubic-bezier(.2,.7,.3,1) both;}
+.ed-anim-inr{animation:edInR .6s cubic-bezier(.2,.7,.3,1) both;}
+.ed-anim-inl{animation:edInL .6s cubic-bezier(.2,.7,.3,1) both;}
+.ed-anim-scale{animation:edScale .5s cubic-bezier(.2,.7,.3,1) both;}
 </style>
 </head>
 <body>
@@ -232,7 +259,7 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
     <!-- SLIDE 2 — PROBLEM / SOLUTION -->
     <section class="slide" id="s2">
       <div class="bg-img"><div class="bg-grid"></div><div class="bg-glow-2"></div></div>
-      <div class="s-kicker anim">01 · הבעיה</div>
+      <div class="s-kicker anim">02 · הבעיה</div>
       <h2 class="s-title anim">כל תיקון קטן <span class="accent">דורש עוד פרומפט</span></h2>
       <div class="problem-row">
         <div class="problem-card bad anim" style="animation-delay:.1s">
@@ -254,7 +281,7 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
     <!-- SLIDE 3 — FEATURES -->
     <section class="slide" id="s3">
       <div class="bg-img"><div class="bg-grid"></div><div class="bg-glow-1"></div></div>
-      <div class="s-kicker anim">02 · מה אפשר לעשות</div>
+      <div class="s-kicker anim">03 · מה אפשר לעשות</div>
       <h2 class="s-title anim">כלי עריכה <span class="accent">מלאים בתוך השקף</span></h2>
       <div class="grid6">
         <div class="feat anim" style="animation-delay:.05s"><div class="ic">🖱️</div><h3>הזזה חופשית</h3><p>גרירה עם קווי הצמדה למרכז השקף.</p></div>
@@ -270,7 +297,7 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
     <!-- SLIDE 4 — HOW IT WORKS -->
     <section class="slide" id="s4">
       <div class="bg-img"><div class="bg-grid"></div><div class="bg-glow-2"></div></div>
-      <div class="s-kicker anim">03 · איך זה עובד</div>
+      <div class="s-kicker anim">04 · איך זה עובד</div>
       <h2 class="s-title anim">שלוש דקות <span class="accent">מהתקנה לעריכה</span></h2>
       <div class="steps">
         <div class="step anim" style="animation-delay:.05s"><div class="num">1</div><h3>מתקינים את הסקיל</h3>
@@ -287,7 +314,7 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
     <!-- SLIDE 5 — CTA -->
     <section class="slide" id="s5">
       <div class="bg-img"><div class="bg-grid"></div><div class="bg-glow-1"></div><div class="bg-glow-2"></div></div>
-      <div class="eyebrow anim" style="animation-delay:.05s;margin-left:auto;margin-right:auto;"><span class="dot"></span>נסו עכשיו</div>
+      <div class="eyebrow anim" style="animation-delay:.05s"><span class="dot"></span>נסו עכשיו</div>
       <h1 class="hero-title anim" style="animation-delay:.15s">לחצו על <span class="accent">✏️ עריכה</span><br>למטה מימין</h1>
       <p class="hero-sub anim" style="animation-delay:.28s">השקף הזה בדיוק — כמו כל שקף אחר במצגת — פתוח לעריכה חופשית.
         נסו לגרור, לצבוע, להדביק תמונה או לשכתב את הכותרת.</p>
@@ -296,11 +323,12 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
         <div class="keycap"><kbd>Cmd</kbd><kbd>Z</kbd><span>ביטול</span></div>
         <div class="keycap"><kbd>Cmd</kbd><kbd>S</kbd><span>שמירה</span></div>
       </div>
+      <div class="cta-btn anim" style="animation-delay:.55s">✏️ נסו לערוך את השקף הזה <span>↓</span></div>
       <div class="foot"><div class="brand"><span class="sq"></span>Brain Edit Slides</div><div class="pg">05</div></div>
     </section>
 
-    <div id="btn-prev" class="nav-btn" onclick="prev()">›</div>
-    <div id="btn-next" class="nav-btn" onclick="next()">‹</div>
+    <button id="btn-prev" type="button" class="nav-btn" onclick="prev()" aria-label="שקף קודם">›</button>
+    <button id="btn-next" type="button" class="nav-btn" onclick="next()" aria-label="שקף הבא">‹</button>
     <div id="nav"></div>
   </div>
 </div>
@@ -312,9 +340,12 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
   var progress = document.getElementById('progress-bar');
   var cur = 0;
 
+  nav.innerHTML = ''; /* idempotent: a saved/reopened export already has these baked in from the live DOM */
   slides.forEach(function(_, i){
-    var d = document.createElement('div');
+    var d = document.createElement('button');
+    d.type = 'button';
     d.className = 'nav-dot' + (i === 0 ? ' on' : '');
+    d.setAttribute('aria-label', 'עבור לשקף ' + (i + 1));
     d.onclick = function(){ show(i); };
     nav.appendChild(d);
   });
@@ -354,12 +385,17 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
 </script>
 
 <script>
-/* ===== BRAIN DECK · EDIT MODE v2 (additive, self-contained) =====
-   v2 adds: clipboard image paste (Cmd+V) + file drag-drop, internal element
+/* ===== BRAIN DECK · EDIT MODE v3 (additive, self-contained) =====
+   v2 added: clipboard image paste (Cmd+V) + file drag-drop, internal element
    copy/paste (Cmd+C/Cmd+V), brand color swatches (whole element OR selected
    word while editing), center snap-guides while dragging, arrow-key nudge,
    z-order, center buttons, redo, autosave to localStorage with restore bar,
-   blur intensity/opaque controls, proportional image resize, Cmd+S save. */
+   blur intensity/opaque controls, proportional image resize, Cmd+S save.
+   v3 adds: compact icon-only FAB (docked corner, low-key until hover), more
+   shapes (circle/line/arrow), text formatting (bold/italic/underline, align,
+   font family, line-height/letter-spacing), generic per-element controls
+   (opacity, duplicate, lock, border width/color/radius, shadow), and
+   per-element entrance-animation controls (style/duration/delay/preview). */
 (function(){
   if(window.__brainEdInit) return; window.__brainEdInit=true;
   var deck=document.getElementById('deck');
@@ -370,7 +406,7 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
   var LS_KEY='brainEd:'+(location.pathname.split('/').pop()||'deck');
   var MARKER='__brain-ed-copy__';
 
-  var ADDED='.ed-img,.ed-blur,.ed-shape,.ed-textbox,.ed-clone';
+  var ADDED='.ed-img,.ed-blur,.ed-shape,.ed-textbox,.ed-clone,.ed-line,.ed-arrow';
   /* DENY = full-bleed backgrounds, slide-filling wrappers, deck chrome, editor UI */
   var DENY='#deck,.slide,.bg-img,.foot,.pg,#nav,.nav-btn,#slide-counter,#btn-fs,#progress-bar,#ed-toolbar,#ed-fab,#ed-hint,#ed-toast,#ed-ctx,#ed-restore,#ed-guide-v,#ed-guide-h,.wrap,.div-wrap,.show-wrap,.bs-wrap,.applayer,.hero-image-content,.hero-image-vignette,.lay-side,.lay-wrap,.tower,.tower-inner,.hero-image,.hero-ring,.hero-ring2,.loop-wrap,.loop-content';
   /* TEXTY = elements that may be inline-edited on double-click */
@@ -513,7 +549,7 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
     if(!matches(el,ADDED) && getComputedStyle(el).position==='static'){ el.style.position='relative'; el.__edRel=true; }
     var del=document.createElement('div'); del.className='ed-del ed-runtime'; del.textContent='×';
     del.addEventListener('mousedown',function(e){ e.stopPropagation(); e.preventDefault(); });
-    del.addEventListener('click',function(e){ e.stopPropagation(); snap(); var t=selected; deselect(); if(t) t.remove(); schedulePersist(); });
+    del.addEventListener('click',function(e){ e.stopPropagation(); deleteSel(); });
     el.appendChild(del);
     if(matches(el,ADDED)){
       var h=document.createElement('div'); h.className='ed-handle br ed-runtime';
@@ -556,6 +592,7 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
       select(el);
     }
     var s=scale(), d=deck.getBoundingClientRect();
+    if(matches(el,'.ed-locked')){ toast('האלמנט נעול - לחץ 🔓 בסרגל כדי לשחרר'); return; }
     drag={el:el,x:e.clientX,y:e.clientY,moved:false,added:matches(el,ADDED),s:s};
     var r0=el.getBoundingClientRect();
     if(drag.added){
@@ -609,6 +646,7 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
 
   /* ---------- resize (images keep aspect ratio; Shift = free) ---------- */
   function startResize(e,el){
+    if(matches(el,'.ed-locked')){ toast('האלמנט נעול'); return; }
     e.preventDefault(); e.stopPropagation();
     var s=scale(), w=el.offsetWidth, h=el.offsetHeight, x=e.clientX, y=e.clientY, moved=false;
     var isImg=matches(el,'.ed-img'), ratio=(h/w)||1;
@@ -636,6 +674,7 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
     if(!el) return;
     if(matches(el,ADDED) && !matches(el,'.ed-textbox')) return;
     if(!matches(el,TEXTY)){ toast('האלמנט הזה לא טקסט לעריכה'); return; }
+    if(matches(el,'.ed-locked')){ toast('האלמנט נעול'); return; }
     deselect(); snap();
     editState={el:el, orig:el.innerHTML, cancelled:false};
     refreshTb();
@@ -673,6 +712,9 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
   }
   function addBlur(){ snap(); var s=activeSlide(); var b=document.createElement('div'); b.className='ed-blur'; b.style.cssText='left:760px;top:460px;width:400px;height:150px;'; s.appendChild(b); select(b); toast('טשטוש - גרור מעל נתון'); schedulePersist(); }
   function addShape(){ snap(); var s=activeSlide(); var b=document.createElement('div'); b.className='ed-shape'; b.style.cssText='left:760px;top:450px;width:420px;height:200px;'; s.appendChild(b); select(b); schedulePersist(); }
+  function addCircle(){ snap(); var s=activeSlide(); var b=document.createElement('div'); b.className='ed-shape ed-circle'; b.style.cssText='left:800px;top:410px;width:220px;height:220px;'; s.appendChild(b); select(b); schedulePersist(); }
+  function addLine(){ snap(); var s=activeSlide(); var b=document.createElement('div'); b.className='ed-line'; b.style.cssText='left:760px;top:533px;width:340px;height:6px;'; s.appendChild(b); select(b); schedulePersist(); }
+  function addArrow(){ snap(); var s=activeSlide(); var b=document.createElement('div'); b.className='ed-arrow'; b.style.cssText='left:760px;top:510px;width:280px;height:46px;'; s.appendChild(b); select(b); schedulePersist(); }
   function mkTextbox(text,x,y){
     var s=activeSlide(); var t=document.createElement('div'); t.className='ed-textbox';
     t.style.left=(x!=null?x:720)+'px'; t.style.top=(y!=null?y:480)+'px';
@@ -711,6 +753,7 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
     var off=24*pasteCount, s=activeSlide(), el;
     var tmp=document.createElement('div'); tmp.innerHTML=clipInternal.html;
     var src=tmp.firstElementChild; if(!src) return;
+    src.classList.remove('ed-locked');
     if(clipInternal.added){
       el=src;
       el.style.left=Math.round((parseFloat(el.style.left)||clipInternal.left)+off)+'px';
@@ -762,6 +805,9 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
     }
     if(!selected){ toast('בחר אלמנט או סמן מילה'); return; }
     snap();
+    if(matches(selected,'.ed-line,.ed-arrow')){
+      selected.style.background=c; schedulePersist(); return;
+    }
     if(matches(selected,'.ed-shape')){
       selected.style.background=c+'33'; selected.style.borderColor=c; schedulePersist(); return;
     }
@@ -784,6 +830,14 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
     selected.style.webkitTextFillColor='transparent'; selected.style.color='';
     schedulePersist();
   }
+  function applyBorderColor(c){
+    if(!selected){ toast('בחר אלמנט קודם'); return; }
+    snap();
+    if((parseFloat(getComputedStyle(selected).borderWidth)||0)===0) selected.style.borderWidth='2px';
+    selected.style.borderStyle='solid';
+    selected.style.borderColor=c;
+    schedulePersist();
+  }
 
   /* ---------- z-order / center / nudge / blur controls ---------- */
   function zOrder(front){
@@ -795,6 +849,7 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
   }
   function centerSel(axis){
     if(!selected){ toast('בחר אלמנט קודם'); return; }
+    if(matches(selected,'.ed-locked')){ toast('האלמנט נעול'); return; }
     snap();
     var d=deck.getBoundingClientRect(), s=scale(), r=selected.getBoundingClientRect();
     var cx=((r.left-d.left)+r.width/2)/s, cy=((r.top-d.top)+r.height/2)/s;
@@ -803,6 +858,7 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
   }
   function nudge(dx,dy){
     if(!selected) return false;
+    if(matches(selected,'.ed-locked')) return false;
     var now=Date.now();
     if(lastNudge.el!==selected || now-lastNudge.t>1200) snap();
     lastNudge={el:selected,t:now};
@@ -835,10 +891,109 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
     selected.style.opacity=(next===1)?'':String(next);
     toast('שקיפות: '+Math.round(next*100)+'%'); schedulePersist();
   }
+  function borderWidthDelta(d){
+    if(!selected){ toast('בחר אלמנט קודם'); return; }
+    snap();
+    var cur=parseFloat(getComputedStyle(selected).borderWidth)||0;
+    var v=Math.max(0,Math.min(20,cur+d));
+    selected.style.borderWidth=v+'px'; selected.style.borderStyle= v>0 ? 'solid' : 'none';
+    toast('מסגרת: '+v+'px'); schedulePersist();
+  }
+  function radiusDelta(d){
+    if(!selected){ toast('בחר אלמנט קודם'); return; }
+    snap();
+    var cur=parseFloat(getComputedStyle(selected).borderRadius)||0;
+    var v=Math.max(0,Math.min(200,cur+d));
+    selected.style.borderRadius=v+'px';
+    toast('עיגול פינות: '+v+'px'); schedulePersist();
+  }
+  var SHADOWS=['','0 8px 24px rgba(0,0,0,.25)','0 20px 60px rgba(0,0,0,.55)'];
+  var SHADOW_LBL=['ללא צל','צל רך','צל חזק'];
+  function cycleShadow(){
+    if(!selected){ toast('בחר אלמנט קודם'); return; }
+    snap();
+    var cur=selected.style.boxShadow||'';
+    var idx=SHADOWS.indexOf(cur); idx=(idx+1)%SHADOWS.length;
+    selected.style.boxShadow=SHADOWS[idx];
+    toast(SHADOW_LBL[idx]); schedulePersist();
+  }
+  function toggleLock(){
+    if(!selected){ toast('בחר אלמנט קודם'); return; }
+    snap();
+    selected.classList.toggle('ed-locked');
+    var locked=selected.classList.contains('ed-locked');
+    toast(locked?'האלמנט ננעל 🔒':'האלמנט שוחרר 🔓');
+    schedulePersist(); refreshTb();
+  }
 
-  function fontDelta(d){ if(!selected){ toast('בחר טקסט קודם'); return; } snap();
-    var cs=parseFloat(getComputedStyle(selected).fontSize)||30; selected.style.fontSize=Math.max(10,cs+d)+'px'; schedulePersist(); }
-  function deleteSel(){ if(!selected){ toast('בחר אלמנט קודם'); return; } snap(); var el=selected; deselect(); el.remove(); schedulePersist(); }
+  /* ---------- text formatting (whole element, or selected word while editing) ---------- */
+  function toggleTextStyle(execCmd, styleProp, onVal, offVal){
+    var ae=document.activeElement, sel=window.getSelection();
+    if(ae && ae.isContentEditable && sel && !sel.isCollapsed){
+      document.execCommand('styleWithCSS',false,true);
+      document.execCommand(execCmd,false,null);
+      return;
+    }
+    if(!selected){ toast('בחר טקסט קודם'); return; }
+    snap();
+    var cur=getComputedStyle(selected)[styleProp];
+    selected.style[styleProp]= (cur===onVal)? offVal : onVal;
+    schedulePersist();
+  }
+  function toggleBold(){ toggleTextStyle('bold','fontWeight','800','400'); }
+  function toggleItalic(){ toggleTextStyle('italic','fontStyle','italic','normal'); }
+  function toggleUnderline(){ toggleTextStyle('underline','textDecorationLine','underline','none'); }
+  function setAlign(v){
+    if(!selected){ toast('בחר טקסט קודם'); return; }
+    snap(); selected.style.textAlign=v; schedulePersist();
+  }
+  var FONTS=[['ברירת מחדל',''],['סריף','Georgia,\'Times New Roman\',serif'],['מונוגרפי',"'Consolas','Courier New',monospace"],['מודגש-רחב',"Impact,'Arial Narrow',sans-serif"]];
+  function setFont(v){ if(!selected){ toast('בחר טקסט קודם'); return; } snap(); selected.style.fontFamily=v; schedulePersist(); }
+  function lineHeightDelta(d){
+    if(!selected){ toast('בחר טקסט קודם'); return; }
+    snap();
+    var cur=parseFloat(selected.style.lineHeight)||1.2;
+    var v=Math.max(0.8,Math.min(2.5,+(cur+d).toFixed(2)));
+    selected.style.lineHeight=v; toast('ריווח שורות: '+v); schedulePersist();
+  }
+  function letterSpacingDelta(d){
+    if(!selected){ toast('בחר טקסט קודם'); return; }
+    snap();
+    var cur=parseFloat(selected.style.letterSpacing)||0;
+    var v=Math.max(-2,Math.min(10,cur+d));
+    selected.style.letterSpacing=v+'px'; toast('ריווח אותיות: '+v+'px'); schedulePersist();
+  }
+
+  /* ---------- entrance-animation controls ---------- */
+  var ANIM_CLASSES=['ed-anim-fade','ed-anim-rise','ed-anim-inr','ed-anim-inl','ed-anim-scale'];
+  var ANIMS=[['ללא',''],['דהייה','ed-anim-fade'],['עלייה','ed-anim-rise'],['כניסה מימין','ed-anim-inr'],['כניסה משמאל','ed-anim-inl'],['הגדלה','ed-anim-scale']];
+  function setAnim(cls){
+    if(!selected){ toast('בחר אלמנט קודם'); return; }
+    snap();
+    selected.classList.remove.apply(selected.classList,['anim'].concat(ANIM_CLASSES));
+    selected.style.animation='';
+    if(cls){ selected.classList.add('anim',cls); selected.setAttribute('data-anim',cls.replace('ed-anim-','')); }
+    else { selected.removeAttribute('data-anim'); selected.style.animation='none'; }
+    schedulePersist();
+  }
+  function animDelta(prop,d,min,max){
+    if(!selected){ toast('בחר אלמנט קודם'); return; }
+    snap();
+    var cur=parseFloat(selected.style[prop])||0;
+    var v=Math.max(min,Math.min(max,+(cur+d).toFixed(2)));
+    selected.style[prop]=v+'s';
+    schedulePersist();
+  }
+  function previewAnim(){
+    if(!selected) return;
+    var cur=null;
+    for(var i=0;i<ANIM_CLASSES.length;i++){ if(selected.classList.contains(ANIM_CLASSES[i])){ cur=ANIM_CLASSES[i]; break; } }
+    if(!cur && !selected.classList.contains('anim')){ toast('אין כניסה מוגדרת - בחר סגנון קודם'); return; }
+    var cls=cur||'anim';
+    selected.classList.remove(cls);
+    void selected.offsetWidth;
+    selected.classList.add(cls);
+  }
 
   /* ---------- navigation (reuse deck) ---------- */
   function go(dir){
@@ -848,6 +1003,14 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
     var n=Math.max(0,Math.min(list.length-1,i+dir));
     if(typeof show==='function') show(n);
     else { list[i].classList.remove('active'); list[n].classList.add('active'); }
+  }
+
+  function fontDelta(d){ if(!selected){ toast('בחר טקסט קודם'); return; } snap();
+    var cs=parseFloat(getComputedStyle(selected).fontSize)||30; selected.style.fontSize=Math.max(10,cs+d)+'px'; schedulePersist(); }
+  function deleteSel(){
+    if(!selected){ toast('בחר אלמנט קודם'); return; }
+    if(matches(selected,'.ed-locked')){ toast('האלמנט נעול - שחרר קודם'); return; }
+    snap(); var el=selected; deselect(); el.remove(); schedulePersist();
   }
 
   /* ---------- export ---------- */
@@ -893,7 +1056,8 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
   }
 
   /* ---------- toolbar UI ---------- */
-  var fab=document.createElement('button'); fab.id='ed-fab'; fab.type='button'; fab.textContent='✏️ עריכה';
+  var fab=document.createElement('button'); fab.id='ed-fab'; fab.type='button'; fab.textContent='✏️';
+  fab.title='עריכה'; fab.setAttribute('aria-label','עריכה');
   fab.addEventListener('click',function(){ setEdit(true); });
   document.body.appendChild(fab);
 
@@ -904,6 +1068,18 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
   function mkSep(){ var s=document.createElement('span'); s.className='ed-sep'; return s; }
   function mkDot(name,color){ var d=document.createElement('button'); d.type='button'; d.className='ed-dot'; d.title=name; d.style.background=color;
     d.addEventListener('mousedown',function(e){e.preventDefault();}); d.addEventListener('click',function(e){e.stopPropagation();applyColor(color);}); return d; }
+  function mkBorderDot(name,color){ var d=document.createElement('button'); d.type='button'; d.className='ed-dot'; d.title='מסגרת: '+name; d.style.background=color;
+    d.addEventListener('mousedown',function(e){e.preventDefault();}); d.addEventListener('click',function(e){e.stopPropagation();applyBorderColor(color);}); return d; }
+  function mkSelect(opts,val,onChange){
+    var sel=document.createElement('select'); sel.className='ed-select';
+    opts.forEach(function(o){ var op=document.createElement('option'); op.value=o[1]; op.textContent=o[0]; sel.appendChild(op); });
+    sel.value=val||opts[0][1];
+    sel.addEventListener('mousedown',function(e){e.stopPropagation();});
+    sel.addEventListener('click',function(e){e.stopPropagation();});
+    sel.addEventListener('change',function(){ onChange(sel.value); });
+    return sel;
+  }
+  function mkLabel(text){ var s=document.createElement('span'); s.className='ed-ctx-lbl'; s.textContent=text; return s; }
 
   var row=document.createElement('div'); row.id='ed-row';
   row.appendChild(mkBtn('› הקודם',function(){go(-1);}));
@@ -912,6 +1088,9 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
   row.appendChild(mkBtn('🖼️ תמונה',addImage));
   row.appendChild(mkBtn('🌫️ טשטוש',addBlur));
   row.appendChild(mkBtn('▭ צורה',addShape));
+  row.appendChild(mkBtn('⚪ עיגול',addCircle));
+  row.appendChild(mkBtn('─ קו',addLine));
+  row.appendChild(mkBtn('➜ חץ',addArrow));
   row.appendChild(mkBtn('🔤 טקסט',addText));
   row.appendChild(mkSep());
   row.appendChild(mkBtn('⤴ מסגרת',selectParent));
@@ -948,29 +1127,74 @@ body.ed-on .ed-img,body.ed-on .ed-blur,body.ed-on .ed-shape,body.ed-on .ed-textb
       ctx.appendChild(tip);
     }
   }
+  function buildTextFormat(){
+    ctx.appendChild(mkSep());
+    ctx.appendChild(mkBtn('B',toggleBold));
+    ctx.appendChild(mkBtn('I',toggleItalic));
+    ctx.appendChild(mkBtn('U',toggleUnderline));
+    ctx.appendChild(mkBtn('⇥ ימין',function(){setAlign('right');}));
+    ctx.appendChild(mkBtn('↔ מרכז',function(){setAlign('center');}));
+    ctx.appendChild(mkBtn('⇤ שמאל',function(){setAlign('left');}));
+    ctx.appendChild(mkSelect(FONTS, selected?selected.style.fontFamily:'', setFont));
+    ctx.appendChild(mkBtn('↕ שורה −',function(){lineHeightDelta(-0.1);}));
+    ctx.appendChild(mkBtn('↕ שורה +',function(){lineHeightDelta(0.1);}));
+    ctx.appendChild(mkBtn('↔ אות −',function(){letterSpacingDelta(-0.5);}));
+    ctx.appendChild(mkBtn('↔ אות +',function(){letterSpacingDelta(0.5);}));
+  }
+  function buildGeneric(){
+    ctx.appendChild(mkLabel('אלמנט:'));
+    ctx.appendChild(mkBtn('👻 שקיפות',cycleOpacity));
+    ctx.appendChild(mkBtn('⧉ שכפול',function(){ if(copySel()) pasteInternal(); }));
+    var locked=selected && selected.classList.contains('ed-locked');
+    ctx.appendChild(mkBtn(locked?'🔓 שחרר':'🔒 נעל',toggleLock));
+    ctx.appendChild(mkBtn('▭ מסגרת −',function(){borderWidthDelta(-1);}));
+    ctx.appendChild(mkBtn('▭ מסגרת +',function(){borderWidthDelta(1);}));
+    ctx.appendChild(mkLabel('צבע מסגרת:'));
+    for(var i=0;i<COLORS.length;i++) ctx.appendChild(mkBorderDot(COLORS[i][0],COLORS[i][1]));
+    ctx.appendChild(mkBtn('◜ עיגול −',function(){radiusDelta(-4);}));
+    ctx.appendChild(mkBtn('◝ עיגול +',function(){radiusDelta(4);}));
+    ctx.appendChild(mkBtn('🌑 צל',cycleShadow));
+  }
+  function buildAnim(){
+    ctx.appendChild(mkSep());
+    ctx.appendChild(mkLabel('כניסה:'));
+    var cur=''; for(var i=0;i<ANIM_CLASSES.length;i++){ if(selected&&selected.classList.contains(ANIM_CLASSES[i])){ cur=ANIM_CLASSES[i]; break; } }
+    ctx.appendChild(mkSelect(ANIMS, cur, function(v){ setAnim(v); refreshTb(); }));
+    ctx.appendChild(mkBtn('⏱ קצר יותר',function(){animDelta('animationDuration',-0.1,0.1,3);}));
+    ctx.appendChild(mkBtn('⏱ ארוך יותר',function(){animDelta('animationDuration',0.1,0.1,3);}));
+    ctx.appendChild(mkBtn('⏳ השהיה −',function(){animDelta('animationDelay',-0.1,0,3);}));
+    ctx.appendChild(mkBtn('⏳ השהיה +',function(){animDelta('animationDelay',0.1,0,3);}));
+    ctx.appendChild(mkBtn('▶ תצוגה מקדימה',previewAnim));
+  }
   function refreshTb(){
     if(!ctx) return;
     ctx.innerHTML='';
     var show=false;
-    if(editState){ buildColors(); show=true; }
-    else if(selected){
+    if(editState){
+      buildColors();
+      buildTextFormat();
+      show=true;
+    } else if(selected){
       if(matches(selected,'.ed-blur')){
         ctx.appendChild(mkBtn('עוצמה −',function(){blurDelta(-5);}));
         ctx.appendChild(mkBtn('עוצמה +',function(){blurDelta(5);}));
         ctx.appendChild(mkBtn('אטום ◼',toggleOpaque));
-        show=true;
       } else if(matches(selected,'.ed-img')){
         ctx.appendChild(mkBtn('פינות ◰',imgCorners));
-        ctx.appendChild(mkBtn('שקיפות 👻',cycleOpacity));
-        show=true;
       } else if(matches(selected,'.ed-shape')){
         buildColors(true);
-        ctx.appendChild(mkBtn('שקיפות 👻',cycleOpacity));
-        show=true;
+      } else if(matches(selected,'.ed-line,.ed-arrow')){
+        buildColors(true);
+      } else if(matches(selected,TEXTY) || matches(selected,'.ed-textbox')){
+        buildColors();
+        buildTextFormat();
       } else {
         buildColors();
-        show=true;
       }
+      ctx.appendChild(mkSep());
+      buildGeneric();
+      buildAnim();
+      show=true;
     }
     ctx.style.display=show?'flex':'none';
   }

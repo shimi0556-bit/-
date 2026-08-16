@@ -1,9 +1,14 @@
-/* ===== BRAIN DECK · EDIT MODE v2 (additive, self-contained) =====
-   v2 adds: clipboard image paste (Cmd+V) + file drag-drop, internal element
+/* ===== BRAIN DECK · EDIT MODE v3 (additive, self-contained) =====
+   v2 added: clipboard image paste (Cmd+V) + file drag-drop, internal element
    copy/paste (Cmd+C/Cmd+V), brand color swatches (whole element OR selected
    word while editing), center snap-guides while dragging, arrow-key nudge,
    z-order, center buttons, redo, autosave to localStorage with restore bar,
-   blur intensity/opaque controls, proportional image resize, Cmd+S save. */
+   blur intensity/opaque controls, proportional image resize, Cmd+S save.
+   v3 adds: compact icon-only FAB (docked corner, low-key until hover), more
+   shapes (circle/line/arrow), text formatting (bold/italic/underline, align,
+   font family, line-height/letter-spacing), generic per-element controls
+   (opacity, duplicate, lock, border width/color/radius, shadow), and
+   per-element entrance-animation controls (style/duration/delay/preview). */
 (function(){
   if(window.__brainEdInit) return; window.__brainEdInit=true;
   var deck=document.getElementById('deck');
@@ -14,7 +19,7 @@
   var LS_KEY='brainEd:'+(location.pathname.split('/').pop()||'deck');
   var MARKER='__brain-ed-copy__';
 
-  var ADDED='.ed-img,.ed-blur,.ed-shape,.ed-textbox,.ed-clone';
+  var ADDED='.ed-img,.ed-blur,.ed-shape,.ed-textbox,.ed-clone,.ed-line,.ed-arrow';
   /* DENY = full-bleed backgrounds, slide-filling wrappers, deck chrome, editor UI */
   var DENY='#deck,.slide,.bg-img,.foot,.pg,#nav,.nav-btn,#slide-counter,#btn-fs,#progress-bar,#ed-toolbar,#ed-fab,#ed-hint,#ed-toast,#ed-ctx,#ed-restore,#ed-guide-v,#ed-guide-h,.wrap,.div-wrap,.show-wrap,.bs-wrap,.applayer,.hero-image-content,.hero-image-vignette,.lay-side,.lay-wrap,.tower,.tower-inner,.hero-image,.hero-ring,.hero-ring2,.loop-wrap,.loop-content';
   /* TEXTY = elements that may be inline-edited on double-click */
@@ -157,7 +162,7 @@
     if(!matches(el,ADDED) && getComputedStyle(el).position==='static'){ el.style.position='relative'; el.__edRel=true; }
     var del=document.createElement('div'); del.className='ed-del ed-runtime'; del.textContent='×';
     del.addEventListener('mousedown',function(e){ e.stopPropagation(); e.preventDefault(); });
-    del.addEventListener('click',function(e){ e.stopPropagation(); snap(); var t=selected; deselect(); if(t) t.remove(); schedulePersist(); });
+    del.addEventListener('click',function(e){ e.stopPropagation(); deleteSel(); });
     el.appendChild(del);
     if(matches(el,ADDED)){
       var h=document.createElement('div'); h.className='ed-handle br ed-runtime';
@@ -200,6 +205,7 @@
       select(el);
     }
     var s=scale(), d=deck.getBoundingClientRect();
+    if(matches(el,'.ed-locked')){ toast('האלמנט נעול - לחץ 🔓 בסרגל כדי לשחרר'); return; }
     drag={el:el,x:e.clientX,y:e.clientY,moved:false,added:matches(el,ADDED),s:s};
     var r0=el.getBoundingClientRect();
     if(drag.added){
@@ -253,6 +259,7 @@
 
   /* ---------- resize (images keep aspect ratio; Shift = free) ---------- */
   function startResize(e,el){
+    if(matches(el,'.ed-locked')){ toast('האלמנט נעול'); return; }
     e.preventDefault(); e.stopPropagation();
     var s=scale(), w=el.offsetWidth, h=el.offsetHeight, x=e.clientX, y=e.clientY, moved=false;
     var isImg=matches(el,'.ed-img'), ratio=(h/w)||1;
@@ -280,6 +287,7 @@
     if(!el) return;
     if(matches(el,ADDED) && !matches(el,'.ed-textbox')) return;
     if(!matches(el,TEXTY)){ toast('האלמנט הזה לא טקסט לעריכה'); return; }
+    if(matches(el,'.ed-locked')){ toast('האלמנט נעול'); return; }
     deselect(); snap();
     editState={el:el, orig:el.innerHTML, cancelled:false};
     refreshTb();
@@ -317,6 +325,9 @@
   }
   function addBlur(){ snap(); var s=activeSlide(); var b=document.createElement('div'); b.className='ed-blur'; b.style.cssText='left:760px;top:460px;width:400px;height:150px;'; s.appendChild(b); select(b); toast('טשטוש - גרור מעל נתון'); schedulePersist(); }
   function addShape(){ snap(); var s=activeSlide(); var b=document.createElement('div'); b.className='ed-shape'; b.style.cssText='left:760px;top:450px;width:420px;height:200px;'; s.appendChild(b); select(b); schedulePersist(); }
+  function addCircle(){ snap(); var s=activeSlide(); var b=document.createElement('div'); b.className='ed-shape ed-circle'; b.style.cssText='left:800px;top:410px;width:220px;height:220px;'; s.appendChild(b); select(b); schedulePersist(); }
+  function addLine(){ snap(); var s=activeSlide(); var b=document.createElement('div'); b.className='ed-line'; b.style.cssText='left:760px;top:533px;width:340px;height:6px;'; s.appendChild(b); select(b); schedulePersist(); }
+  function addArrow(){ snap(); var s=activeSlide(); var b=document.createElement('div'); b.className='ed-arrow'; b.style.cssText='left:760px;top:510px;width:280px;height:46px;'; s.appendChild(b); select(b); schedulePersist(); }
   function mkTextbox(text,x,y){
     var s=activeSlide(); var t=document.createElement('div'); t.className='ed-textbox';
     t.style.left=(x!=null?x:720)+'px'; t.style.top=(y!=null?y:480)+'px';
@@ -355,6 +366,7 @@
     var off=24*pasteCount, s=activeSlide(), el;
     var tmp=document.createElement('div'); tmp.innerHTML=clipInternal.html;
     var src=tmp.firstElementChild; if(!src) return;
+    src.classList.remove('ed-locked');
     if(clipInternal.added){
       el=src;
       el.style.left=Math.round((parseFloat(el.style.left)||clipInternal.left)+off)+'px';
@@ -406,6 +418,9 @@
     }
     if(!selected){ toast('בחר אלמנט או סמן מילה'); return; }
     snap();
+    if(matches(selected,'.ed-line,.ed-arrow')){
+      selected.style.background=c; schedulePersist(); return;
+    }
     if(matches(selected,'.ed-shape')){
       selected.style.background=c+'33'; selected.style.borderColor=c; schedulePersist(); return;
     }
@@ -428,6 +443,14 @@
     selected.style.webkitTextFillColor='transparent'; selected.style.color='';
     schedulePersist();
   }
+  function applyBorderColor(c){
+    if(!selected){ toast('בחר אלמנט קודם'); return; }
+    snap();
+    if((parseFloat(getComputedStyle(selected).borderWidth)||0)===0) selected.style.borderWidth='2px';
+    selected.style.borderStyle='solid';
+    selected.style.borderColor=c;
+    schedulePersist();
+  }
 
   /* ---------- z-order / center / nudge / blur controls ---------- */
   function zOrder(front){
@@ -439,6 +462,7 @@
   }
   function centerSel(axis){
     if(!selected){ toast('בחר אלמנט קודם'); return; }
+    if(matches(selected,'.ed-locked')){ toast('האלמנט נעול'); return; }
     snap();
     var d=deck.getBoundingClientRect(), s=scale(), r=selected.getBoundingClientRect();
     var cx=((r.left-d.left)+r.width/2)/s, cy=((r.top-d.top)+r.height/2)/s;
@@ -447,6 +471,7 @@
   }
   function nudge(dx,dy){
     if(!selected) return false;
+    if(matches(selected,'.ed-locked')) return false;
     var now=Date.now();
     if(lastNudge.el!==selected || now-lastNudge.t>1200) snap();
     lastNudge={el:selected,t:now};
@@ -479,10 +504,109 @@
     selected.style.opacity=(next===1)?'':String(next);
     toast('שקיפות: '+Math.round(next*100)+'%'); schedulePersist();
   }
+  function borderWidthDelta(d){
+    if(!selected){ toast('בחר אלמנט קודם'); return; }
+    snap();
+    var cur=parseFloat(getComputedStyle(selected).borderWidth)||0;
+    var v=Math.max(0,Math.min(20,cur+d));
+    selected.style.borderWidth=v+'px'; selected.style.borderStyle= v>0 ? 'solid' : 'none';
+    toast('מסגרת: '+v+'px'); schedulePersist();
+  }
+  function radiusDelta(d){
+    if(!selected){ toast('בחר אלמנט קודם'); return; }
+    snap();
+    var cur=parseFloat(getComputedStyle(selected).borderRadius)||0;
+    var v=Math.max(0,Math.min(200,cur+d));
+    selected.style.borderRadius=v+'px';
+    toast('עיגול פינות: '+v+'px'); schedulePersist();
+  }
+  var SHADOWS=['','0 8px 24px rgba(0,0,0,.25)','0 20px 60px rgba(0,0,0,.55)'];
+  var SHADOW_LBL=['ללא צל','צל רך','צל חזק'];
+  function cycleShadow(){
+    if(!selected){ toast('בחר אלמנט קודם'); return; }
+    snap();
+    var cur=selected.style.boxShadow||'';
+    var idx=SHADOWS.indexOf(cur); idx=(idx+1)%SHADOWS.length;
+    selected.style.boxShadow=SHADOWS[idx];
+    toast(SHADOW_LBL[idx]); schedulePersist();
+  }
+  function toggleLock(){
+    if(!selected){ toast('בחר אלמנט קודם'); return; }
+    snap();
+    selected.classList.toggle('ed-locked');
+    var locked=selected.classList.contains('ed-locked');
+    toast(locked?'האלמנט ננעל 🔒':'האלמנט שוחרר 🔓');
+    schedulePersist(); refreshTb();
+  }
 
-  function fontDelta(d){ if(!selected){ toast('בחר טקסט קודם'); return; } snap();
-    var cs=parseFloat(getComputedStyle(selected).fontSize)||30; selected.style.fontSize=Math.max(10,cs+d)+'px'; schedulePersist(); }
-  function deleteSel(){ if(!selected){ toast('בחר אלמנט קודם'); return; } snap(); var el=selected; deselect(); el.remove(); schedulePersist(); }
+  /* ---------- text formatting (whole element, or selected word while editing) ---------- */
+  function toggleTextStyle(execCmd, styleProp, onVal, offVal){
+    var ae=document.activeElement, sel=window.getSelection();
+    if(ae && ae.isContentEditable && sel && !sel.isCollapsed){
+      document.execCommand('styleWithCSS',false,true);
+      document.execCommand(execCmd,false,null);
+      return;
+    }
+    if(!selected){ toast('בחר טקסט קודם'); return; }
+    snap();
+    var cur=getComputedStyle(selected)[styleProp];
+    selected.style[styleProp]= (cur===onVal)? offVal : onVal;
+    schedulePersist();
+  }
+  function toggleBold(){ toggleTextStyle('bold','fontWeight','800','400'); }
+  function toggleItalic(){ toggleTextStyle('italic','fontStyle','italic','normal'); }
+  function toggleUnderline(){ toggleTextStyle('underline','textDecorationLine','underline','none'); }
+  function setAlign(v){
+    if(!selected){ toast('בחר טקסט קודם'); return; }
+    snap(); selected.style.textAlign=v; schedulePersist();
+  }
+  var FONTS=[['ברירת מחדל',''],['סריף','Georgia,\'Times New Roman\',serif'],['מונוגרפי',"'Consolas','Courier New',monospace"],['מודגש-רחב',"Impact,'Arial Narrow',sans-serif"]];
+  function setFont(v){ if(!selected){ toast('בחר טקסט קודם'); return; } snap(); selected.style.fontFamily=v; schedulePersist(); }
+  function lineHeightDelta(d){
+    if(!selected){ toast('בחר טקסט קודם'); return; }
+    snap();
+    var cur=parseFloat(selected.style.lineHeight)||1.2;
+    var v=Math.max(0.8,Math.min(2.5,+(cur+d).toFixed(2)));
+    selected.style.lineHeight=v; toast('ריווח שורות: '+v); schedulePersist();
+  }
+  function letterSpacingDelta(d){
+    if(!selected){ toast('בחר טקסט קודם'); return; }
+    snap();
+    var cur=parseFloat(selected.style.letterSpacing)||0;
+    var v=Math.max(-2,Math.min(10,cur+d));
+    selected.style.letterSpacing=v+'px'; toast('ריווח אותיות: '+v+'px'); schedulePersist();
+  }
+
+  /* ---------- entrance-animation controls ---------- */
+  var ANIM_CLASSES=['ed-anim-fade','ed-anim-rise','ed-anim-inr','ed-anim-inl','ed-anim-scale'];
+  var ANIMS=[['ללא',''],['דהייה','ed-anim-fade'],['עלייה','ed-anim-rise'],['כניסה מימין','ed-anim-inr'],['כניסה משמאל','ed-anim-inl'],['הגדלה','ed-anim-scale']];
+  function setAnim(cls){
+    if(!selected){ toast('בחר אלמנט קודם'); return; }
+    snap();
+    selected.classList.remove.apply(selected.classList,['anim'].concat(ANIM_CLASSES));
+    selected.style.animation='';
+    if(cls){ selected.classList.add('anim',cls); selected.setAttribute('data-anim',cls.replace('ed-anim-','')); }
+    else { selected.removeAttribute('data-anim'); selected.style.animation='none'; }
+    schedulePersist();
+  }
+  function animDelta(prop,d,min,max){
+    if(!selected){ toast('בחר אלמנט קודם'); return; }
+    snap();
+    var cur=parseFloat(selected.style[prop])||0;
+    var v=Math.max(min,Math.min(max,+(cur+d).toFixed(2)));
+    selected.style[prop]=v+'s';
+    schedulePersist();
+  }
+  function previewAnim(){
+    if(!selected) return;
+    var cur=null;
+    for(var i=0;i<ANIM_CLASSES.length;i++){ if(selected.classList.contains(ANIM_CLASSES[i])){ cur=ANIM_CLASSES[i]; break; } }
+    if(!cur && !selected.classList.contains('anim')){ toast('אין כניסה מוגדרת - בחר סגנון קודם'); return; }
+    var cls=cur||'anim';
+    selected.classList.remove(cls);
+    void selected.offsetWidth;
+    selected.classList.add(cls);
+  }
 
   /* ---------- navigation (reuse deck) ---------- */
   function go(dir){
@@ -492,6 +616,14 @@
     var n=Math.max(0,Math.min(list.length-1,i+dir));
     if(typeof show==='function') show(n);
     else { list[i].classList.remove('active'); list[n].classList.add('active'); }
+  }
+
+  function fontDelta(d){ if(!selected){ toast('בחר טקסט קודם'); return; } snap();
+    var cs=parseFloat(getComputedStyle(selected).fontSize)||30; selected.style.fontSize=Math.max(10,cs+d)+'px'; schedulePersist(); }
+  function deleteSel(){
+    if(!selected){ toast('בחר אלמנט קודם'); return; }
+    if(matches(selected,'.ed-locked')){ toast('האלמנט נעול - שחרר קודם'); return; }
+    snap(); var el=selected; deselect(); el.remove(); schedulePersist();
   }
 
   /* ---------- export ---------- */
@@ -537,7 +669,8 @@
   }
 
   /* ---------- toolbar UI ---------- */
-  var fab=document.createElement('button'); fab.id='ed-fab'; fab.type='button'; fab.textContent='✏️ עריכה';
+  var fab=document.createElement('button'); fab.id='ed-fab'; fab.type='button'; fab.textContent='✏️';
+  fab.title='עריכה'; fab.setAttribute('aria-label','עריכה');
   fab.addEventListener('click',function(){ setEdit(true); });
   document.body.appendChild(fab);
 
@@ -548,6 +681,18 @@
   function mkSep(){ var s=document.createElement('span'); s.className='ed-sep'; return s; }
   function mkDot(name,color){ var d=document.createElement('button'); d.type='button'; d.className='ed-dot'; d.title=name; d.style.background=color;
     d.addEventListener('mousedown',function(e){e.preventDefault();}); d.addEventListener('click',function(e){e.stopPropagation();applyColor(color);}); return d; }
+  function mkBorderDot(name,color){ var d=document.createElement('button'); d.type='button'; d.className='ed-dot'; d.title='מסגרת: '+name; d.style.background=color;
+    d.addEventListener('mousedown',function(e){e.preventDefault();}); d.addEventListener('click',function(e){e.stopPropagation();applyBorderColor(color);}); return d; }
+  function mkSelect(opts,val,onChange){
+    var sel=document.createElement('select'); sel.className='ed-select';
+    opts.forEach(function(o){ var op=document.createElement('option'); op.value=o[1]; op.textContent=o[0]; sel.appendChild(op); });
+    sel.value=val||opts[0][1];
+    sel.addEventListener('mousedown',function(e){e.stopPropagation();});
+    sel.addEventListener('click',function(e){e.stopPropagation();});
+    sel.addEventListener('change',function(){ onChange(sel.value); });
+    return sel;
+  }
+  function mkLabel(text){ var s=document.createElement('span'); s.className='ed-ctx-lbl'; s.textContent=text; return s; }
 
   var row=document.createElement('div'); row.id='ed-row';
   row.appendChild(mkBtn('› הקודם',function(){go(-1);}));
@@ -556,6 +701,9 @@
   row.appendChild(mkBtn('🖼️ תמונה',addImage));
   row.appendChild(mkBtn('🌫️ טשטוש',addBlur));
   row.appendChild(mkBtn('▭ צורה',addShape));
+  row.appendChild(mkBtn('⚪ עיגול',addCircle));
+  row.appendChild(mkBtn('─ קו',addLine));
+  row.appendChild(mkBtn('➜ חץ',addArrow));
   row.appendChild(mkBtn('🔤 טקסט',addText));
   row.appendChild(mkSep());
   row.appendChild(mkBtn('⤴ מסגרת',selectParent));
@@ -592,29 +740,74 @@
       ctx.appendChild(tip);
     }
   }
+  function buildTextFormat(){
+    ctx.appendChild(mkSep());
+    ctx.appendChild(mkBtn('B',toggleBold));
+    ctx.appendChild(mkBtn('I',toggleItalic));
+    ctx.appendChild(mkBtn('U',toggleUnderline));
+    ctx.appendChild(mkBtn('⇥ ימין',function(){setAlign('right');}));
+    ctx.appendChild(mkBtn('↔ מרכז',function(){setAlign('center');}));
+    ctx.appendChild(mkBtn('⇤ שמאל',function(){setAlign('left');}));
+    ctx.appendChild(mkSelect(FONTS, selected?selected.style.fontFamily:'', setFont));
+    ctx.appendChild(mkBtn('↕ שורה −',function(){lineHeightDelta(-0.1);}));
+    ctx.appendChild(mkBtn('↕ שורה +',function(){lineHeightDelta(0.1);}));
+    ctx.appendChild(mkBtn('↔ אות −',function(){letterSpacingDelta(-0.5);}));
+    ctx.appendChild(mkBtn('↔ אות +',function(){letterSpacingDelta(0.5);}));
+  }
+  function buildGeneric(){
+    ctx.appendChild(mkLabel('אלמנט:'));
+    ctx.appendChild(mkBtn('👻 שקיפות',cycleOpacity));
+    ctx.appendChild(mkBtn('⧉ שכפול',function(){ if(copySel()) pasteInternal(); }));
+    var locked=selected && selected.classList.contains('ed-locked');
+    ctx.appendChild(mkBtn(locked?'🔓 שחרר':'🔒 נעל',toggleLock));
+    ctx.appendChild(mkBtn('▭ מסגרת −',function(){borderWidthDelta(-1);}));
+    ctx.appendChild(mkBtn('▭ מסגרת +',function(){borderWidthDelta(1);}));
+    ctx.appendChild(mkLabel('צבע מסגרת:'));
+    for(var i=0;i<COLORS.length;i++) ctx.appendChild(mkBorderDot(COLORS[i][0],COLORS[i][1]));
+    ctx.appendChild(mkBtn('◜ עיגול −',function(){radiusDelta(-4);}));
+    ctx.appendChild(mkBtn('◝ עיגול +',function(){radiusDelta(4);}));
+    ctx.appendChild(mkBtn('🌑 צל',cycleShadow));
+  }
+  function buildAnim(){
+    ctx.appendChild(mkSep());
+    ctx.appendChild(mkLabel('כניסה:'));
+    var cur=''; for(var i=0;i<ANIM_CLASSES.length;i++){ if(selected&&selected.classList.contains(ANIM_CLASSES[i])){ cur=ANIM_CLASSES[i]; break; } }
+    ctx.appendChild(mkSelect(ANIMS, cur, function(v){ setAnim(v); refreshTb(); }));
+    ctx.appendChild(mkBtn('⏱ קצר יותר',function(){animDelta('animationDuration',-0.1,0.1,3);}));
+    ctx.appendChild(mkBtn('⏱ ארוך יותר',function(){animDelta('animationDuration',0.1,0.1,3);}));
+    ctx.appendChild(mkBtn('⏳ השהיה −',function(){animDelta('animationDelay',-0.1,0,3);}));
+    ctx.appendChild(mkBtn('⏳ השהיה +',function(){animDelta('animationDelay',0.1,0,3);}));
+    ctx.appendChild(mkBtn('▶ תצוגה מקדימה',previewAnim));
+  }
   function refreshTb(){
     if(!ctx) return;
     ctx.innerHTML='';
     var show=false;
-    if(editState){ buildColors(); show=true; }
-    else if(selected){
+    if(editState){
+      buildColors();
+      buildTextFormat();
+      show=true;
+    } else if(selected){
       if(matches(selected,'.ed-blur')){
         ctx.appendChild(mkBtn('עוצמה −',function(){blurDelta(-5);}));
         ctx.appendChild(mkBtn('עוצמה +',function(){blurDelta(5);}));
         ctx.appendChild(mkBtn('אטום ◼',toggleOpaque));
-        show=true;
       } else if(matches(selected,'.ed-img')){
         ctx.appendChild(mkBtn('פינות ◰',imgCorners));
-        ctx.appendChild(mkBtn('שקיפות 👻',cycleOpacity));
-        show=true;
       } else if(matches(selected,'.ed-shape')){
         buildColors(true);
-        ctx.appendChild(mkBtn('שקיפות 👻',cycleOpacity));
-        show=true;
+      } else if(matches(selected,'.ed-line,.ed-arrow')){
+        buildColors(true);
+      } else if(matches(selected,TEXTY) || matches(selected,'.ed-textbox')){
+        buildColors();
+        buildTextFormat();
       } else {
         buildColors();
-        show=true;
       }
+      ctx.appendChild(mkSep());
+      buildGeneric();
+      buildAnim();
+      show=true;
     }
     ctx.style.display=show?'flex':'none';
   }

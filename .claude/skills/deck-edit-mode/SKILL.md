@@ -57,19 +57,33 @@ appears, and edit mode opens. If anything looks broken, restore the backup.
 
 ## What the user gets (tell them after injecting)
 
-- ✏️ עריכה button (bottom-right) toggles edit mode
+- A small ✏️ icon docked in the corner (low-key until hover) toggles edit
+  mode - deliberately compact so it doesn't get in the way when presenting.
 - Click = select · drag = move (center snap-guides, Alt disables) ·
   double-click = edit text (Escape cancels)
 - Cmd+C / Cmd+V copy-paste elements · paste a screenshot directly ·
   drag image files from the desktop · Cmd+D duplicate
-- Toolbar: add image / blur / shape / textbox · ⤴ select parent group ·
-  z-order · center H/V · font size · color swatches (whole element, or a
-  selected word while editing)
+- Add tools: image / blur / shape / circle / line / arrow / textbox ·
+  ⤴ select parent group · z-order · center H/V · font size
+- Text formatting (any text element, or a word selected while editing):
+  bold/italic/underline, align right/center/left, font-family picker,
+  line-height and letter-spacing nudges, plus the existing color swatches
+  and gradient
+- Per-element controls (any selected element): opacity nudge, duplicate,
+  lock/unlock (blocks move/resize/delete on that element until unlocked),
+  border width + color + corner radius, and a shadow toggle
+- Entrance-animation controls (any selected element): pick a style
+  (fade / rise / slide-in from right or left / scale-in / none), nudge
+  duration and delay, and preview it in place without leaving edit mode
 - Arrow keys nudge 1px (Shift = 10px) · Cmd+Z undo · Cmd+Shift+Z redo
 - Autosave to the browser; a restore bar appears if work was lost
 - 💾 שמור / Cmd+S downloads `<name>-edited.html` - the user replaces the
   original file with it. Backgrounds, fonts and numbers are preserved
   (URLs are absolutized and counters baked at export)
+
+The toolbar wraps and scrolls (`max-height` + `overflow-y`) if a deck's
+viewport is too short to show every row at once, so adding more controls
+here is safe.
 
 ## Auto-injection for every future deck
 
