@@ -50,7 +50,8 @@ export const Scene3Reasoning: React.FC = () => {
           gap: 32,
         }}
       >
-        <div
+        <Interactive.Div
+          name="User bubble"
           style={{
             alignSelf: "flex-end",
             maxWidth: 640,
@@ -74,8 +75,9 @@ export const Scene3Reasoning: React.FC = () => {
           }}
         >
           How should I structure this API?
-        </div>
-        <div
+        </Interactive.Div>
+        <Interactive.Div
+          name="Claude bubble"
           style={{
             alignSelf: "flex-start",
             maxWidth: 760,
@@ -100,7 +102,7 @@ export const Scene3Reasoning: React.FC = () => {
         >
           Let's break it down: resources, versioning, then auth — step by
           step.
-        </div>
+        </Interactive.Div>
       </div>
     </AbsoluteFill>
   );

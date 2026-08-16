@@ -4,7 +4,6 @@ import {
   Interactive,
   interpolate,
   useCurrentFrame,
-  useVideoConfig,
 } from "remotion";
 import { headlineFont, bodyFont } from "../fonts";
 
@@ -88,19 +87,8 @@ const ToolIcon: React.FC<{ type: IconType }> = ({ type }) => {
   );
 };
 
-const nodes: { x: number; label: string; type: IconType; start: number }[] = [
-  { x: 660, label: "Search", type: "search", start: 0.9 },
-  { x: 960, label: "Terminal", type: "terminal", start: 1.1 },
-  { x: 1260, label: "Files", type: "file", start: 1.3 },
-];
-
-const NODE_Y = 440;
-const CENTER_X = 960;
-const CENTER_Y = 800;
-
 export const Scene4Tools: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
 
   return (
     <AbsoluteFill name="Tools" style={{ backgroundColor: "#141311" }}>
@@ -116,7 +104,7 @@ export const Scene4Tools: React.FC = () => {
           fontWeight: 700,
           fontSize: 72,
           color: "#F5F0EB",
-          opacity: interpolate(frame, [0, 0.5 * fps], [0, 1], {
+          opacity: interpolate(frame, [0, 15], [0, 1], {
             extrapolateLeft: "clamp",
             extrapolateRight: "clamp",
             easing: Easing.bezier(0.16, 1, 0.3, 1),
@@ -126,121 +114,185 @@ export const Scene4Tools: React.FC = () => {
         Uses tools to get things done
       </Interactive.Div>
 
-      <svg
+      <Interactive.Svg
+        name="Connector lines"
         width={1920}
         height={1080}
         style={{ position: "absolute", top: 0, left: 0 }}
       >
-        <line
+        <Interactive.Line
+          name="Line to Search"
           x1={660}
-          y1={NODE_Y}
-          x2={CENTER_X}
-          y2={CENTER_Y}
+          y1={440}
+          x2={960}
+          y2={800}
           stroke="#2C2925"
           strokeWidth={3}
           strokeDasharray={469}
-          strokeDashoffset={interpolate(
-            frame,
-            [1.6 * fps, 2.1 * fps],
-            [469, 0],
-            {
-              extrapolateLeft: "clamp",
-              extrapolateRight: "clamp",
-              easing: Easing.bezier(0.16, 1, 0.3, 1),
-            },
-          )}
+          strokeDashoffset={interpolate(frame, [48, 63], [469, 0], {
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+            easing: Easing.bezier(0.16, 1, 0.3, 1),
+          })}
         />
-        <line
+        <Interactive.Line
+          name="Line to Terminal"
           x1={960}
-          y1={NODE_Y}
-          x2={CENTER_X}
-          y2={CENTER_Y}
+          y1={440}
+          x2={960}
+          y2={800}
           stroke="#2C2925"
           strokeWidth={3}
           strokeDasharray={360}
-          strokeDashoffset={interpolate(
-            frame,
-            [1.8 * fps, 2.3 * fps],
-            [360, 0],
-            {
-              extrapolateLeft: "clamp",
-              extrapolateRight: "clamp",
-              easing: Easing.bezier(0.16, 1, 0.3, 1),
-            },
-          )}
+          strokeDashoffset={interpolate(frame, [54, 69], [360, 0], {
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+            easing: Easing.bezier(0.16, 1, 0.3, 1),
+          })}
         />
-        <line
+        <Interactive.Line
+          name="Line to Files"
           x1={1260}
-          y1={NODE_Y}
-          x2={CENTER_X}
-          y2={CENTER_Y}
+          y1={440}
+          x2={960}
+          y2={800}
           stroke="#2C2925"
           strokeWidth={3}
           strokeDasharray={469}
-          strokeDashoffset={interpolate(
-            frame,
-            [2.0 * fps, 2.5 * fps],
-            [469, 0],
-            {
-              extrapolateLeft: "clamp",
-              extrapolateRight: "clamp",
-              easing: Easing.bezier(0.16, 1, 0.3, 1),
-            },
-          )}
+          strokeDashoffset={interpolate(frame, [60, 75], [469, 0], {
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+            easing: Easing.bezier(0.16, 1, 0.3, 1),
+          })}
         />
-      </svg>
+      </Interactive.Svg>
 
-      {nodes.map((node) => (
-        <div
-          key={node.label}
-          style={{
-            position: "absolute",
-            top: NODE_Y - 70,
-            left: node.x - 70,
-            width: 140,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 16,
-            opacity: interpolate(
-              frame,
-              [node.start * fps, (node.start + 0.4) * fps],
-              [0, 1],
-              { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-            ),
-            translate: interpolate(
-              frame,
-              [node.start * fps, (node.start + 0.4) * fps],
-              ["0px 20px", "0px 0px"],
-              { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-            ),
-          }}
-        >
-          <div
-            style={{
-              width: 140,
-              height: 140,
-              borderRadius: "50%",
-              backgroundColor: "#1E1C19",
-              border: "2px solid #2C2925",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <ToolIcon type={node.type} />
-          </div>
-          <div style={{ fontFamily: bodyFont, fontSize: 32, color: "#9C9690" }}>
-            {node.label}
-          </div>
-        </div>
-      ))}
-
-      <div
+      <Interactive.Div
+        name="Search node"
         style={{
           position: "absolute",
-          top: CENTER_Y - 100,
-          left: CENTER_X - 100,
+          top: 370,
+          left: 590,
+          width: 140,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 16,
+          opacity: interpolate(frame, [27, 39], [0, 1], {
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+          }),
+          translate: interpolate(frame, [27, 39], ["0px 20px", "0px 0px"], {
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+          }),
+        }}
+      >
+        <div
+          style={{
+            width: 140,
+            height: 140,
+            borderRadius: "50%",
+            backgroundColor: "#1E1C19",
+            border: "2px solid #2C2925",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <ToolIcon type="search" />
+        </div>
+        <div style={{ fontFamily: bodyFont, fontSize: 32, color: "#9C9690" }}>
+          Search
+        </div>
+      </Interactive.Div>
+
+      <Interactive.Div
+        name="Terminal node"
+        style={{
+          position: "absolute",
+          top: 370,
+          left: 890,
+          width: 140,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 16,
+          opacity: interpolate(frame, [33, 45], [0, 1], {
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+          }),
+          translate: interpolate(frame, [33, 45], ["0px 20px", "0px 0px"], {
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+          }),
+        }}
+      >
+        <div
+          style={{
+            width: 140,
+            height: 140,
+            borderRadius: "50%",
+            backgroundColor: "#1E1C19",
+            border: "2px solid #2C2925",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <ToolIcon type="terminal" />
+        </div>
+        <div style={{ fontFamily: bodyFont, fontSize: 32, color: "#9C9690" }}>
+          Terminal
+        </div>
+      </Interactive.Div>
+
+      <Interactive.Div
+        name="Files node"
+        style={{
+          position: "absolute",
+          top: 370,
+          left: 1190,
+          width: 140,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 16,
+          opacity: interpolate(frame, [39, 51], [0, 1], {
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+          }),
+          translate: interpolate(frame, [39, 51], ["0px 20px", "0px 0px"], {
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+          }),
+        }}
+      >
+        <div
+          style={{
+            width: 140,
+            height: 140,
+            borderRadius: "50%",
+            backgroundColor: "#1E1C19",
+            border: "2px solid #2C2925",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <ToolIcon type="file" />
+        </div>
+        <div style={{ fontFamily: bodyFont, fontSize: 32, color: "#9C9690" }}>
+          Files
+        </div>
+      </Interactive.Div>
+
+      <Interactive.Div
+        name="Claude node"
+        style={{
+          position: "absolute",
+          top: 700,
+          left: 860,
           width: 200,
           height: 200,
           borderRadius: "50%",
@@ -252,20 +304,20 @@ export const Scene4Tools: React.FC = () => {
           fontWeight: 700,
           fontSize: 44,
           color: "#141311",
-          scale: interpolate(frame, [2.3 * fps, 2.7 * fps], [0.6, 1], {
+          scale: interpolate(frame, [69, 81], [0.6, 1], {
             extrapolateLeft: "clamp",
             extrapolateRight: "clamp",
             easing: Easing.spring({ damping: 200 }),
             output: "perceptual-scale",
           }),
-          opacity: interpolate(frame, [2.3 * fps, 2.6 * fps], [0, 1], {
+          opacity: interpolate(frame, [69, 78], [0, 1], {
             extrapolateLeft: "clamp",
             extrapolateRight: "clamp",
           }),
         }}
       >
         Claude
-      </div>
+      </Interactive.Div>
     </AbsoluteFill>
   );
 };
