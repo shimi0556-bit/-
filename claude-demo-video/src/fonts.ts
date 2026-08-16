@@ -1,18 +1,34 @@
-import { loadFont as loadSpaceGrotesk } from "@remotion/google-fonts/SpaceGrotesk";
-import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
-import { loadFont as loadJetBrainsMono } from "@remotion/google-fonts/JetBrainsMono";
+import { loadFont } from "@remotion/fonts";
+import { staticFile } from "remotion";
 
-export const { fontFamily: headlineFont } = loadSpaceGrotesk("normal", {
-  weights: ["700"],
-  subsets: ["latin"],
-});
+export const headlineFont = "Space Grotesk";
+export const bodyFont = "Inter";
+export const monoFont = "JetBrains Mono";
 
-export const { fontFamily: bodyFont } = loadInter("normal", {
-  weights: ["400", "500"],
-  subsets: ["latin"],
-});
-
-export const { fontFamily: monoFont } = loadJetBrainsMono("normal", {
-  weights: ["400", "500"],
-  subsets: ["latin"],
-});
+await Promise.all([
+  loadFont({
+    family: headlineFont,
+    url: staticFile("fonts/space-grotesk-700.woff2"),
+    weight: "700",
+  }),
+  loadFont({
+    family: bodyFont,
+    url: staticFile("fonts/inter-400.woff2"),
+    weight: "400",
+  }),
+  loadFont({
+    family: bodyFont,
+    url: staticFile("fonts/inter-500.woff2"),
+    weight: "500",
+  }),
+  loadFont({
+    family: monoFont,
+    url: staticFile("fonts/jetbrains-mono-400.woff2"),
+    weight: "400",
+  }),
+  loadFont({
+    family: monoFont,
+    url: staticFile("fonts/jetbrains-mono-500.woff2"),
+    weight: "500",
+  }),
+]);
