@@ -23,7 +23,8 @@ export const Scene1Intro: React.FC = () => {
         alignItems: "center",
       }}
     >
-      <div
+      <Interactive.Div
+        name="Ambient glow"
         style={{
           position: "absolute",
           width: 900,
