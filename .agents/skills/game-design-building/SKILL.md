@@ -59,6 +59,10 @@ Per this environment's general rule for frontend/UI work: **start the game and a
 ## Recommended stack (when the user hasn't specified one)
 
 - **2D browser game, no build step needed**: plain HTML5 Canvas + vanilla JS/TS. Simplest to run, debug, and hand off.
-- **2D browser game with more entities/scenes**: a lightweight framework (e.g. Kaboom/Kaplay-style or a small ECS) only if the game's complexity actually warrants it — don't reach for a framework for a 5-entity prototype.
+- **2D browser game with more entities/scenes**: a free, open-source framework — see [Free Tools & Resources](free-tools-and-resources.md) — only if the game's complexity actually warrants it; don't reach for a framework for a 5-entity prototype.
 - **CLI/terminal game**: plain language stdlib + a simple render-loop with cleared screen redraws; keep input non-blocking.
-- Don't default to a full 3D engine (Unity/Godot/Unreal) unless the user asks for one or the game is genuinely 3D — those aren't runnable/verifiable in most agent sessions.
+- Don't default to a full 3D engine (Unity/Godot/Unreal) unless the user asks for one or the game is genuinely 3D — those need a locally running editor and aren't runnable/verifiable in most agent sessions.
+
+## Free tools & resources
+
+Everything this skill assumes by default is free: no paid engine license, no paid asset-generation API, no paid audio tool. See [Free Tools & Resources](free-tools-and-resources.md) for the specific free/open-source frameworks, free art/audio asset libraries, and free MCP-based editor integrations worth knowing about — and which popular tools in this space are *not* free, so you don't recommend them by default.

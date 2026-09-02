@@ -2,6 +2,8 @@
 
 Sound is one of the cheapest, highest-leverage additions to game feel — a working sound effect on every meaningful action (hit, pickup, jump, menu select) does more for perceived polish than most visual work of equal effort. Don't leave audio for "later" on a small project; budget it in from the start.
 
+Don't have SFX/music yet? See [Free Tools & Resources](free-tools-and-resources.md#free-art--asset-resources) for free sound and music sources (Freesound.org, Kenney.nl) before reaching for a paid AI voice/audio generator.
+
 ## The autoplay-unlock gotcha
 
 Browsers block audio (and `AudioContext`) from starting before a user gesture. Don't call `audioContext.resume()` or start music on page load — wire it to the first `pointerdown`/`keydown`/click (often the "Start Game" or "Click to play" screen most games already have):
