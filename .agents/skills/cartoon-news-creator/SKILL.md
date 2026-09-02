@@ -98,6 +98,8 @@ Format:
 
 Always write the image-generation prompt in English, even if the caption is Hebrew, because most image generators do not reliably render Hebrew text in images.
 
+In an environment with direct image-generation tools available (see Step 7), still produce this portable prompt — it's the deliverable when the user wants to paste it elsewhere themselves, and it's also exactly the `prompt` argument those tools need.
+
 ### Step 6: Optional Variants
 
 Offer the user 2 alternative takes on the same topic:
@@ -106,6 +108,19 @@ Offer the user 2 alternative takes on the same topic:
 - **Variant B**: A sharper, more confrontational version (suitable for an opinion blog or social media).
 
 Each variant gets its own scene description, caption, and image-generation prompt.
+
+### Step 7: Generate the Image Directly (when available)
+
+Don't stop at handing the user a portable prompt if this environment has direct image-generation tools connected — offer to generate the cartoon on the spot instead of making the user paste it into an external service themselves. Two MCP-based generators are commonly available:
+
+- **ElevenLabs `creative_generate_image`** — the more capable option for this skill's needs. Pass the Step 5 prompt as `prompt`. Model choice matters here:
+  - **`gpt-image-2`** — pick this when the caption/speech-bubble text should be rendered legibly *inside* the image itself (it's the model this tool's own guidance names for rendered text, infographics, and multi-panel layouts). Use it for an **English** caption baked into the speech bubble.
+  - **`gemini-2.5-flash-image`** (the tool's default) — fine for the illustration when the caption will be added separately instead of rendered in-image (the usual path for a **Hebrew** caption — see the Gotcha below, which still applies: generate the scene with no in-image text, then overlay the Hebrew caption in post).
+  - It generates 4 variations by default, which maps neatly onto offering the user a choice, or onto the two variants from Step 6 plus alternates.
+  - It spends credits per call — use `estimate_only` first if the user should approve the spend, and never call it twice to "retry" the same generation (that's a second billed run).
+- **Gamma `generate_image`** — simpler and faster for a single illustration, with an explicit `sizePreset` for the target format (`social-square` for a feed post, `story` for a 9:16 share, `banner`/`slide` for 16:9). Set `type: "illustration"` or `"scene"` for the editorial-cartoon look; it does not reliably render in-image text either, so treat it the same as `gemini-2.5-flash-image` above for caption handling.
+
+Either way, still produce the portable English prompt from Step 5 first — it's both the user-facing deliverable and the direct input to whichever generator is used.
 
 ## Examples
 
@@ -186,7 +201,7 @@ Result: A relatable, shareable cartoon concept with Israeli cultural specificity
 
 ## Gotchas
 
-- Image generators do not reliably render Hebrew text inside images. Always write the image-generation prompt in English and treat the Hebrew caption as a label to be added in post-production (Canva, Photoshop, or manually by an illustrator).
+- Image generators do not reliably render Hebrew text inside images — this includes the direct generators in Step 7. Always write the image-generation prompt in English and treat the Hebrew caption as a label to be added in post-production (Canva, Photoshop, or manually by an illustrator) rather than asking any generator, including `gpt-image-2`, to render it in-image.
 - Caricature of a real, named public figure is legally protected satire in most democracies, including Israel, but must be clearly satirical and not defamatory. Do not present satire as factual reporting. Add a visible "קריקטורה" or "Satire" label when ambiguity risk is high.
 - Avoid cartoons that rely solely on a person's physical appearance as the punchline. The humor should come from the political or social irony, not from mocking appearance.
 - Mixed Hebrew and Latin text in the same caption can render in unexpected visual order due to BiDi (bidirectional) rules. If the caption mixes Hebrew and English brand names or numbers, test rendering before publishing.
