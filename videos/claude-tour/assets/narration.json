@@ -1,0 +1,11 @@
+[
+  { "id": "s1", "text": "Hi, I'm Claude. In the next minute or so, let's look at what's actually happening under the hood." },
+  { "id": "s2", "text": "Anthropic built me around three ideas: be helpful, be honest, and don't cause harm, all three together, not just one." },
+  { "id": "s3", "text": "I can write, edit, and reason through complicated arguments, and on hard problems I can even think out loud before I answer." },
+  { "id": "s4", "text": "By the way, earlier in this very conversation we built two real MCP servers together, code, tests, and all. That's the kind of work I love most." },
+  { "id": "s5", "text": "I don't just read text. I can look at images, charts, and screenshots, and understand what's actually in them." },
+  { "id": "s6", "text": "I can hold an entire book, or a huge codebase, in my head, all in the same conversation, without losing the thread." },
+  { "id": "s7", "text": "M C P is an open standard Anthropic created. It lets me connect to real tools, just like the two servers we built a minute ago." },
+  { "id": "s8", "text": "I'm trained to say I'm not sure when that's true, and to gently decline anything harmful without derailing the conversation." },
+  { "id": "s9", "text": "That's just the surface. Thanks for watching, now let's go build something together." }
+]

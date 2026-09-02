@@ -1,0 +1,126 @@
+<!doctype html>
+<html>
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <template>
+      <style>
+        
+    #root { position:absolute; inset:0; background:#14121B; color:#F4F1EC; font-family:'Montserrat',sans-serif; overflow:hidden; }
+    .ambient{position:absolute; inset:0; overflow:hidden; pointer-events:none;}
+    .orb{position:absolute; border-radius:50%; filter:blur(70px); opacity:.28;}
+    .orb1{width:640px; height:640px; background:#FF6B4A; top:-80px; right:-80px;}
+    .orb2{width:520px; height:520px; background:#4FD8C4; bottom:-180px; left:-140px; opacity:.18;}
+    .content{position:absolute; inset:0; display:flex; align-items:center; padding:0 120px;}
+    .body-row{display:flex; align-items:center; gap:100px; width:100%;}
+    .text-col.split{max-width:620px; flex:0 0 auto;}
+    .art-col{flex:1; display:flex; align-items:center; justify-content:center; min-width:0;}
+    .eyebrow{font-family:'IBM Plex Mono',monospace; font-size:22px; letter-spacing:.14em; color:#FF6B4A; margin-bottom:22px; display:flex; align-items:center; gap:14px;}
+    .eyebrow::before{content:""; width:34px; height:2px; background:#FF6B4A; display:inline-block;}
+    h1{font-family:'League Gothic',sans-serif; font-weight:400; font-size:92px; line-height:1.02; margin:0 0 30px 0; letter-spacing:.005em;}
+    h1 em{font-style:normal; color:#FF6B4A;}
+    .body-text{font-size:30px; line-height:1.5; color:#C9C4D6; font-weight:350; max-width:640px;}
+    .chip-col{display:flex; flex-direction:column; gap:20px;}
+    .pillar-chip{display:flex; align-items:center; gap:18px; background:#1D1B25; border:1px solid #332F3D; border-radius:8px; padding:18px 28px; font-size:26px; font-weight:500;}
+    .pillar-chip svg{width:34px; height:34px; stroke:#4FD8C4; flex-shrink:0;}
+    .chips{display:flex; flex-wrap:wrap; gap:16px; margin-top:36px;}
+    .chip{display:inline-flex; align-items:center; padding:14px 26px; border-radius:999px; border:1px solid #332F3D; background:#1D1B25; font-size:24px;}
+    .chip.mono{font-family:'IBM Plex Mono',monospace;}
+    .stat-panel{margin-top:20px; padding:32px 36px; background:#1D1B25; border-right:5px solid #FF6B4A; max-width:640px;}
+    .stat-panel.wide{max-width:720px;}
+    .stat-row{display:flex; align-items:baseline; gap:16px;}
+    .stat-num{font-family:'IBM Plex Mono',monospace; font-size:64px; font-weight:700; color:#FF6B4A; font-variant-numeric:tabular-nums;}
+    .stat-unit{font-family:'IBM Plex Mono',monospace; font-size:28px; color:#C9C4D6;}
+    .stat-label{color:#A9A4B5; font-size:22px; margin-top:10px; line-height:1.4;}
+    .code-card{background:#1D1B25; border:1px solid #332F3D; border-radius:10px; padding:20px 26px; width:440px;}
+    .code-topbar{display:flex; gap:8px; margin-bottom:16px;}
+    .code-topbar .dot{width:12px; height:12px; border-radius:50%; display:inline-block;}
+    .code-topbar .d1{background:#FF6B4A;} .code-topbar .d2{background:#5A2E22;} .code-topbar .d3{background:#4FD8C4;}
+    .code-line{font-family:'IBM Plex Mono',monospace; font-size:22px; color:#F4F1EC; padding:3px 0;}
+    .code-line.dim{color:#7A7488;} .code-line.accent{color:#FF6B4A;} .kw{color:#4FD8C4;}
+    .hero-spark{width:420px; height:420px;}
+    .glow-core{fill:#FF6B4A; filter:blur(16px); opacity:.5;}
+    .orbit{fill:none; stroke:#332F3D; stroke-dasharray:2 9;}
+    .ray{stroke:#FF6B4A; stroke-width:4; stroke-linecap:round;}
+    .ray-short{stroke:#4FD8C4; stroke-width:2.6; opacity:.85;}
+    .tip{fill:#FF6B4A;} .tip-short{fill:#4FD8C4;}
+    .mm-line{fill:none; stroke:#332F3D; stroke-width:1.6;}
+    .mm-node{fill:#1D1B25; stroke:#7A7488; stroke-width:1.4;}
+    .mono-label{font-family:'IBM Plex Mono',monospace; font-size:15px; fill:#4FD8C4;}
+    .mono-label.accent{fill:#FF6B4A; font-size:17px;}
+    .narrator{position:absolute; left:70px; bottom:64px; display:flex; align-items:flex-end; gap:22px; max-width:900px;}
+    .spark-avatar{width:120px; height:120px; flex-shrink:0;}
+    .avatar-glow{fill:#FF6B4A; filter:blur(14px); opacity:.5;}
+    .avatar-body{fill:#FF6B4A;}
+    .avatar-eye{fill:#14121B;}
+    .avatar-mouth{fill:#14121B;}
+    .speech-bubble{position:relative; background:#1D1B25; border:1px solid #332F3D; border-radius:6px; padding:22px 28px; font-size:25px; line-height:1.5; color:#F4F1EC; max-width:760px;}
+    .speech-bubble::after{content:""; position:absolute; bottom:22px; left:-9px; width:16px; height:16px; background:#1D1B25; border-left:1px solid #332F3D; border-bottom:1px solid #332F3D; transform:rotate(45deg);}
+  
+      </style>
+      <div id="root" data-composition-id="s3" data-width="1920" data-height="1080" data-duration="9.8">
+        <div class="ambient"><div class="orb orb1" data-layout-allow-overflow></div><div class="orb orb2" data-layout-allow-overflow></div></div>
+
+        <div class="content">
+          <div class="body-row">
+            <div class="text-col split" id="s3-text">
+              <div class="eyebrow" id="s3-eyebrow">CORE CAPABILITY 01</div>
+              <h1 id="s3-headline">Writes, edits, and <em>thinks out loud</em></h1>
+              <div class="body-text" id="s3-body">From a first draft to a careful edit, unpacking a dense argument, or summarizing a long document — and on hard problems, laying out its reasoning before the final answer.</div>
+            </div>
+            <div class="art-col" id="s3-art">
+              
+      <svg width="260" height="230" viewBox="0 0 220 200">
+        <g stroke="#3a3648" stroke-width="1.6">
+          <line id="s3-l1" x1="40" y1="55" x2="170" y2="55"/>
+          <line id="s3-l2" x1="40" y1="82" x2="170" y2="82"/>
+          <line id="s3-l3" x1="40" y1="109" x2="135" y2="109"/>
+        </g>
+        <path id="s3-pen" d="M50 150 l90 -90 14 14 -90 90 -20 6z" fill="none" stroke="#FF6B4A" stroke-width="3.4" stroke-linejoin="round"/>
+      </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="narrator">
+          
+    <svg class="spark-avatar" id="s3-avatar" viewBox="0 0 120 120">
+      <circle class="avatar-glow" cx="60" cy="66" r="30"/>
+      <path class="avatar-body" d="M60 20c22 0 34 16 34 36 0 22-15 38-34 38S26 78 26 56c0-20 12-36 34-36z"/>
+      <ellipse class="avatar-eye" id="s3-eye-l" cx="49" cy="58" rx="4.4" ry="6"/>
+      <ellipse class="avatar-eye" id="s3-eye-r" cx="71" cy="58" rx="4.4" ry="6"/>
+      <rect class="avatar-mouth" id="s3-mouth" x="51" y="75" width="18" height="5.5" rx="2.75"/>
+    </svg>
+          <div class="speech-bubble" id="s3-speech">I can write, edit, and reason through complicated arguments, and on hard problems I can even think out loud before I answer.</div>
+        </div>
+
+        <audio id="s3-audio" src="assets/audio/s3.wav" data-start="1.2" data-duration="7.787" data-track-index="12" data-volume="1"></audio>
+      </div>
+
+      <script>
+        window.__timelines = window.__timelines || {};
+        const tl = gsap.timeline({ paused: true });
+
+        tl.fromTo("#s3-eyebrow", { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power2.out" }, 0.15);
+        tl.fromTo("#s3-headline", { y: 22, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 0.28);
+        tl.fromTo("#s3-body", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 0.45);
+
+        
+      tl.fromTo("#s3-l1", { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" }, 0.55);
+      tl.fromTo("#s3-l2", { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" }, 0.7);
+      tl.fromTo("#s3-l3", { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" }, 0.85);
+      tl.fromTo("#s3-pen", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.7)", transformOrigin: "50% 50%" }, 1.0);
+
+        tl.fromTo("#s3-avatar", { scale: 0.7, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(1.8)", transformOrigin: "50% 100%" }, 0.05);
+        tl.to("#s3-avatar", { y: -8, duration: 1.6, repeat: 5, yoyo: true, ease: "sine.inOut" }, 0.5);
+        tl.fromTo("#s3-speech", { x: -16, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 0.75);
+
+        tl.to(["#s3-eye-l", "#s3-eye-r"], { scaleY: 0.1, duration: 0.06, repeat: 1, repeatDelay: 3.3, yoyo: true, transformOrigin: "50% 50%" }, 0.9);
+
+        tl.to("#s3-mouth", { scaleY: 2.6, duration: 0.080, repeat: 47, yoyo: true, ease: "sine.inOut", transformOrigin: "50% 50%" }, 1.2);
+        tl.set("#s3-mouth", { scaleY: 1 }, 8.987);
+
+        window.__timelines["s3"] = tl;
+      </script>
+    </template>
+  </body>
+</html>
