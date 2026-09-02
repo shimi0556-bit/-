@@ -1,0 +1,137 @@
+<!doctype html>
+<html>
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <template>
+      <style>
+        
+    #root { position:absolute; inset:0; background:#14121B; color:#F4F1EC; font-family:'Montserrat',sans-serif; overflow:hidden; }
+    .ambient{position:absolute; inset:0; overflow:hidden; pointer-events:none;}
+    .orb{position:absolute; border-radius:50%; filter:blur(70px); opacity:.28;}
+    .orb1{width:640px; height:640px; background:#FF6B4A; top:-80px; right:-80px;}
+    .orb2{width:520px; height:520px; background:#4FD8C4; bottom:-180px; left:-140px; opacity:.18;}
+    .content{position:absolute; inset:0; display:flex; align-items:center; padding:0 120px;}
+    .body-row{display:flex; align-items:center; gap:100px; width:100%;}
+    .text-col.split{max-width:620px; flex:0 0 auto;}
+    .art-col{flex:1; display:flex; align-items:center; justify-content:center; min-width:0;}
+    .eyebrow{font-family:'IBM Plex Mono',monospace; font-size:22px; letter-spacing:.14em; color:#FF6B4A; margin-bottom:22px; display:flex; align-items:center; gap:14px;}
+    .eyebrow::before{content:""; width:34px; height:2px; background:#FF6B4A; display:inline-block;}
+    h1{font-family:'League Gothic',sans-serif; font-weight:400; font-size:92px; line-height:1.02; margin:0 0 30px 0; letter-spacing:.005em;}
+    h1 em{font-style:normal; color:#FF6B4A;}
+    .body-text{font-size:30px; line-height:1.5; color:#C9C4D6; font-weight:350; max-width:640px;}
+    .chip-col{display:flex; flex-direction:column; gap:20px;}
+    .pillar-chip{display:flex; align-items:center; gap:18px; background:#1D1B25; border:1px solid #332F3D; border-radius:8px; padding:18px 28px; font-size:26px; font-weight:500;}
+    .pillar-chip svg{width:34px; height:34px; stroke:#4FD8C4; flex-shrink:0;}
+    .chips{display:flex; flex-wrap:wrap; gap:16px; margin-top:36px;}
+    .chip{display:inline-flex; align-items:center; padding:14px 26px; border-radius:999px; border:1px solid #332F3D; background:#1D1B25; font-size:24px;}
+    .chip.mono{font-family:'IBM Plex Mono',monospace;}
+    .stat-panel{margin-top:20px; padding:32px 36px; background:#1D1B25; border-right:5px solid #FF6B4A; max-width:640px;}
+    .stat-panel.wide{max-width:720px;}
+    .stat-row{display:flex; align-items:baseline; gap:16px;}
+    .stat-num{font-family:'IBM Plex Mono',monospace; font-size:64px; font-weight:700; color:#FF6B4A; font-variant-numeric:tabular-nums;}
+    .stat-unit{font-family:'IBM Plex Mono',monospace; font-size:28px; color:#C9C4D6;}
+    .stat-label{color:#A9A4B5; font-size:22px; margin-top:10px; line-height:1.4;}
+    .code-card{background:#1D1B25; border:1px solid #332F3D; border-radius:10px; padding:20px 26px; width:440px;}
+    .code-topbar{display:flex; gap:8px; margin-bottom:16px;}
+    .code-topbar .dot{width:12px; height:12px; border-radius:50%; display:inline-block;}
+    .code-topbar .d1{background:#FF6B4A;} .code-topbar .d2{background:#5A2E22;} .code-topbar .d3{background:#4FD8C4;}
+    .code-line{font-family:'IBM Plex Mono',monospace; font-size:22px; color:#F4F1EC; padding:3px 0;}
+    .code-line.dim{color:#7A7488;} .code-line.accent{color:#FF6B4A;} .kw{color:#4FD8C4;}
+    .hero-spark{width:420px; height:420px;}
+    .glow-core{fill:#FF6B4A; filter:blur(16px); opacity:.5;}
+    .orbit{fill:none; stroke:#332F3D; stroke-dasharray:2 9;}
+    .ray{stroke:#FF6B4A; stroke-width:4; stroke-linecap:round;}
+    .ray-short{stroke:#4FD8C4; stroke-width:2.6; opacity:.85;}
+    .tip{fill:#FF6B4A;} .tip-short{fill:#4FD8C4;}
+    .mm-line{fill:none; stroke:#332F3D; stroke-width:1.6;}
+    .mm-node{fill:#1D1B25; stroke:#7A7488; stroke-width:1.4;}
+    .mono-label{font-family:'IBM Plex Mono',monospace; font-size:15px; fill:#4FD8C4;}
+    .mono-label.accent{fill:#FF6B4A; font-size:17px;}
+    .narrator{position:absolute; left:70px; bottom:64px; display:flex; align-items:flex-end; gap:22px; max-width:900px;}
+    .spark-avatar{width:120px; height:120px; flex-shrink:0;}
+    .avatar-glow{fill:#FF6B4A; filter:blur(14px); opacity:.5;}
+    .avatar-body{fill:#FF6B4A;}
+    .avatar-eye{fill:#14121B;}
+    .avatar-mouth{fill:#14121B;}
+    .speech-bubble{position:relative; background:#1D1B25; border:1px solid #332F3D; border-radius:6px; padding:22px 28px; font-size:25px; line-height:1.5; color:#F4F1EC; max-width:760px;}
+    .speech-bubble::after{content:""; position:absolute; bottom:22px; left:-9px; width:16px; height:16px; background:#1D1B25; border-left:1px solid #332F3D; border-bottom:1px solid #332F3D; transform:rotate(45deg);}
+  
+      </style>
+      <div id="root" data-composition-id="s5" data-width="1920" data-height="1080" data-duration="8.2">
+        <div class="ambient"><div class="orb orb1" data-layout-allow-overflow></div><div class="orb orb2" data-layout-allow-overflow></div></div>
+
+        <div class="content">
+          <div class="body-row">
+            <div class="text-col split" id="s5-text">
+              <div class="eyebrow" id="s5-eyebrow">CORE CAPABILITY 03</div>
+              <h1 id="s5-headline">Sees, and <em>understands</em></h1>
+              <div class="body-text" id="s5-body">A photo, a chart, a scanned table, or a screenshot — they all enter the same conversation as the text, and get interpreted together: writing, code, sound and vision meeting in one place.</div>
+            </div>
+            <div class="art-col" id="s5-art">
+              
+      <svg width="280" height="240" viewBox="0 0 260 220">
+        <path id="s5-l1" class="mm-line" d="M130,110 C90,90 60,70 40,40"/>
+        <path id="s5-l2" class="mm-line" d="M130,110 C170,90 200,70 220,40"/>
+        <path id="s5-l3" class="mm-line" d="M130,110 C90,130 60,150 40,180"/>
+        <path id="s5-l4" class="mm-line" d="M130,110 C170,130 200,150 220,180"/>
+        <circle id="s5-hub" cx="130" cy="110" r="9" fill="#FF6B4A"/>
+        <circle class="mm-node" cx="40" cy="40" r="20"/>
+        <path fill="none" stroke="#4FD8C4" stroke-width="1.6" d="M32,48 l10,-16 6,10 4,-6 6,10z"/>
+        <circle class="mm-node" cx="220" cy="40" r="20"/>
+        <text x="220" y="46" class="mono-label" text-anchor="middle">&lt;/&gt;</text>
+        <circle class="mm-node" cx="40" cy="180" r="20"/>
+        <path fill="none" stroke="#4FD8C4" stroke-width="1.6" d="M30,180 q4,-14 5,0 q4,-20 5,0 q4,-10 5,0 q4,-16 5,0"/>
+        <circle class="mm-node" cx="220" cy="180" r="20"/>
+        <rect x="209" y="169" width="22" height="22" rx="2" fill="none" stroke="#4FD8C4" stroke-width="1.6"/>
+      </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="narrator">
+          
+    <svg class="spark-avatar" id="s5-avatar" viewBox="0 0 120 120">
+      <circle class="avatar-glow" cx="60" cy="66" r="30"/>
+      <path class="avatar-body" d="M60 20c22 0 34 16 34 36 0 22-15 38-34 38S26 78 26 56c0-20 12-36 34-36z"/>
+      <ellipse class="avatar-eye" id="s5-eye-l" cx="49" cy="58" rx="4.4" ry="6"/>
+      <ellipse class="avatar-eye" id="s5-eye-r" cx="71" cy="58" rx="4.4" ry="6"/>
+      <rect class="avatar-mouth" id="s5-mouth" x="51" y="75" width="18" height="5.5" rx="2.75"/>
+    </svg>
+          <div class="speech-bubble" id="s5-speech">I don't just read text. I can look at images, charts, and screenshots, and understand what's actually in them.</div>
+        </div>
+
+        <audio id="s5-audio" src="assets/audio/s5.wav" data-start="1.2" data-duration="6.229" data-track-index="14" data-volume="1"></audio>
+      </div>
+
+      <script>
+        window.__timelines = window.__timelines || {};
+        const tl = gsap.timeline({ paused: true });
+
+        tl.fromTo("#s5-eyebrow", { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power2.out" }, 0.15);
+        tl.fromTo("#s5-headline", { y: 22, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 0.28);
+        tl.fromTo("#s5-body", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 0.45);
+
+        
+      ["l1","l2","l3","l4"].forEach((k,i)=>{
+        const el = document.getElementById("s5-"+k);
+        const len = el.getTotalLength();
+        gsap.set(el, { strokeDasharray: len, strokeDashoffset: len });
+        tl.to(el, { strokeDashoffset: 0, duration: 0.55, ease: "power2.out" }, 0.5 + i*0.12);
+      });
+      tl.fromTo("#s5-hub", { scale: 0 }, { scale: 1, duration: 0.4, ease: "back.out(2)", transformOrigin: "50% 50%" }, 0.5);
+      tl.to("#s5-hub", { scale: 1.3, duration: 1.3, repeat: 5, yoyo: true, ease: "sine.inOut", transformOrigin: "50% 50%" }, 1.0);
+
+        tl.fromTo("#s5-avatar", { scale: 0.7, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(1.8)", transformOrigin: "50% 100%" }, 0.05);
+        tl.to("#s5-avatar", { y: -8, duration: 1.6, repeat: 4, yoyo: true, ease: "sine.inOut" }, 0.5);
+        tl.fromTo("#s5-speech", { x: -16, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 0.75);
+
+        tl.to(["#s5-eye-l", "#s5-eye-r"], { scaleY: 0.1, duration: 0.06, repeat: 1, repeatDelay: 3.3, yoyo: true, transformOrigin: "50% 50%" }, 0.9);
+
+        tl.to("#s5-mouth", { scaleY: 2.6, duration: 0.080, repeat: 37, yoyo: true, ease: "sine.inOut", transformOrigin: "50% 50%" }, 1.2);
+        tl.set("#s5-mouth", { scaleY: 1 }, 7.429);
+
+        window.__timelines["s5"] = tl;
+      </script>
+    </template>
+  </body>
+</html>

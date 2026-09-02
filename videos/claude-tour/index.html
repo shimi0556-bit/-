@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Meet Claude</title>
+    <script src="vendor/gsap.min.js"></script>
+    <style>
+      body { margin: 0; background: #14121B; }
+      #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+      .clip { position: absolute; inset: 0; }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="root"
+      data-width="1920"
+      data-height="1080"
+      data-duration="81.700"
+    >
+      <div
+        id="el-s1"
+        class="clip"
+        data-composition-id="s1"
+        data-composition-src="compositions/s1.html"
+        data-start="0.000"
+        data-duration="7.500"
+        data-track-index="1"
+      ></div>
+      <div
+        id="el-s2"
+        class="clip"
+        data-composition-id="s2"
+        data-composition-src="compositions/s2.html"
+        data-start="7.500"
+        data-duration="9.000"
+        data-track-index="1"
+      ></div>
+      <div
+        id="el-s3"
+        class="clip"
+        data-composition-id="s3"
+        data-composition-src="compositions/s3.html"
+        data-start="16.500"
+        data-duration="9.800"
+        data-track-index="1"
+      ></div>
+      <div
+        id="el-s4"
+        class="clip"
+        data-composition-id="s4"
+        data-composition-src="compositions/s4.html"
+        data-start="26.300"
+        data-duration="11.500"
+        data-track-index="1"
+      ></div>
+      <div
+        id="el-s5"
+        class="clip"
+        data-composition-id="s5"
+        data-composition-src="compositions/s5.html"
+        data-start="37.800"
+        data-duration="8.200"
+        data-track-index="1"
+      ></div>
+      <div
+        id="el-s6"
+        class="clip"
+        data-composition-id="s6"
+        data-composition-src="compositions/s6.html"
+        data-start="46.000"
+        data-duration="8.900"
+        data-track-index="1"
+      ></div>
+      <div
+        id="el-s7"
+        class="clip"
+        data-composition-id="s7"
+        data-composition-src="compositions/s7.html"
+        data-start="54.900"
+        data-duration="10.500"
+        data-track-index="1"
+      ></div>
+      <div
+        id="el-s8"
+        class="clip"
+        data-composition-id="s8"
+        data-composition-src="compositions/s8.html"
+        data-start="65.400"
+        data-duration="8.800"
+        data-track-index="1"
+      ></div>
+      <div
+        id="el-s9"
+        class="clip"
+        data-composition-id="s9"
+        data-composition-src="compositions/s9.html"
+        data-start="74.200"
+        data-duration="7.500"
+        data-track-index="1"
+      ></div>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      window.__timelines["root"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>
