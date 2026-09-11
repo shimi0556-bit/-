@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Model Extractor</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 520px;
+      min-height: 380px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #1e1e1e;
+      color: #e0e0e0;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 16px 20px;
+      text-align: center;
+    }
+
+    .header h1 { font-size: 18px; font-weight: 600; color: white; margin-bottom: 4px; }
+    .header p { font-size: 11px; color: rgba(255,255,255,0.85); }
+
+    .tabs {
+      display: flex;
+      background: #161616;
+      border-bottom: 1px solid #2d2d2d;
+    }
+    .tab {
+      flex: 1;
+      padding: 12px 8px;
+      background: transparent;
+      border: none;
+      color: #888;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .tab:hover { color: #e0e0e0; }
+    .tab.active { color: #fff; border-bottom-color: #667eea; }
+    .tab .count {
+      display: inline-block;
+      background: #3d3d3d;
+      color: #e0e0e0;
+      padding: 1px 6px;
+      border-radius: 10px;
+      font-size: 10px;
+      margin-left: 4px;
+    }
+    .tab.active .count { background: #667eea; color: white; }
+
+    .panel { display: none; padding: 14px; }
+    .panel.active { display: block; }
+
+    .status {
+      padding: 10px 12px;
+      background: #2d2d2d;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      text-align: center;
+      font-size: 12px;
+    }
+    .status.success { background: #1a472a; color: #4ade80; }
+    .status.info { background: #1e3a5f; color: #60a5fa; }
+    .status.empty { background: #3d2d1f; color: #fbbf24; }
+
+    .models-list { max-height: 440px; overflow-y: auto; }
+
+    .model-item {
+      background: #2d2d2d;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+      border: 1px solid #3d3d3d;
+      transition: all 0.2s;
+    }
+    .model-item:hover { border-color: #667eea; background: #333; }
+
+    .model-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      gap: 8px;
+    }
+    .model-filename { font-size: 13px; font-weight: 600; color: #fff; word-break: break-word; flex: 1; }
+    .model-size { font-size: 11px; color: #888; white-space: nowrap; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-right: 6px;
+    }
+    .badge.fmt { background: #667eea; color: white; }
+    .badge.fmt-glb { background: #667eea; }
+    .badge.fmt-gltf { background: #5a67d8; }
+    .badge.fmt-fbx { background: #d97706; }
+    .badge.fmt-obj { background: #059669; }
+    .badge.fmt-usdz, .badge.fmt-usd, .badge.fmt-usdc { background: #dc2626; }
+    .badge.fmt-stl { background: #7c3aed; }
+    .badge.fmt-3mf, .badge.fmt-m3f { background: #db2777; }
+    .badge.fmt-ply { background: #0891b2; }
+    .badge.fmt-dae { background: #ea580c; }
+    .badge.fmt-unknown { background: #525252; }
+
+    .badge.conf-low { background: #92400e; color: #fde68a; }
+    .badge.conf-manual { background: #1f2937; color: #93c5fd; }
+    .badge.conf-dom { background: #1f2937; color: #a7f3d0; }
+
+    .model-url { font-size: 11px; color: #888; word-break: break-all; margin-bottom: 10px; line-height: 1.4; }
+    .model-actions { display: flex; gap: 8px; }
+
+    .btn {
+      flex: 1;
+      padding: 7px 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-download { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    .btn-download:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102,126,234,0.4); }
+    .btn-copy { background: #3d3d3d; color: #e0e0e0; }
+    .btn-copy:hover { background: #4d4d4d; }
+    .btn-flag { background: #1f2937; color: #93c5fd; border: 1px solid #374151; }
+    .btn-flag:hover { background: #374151; }
+    .btn-identify { background: #1e3a5f; color: #93c5fd; }
+    .btn-identify:hover { background: #234670; }
+    .btn-convert { background: #4c1d95; color: #ddd6fe; }
+    .btn-convert:hover { background: #5b21b6; }
+    .btn-convert:disabled { background: #2d2d2d; color: #666; cursor: not-allowed; }
+
+    .convert-options {
+      margin-top: 8px;
+      padding: 7px 9px;
+      background: #161616;
+      border: 1px solid #2d2d2d;
+      border-radius: 6px;
+      font-size: 11px;
+      color: #888;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .convert-options label { display: flex; align-items: center; gap: 5px; cursor: pointer; user-select: none; }
+    .convert-options input[type="checkbox"] { accent-color: #667eea; }
+    .convert-options input[type="number"] {
+      width: 60px;
+      padding: 3px 6px;
+      background: #2d2d2d;
+      border: 1px solid #3d3d3d;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-size: 11px;
+      outline: none;
+    }
+    .convert-options input[type="number"]:focus { border-color: #667eea; }
+
+    .identify-result {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      line-height: 1.45;
+      background: #0c0c0c;
+      border: 1px solid #2d2d2d;
+    }
+    .identify-result.high { border-color: #166534; background: #0a1f12; color: #bbf7d0; }
+    .identify-result.medium { border-color: #854d0e; background: #1f1607; color: #fde68a; }
+    .identify-result.low { border-color: #1e3a5f; background: #0a1322; color: #93c5fd; }
+    .identify-result .verdict { font-weight: 700; margin-bottom: 3px; }
+    .identify-result .hint { color: #888; }
+    .identify-result .sibling { display: block; margin-top: 6px; color: #fbbf24; word-break: break-all; }
+    .identify-result .sibling a { color: #fbbf24; text-decoration: underline; cursor: pointer; }
+
+    .btn-clear {
+      width: 100%;
+      padding: 9px;
+      background: #3d2d1f;
+      color: #fbbf24;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .btn-clear:hover { background: #4d3d2f; }
+
+    .empty-state { text-align: center; padding: 40px 20px; }
+    .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
+    .empty-text { font-size: 13px; color: #888; line-height: 1.6; }
+
+    .filter-bar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .filter-input {
+      flex: 1;
+      min-width: 140px;
+      padding: 7px 10px;
+      background: #2d2d2d;
+      border: 1px solid #3d3d3d;
+      border-radius: 6px;
+      color: #e0e0e0;
+      font-size: 12px;
+      outline: none;
+    }
+    .filter-input:focus { border-color: #667eea; }
+    .filter-select {
+      padding: 7px 10px;
+      background: #2d2d2d;
+      border: 1px solid #3d3d3d;
+      border-radius: 6px;
+      color: #e0e0e0;
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .req-table {
+      max-height: 420px;
+      overflow-y: auto;
+      background: #161616;
+      border-radius: 6px;
+      border: 1px solid #2d2d2d;
+    }
+    .req-row {
+      display: grid;
+      grid-template-columns: 60px 1fr 70px 60px;
+      gap: 8px;
+      padding: 8px 10px;
+      border-bottom: 1px solid #242424;
+      font-size: 11px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .req-row:last-child { border-bottom: none; }
+    .req-row:hover { background: #232323; }
+    .req-row.flagged { background: rgba(102,126,234,0.12); }
+    .req-row.flagged:hover { background: rgba(102,126,234,0.2); }
+
+    .req-type { color: #888; text-transform: uppercase; font-size: 10px; font-weight: 600; }
+    .req-url { color: #e0e0e0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .req-size, .req-status { color: #888; text-align: right; }
+    .req-status.s-200 { color: #4ade80; }
+    .req-status.s-3 { color: #60a5fa; }
+    .req-status.s-4, .req-status.s-5 { color: #f87171; }
+
+    .req-detail {
+      grid-column: 1 / -1;
+      padding: 10px;
+      background: #0c0c0c;
+      border-radius: 4px;
+      margin-top: 6px;
+      display: none;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .req-row.expanded { display: block; }
+    .req-row.expanded .req-detail { display: block; }
+    .req-row.expanded .req-grid { display: grid; grid-template-columns: 60px 1fr 70px 60px; gap: 8px; }
+    .req-row .req-grid { display: contents; }
+
+    .req-detail .kv { display: flex; gap: 8px; margin-bottom: 4px; word-break: break-all; }
+    .req-detail .kv .k { color: #888; flex: 0 0 90px; }
+    .req-detail .kv .v { color: #e0e0e0; flex: 1; }
+    .req-actions { margin-top: 8px; display: flex; gap: 6px; }
+
+    .toolbar {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 11px;
+      color: #888;
+    }
+    .toolbar .count-text { flex: 1; }
+    .toolbar .btn-mini {
+      padding: 5px 9px;
+      background: #2d2d2d;
+      color: #e0e0e0;
+      border: 1px solid #3d3d3d;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .toolbar .btn-mini:hover { background: #3d3d3d; }
+
+    ::-webkit-scrollbar { width: 7px; height: 7px; }
+    ::-webkit-scrollbar-track { background: #1e1e1e; }
+    ::-webkit-scrollbar-thumb { background: #4d4d4d; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #5d5d5d; }
+
+    .spinner {
+      border: 3px solid #3d3d3d;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+    @keyframes spin { 0% { transform: rotate(0); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🎨 3D Model Extractor</h1>
+    <p>GLB · GLTF · M3F · 3MF · FBX · OBJ · USDZ · STL · PLY · DAE</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="models">Models <span id="models-count" class="count">0</span></button>
+    <button class="tab" data-tab="network">Network <span id="network-count" class="count">0</span></button>
+  </div>
+
+  <div id="panel-models" class="panel active">
+    <div id="models-status" class="status info">
+      <div class="spinner"></div>
+      Scanning for 3D models...
+    </div>
+    <div class="convert-options" id="convert-options">
+      <span style="color:#aaa;font-weight:600;">Convert:</span>
+      <label><input type="checkbox" id="opt-rotate" checked> Y-up → Z-up</label>
+      <label>Scale × <input type="number" id="opt-scale" value="100" min="0.001" step="any"></label>
+      <label><input type="checkbox" id="opt-texture" checked> Texture (3MF)</label>
+    </div>
+    <div id="models-container"></div>
+  </div>
+
+  <div id="panel-network" class="panel">
+    <div class="filter-bar">
+      <input id="filter-input" class="filter-input" placeholder="Filter URL or content-type..." />
+      <select id="filter-type" class="filter-select">
+        <option value="">All types</option>
+        <option value="xmlhttprequest">XHR</option>
+        <option value="fetch">Fetch</option>
+        <option value="script">Script</option>
+        <option value="image">Image</option>
+        <option value="media">Media</option>
+        <option value="stylesheet">CSS</option>
+        <option value="other">Other</option>
+      </select>
+      <select id="filter-min-size" class="filter-select">
+        <option value="0">Any size</option>
+        <option value="10000">≥ 10 KB</option>
+        <option value="100000">≥ 100 KB</option>
+        <option value="1000000">≥ 1 MB</option>
+      </select>
+    </div>
+    <div class="toolbar">
+      <span id="req-count-text" class="count-text">0 requests</span>
+      <button id="only-flagged" class="btn-mini">Flagged only</button>
+      <button id="clear-requests" class="btn-mini">Clear log</button>
+    </div>
+    <div id="req-table" class="req-table"></div>
+  </div>
+
+  <script src="lib/draco_wasm_wrapper.js"></script>
+  <script src="lib/meshopt_decoder.js"></script>
+  <script src="converter.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
