@@ -32,7 +32,9 @@ Installed via the [`skills`](https://www.npmjs.com/package/skills) CLI and track
 `remotion-best-practices`, `remotion-create`, `remotion-captions`, `remotion-docs`, `remotion-interactivity`, `remotion-maps`, `remotion-markup`, `remotion-multimedia`, `remotion-render`, `remotion-saas`, `remotion-studio`, `remotion-upgrade`
 
 **From [hoodini/ai-agents-skills](https://github.com/hoodini/ai-agents-skills):**
-`video-edit`, `video-to-landing-page`, `parallax-landing-page`, `cinematic-scrub-landing`, `image-master`, `nano-banana-pro`, `fal-ai`, `mermaid-diagrams`, `analytics-metrics`, `ux-design-systems`, `owasp-security`, `web-accessibility`, `mobile-responsiveness`, `shabbat-times`
+`video-edit`, `video-to-landing-page`, `parallax-landing-page`, `cinematic-scrub-landing`, `image-master`, `nano-banana-pro`, `fal-ai`, `mermaid-diagrams`, `analytics-metrics`, `ux-design-systems`, `owasp-security`, `web-accessibility`, `mobile-responsiveness`, `shabbat-times`, `director`, `figma`, `yuv-decks`, `yuv-design-system`, `yuv-viral-video`
+
+`yuv-viral-video`'s upstream `SKILL.md` frontmatter has an unquoted `description:` containing a bare `: ` (invalid YAML — nested mapping), which makes `skills add` skip it; it was vendored manually with the description string quoted so it parses.
 
 **From [majidmanzarpour/threejs-game-skills](https://github.com/majidmanzarpour/threejs-game-skills)** (build/upgrade/finish Three.js browser games — pairs well with `skyhawk-flight-simulator/`):
 `threejs-game-director` (entrypoint/router), `threejs-gameplay-systems`, `threejs-aaa-graphics-builder`, `threejs-game-ui-designer`, `threejs-3d-generator`, `threejs-image-generator`, `threejs-audio-generator`, `threejs-debug-profiler`, `threejs-qa-release`

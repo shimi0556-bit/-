@@ -13,11 +13,23 @@
       "skillPath": "skills/cinematic-scrub-landing/SKILL.md",
       "computedHash": "d567568e4545dfb91bce38bfa3ee5c3a2a7c0e0dd6a50d3a0a76ed3eddb8dc47"
     },
+    "director": {
+      "source": "hoodini/ai-agents-skills",
+      "sourceType": "github",
+      "skillPath": "skills/director/SKILL.md",
+      "computedHash": "27ed84589cb37b020176c261781b0dc4a7d362904b2e8affbad5f137a06c4efd"
+    },
     "fal-ai": {
       "source": "hoodini/ai-agents-skills",
       "sourceType": "github",
       "skillPath": "skills/fal-ai/SKILL.md",
       "computedHash": "de15d718548d8a638b9adb7d30df7d944a85363bfa33def39ed16ef4b519f17d"
+    },
+    "figma": {
+      "source": "hoodini/ai-agents-skills",
+      "sourceType": "github",
+      "skillPath": "skills/figma/SKILL.md",
+      "computedHash": "31776d07ec44f5e948f3f0bd14aa421a872a97883a2a90c3bfb391e0bfaf336b"
     },
     "image-master": {
       "source": "hoodini/ai-agents-skills",
@@ -210,6 +222,24 @@
       "sourceType": "github",
       "skillPath": "skills/web-accessibility/SKILL.md",
       "computedHash": "c097775d156645fb8b9994e461598518d91837eebc3f7e61a2f8bd18479bafda"
+    },
+    "yuv-decks": {
+      "source": "hoodini/ai-agents-skills",
+      "sourceType": "github",
+      "skillPath": "skills/yuv-decks/SKILL.md",
+      "computedHash": "6eac47bbb3b5bd75ba1041ba882e6c284be63ffb203b65ac214d8fe80b0a5be9"
+    },
+    "yuv-design-system": {
+      "source": "hoodini/ai-agents-skills",
+      "sourceType": "github",
+      "skillPath": "skills/yuv-design-system/SKILL.md",
+      "computedHash": "2a84fb0b2a4faaab301a85d35363a38c3a9087059c9aec79ed0f5fdf87ebdd92"
+    },
+    "yuv-viral-video": {
+      "source": "hoodini/ai-agents-skills",
+      "sourceType": "github",
+      "skillPath": "skills/yuv-viral-video/SKILL.md",
+      "computedHash": "5ee8fd0922b07102b9e1b536a3903b5c336d9ba1fdb612e217f408adb72f4490"
     }
   }
 }
