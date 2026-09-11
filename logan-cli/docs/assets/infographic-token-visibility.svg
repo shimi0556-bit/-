@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="860" viewBox="0 0 1400 860">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0c0c0e"/>
+      <stop offset="100%" stop-color="#141018"/>
+    </linearGradient>
+  </defs>
+  <rect width="1400" height="860" fill="url(#bg)"/>
+  <path d="M40 40 L140 10 L90 110 Z" fill="#ff4d9a" opacity="0.45"/>
+  <path d="M1260 40 L1380 20 L1320 130 Z" fill="#64b4aa" opacity="0.35"/>
+  <path d="M40 780 L120 740 L90 840 Z" fill="#ffd60a" opacity="0.25"/>
+  <path d="M1280 760 L1380 720 L1340 840 Z" fill="#ff4d9a" opacity="0.3"/>
+
+  <text x="700" y="70" text-anchor="middle" fill="#9a9590" font-family="system-ui,sans-serif" font-size="16" letter-spacing="4">LOGAN CLI · TOKEN VISIBILITY</text>
+  <text x="700" y="125" text-anchor="middle" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="52" font-weight="800">NEVER FLY BLIND</text>
+  <text x="700" y="165" text-anchor="middle" fill="#ff4d9a" font-family="system-ui,sans-serif" font-size="20">Live bar · colorful /stats · /context deep real text</text>
+
+  <!-- Status bar card -->
+  <rect x="80" y="210" width="1240" height="130" rx="16" fill="#16141c" stroke="#ff4d9a" stroke-width="2"/>
+  <rect x="100" y="228" width="140" height="32" rx="8" fill="#ff4d9a"/>
+  <text x="170" y="250" text-anchor="middle" fill="#0c0c0e" font-family="system-ui,sans-serif" font-size="14" font-weight="800">STATUS BAR · LIVE</text>
+  <text x="100" y="300" fill="#ffd60a" font-family="ui-monospace,Menlo,monospace" font-size="28" font-weight="700">24K/200K</text>
+  <text x="280" y="300" fill="#f5f0e8" font-family="ui-monospace,Menlo,monospace" font-size="22">12% · in 2.4K out 180 c 1.2K</text>
+  <rect x="100" y="315" width="1180" height="10" rx="5" fill="#2a2430"/>
+  <rect x="100" y="315" width="140" height="10" rx="5" fill="#ff4d9a"/>
+  <text x="1180" y="250" fill="#64b4aa" font-family="system-ui,sans-serif" font-size="14">every sample after a turn</text>
+
+  <!-- /stats -->
+  <rect x="80" y="370" width="600" height="280" rx="16" fill="#16141c" stroke="#bb9af7" stroke-width="2"/>
+  <rect x="100" y="390" width="100" height="32" rx="8" fill="#bb9af7"/>
+  <text x="150" y="412" text-anchor="middle" fill="#0c0c0e" font-family="system-ui,sans-serif" font-size="16" font-weight="800">/stats</text>
+  <text x="220" y="412" fill="#9a9590" font-family="system-ui,sans-serif" font-size="14">colorful token ledger</text>
+
+  <rect x="100" y="450" width="160" height="90" rx="12" fill="#2a1020" stroke="#ff4d9a" stroke-width="1"/>
+  <text x="120" y="480" fill="#ff4d9a" font-family="system-ui,sans-serif" font-size="14" font-weight="700">IN</text>
+  <text x="120" y="520" fill="#f5f0e8" font-family="ui-monospace,Menlo,monospace" font-size="28" font-weight="700">2.4K</text>
+
+  <rect x="280" y="450" width="160" height="90" rx="12" fill="#2a2410" stroke="#ffd60a" stroke-width="1"/>
+  <text x="300" y="480" fill="#ffd60a" font-family="system-ui,sans-serif" font-size="14" font-weight="700">OUT</text>
+  <text x="300" y="520" fill="#f5f0e8" font-family="ui-monospace,Menlo,monospace" font-size="28" font-weight="700">180</text>
+
+  <rect x="460" y="450" width="180" height="90" rx="12" fill="#102a28" stroke="#64b4aa" stroke-width="1"/>
+  <text x="480" y="480" fill="#64b4aa" font-family="system-ui,sans-serif" font-size="14" font-weight="700">CACHE</text>
+  <text x="480" y="520" fill="#f5f0e8" font-family="ui-monospace,Menlo,monospace" font-size="28" font-weight="700">1.2K</text>
+
+  <text x="100" y="580" fill="#9a9590" font-family="system-ui,sans-serif" font-size="15">Input · output · cache · estimated $</text>
+  <text x="100" y="610" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="16">Session totals that update live</text>
+
+  <!-- /context deep -->
+  <rect x="720" y="370" width="600" height="280" rx="16" fill="#16141c" stroke="#64b4aa" stroke-width="2"/>
+  <rect x="740" y="390" width="160" height="32" rx="8" fill="#64b4aa"/>
+  <text x="820" y="412" text-anchor="middle" fill="#0c0c0e" font-family="system-ui,sans-serif" font-size="15" font-weight="800">/context deep</text>
+  <text x="920" y="412" fill="#9a9590" font-family="system-ui,sans-serif" font-size="14">actual prompt text</text>
+
+  <rect x="740" y="450" width="560" height="160" rx="10" fill="#0c0c0e" stroke="#2a2430" stroke-width="1"/>
+  <text x="760" y="485" fill="#64b4aa" font-family="ui-monospace,Menlo,monospace" font-size="14">system prompt · real bytes</text>
+  <text x="760" y="515" fill="#ff4d9a" font-family="ui-monospace,Menlo,monospace" font-size="14">messages · tool results · history</text>
+  <text x="760" y="545" fill="#ffd60a" font-family="ui-monospace,Menlo,monospace" font-size="14">see what ate your context window</text>
+  <text x="760" y="580" fill="#9a9590" font-family="system-ui,sans-serif" font-size="14">Not a vague percentage - the text itself</text>
+
+  <rect x="80" y="680" width="1240" height="100" rx="16" fill="#1f1520" stroke="#ffd60a" stroke-width="2"/>
+  <text x="700" y="725" text-anchor="middle" fill="#ffd60a" font-family="system-ui,sans-serif" font-size="26" font-weight="800">Three layers. Zero guesswork.</text>
+  <text x="700" y="760" text-anchor="middle" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="16">bar after every reply · /stats for the ledger · /context deep for the raw window</text>
+</svg>

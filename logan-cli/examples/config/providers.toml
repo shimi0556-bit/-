@@ -1,0 +1,160 @@
+# Logan multi-provider model presets
+# Author: Yuval Avidani (YUV.AI) - https://yuv.ai
+#
+# Copy sections you need into ~/.logan/config.toml
+# Then: logan models   |   logan -m <id> -p "hi"   |   /model <id>
+#
+# Wire protocols:
+#   chat_completions  -> OpenAI /v1/chat/completions
+#   responses         -> OpenAI /v1/responses
+#   messages          -> Anthropic /v1/messages
+
+[models]
+# default = "claude-sonnet"
+# default = "gpt-4o"
+# default = "ollama-qwen"
+# default = "openrouter-auto"
+
+# ---------------------------------------------------------------------------
+# Anthropic (Claude)
+# ---------------------------------------------------------------------------
+[model.claude-sonnet]
+model = "claude-sonnet-4-5"
+base_url = "https://api.anthropic.com/v1"
+name = "Claude Sonnet"
+api_backend = "messages"
+context_window = 200000
+max_completion_tokens = 16384
+env_key = ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"]
+extra_headers = { "anthropic-version" = "2023-06-01" }
+# Anthropic often needs the key as x-api-key. If Bearer fails, set:
+# extra_headers = { "x-api-key" = "sk-ant-...", "anthropic-version" = "2023-06-01" }
+
+[model.claude-opus]
+model = "claude-opus-4-6"
+base_url = "https://api.anthropic.com/v1"
+name = "Claude Opus"
+api_backend = "messages"
+context_window = 200000
+env_key = "ANTHROPIC_API_KEY"
+extra_headers = { "anthropic-version" = "2023-06-01" }
+
+# ---------------------------------------------------------------------------
+# OpenAI
+# ---------------------------------------------------------------------------
+[model.gpt-4o]
+model = "gpt-4o"
+base_url = "https://api.openai.com/v1"
+name = "GPT-4o"
+api_backend = "chat_completions"
+context_window = 128000
+env_key = "OPENAI_API_KEY"
+
+[model.gpt-5-responses]
+model = "gpt-5"
+base_url = "https://api.openai.com/v1"
+name = "GPT-5 (Responses)"
+api_backend = "responses"
+context_window = 200000
+env_key = "OPENAI_API_KEY"
+
+# ---------------------------------------------------------------------------
+# OpenRouter (one key, many models)
+# ---------------------------------------------------------------------------
+[model.openrouter-auto]
+model = "openrouter/auto"
+base_url = "https://openrouter.ai/api/v1"
+name = "OpenRouter Auto"
+api_backend = "chat_completions"
+context_window = 200000
+env_key = "OPENROUTER_API_KEY"
+extra_headers = { "HTTP-Referer" = "https://yuv.ai", "X-Title" = "Logan CLI" }
+
+[model.openrouter-claude]
+model = "anthropic/claude-sonnet-4"
+base_url = "https://openrouter.ai/api/v1"
+name = "Claude via OpenRouter"
+api_backend = "chat_completions"
+context_window = 200000
+env_key = "OPENROUTER_API_KEY"
+
+# ---------------------------------------------------------------------------
+# Google Gemini (OpenAI-compatible endpoint)
+# ---------------------------------------------------------------------------
+[model.gemini-flash]
+model = "gemini-2.5-flash"
+base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
+name = "Gemini 2.5 Flash"
+api_backend = "chat_completions"
+context_window = 1000000
+env_key = "GEMINI_API_KEY"
+
+# ---------------------------------------------------------------------------
+# Ollama (local)
+# ---------------------------------------------------------------------------
+[model.ollama-qwen]
+model = "qwen2.5-coder:14b"
+base_url = "http://localhost:11434/v1"
+name = "Qwen Coder (Ollama)"
+api_backend = "chat_completions"
+context_window = 32768
+# no api_key needed for local Ollama
+
+[model.ollama-llama]
+model = "llama3.1:70b"
+base_url = "http://localhost:11434/v1"
+name = "Llama 3.1 (Ollama)"
+api_backend = "chat_completions"
+context_window = 128000
+
+# ---------------------------------------------------------------------------
+# LM Studio (local OpenAI server)
+# ---------------------------------------------------------------------------
+[model.lmstudio]
+model = "local-model"
+base_url = "http://localhost:1234/v1"
+name = "LM Studio"
+api_backend = "chat_completions"
+context_window = 32768
+
+# ---------------------------------------------------------------------------
+# LiteLLM proxy (routes Bedrock, Azure, Gemini, etc.)
+# ---------------------------------------------------------------------------
+[model.litellm]
+model = "bedrock/anthropic.claude-sonnet-4-20250514-v1:0"
+base_url = "http://localhost:4000/v1"
+name = "LiteLLM Proxy"
+api_backend = "chat_completions"
+context_window = 200000
+env_key = "LITELLM_API_KEY"
+# Or: api_key = "sk-..."
+
+# ---------------------------------------------------------------------------
+# AWS Bedrock via LiteLLM (recommended)
+# Native Bedrock SigV4 is not built into Logan yet - proxy through LiteLLM:
+#   litellm --model bedrock/anthropic.claude-...
+# ---------------------------------------------------------------------------
+[model.bedrock-claude]
+model = "bedrock/anthropic.claude-sonnet-4-20250514-v1:0"
+base_url = "http://localhost:4000/v1"
+name = "Bedrock Claude (via LiteLLM)"
+api_backend = "chat_completions"
+context_window = 200000
+env_key = "LITELLM_API_KEY"
+
+# ---------------------------------------------------------------------------
+# Memory + learning (recommended with multi-provider)
+# ---------------------------------------------------------------------------
+[memory]
+enabled = true
+
+[memory.session]
+save_on_end = true
+
+[memory.dream]
+enabled = true
+min_sessions = 3
+min_hours = 4
+
+[memory.initial_injection]
+enabled = true

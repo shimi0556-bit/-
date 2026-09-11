@@ -1,0 +1,6 @@
+    \\  \\  \\
+     \\  \\  \\      L O G A N
+      \\  \\  \\     coding agent CLI
+       V   V   V     inspired by Wolverine · by Yuval Avidani (YUV.AI)
+  ═══════════════════════════════
+  multi-LLM · memory · self-improve

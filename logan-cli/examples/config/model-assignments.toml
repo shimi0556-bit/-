@@ -1,0 +1,49 @@
+# Logan - assign models to roles, skills, and subagents
+# Author: Yuval Avidani (YUV.AI) - https://yuv.ai
+#
+# Merge with auto-routing.toml tiers. Skills/subagents also set model in
+# their markdown frontmatter (model: tier-fast).
+
+[models]
+default = "tier-default"
+web_search = "tier-fast"
+session_summary = "tier-fast"
+image_description = "tier-fast"
+
+# Optional specials (if your build reads them):
+# prompt_suggestion_model via remote/settings - leave to defaults unless needed
+
+# --- Tier definitions (duplicate of auto-routing if not already merged) ---
+
+[model.tier-fast]
+model = "gemini-2.5-flash"
+base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
+name = "Fast"
+env_key = "GEMINI_API_KEY"
+context_window = 1000000
+
+[model.tier-default]
+model = "claude-sonnet-4-5"
+base_url = "https://api.anthropic.com/v1"
+name = "Default"
+api_backend = "messages"
+env_key = "ANTHROPIC_API_KEY"
+extra_headers = { "anthropic-version" = "2023-06-01" }
+context_window = 200000
+
+[model.tier-premium]
+model = "claude-opus-4-6"
+base_url = "https://api.anthropic.com/v1"
+name = "Premium"
+api_backend = "messages"
+env_key = "ANTHROPIC_API_KEY"
+extra_headers = { "anthropic-version" = "2023-06-01" }
+context_window = 200000
+
+# Recommended mapping (implement via agent/skill frontmatter):
+#   explore subagent     -> tier-fast
+#   plan subagent        -> tier-premium
+#   general-purpose      -> tier-default
+#   skill auto-route     -> tier-fast
+#   skill self-improve   -> tier-default
+#   skill learn-user     -> tier-fast

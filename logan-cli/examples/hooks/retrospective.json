@@ -1,0 +1,48 @@
+{
+  "hooks": {
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.logan/hooks/bin/retro-insight.py 2>/dev/null || python ~/.logan/hooks/bin/retro-insight.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PermissionDenied": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.logan/hooks/bin/retro-insight.py 2>/dev/null || python ~/.logan/hooks/bin/retro-insight.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.logan/hooks/bin/retro-insight.py 2>/dev/null || python ~/.logan/hooks/bin/retro-insight.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.logan/hooks/bin/retro-insight.py 2>/dev/null || python ~/.logan/hooks/bin/retro-insight.py",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}
