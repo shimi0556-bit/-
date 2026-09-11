@@ -59,6 +59,11 @@ Installed via the [`skills`](https://www.npmjs.com/package/skills) CLI and track
 **From [smixs/creative-director-skill](https://github.com/smixs/creative-director-skill)**:
 `creative-director` — generates and recursively refines creative concepts (SIT, TRIZ, Lateral Thinking, bisociation) scored against a 569-campaign library for originality; aimed at ad/campaign concepts more than physical-product invention, but the same ideation methodologies apply.
 
+**From [tjboudreaux/cc-thinking-skills](https://github.com/tjboudreaux/cc-thinking-skills)** (28 structured-reasoning / mental-model skills — for solving any complex mystery: investigation, debugging, plot puzzles, decisions):
+`thinking-model-router` (meta-skill: picks the right one below), `thinking-scientific-method` (rank falsifiable hypotheses, run the cheapest discriminating test first), `thinking-kepner-tregoe` (IS/IS-NOT difference analysis), `thinking-probabilistic` (Bayesian prior→likelihood→posterior updates on evidence), `thinking-map-territory` (verify against observed reality, don't theorize), `thinking-five-whys-plus`, `thinking-ooda`, `thinking-red-team`, `thinking-systems`, `thinking-socratic`, `thinking-steel-manning`, `thinking-pre-mortem`, `thinking-second-order`, `thinking-first-principles`, `thinking-triz`, and 13 more (`thinking-bounded-rationality`, `thinking-circle-of-competence`, `thinking-cynefin`, `thinking-effectuation`, `thinking-jobs-to-be-done`, `thinking-lindy-effect`, `thinking-margin-of-safety`, `thinking-model-combination`, `thinking-opportunity-cost`, `thinking-reversibility`, `thinking-theory-of-constraints`, `thinking-thought-experiment`, `thinking-via-negativa`).
+
+Deliberately left out of scope: real-person OSINT/dossier tools and real-criminal-investigation guides found during the same search — a general evidence-based reasoning toolkit fits this repo, tools for surveilling real people or documentation meant for actual law-enforcement casework don't.
+
 To add more skills: `npx skills add <owner>/<repo> -s <skill-name> -y`
 
 ## Notes
