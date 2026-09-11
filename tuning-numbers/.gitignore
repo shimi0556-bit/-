@@ -1,0 +1,26 @@
+# dependencies & build output
+node_modules/
+site/node_modules/
+dist/
+site/dist/
+
+# local env / logs
+*.log
+*.local
+.env
+.env.*
+
+# editor / tooling
+.vscode/
+.idea/
+.claude/
+
+# os
+.DS_Store
+**/.DS_Store
+Thumbs.db
+
+# source video clips — large; the processed, web-ready assets the app actually
+# uses live committed under site/public/ (hero.mp4 + frames/). See the README
+# "How the video assets were made" section to regenerate from your own clips.
+videos/
