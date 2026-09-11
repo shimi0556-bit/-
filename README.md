@@ -47,6 +47,9 @@ Installed via the [`skills`](https://www.npmjs.com/package/skills) CLI and track
 
 `maccabi-medicine-lookup` hit the same upstream YAML bug as `yuv-viral-video` above (unquoted `description:` with a bare `: `) and was vendored manually the same way. Four other skills in this plugin (`add-skill-to-plugin`, `environment-check`, `jerusalem-council-meetings`, `jerusalem-municipality-report`) have the identical bug and were left unvendored — narrow/meta-tooling skills, not worth the manual fix unless needed.
 
+**From [anthropics/skills](https://github.com/anthropics/skills)** (Anthropic's own official examples — most others in this collection, like `pdf`/`docx`/`pptx`/`xlsx`/`mcp-builder`/`canvas-design`, are already active as Claude Code's built-in skills, so only the ones not built in were added):
+`webapp-testing` (Playwright toolkit for testing the web apps vendored in this repo), `frontend-design` (distinctive UI direction, avoids generic "AI slop" defaults), `discernment-nudge` (appends fact/assumption-checking follow-up questions after a substantive answer), `internal-comms` (templates for status reports, incident reports, leadership updates)
+
 To add more skills: `npx skills add <owner>/<repo> -s <skill-name> -y`
 
 ## Notes

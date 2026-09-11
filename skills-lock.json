@@ -211,6 +211,12 @@
       "skillPath": "skills/director/SKILL.md",
       "computedHash": "27ed84589cb37b020176c261781b0dc4a7d362904b2e8affbad5f137a06c4efd"
     },
+    "discernment-nudge": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/discernment-nudge/SKILL.md",
+      "computedHash": "fbe8fab770e8e106623525caa342bd2a4c84992cb840377cb57d4365be599be8"
+    },
     "discover-israel-skills": {
       "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
       "sourceType": "github",
@@ -241,6 +247,12 @@
       "skillPath": "skills/figma/SKILL.md",
       "computedHash": "31776d07ec44f5e948f3f0bd14aa421a872a97883a2a90c3bfb391e0bfaf336b"
     },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "89496d5dd00f4810205f351759594fc2742bf8eea85a2f2b2d1de59f4bd91576"
+    },
     "home-front-command-guidelines": {
       "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
       "sourceType": "github",
@@ -258,6 +270,12 @@
       "sourceType": "github",
       "skillPath": "skills/install-companion-plugins/SKILL.md",
       "computedHash": "6e57a25ea0f1026880eee2316fd86b381f91c533415f69d793b2d53b5f17a10d"
+    },
+    "internal-comms": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/internal-comms/SKILL.md",
+      "computedHash": "0bdc8867452b7ab9ef6167f6b0db2025ce5fb03773d3f85efcef2dfeb9d4976d"
     },
     "israel-conferences": {
       "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
@@ -294,6 +312,12 @@
       "sourceType": "github",
       "skillPath": "skills/list-skills/SKILL.md",
       "computedHash": "cd40f95d13c4e1fd8aac1b88fa58efa27ce03328617e6f5efbedc4334198b2cd"
+    },
+    "maccabi-medicine-lookup": {
+      "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
+      "sourceType": "github",
+      "skillPath": "skills/maccabi-medicine-lookup/SKILL.md",
+      "computedHash": "890a46b79dd09db4f8339a04b8b6fa547354d631fc23cdad2941766ee65277e9"
     },
     "medicine-availability-check": {
       "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
@@ -511,6 +535,12 @@
       "skillPath": "skills/web-accessibility/SKILL.md",
       "computedHash": "c097775d156645fb8b9994e461598518d91837eebc3f7e61a2f8bd18479bafda"
     },
+    "webapp-testing": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/webapp-testing/SKILL.md",
+      "computedHash": "ad5b1fc52807e9afa4635e59218a026b164dc58b6c3f41b0f7c644dcd6ccf572"
+    },
     "yuv-decks": {
       "source": "hoodini/ai-agents-skills",
       "sourceType": "github",
@@ -528,12 +558,6 @@
       "sourceType": "github",
       "skillPath": "skills/yuv-viral-video/SKILL.md",
       "computedHash": "5ee8fd0922b07102b9e1b536a3903b5c336d9ba1fdb612e217f408adb72f4490"
-    },
-    "maccabi-medicine-lookup": {
-      "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
-      "sourceType": "github",
-      "skillPath": "skills/maccabi-medicine-lookup/SKILL.md",
-      "computedHash": "890a46b79dd09db4f8339a04b8b6fa547354d631fc23cdad2941766ee65277e9"
     }
   }
 }
