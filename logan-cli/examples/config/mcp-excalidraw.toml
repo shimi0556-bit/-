@@ -1,0 +1,18 @@
+# Excalidraw MCP for Logan - OPTIONAL LOCAL FALLBACK
+# Author: Yuval Avidani (YUV.AI) - https://yuv.ai
+#
+# PREFERRED: connect Excalidraw via the Grok Build website connectors UI
+# (same connector stack Logan inherits). No npx required once linked.
+#
+# Use this file only for offline/local stdio setups.
+#   cat examples/config/mcp-excalidraw.toml >> ~/.logan/config.toml
+# Then: logan  →  /mcp
+
+[mcp_servers.excalidraw]
+command = "npx"
+args = ["-y", "excalidraw-mcp"]
+
+# Hardened alternative:
+# [mcp_servers.excalidraw-sentinel]
+# command = "npx"
+# args = ["-y", "excalidraw-mcp-sentinel"]

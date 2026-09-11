@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="960" viewBox="0 0 1400 960">
+  <rect width="1400" height="960" fill="#0a0a0c"/>
+  <path d="M30 20 L80 140" stroke="#ffd60a" stroke-width="7" stroke-linecap="round"/>
+  <path d="M60 15 L120 140" stroke="#ffd60a" stroke-width="7" stroke-linecap="round" opacity="0.8"/>
+  <path d="M90 10 L160 135" stroke="#ff4d9a" stroke-width="7" stroke-linecap="round" opacity="0.85"/>
+  <text x="200" y="70" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="40" font-weight="800">LOGAN — Project Infographic</text>
+  <text x="200" y="105" fill="#9a9590" font-family="system-ui,sans-serif" font-size="18">Wolverine-inspired coding agent CLI · Yuval Avidani (YUV.AI) · fork of Grok Build OSS</text>
+
+  <!-- What is logan -->
+  <rect x="50" y="150" width="640" height="220" rx="16" fill="#141018" stroke="#ff4d9a" stroke-width="2"/>
+  <text x="80" y="195" fill="#ff4d9a" font-family="system-ui,sans-serif" font-size="22" font-weight="700">What is Logan?</text>
+  <text x="80" y="235" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="17">A terminal AI coding agent that edits code, runs shell,</text>
+  <text x="80" y="262" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="17">uses MCP connectors, skills, and long-term memory.</text>
+  <text x="80" y="300" fill="#ffd60a" font-family="system-ui,sans-serif" font-size="17">Personality: adamantium focus — heal, adapt, ship.</text>
+  <text x="80" y="335" fill="#9a9590" font-family="system-ui,sans-serif" font-size="15">Binary: logan · Config: ~/.logan · Repo: hoodini/logan-cli</text>
+
+  <rect x="720" y="150" width="630" height="220" rx="16" fill="#141018" stroke="#ffd60a" stroke-width="2"/>
+  <text x="750" y="195" fill="#ffd60a" font-family="system-ui,sans-serif" font-size="22" font-weight="700">Pillars</text>
+  <text x="750" y="240" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="17">1. Multi-LLM (Anthropic, OpenAI, Gemini, OpenRouter…)</text>
+  <text x="750" y="275" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="17">2. Memory (short session + long MEMORY.md + dream)</text>
+  <text x="750" y="310" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="17">3. Self-improve (skills + Stop/SessionEnd hooks)</text>
+  <text x="750" y="345" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="17">4. Connectors (MCP — e.g. Excalidraw via website)</text>
+
+  <!-- Comparison table -->
+  <text x="50" y="430" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="26" font-weight="800">Grok Build OSS vs Logan</text>
+  <rect x="50" y="455" width="640" height="380" rx="16" fill="#16161a" stroke="#555"/>
+  <text x="80" y="500" fill="#9a9590" font-family="system-ui,sans-serif" font-size="22" font-weight="700">Grok Build (upstream)</text>
+  <text x="80" y="545" fill="#cfc9c2" font-family="system-ui,sans-serif" font-size="17">• Open harness + TUI (grok binary)</text>
+  <text x="80" y="580" fill="#cfc9c2" font-family="system-ui,sans-serif" font-size="17">• Tools, sessions, MCP engine, skills</text>
+  <text x="80" y="615" fill="#cfc9c2" font-family="system-ui,sans-serif" font-size="17">• Generic custom models</text>
+  <text x="80" y="650" fill="#cfc9c2" font-family="system-ui,sans-serif" font-size="17">• Experimental memory</text>
+  <text x="80" y="685" fill="#cfc9c2" font-family="system-ui,sans-serif" font-size="17">• xAI product identity</text>
+  <text x="80" y="720" fill="#cfc9c2" font-family="system-ui,sans-serif" font-size="17">• No opinionated learning loop</text>
+  <text x="80" y="755" fill="#cfc9c2" font-family="system-ui,sans-serif" font-size="17">• Website connectors for MCP</text>
+  <text x="80" y="800" fill="#6b6560" font-family="system-ui,sans-serif" font-size="15">You keep all of this under Apache-2.0</text>
+
+  <rect x="720" y="455" width="630" height="380" rx="16" fill="#1a1218" stroke="#ffd60a" stroke-width="2.5"/>
+  <text x="750" y="500" fill="#ffd60a" font-family="system-ui,sans-serif" font-size="22" font-weight="700">Logan (YUV.AI) adds</text>
+  <text x="750" y="545" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="17">• logan brand · Wolverine-inspired claws</text>
+  <text x="750" y="580" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="17">• Provider presets (8+ LLMs)</text>
+  <text x="750" y="615" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="17">• self-improve + learn-user skills</text>
+  <text x="750" y="650" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="17">• Auto-reflect hooks → MEMORY.md</text>
+  <text x="750" y="685" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="17">• Prompt-journey architecture docs</text>
+  <text x="750" y="720" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="17">• Banner, ASCII art, infographics</text>
+  <text x="750" y="755" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="17">• SETUP guide for humans + LLM agents</text>
+  <text x="750" y="800" fill="#b2f2bb" font-family="system-ui,sans-serif" font-size="15">Same claws. Sharper product.</text>
+
+  <text x="50" y="920" fill="#6b6560" font-family="system-ui,sans-serif" font-size="14">Inspired by Wolverine (X-Men) — fan tribute aesthetic, not affiliated with Marvel. Author: Yuval Avidani · yuv.ai</text>
+</svg>

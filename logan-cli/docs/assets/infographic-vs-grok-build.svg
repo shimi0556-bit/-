@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="720" viewBox="0 0 1400 720">
+  <rect width="1400" height="720" fill="#0a0a0c"/>
+  <path d="M40 30 L100 160" stroke="#ffd60a" stroke-width="8" stroke-linecap="round"/>
+  <path d="M80 25 L150 155" stroke="#ffd60a" stroke-width="8" stroke-linecap="round" opacity="0.75"/>
+  <path d="M120 20 L200 150" stroke="#ff4d9a" stroke-width="8" stroke-linecap="round" opacity="0.8"/>
+  <text x="240" y="80" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="40" font-weight="800">Grok Build OSS vs LOGAN</text>
+  <text x="240" y="120" fill="#9a9590" font-family="system-ui,sans-serif" font-size="18">Same open harness. Logan adds claws: multi-LLM, learning, product docs.</text>
+  <rect x="60" y="180" width="600" height="460" rx="18" fill="#141418" stroke="#444"/>
+  <text x="100" y="240" fill="#9a9590" font-family="system-ui,sans-serif" font-size="28" font-weight="700">Grok Build (upstream)</text>
+  <text x="100" y="300" fill="#cfc9c2" font-family="system-ui,sans-serif" font-size="20">grok binary · ~/.grok</text>
+  <text x="100" y="350" fill="#cfc9c2" font-family="system-ui,sans-serif" font-size="20">Tools · sessions · MCP engine</text>
+  <text x="100" y="400" fill="#cfc9c2" font-family="system-ui,sans-serif" font-size="20">Generic custom models</text>
+  <text x="100" y="450" fill="#cfc9c2" font-family="system-ui,sans-serif" font-size="20">Experimental memory</text>
+  <text x="100" y="500" fill="#cfc9c2" font-family="system-ui,sans-serif" font-size="20">xAI product identity</text>
+  <text x="100" y="550" fill="#cfc9c2" font-family="system-ui,sans-serif" font-size="20">Website MCP connectors supported</text>
+  <rect x="740" y="180" width="600" height="460" rx="18" fill="#1a1218" stroke="#ffd60a" stroke-width="3"/>
+  <text x="780" y="240" fill="#ffd60a" font-family="system-ui,sans-serif" font-size="28" font-weight="700">LOGAN (YUV.AI)</text>
+  <text x="780" y="300" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="20">logan binary · ~/.logan · claw banner</text>
+  <text x="780" y="350" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="20">Provider presets (8+ LLMs)</text>
+  <text x="780" y="400" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="20">self-improve + learn-user skills</text>
+  <text x="780" y="450" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="20">Auto-reflect hooks → MEMORY.md</text>
+  <text x="780" y="500" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="20">Prompt-journey docs + infographics</text>
+  <text x="780" y="550" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="20">Excalidraw via Grok Build connectors</text>
+  <text x="780" y="600" fill="#b2f2bb" font-family="system-ui,sans-serif" font-size="18">Inspired by Wolverine · claws out</text>
+</svg>

@@ -1,0 +1,49 @@
+# Logan observability: LiteLLM + Langfuse / OTEL + local usage ledger
+# Author: Yuval Avidani (YUV.AI) - https://yuv.ai
+#
+# Merge carefully into ~/.logan/config.toml. Do not commit real secrets.
+
+# ---------------------------------------------------------------------------
+# LiteLLM as the model gateway (recommended for multi-cloud + budgets)
+# ---------------------------------------------------------------------------
+[models]
+default = "via-litellm"
+
+[model.via-litellm]
+model = "claude-sonnet-4"
+base_url = "http://localhost:4000/v1"
+name = "LiteLLM"
+env_key = "LITELLM_API_KEY"
+context_window = 200000
+# LiteLLM can log every call and forward to Langfuse/Helicone/etc.
+
+# ---------------------------------------------------------------------------
+# Local usage ledger path (used by examples/scripts/usage-rollup.py)
+# ---------------------------------------------------------------------------
+# Logan headless JSON usage should be appended to:
+#   ~/.logan/stats/usage.jsonl
+# Create with: mkdir -p ~/.logan/stats
+
+# ---------------------------------------------------------------------------
+# OpenTelemetry → Langfuse (or any OTLP collector)
+# ---------------------------------------------------------------------------
+# Exact env vars depend on your Langfuse project (cloud vs self-host).
+# Typical pattern:
+#
+#   export OTEL_EXPORTER_OTLP_ENDPOINT="https://cloud.langfuse.com/api/public/otel"
+#   export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Basic <base64(public:secret)>"
+#   export OTEL_SERVICE_NAME="logan-cli"
+#
+# Also set any Logan/Grok OTEL enable flags your binary reads (see user guide
+# telemetry / GROK_OTEL_* if present in your build).
+#
+# [telemetry]
+# enabled = true
+# Prefer redaction on; never send raw secrets.
+
+# ---------------------------------------------------------------------------
+# What to inspect in the TUI without external tools
+# ---------------------------------------------------------------------------
+# /context        context composition + estimated costs of tools/skills/MCP
+# /session-info   session rollup
+# /usage          product credits (when applicable)

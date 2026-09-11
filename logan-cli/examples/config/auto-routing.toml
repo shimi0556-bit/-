@@ -1,0 +1,62 @@
+# Logan smart model tiers (token-saving auto-routing foundation)
+# Author: Yuval Avidani (YUV.AI) - https://yuv.ai
+#
+# Merge into ~/.logan/config.toml and set keys.
+# Today: pick tier with -m / /model
+# Skill: /skill auto-route  (recommends a tier mid-session)
+# Planned: --route auto classifier before sampler
+
+[models]
+# Default "balanced" workhorse
+default = "tier-default"
+
+# --- Tiers (rename models to match your providers) ---
+
+[model.tier-fast]
+model = "gemini-2.5-flash"
+base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
+name = "Fast (cheap triage)"
+env_key = "GEMINI_API_KEY"
+context_window = 1000000
+# Use for: status questions, search-only, tiny edits, classify task
+
+[model.tier-default]
+model = "claude-sonnet-4-5"
+base_url = "https://api.anthropic.com/v1"
+name = "Default (implement)"
+api_backend = "messages"
+env_key = "ANTHROPIC_API_KEY"
+extra_headers = { "anthropic-version" = "2023-06-01" }
+context_window = 200000
+# Use for: normal features, refactors, tests
+
+[model.tier-premium]
+model = "claude-opus-4-6"
+base_url = "https://api.anthropic.com/v1"
+name = "Premium (hard problems)"
+api_backend = "messages"
+env_key = "ANTHROPIC_API_KEY"
+extra_headers = { "anthropic-version" = "2023-06-01" }
+context_window = 200000
+# Use for: multi-module design, nasty bugs, security-sensitive
+
+[model.tier-local]
+model = "qwen2.5-coder:14b"
+base_url = "http://localhost:11434/v1"
+name = "Local (Ollama offline)"
+context_window = 32768
+# Use for: offline, privacy-sensitive, bulk classification
+
+[model.tier-gateway]
+model = "claude-sonnet-4"
+base_url = "http://localhost:4000/v1"
+name = "LiteLLM gateway"
+env_key = "LITELLM_API_KEY"
+context_window = 200000
+# Use for: Bedrock/Azure/Vertex via LiteLLM + unified logging
+
+# Heuristic cheat-sheet (for humans + auto-route skill):
+#   fast:     < ~5 files, Q&A, lint-level
+#   default:  feature work, tests green
+#   premium:  architecture, production incident, multi-package
+#   local:    no network / secret code

@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="920" viewBox="0 0 1400 920">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0c0c0e"/>
+      <stop offset="100%" stop-color="#181018"/>
+    </linearGradient>
+  </defs>
+  <rect width="1400" height="920" fill="url(#bg)"/>
+  <path d="M50 30 L160 10 L100 100 Z" fill="#ff4d9a" opacity="0.4"/>
+  <path d="M1240 30 L1380 50 L1300 140 Z" fill="#ffd60a" opacity="0.25"/>
+  <path d="M50 860 L140 820 L100 910 Z" fill="#ff4d9a" opacity="0.3"/>
+  <path d="M1260 840 L1380 800 L1340 910 Z" fill="#64b4aa" opacity="0.25"/>
+
+  <text x="700" y="70" text-anchor="middle" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="44" font-weight="800">
+    <tspan fill="#ff4d9a">LOGAN CLI</tspan><tspan fill="#f5f0e8"> vs </tspan><tspan fill="#ffd60a">THE FIELD</tspan>
+  </text>
+  <text x="700" y="110" text-anchor="middle" fill="#9a9590" font-family="system-ui,sans-serif" font-size="18">Honest map · where each tool wins · where Logan wins</text>
+
+  <rect x="200" y="135" width="1000" height="48" rx="24" fill="#1f1520" stroke="#ffd60a" stroke-width="2"/>
+  <text x="700" y="166" text-anchor="middle" fill="#ffd60a" font-family="system-ui,sans-serif" font-size="18" font-weight="700">LOGAN BET: token visibility + one-command install + open multi-LLM terminal agent</text>
+
+  <!-- Row 1: Copilot, Claude Code, Cursor -->
+  <g>
+    <rect x="50" y="220" width="400" height="220" rx="16" fill="#141418" stroke="#3a3a42" stroke-width="2"/>
+    <text x="75" y="265" fill="#58a6ff" font-family="system-ui,sans-serif" font-size="24" font-weight="800">GitHub Copilot</text>
+    <text x="75" y="310" fill="#ffd60a" font-family="system-ui,sans-serif" font-size="15">Best at: IDE + GitHub org</text>
+    <text x="75" y="345" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="15">S: deep editor integration</text>
+    <text x="75" y="375" fill="#9a9590" font-family="system-ui,sans-serif" font-size="15">Gap for Logan users: not a full</text>
+    <text x="75" y="400" fill="#9a9590" font-family="system-ui,sans-serif" font-size="15">open terminal agent + token deep-dive</text>
+  </g>
+  <g>
+    <rect x="500" y="220" width="400" height="220" rx="16" fill="#141418" stroke="#3a3a42" stroke-width="2"/>
+    <text x="525" y="265" fill="#d4a574" font-family="system-ui,sans-serif" font-size="24" font-weight="800">Claude Code</text>
+    <text x="525" y="310" fill="#ffd60a" font-family="system-ui,sans-serif" font-size="15">Best at: Anthropic coding agent</text>
+    <text x="525" y="345" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="15">S: excellent terminal agent UX</text>
+    <text x="525" y="375" fill="#9a9590" font-family="system-ui,sans-serif" font-size="15">Logan edge: multi-LLM + live in/out/c</text>
+    <text x="525" y="400" fill="#9a9590" font-family="system-ui,sans-serif" font-size="15">bar + /context deep real text</text>
+  </g>
+  <g>
+    <rect x="950" y="220" width="400" height="220" rx="16" fill="#141418" stroke="#3a3a42" stroke-width="2"/>
+    <text x="975" y="265" fill="#7ee787" font-family="system-ui,sans-serif" font-size="24" font-weight="800">Cursor</text>
+    <text x="975" y="310" fill="#ffd60a" font-family="system-ui,sans-serif" font-size="15">Best at: AI-native IDE</text>
+    <text x="975" y="345" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="15">S: editor polish + edit loops</text>
+    <text x="975" y="375" fill="#9a9590" font-family="system-ui,sans-serif" font-size="15">Logan edge: headless/TUI agent,</text>
+    <text x="975" y="400" fill="#9a9590" font-family="system-ui,sans-serif" font-size="15">open fork, cost clarity</text>
+  </g>
+
+  <!-- Row 2: Hermes, OpenClaw, Logan -->
+  <g>
+    <rect x="50" y="480" width="400" height="220" rx="16" fill="#141418" stroke="#3a3a42" stroke-width="2"/>
+    <text x="75" y="525" fill="#64b4aa" font-family="system-ui,sans-serif" font-size="24" font-weight="800">Hermes</text>
+    <text x="75" y="570" fill="#ffd60a" font-family="system-ui,sans-serif" font-size="15">Best at: learning personal agent</text>
+    <text x="75" y="605" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="15">S: skills from experience loop</text>
+    <text x="75" y="635" fill="#9a9590" font-family="system-ui,sans-serif" font-size="15">Logan edge: code-first harness</text>
+    <text x="75" y="660" fill="#9a9590" font-family="system-ui,sans-serif" font-size="15">+ spend transparency for repos</text>
+  </g>
+  <g>
+    <rect x="500" y="480" width="400" height="220" rx="16" fill="#141418" stroke="#3a3a42" stroke-width="2"/>
+    <text x="525" y="525" fill="#ff9f43" font-family="system-ui,sans-serif" font-size="24" font-weight="800">OpenClaw</text>
+    <text x="525" y="570" fill="#ffd60a" font-family="system-ui,sans-serif" font-size="15">Best at: life/skills automation</text>
+    <text x="525" y="605" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="15">S: multi-channel personal agent</text>
+    <text x="525" y="635" fill="#9a9590" font-family="system-ui,sans-serif" font-size="15">Logan edge: repo coding CLI</text>
+    <text x="525" y="660" fill="#9a9590" font-family="system-ui,sans-serif" font-size="15">+ context text audit</text>
+  </g>
+  <g>
+    <rect x="950" y="480" width="400" height="220" rx="16" fill="#221018" stroke="#ffd60a" stroke-width="4"/>
+    <text x="975" y="525" fill="#ffd60a" font-family="system-ui,sans-serif" font-size="24" font-weight="800">Logan ★ you are here</text>
+    <text x="975" y="570" fill="#ff4d9a" font-family="system-ui,sans-serif" font-size="15">Best at: transparent coding CLI</text>
+    <text x="975" y="605" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="15">S: live tokens · one command</text>
+    <text x="975" y="635" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="15">· multi-LLM · open Apache fork</text>
+    <text x="975" y="670" fill="#ffd60a" font-family="system-ui,sans-serif" font-size="15">Proof: /stats · /context deep</text>
+  </g>
+
+  <text x="700" y="760" text-anchor="middle" fill="#f5f0e8" font-family="system-ui,sans-serif" font-size="20" font-weight="600">We do not claim IDE parity with Copilot or Cursor.</text>
+  <text x="700" y="800" text-anchor="middle" fill="#9a9590" font-family="system-ui,sans-serif" font-size="18">We claim: never fly blind on tokens, install in one paste, stay open.</text>
+  <text x="700" y="860" text-anchor="middle" fill="#666" font-family="system-ui,sans-serif" font-size="15">Yuval Avidani (YUV.AI) · full SWOT in docs/SWOT.md · github.com/hoodini/logan-cli</text>
+</svg>
