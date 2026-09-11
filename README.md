@@ -53,6 +53,12 @@ Installed via the [`skills`](https://www.npmjs.com/package/skills) CLI and track
 **From [JimLiu/baoyu-skills](https://github.com/JimLiu/baoyu-skills)** (comic creation):
 `baoyu-comic` — knowledge/educational comic creator: 6 art styles × 7 tones × 7 panel layouts plus 5 presets (incl. Logicomix-style), builds a storyboard with consistent characters across panels, renders a final PDF. `baoyu-image-gen` — the image-rendering backend it uses (OpenAI GPT Image, Azure, Google, DashScope, Z.AI, MiniMax, Replicate, and more); **needs an API key for one of those providers to actually render panels** — it only builds prompts/storyboard without one. The rest of that repo (WeChat/Weibo/X posting, reverse-engineered "danger-*" skills, etc.) was left out as out of scope / not vetted.
 
+**From [thinkbigleaders/claude-innovation-skills](https://github.com/thinkbigleaders/claude-innovation-skills)** (systematic-innovation pipeline — going from a raw idea to a validated invention):
+`customer-discovery`, `blue-ocean-discovery` (phase 1 — understand the customer / find uncontested market space) → `solution-definition` (phase 2 — Amazon Working-Backwards + SIT Closed World) → `ideation-scamper` (+ its 7 sub-skills `scamper-substitute`/`combine`/`adapt`/`modify`/`eliminate`/`put-to-other-uses`/`reverse`), `ideation-sit`, `variable-dependency` (phase 3 — generate 30-50+ ideas) → `idea-evaluation`, `critical-validation` (phase 4 — rank and Six-Thinking-Hats-validate the top 3-5)
+
+**From [smixs/creative-director-skill](https://github.com/smixs/creative-director-skill)**:
+`creative-director` — generates and recursively refines creative concepts (SIT, TRIZ, Lateral Thinking, bisociation) scored against a 569-campaign library for originality; aimed at ad/campaign concepts more than physical-product invention, but the same ideation methodologies apply.
+
 To add more skills: `npx skills add <owner>/<repo> -s <skill-name> -y`
 
 ## Notes

@@ -211,11 +211,35 @@
       "skillPath": "skills/ben-gurion-flight-board/SKILL.md",
       "computedHash": "d9af4e0da2aaa07d57374ae6778178e251ac566f5435c669010841e5cb96e54e"
     },
+    "blue-ocean-discovery": {
+      "source": "thinkbigleaders/claude-innovation-skills",
+      "sourceType": "github",
+      "skillPath": "blue-ocean-discovery/SKILL.md",
+      "computedHash": "12d1f228a5ca966c6ef97058894b7faea00c7a92b15f92bbc40c09f98694a0c1"
+    },
     "cinematic-scrub-landing": {
       "source": "hoodini/ai-agents-skills",
       "sourceType": "github",
       "skillPath": "skills/cinematic-scrub-landing/SKILL.md",
       "computedHash": "d567568e4545dfb91bce38bfa3ee5c3a2a7c0e0dd6a50d3a0a76ed3eddb8dc47"
+    },
+    "creative-director": {
+      "source": "smixs/creative-director-skill",
+      "sourceType": "github",
+      "skillPath": "creative-director/SKILL.md",
+      "computedHash": "6d21d29aade0c27382b901eff08af0d67cc127e797b6c133485af82a1106d3ab"
+    },
+    "critical-validation": {
+      "source": "thinkbigleaders/claude-innovation-skills",
+      "sourceType": "github",
+      "skillPath": "critical-validation/SKILL.md",
+      "computedHash": "bd4263a5339ca65e905993d05b403bb0375e79d629d974502e5d26f5c6667bdb"
+    },
+    "customer-discovery": {
+      "source": "thinkbigleaders/claude-innovation-skills",
+      "sourceType": "github",
+      "skillPath": "customer-discovery/SKILL.md",
+      "computedHash": "be6bbc724eff980db9fe4cd3cb29e32a3d1142e0ed630ed2da89aba7cdd10f38"
     },
     "director": {
       "source": "hoodini/ai-agents-skills",
@@ -270,6 +294,24 @@
       "sourceType": "github",
       "skillPath": "skills/home-front-command-guidelines/SKILL.md",
       "computedHash": "3873f4fc2f72ff562579572aa0bbddc4fe14e5f917657c2fb244826d53fd63ed"
+    },
+    "idea-evaluation": {
+      "source": "thinkbigleaders/claude-innovation-skills",
+      "sourceType": "github",
+      "skillPath": "idea-evaluation/SKILL.md",
+      "computedHash": "c33a863fe10edf8a396044a0c4806f6cdc12c4bcc1d774b27e2beeb202720135"
+    },
+    "ideation-scamper": {
+      "source": "thinkbigleaders/claude-innovation-skills",
+      "sourceType": "github",
+      "skillPath": "ideation-scamper/SKILL.md",
+      "computedHash": "4ec3d555763f9664c994e19a3b5eeb2c6c40bd4d3ce0d9f4ca184c155dffb6b1"
+    },
+    "ideation-sit": {
+      "source": "thinkbigleaders/claude-innovation-skills",
+      "sourceType": "github",
+      "skillPath": "ideation-sit/SKILL.md",
+      "computedHash": "d4b4eec95528adb0a6a84aeb26dafb10e34894ac65cca8d168013003536c5e96"
     },
     "image-master": {
       "source": "hoodini/ai-agents-skills",
@@ -457,11 +499,59 @@
       "skillPath": "skills/salary-conversion/SKILL.md",
       "computedHash": "659359ba4cfe62f1ad47c4eb9468309d5b66c96fc0c7469a344ad1a0f593344a"
     },
+    "scamper-adapt": {
+      "source": "thinkbigleaders/claude-innovation-skills",
+      "sourceType": "github",
+      "skillPath": "scamper-adapt/SKILL.md",
+      "computedHash": "7098febacb73471edc4b6c444398da0db00b2c30b74ac037f733fdb02b8b1fc8"
+    },
+    "scamper-combine": {
+      "source": "thinkbigleaders/claude-innovation-skills",
+      "sourceType": "github",
+      "skillPath": "scamper-combine/SKILL.md",
+      "computedHash": "4338a50f6b8fae21b246ed8a3084b7add536b13c04626d03846857f29652a82d"
+    },
+    "scamper-eliminate": {
+      "source": "thinkbigleaders/claude-innovation-skills",
+      "sourceType": "github",
+      "skillPath": "scamper-eliminate/SKILL.md",
+      "computedHash": "d75e38c6c89cb6a31d2f43c852729f17de8d6b2abe255e1eaa05f08d4754b7d3"
+    },
+    "scamper-modify": {
+      "source": "thinkbigleaders/claude-innovation-skills",
+      "sourceType": "github",
+      "skillPath": "scamper-modify/SKILL.md",
+      "computedHash": "e6ca7ad5d264492be707ad5d3742e0fd3d13e7a14d94478dd954a7250eba95e7"
+    },
+    "scamper-put-to-other-uses": {
+      "source": "thinkbigleaders/claude-innovation-skills",
+      "sourceType": "github",
+      "skillPath": "scamper-put-to-other-uses/SKILL.md",
+      "computedHash": "e61d51870ec25b22c13e21831a42f4d6a48147e5783d80984aad778272bdce16"
+    },
+    "scamper-reverse": {
+      "source": "thinkbigleaders/claude-innovation-skills",
+      "sourceType": "github",
+      "skillPath": "scamper-reverse/SKILL.md",
+      "computedHash": "e8c8288b0638fe92088cc7e1f3820f704f2ade61ce0cae0527a169726c04b221"
+    },
+    "scamper-substitute": {
+      "source": "thinkbigleaders/claude-innovation-skills",
+      "sourceType": "github",
+      "skillPath": "scamper-substitute/SKILL.md",
+      "computedHash": "a9a4e3b656bfc176e0f134d4fedbd8b2870a2365b6c1df7aebc4fb211379a465"
+    },
     "shabbat-times": {
       "source": "hoodini/ai-agents-skills",
       "sourceType": "github",
       "skillPath": "skills/shabbat-times/SKILL.md",
       "computedHash": "650c2defd349692caacba6ce8d4452459039a5e643b760000d6be4b9cf756801"
+    },
+    "solution-definition": {
+      "source": "thinkbigleaders/claude-innovation-skills",
+      "sourceType": "github",
+      "skillPath": "solution-definition/SKILL.md",
+      "computedHash": "d6c2e4544ed6b442dcefc5f57c96dbea638666f5bb5312ada11632f1208128f5"
     },
     "threejs-3d-generator": {
       "source": "majidmanzarpour/threejs-game-skills",
@@ -528,6 +618,12 @@
       "sourceType": "github",
       "skillPath": "skills/ux-design-systems/SKILL.md",
       "computedHash": "3013c21a051a284095ce7d2ef770c2c6fdb7d7643c5dcb8a042a4acd9b660baf"
+    },
+    "variable-dependency": {
+      "source": "thinkbigleaders/claude-innovation-skills",
+      "sourceType": "github",
+      "skillPath": "variable-dependency/SKILL.md",
+      "computedHash": "97068eee6d7e98bf76e03c09f1710168199e9c8dd2c3ae82a7a4e91b1084b6e5"
     },
     "video-edit": {
       "source": "hoodini/ai-agents-skills",
