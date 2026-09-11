@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyHawk - Helicopter Flight Simulator | SF to London</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        canvas { display: block; }
+
+        /* Loading Screen */
+        #loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #0a0a2e 0%, #1a1a4e 50%, #0a0a2e 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 1000; transition: opacity 1s ease;
+        }
+        #loading-screen.fade-out { opacity: 0; pointer-events: none; }
+        #loading-screen h1 {
+            font-size: 72px; color: #00ffcc; text-shadow: 0 0 30px #00ffcc, 0 0 60px #00ffcc;
+            letter-spacing: 12px; margin-bottom: 10px; font-weight: 900;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        #loading-screen .subtitle {
+            font-size: 18px; color: #88aacc; letter-spacing: 6px; margin-bottom: 50px;
+        }
+        .loading-bar-container {
+            width: 400px; height: 4px; background: rgba(255,255,255,0.1);
+            border-radius: 2px; overflow: hidden;
+        }
+        .loading-bar {
+            width: 0%; height: 100%; background: linear-gradient(90deg, #00ffcc, #00aaff);
+            border-radius: 2px; transition: width 0.3s;
+        }
+        #loading-text { color: #667; font-size: 14px; margin-top: 15px; letter-spacing: 2px; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+        /* Start Screen */
+        #start-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #0a0a2e 0%, #1a1a4e 50%, #0a0a2e 100%);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 999; transition: opacity 1s ease;
+        }
+        #start-screen.fade-out { opacity: 0; pointer-events: none; }
+        #start-screen h1 {
+            font-size: 80px; color: #00ffcc; text-shadow: 0 0 30px #00ffcc;
+            letter-spacing: 12px; margin-bottom: 5px; font-weight: 900;
+        }
+        #start-screen .route {
+            font-size: 22px; color: #ff8844; letter-spacing: 4px; margin-bottom: 40px;
+            text-shadow: 0 0 15px #ff8844;
+        }
+        .controls-info {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px 40px;
+            margin-bottom: 40px; color: #aac; font-size: 14px;
+        }
+        .controls-info div { display: flex; align-items: center; gap: 10px; }
+        .key {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            padding: 4px 10px; border-radius: 4px; font-family: monospace;
+            color: #00ffcc; font-size: 13px; min-width: 30px; text-align: center;
+        }
+        .start-btn {
+            padding: 18px 60px; font-size: 22px; background: linear-gradient(135deg, #00ffcc, #00aaff);
+            border: none; border-radius: 50px; color: #000; font-weight: 700; cursor: pointer;
+            letter-spacing: 4px; text-transform: uppercase; transition: all 0.3s;
+            box-shadow: 0 0 30px rgba(0,255,204,0.3);
+        }
+        .start-btn:hover {
+            transform: scale(1.05); box-shadow: 0 0 50px rgba(0,255,204,0.5);
+        }
+        .mode-select {
+            display: flex; gap: 15px; margin-bottom: 30px;
+        }
+        .mode-btn {
+            padding: 12px 30px; font-size: 14px; background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.15); border-radius: 30px;
+            color: #aac; cursor: pointer; letter-spacing: 2px; transition: all 0.3s;
+        }
+        .mode-btn.active {
+            border-color: #00ffcc; color: #00ffcc; background: rgba(0,255,204,0.1);
+            box-shadow: 0 0 20px rgba(0,255,204,0.2);
+        }
+        .mode-btn:hover { border-color: #00ffcc; color: #00ffcc; }
+
+        /* HUD */
+        #hud {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 100; display: none;
+        }
+        .hud-top {
+            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 30px; align-items: center;
+        }
+        .hud-box {
+            background: rgba(0,10,20,0.7); border: 1px solid rgba(0,255,204,0.3);
+            padding: 8px 18px; border-radius: 8px; color: #00ffcc; font-size: 13px;
+            backdrop-filter: blur(10px); letter-spacing: 1px;
+        }
+        .hud-box .label { color: #668; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; }
+        .hud-box .value { font-size: 20px; font-weight: 700; font-family: 'Courier New', monospace; }
+
+        /* Score display */
+        .score-display {
+            position: absolute; top: 15px; right: 20px;
+            background: rgba(0,10,20,0.7); border: 1px solid rgba(255,136,68,0.4);
+            padding: 10px 20px; border-radius: 8px; backdrop-filter: blur(10px);
+        }
+        .score-display .label { color: #886; font-size: 10px; letter-spacing: 2px; }
+        .score-display .score-val { color: #ff8844; font-size: 28px; font-weight: 700; font-family: 'Courier New'; }
+
+        /* Speed indicator */
+        .speed-display {
+            position: absolute; top: 15px; left: 20px;
+            background: rgba(0,10,20,0.7); border: 1px solid rgba(0,170,255,0.3);
+            padding: 10px 20px; border-radius: 8px; backdrop-filter: blur(10px);
+        }
+        .speed-display .label { color: #668; font-size: 10px; letter-spacing: 2px; }
+        .speed-display .speed-val { color: #00aaff; font-size: 22px; font-weight: 700; font-family: 'Courier New'; }
+
+        /* Altitude bar */
+        .alt-bar {
+            position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+            width: 8px; height: 200px; background: rgba(255,255,255,0.05);
+            border-radius: 4px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .alt-bar-fill {
+            position: absolute; bottom: 0; width: 100%;
+            background: linear-gradient(to top, #00ffcc, #00aaff);
+            border-radius: 4px; transition: height 0.1s;
+        }
+        .alt-label {
+            position: absolute; right: 35px; top: 50%; transform: translateY(-50%);
+            color: #557; font-size: 10px; letter-spacing: 1px;
+            writing-mode: vertical-lr; text-orientation: mixed;
+        }
+
+        /* Compass */
+        .compass {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,10,20,0.7); border: 1px solid rgba(0,255,204,0.2);
+            padding: 8px 25px; border-radius: 20px; backdrop-filter: blur(10px);
+            display: flex; align-items: center; gap: 15px;
+        }
+        .compass .dir { color: #445; font-size: 12px; font-family: 'Courier New'; }
+        .compass .dir.active { color: #00ffcc; font-size: 14px; font-weight: 700; }
+
+        /* Throttle */
+        .throttle-display {
+            position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+        }
+        .throttle-bar {
+            width: 8px; height: 200px; background: rgba(255,255,255,0.05);
+            border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); position: relative;
+        }
+        .throttle-fill {
+            position: absolute; bottom: 0; width: 100%;
+            background: linear-gradient(to top, #22cc44, #ffcc00, #ff4444);
+            border-radius: 4px; transition: height 0.1s;
+        }
+        .throttle-label {
+            color: #557; font-size: 10px; letter-spacing: 1px;
+        }
+
+        /* Minimap */
+        .minimap {
+            position: absolute; bottom: 20px; right: 20px;
+            width: 180px; height: 120px;
+            background: rgba(0,10,20,0.8); border: 1px solid rgba(0,255,204,0.2);
+            border-radius: 8px; overflow: hidden; backdrop-filter: blur(10px);
+        }
+        .minimap canvas { width: 100%; height: 100%; }
+
+        /* Waypoint indicator */
+        .waypoint-indicator {
+            position: absolute; left: 50%; top: 80px; transform: translateX(-50%);
+            color: #ffcc00; font-size: 12px; letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(255,204,0,0.5);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .waypoint-indicator .arrow { font-size: 18px; animation: bob 1s ease-in-out infinite; }
+        @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+        /* Messages */
+        .game-message {
+            position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%);
+            font-size: 36px; color: #00ffcc; text-shadow: 0 0 30px #00ffcc;
+            letter-spacing: 6px; opacity: 0; transition: opacity 0.5s;
+            pointer-events: none;
+        }
+        .game-message.show { opacity: 1; }
+
+        /* Checkpoint flash */
+        .checkpoint-flash {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(ellipse at center, rgba(0,255,204,0.15) 0%, transparent 70%);
+            pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 99;
+        }
+        .checkpoint-flash.active { opacity: 1; }
+
+        /* Speed lines overlay */
+        #speed-lines {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 98; opacity: 0; transition: opacity 0.3s;
+        }
+
+        /* Warning indicators */
+        .warning {
+            position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+            color: #ff4444; font-size: 14px; letter-spacing: 3px; opacity: 0;
+            animation: blink 0.5s ease-in-out infinite;
+        }
+        .warning.show { opacity: 1; }
+        @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        /* Fast mode indicator */
+        .fast-mode-indicator {
+            position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
+            color: #ff4444; font-size: 14px; letter-spacing: 4px; display: none;
+            text-shadow: 0 0 15px #ff4444;
+            animation: blink 1s ease-in-out infinite;
+        }
+
+        /* Distance progress bar */
+        .progress-container {
+            position: absolute; bottom: 55px; left: 50%; transform: translateX(-50%);
+            width: 300px;
+        }
+        .progress-labels {
+            display: flex; justify-content: space-between; margin-bottom: 4px;
+            font-size: 10px; color: #557; letter-spacing: 1px;
+        }
+        .progress-bar {
+            width: 100%; height: 4px; background: rgba(255,255,255,0.05);
+            border-radius: 2px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, #00ffcc, #ff8844);
+            border-radius: 2px; transition: width 0.3s;
+        }
+        .progress-heli {
+            width: 10px; height: 10px; position: relative; top: -7px;
+            color: #00ffcc; font-size: 14px; transition: left 0.3s;
+        }
+
+        /* Game over screen */
+        #game-over {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,5,15,0.9); display: none; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 1000;
+        }
+        #game-over h1 { font-size: 60px; color: #00ffcc; letter-spacing: 8px; margin-bottom: 15px; }
+        #game-over .final-score { font-size: 48px; color: #ff8844; font-weight: 700; margin-bottom: 30px; }
+        .stats-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px;
+            margin-bottom: 30px; color: #889; font-size: 14px;
+        }
+        .stats-grid .stat-val { color: #00ffcc; font-weight: 700; }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <h1>SKYHAWK</h1>
+        <div class="subtitle">HELICOPTER FLIGHT SIMULATOR</div>
+        <div class="loading-bar-container">
+            <div class="loading-bar" id="loading-bar"></div>
+        </div>
+        <div id="loading-text">INITIALIZING SYSTEMS...</div>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="start-screen">
+        <h1>SKYHAWK</h1>
+        <div class="route">SAN FRANCISCO → LONDON</div>
+        <div class="mode-select">
+            <div class="mode-btn active" data-mode="normal" onclick="selectMode('normal')">NORMAL</div>
+            <div class="mode-btn" data-mode="fast" onclick="selectMode('fast')">FAST MODE</div>
+            <div class="mode-btn" data-mode="turbo" onclick="selectMode('turbo')">TURBO</div>
+        </div>
+        <div class="controls-info">
+            <div><span class="key">↑</span> Pitch Down / Accelerate</div>
+            <div><span class="key">↓</span> Pitch Up / Decelerate</div>
+            <div><span class="key">←</span> Bank Left</div>
+            <div><span class="key">→</span> Bank Right</div>
+            <div><span class="key">W</span> Increase Altitude</div>
+            <div><span class="key">S</span> Decrease Altitude</div>
+            <div><span class="key">A/D</span> Yaw Left/Right</div>
+            <div><span class="key">SHIFT</span> Boost Speed</div>
+            <div><span class="key">SPACE</span> Toggle Fast Mode</div>
+            <div><span class="key">C</span> Camera View</div>
+            <div><span class="key">M</span> Toggle Minimap</div>
+            <div><span class="key">R</span> Reset Position</div>
+        </div>
+        <button class="start-btn" onclick="startGame()">TAKE OFF</button>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud">
+        <div class="speed-display">
+            <div class="label">SPEED KTS</div>
+            <div class="speed-val" id="speed-val">0</div>
+        </div>
+        <div class="hud-top">
+            <div class="hud-box">
+                <div class="label">ALTITUDE FT</div>
+                <div class="value" id="alt-val">500</div>
+            </div>
+            <div class="hud-box">
+                <div class="label">HEADING</div>
+                <div class="value" id="heading-val">045°</div>
+            </div>
+            <div class="hud-box">
+                <div class="label">DISTANCE NM</div>
+                <div class="value" id="dist-val">4670</div>
+            </div>
+        </div>
+        <div class="score-display">
+            <div class="label">SCORE</div>
+            <div class="score-val" id="score-val">0</div>
+        </div>
+
+        <div class="alt-bar">
+            <div class="alt-bar-fill" id="alt-bar-fill" style="height: 25%"></div>
+        </div>
+        <div class="alt-label">ALT</div>
+
+        <div class="throttle-display">
+            <div class="throttle-label">THR</div>
+            <div class="throttle-bar">
+                <div class="throttle-fill" id="throttle-fill" style="height: 30%"></div>
+            </div>
+        </div>
+
+        <div class="compass">
+            <span class="dir" id="dir-w">W</span>
+            <span class="dir" id="dir-nw">NW</span>
+            <span class="dir" id="dir-n">N</span>
+            <span class="dir" id="dir-ne">NE</span>
+            <span class="dir" id="dir-e">E</span>
+        </div>
+
+        <div class="waypoint-indicator" id="waypoint-indicator">
+            <span class="arrow">▼</span>
+            <span id="waypoint-text">GOLDEN GATE BRIDGE - 2.5 NM</span>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-labels">
+                <span>SFO</span><span>LHR</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+        </div>
+
+        <div class="fast-mode-indicator" id="fast-mode-ind">▶▶ FAST MODE ENGAGED ▶▶</div>
+
+        <div class="warning" id="alt-warning">⚠ LOW ALTITUDE</div>
+        <div class="game-message" id="game-message"></div>
+    </div>
+
+    <div class="checkpoint-flash" id="checkpoint-flash"></div>
+    <canvas id="speed-lines"></canvas>
+
+    <!-- Game Over -->
+    <div id="game-over">
+        <h1>MISSION COMPLETE</h1>
+        <div class="final-score" id="final-score">0</div>
+        <div class="stats-grid" id="stats-grid"></div>
+        <button class="start-btn" onclick="restartGame()">FLY AGAIN</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
