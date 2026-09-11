@@ -1,0 +1,5994 @@
+{
+  "generated_from": "upstream Israel Post CDN (see refresh-branches.py)",
+  "booking_url_template": "https://israelpost.co.il/%D7%A9%D7%99%D7%A8%D7%95%D7%AA%D7%99%D7%9D/%D7%90%D7%99%D7%AA%D7%95%D7%A8-%D7%A1%D7%A0%D7%99%D7%A4%D7%99%D7%9D-%D7%95%D7%96%D7%99%D7%9E%D7%95%D7%9F-%D7%AA%D7%95%D7%A8-%D7%91%D7%A7%D7%9C%D7%99%D7%A7/%D7%96%D7%99%D7%9E%D7%95%D7%9F-%D7%AA%D7%95%D7%A8-%D7%95%D7%91%D7%99%D7%98%D7%95%D7%97?no={branchnumber}",
+  "count": 314,
+  "branches": [
+    {
+      "branchnumber": 101,
+      "branchname": "מרכזי ירושלים",
+      "branchtypename": "סניף",
+      "city": "ירושלים",
+      "street": "יפו",
+      "house": 23,
+      "zip": "9199907",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.7803482,
+      "geocode_longitude": 35.2222095,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 102,
+      "branchname": "בית הכרם",
+      "branchtypename": "סניף",
+      "city": "ירושלים",
+      "street": "בית הכרם",
+      "house": 22,
+      "zip": "9634346",
+      "area": "",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.7806279,
+      "geocode_longitude": 35.1895441,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 108,
+      "branchname": "קניון בלדי-סוכנות",
+      "branchtypename": "סוכנות א",
+      "city": "ירושלים",
+      "street": "גסר א-נסף",
+      "house": 14,
+      "zip": "9716755",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.8417203,
+      "geocode_longitude": 35.2286551,
+      "ExtraServices": []
+    },
+    {
+      "branchnumber": 111,
+      "branchname": "קרית יובל",
+      "branchtypename": "סניף",
+      "city": "ירושלים",
+      "street": "וולטה העלית",
+      "house": 3,
+      "zip": "9670603",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.759295,
+      "geocode_longitude": 35.1771692,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 113,
+      "branchname": "רסקו",
+      "branchtypename": "סניף",
+      "city": "ירושלים",
+      "street": "טשרניחובסקי",
+      "house": 42,
+      "zip": "9258521",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.7654653,
+      "geocode_longitude": 35.2060312,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 114,
+      "branchname": "הורדוס",
+      "branchtypename": "סניף",
+      "city": "ירושלים",
+      "street": "סלאח אל-דין",
+      "house": 2,
+      "zip": "9711025",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.7835697,
+      "geocode_longitude": 35.233499,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 116,
+      "branchname": "שועפט",
+      "branchtypename": "סוכנות א",
+      "city": "ירושלים",
+      "street": "דרך שועפאט",
+      "house": 34,
+      "zip": "9717110",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.8138732,
+      "geocode_longitude": 35.2343857,
+      "ExtraServices": []
+    },
+    {
+      "branchnumber": 117,
+      "branchname": "מגדל דוד",
+      "branchtypename": "סוכנות א",
+      "city": "ירושלים",
+      "street": "עומר בן אל ח'טאב",
+      "house": 64,
+      "zip": "9761366",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.7764542,
+      "geocode_longitude": 35.2275622,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 122,
+      "branchname": "הר חומה",
+      "branchtypename": "סוכנות א",
+      "city": "ירושלים",
+      "street": "אביגור שאול",
+      "house": 11,
+      "zip": "9312206",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.7232227,
+      "geocode_longitude": 35.2197312,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 127,
+      "branchname": "שערי גאולה",
+      "branchtypename": "סניף",
+      "city": "ירושלים",
+      "street": "דוד",
+      "house": 7,
+      "zip": "9534715",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.791012,
+      "geocode_longitude": 35.220436,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 135,
+      "branchname": "שטנר",
+      "branchtypename": "סניף",
+      "city": "ירושלים",
+      "street": "שטנר",
+      "house": 5,
+      "zip": "9546105",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.7865181,
+      "geocode_longitude": 35.1897267,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 141,
+      "branchname": "אלקנה",
+      "branchtypename": "סוכנות א",
+      "city": "אלקנה",
+      "street": null,
+      "house": 0,
+      "zip": "4481400",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 32.110566,
+      "geocode_longitude": 35.032054,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 144,
+      "branchname": "קרית ספר",
+      "branchtypename": "סוכנות א",
+      "city": "מודיעין עילית",
+      "street": "אבני נזר",
+      "house": 46,
+      "zip": "7181043",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.9306048,
+      "geocode_longitude": 35.0386542,
+      "ExtraServices": []
+    },
+    {
+      "branchnumber": 151,
+      "branchname": "גילה",
+      "branchtypename": "סוכנות א",
+      "city": "ירושלים",
+      "street": "צביה ויצחק",
+      "house": 800,
+      "zip": "9381826",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.7303184,
+      "geocode_longitude": 35.1881184,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 155,
+      "branchname": "צור באחר",
+      "branchtypename": "סוכנות א",
+      "city": "ירושלים",
+      "street": "אלמדינה מונורה ",
+      "house": 156,
+      "zip": "9703752",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.73651,
+      "geocode_longitude": 35.23284,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 158,
+      "branchname": "מזרח תלפיות",
+      "branchtypename": "סוכנות א",
+      "city": "ירושלים",
+      "street": "עולי הגרדום",
+      "house": 2,
+      "zip": "9380102",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.7527373,
+      "geocode_longitude": 35.2346902,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 159,
+      "branchname": "פסגת זאב",
+      "branchtypename": "סניף",
+      "city": "ירושלים",
+      "street": "שד דיין משה",
+      "house": 106,
+      "zip": "9781616",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.8280038,
+      "geocode_longitude": 35.2401992,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 160,
+      "branchname": "סילוואן",
+      "branchtypename": "סוכנות א",
+      "city": "ירושלים",
+      "street": "עין אל-לוזה",
+      "house": 10,
+      "zip": "9791410",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.762905,
+      "geocode_longitude": 35.243114,
+      "ExtraServices": []
+    },
+    {
+      "branchnumber": 161,
+      "branchname": "ראס אל עמוד",
+      "branchtypename": "סוכנות א",
+      "city": "ירושלים",
+      "street": "דרך יריחו",
+      "house": 207,
+      "zip": "9791141",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.7791695,
+      "geocode_longitude": 35.2392878,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 162,
+      "branchname": "קרית ארבע",
+      "branchtypename": "סוכנות א",
+      "city": "קריית ארבע",
+      "street": "בן יפונה",
+      "house": 14,
+      "zip": "9058840",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": null,
+      "geocode_latitude": 31.529326,
+      "geocode_longitude": 35.115625,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 165,
+      "branchname": "אבו גוש",
+      "branchtypename": "סוכנות א",
+      "city": "אבו גוש",
+      "street": "דרך השלום",
+      "house": 37,
+      "zip": "9084500",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.8095116,
+      "geocode_longitude": 35.1091508,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 166,
+      "branchname": "רמות",
+      "branchtypename": "סניף",
+      "city": "ירושלים",
+      "street": "מעלות כיסופים",
+      "house": 801,
+      "zip": "9773314",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.817026,
+      "geocode_longitude": 35.196319,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 170,
+      "branchname": "רמת אשכול",
+      "branchtypename": "סניף",
+      "city": "ירושלים",
+      "street": "פארן",
+      "house": 7,
+      "zip": "9780209",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.8012846,
+      "geocode_longitude": 35.2281633,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 171,
+      "branchname": "קניון האחים ישראל",
+      "branchtypename": "סניף",
+      "city": "ירושלים",
+      "street": "יד חרוצים",
+      "house": 18,
+      "zip": "9342155",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.7510535,
+      "geocode_longitude": 35.2160012,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 172,
+      "branchname": "נוה יעקב",
+      "branchtypename": "סניף",
+      "city": "ירושלים",
+      "street": "שד נוה יעקב",
+      "house": 611,
+      "zip": "9735767",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.8382615,
+      "geocode_longitude": 35.2351091,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 174,
+      "branchname": "קרני שומרון",
+      "branchtypename": "סוכנות ב",
+      "city": "קרני שומרון",
+      "street": "שדרות רחבעם",
+      "house": 1,
+      "zip": "4485500",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 32.174815,
+      "geocode_longitude": 35.0909491,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 178,
+      "branchname": "גבעת זאב",
+      "branchtypename": "סוכנות א",
+      "city": "גבעת זאב",
+      "street": "המכבים",
+      "house": 46,
+      "zip": "9091041",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.8650633,
+      "geocode_longitude": 35.16792,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 182,
+      "branchname": "הגבעה הצרפתית",
+      "branchtypename": "סוכנות א",
+      "city": "ירושלים",
+      "street": "אבא ברדיצב",
+      "house": 2,
+      "zip": "9788702",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.8051883,
+      "geocode_longitude": 35.2415988,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 183,
+      "branchname": "אלפי מנשה",
+      "branchtypename": "סוכנות ב",
+      "city": "אלפי מנשה",
+      "street": "גלבוע",
+      "house": 116,
+      "zip": "4485100",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 32.1711553,
+      "geocode_longitude": 35.0145818,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 184,
+      "branchname": "קניון רמי לוי עטרות ",
+      "branchtypename": "סוכנות א",
+      "city": "ירושלים",
+      "street": "עטרות",
+      "house": 0,
+      "zip": "9711400",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.854126,
+      "geocode_longitude": 35.217405,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 187,
+      "branchname": "קניון הראל",
+      "branchtypename": "סניף",
+      "city": "מבשרת ציון",
+      "street": "הראל",
+      "house": 1,
+      "zip": "9079129",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.7998,
+      "geocode_longitude": 35.1490076,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 191,
+      "branchname": "אלון שבות",
+      "branchtypename": "סוכנות א",
+      "city": "אלון שבות",
+      "street": "מעלה מיכאל",
+      "house": 10,
+      "zip": "9043300",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.6578625,
+      "geocode_longitude": 35.125977,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 193,
+      "branchname": "היחידה המרכזית אריאל",
+      "branchtypename": "סניף",
+      "city": "אריאל",
+      "street": "יהודה",
+      "house": 14,
+      "zip": "4070814",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 32.1051742,
+      "geocode_longitude": 35.1714868,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 196,
+      "branchname": "היחידה המרכזית מעלה אדומים",
+      "branchtypename": "סניף",
+      "city": "מעלה אדומים",
+      "street": "דרך קדם",
+      "house": 5,
+      "zip": "9845203",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.7714714,
+      "geocode_longitude": 35.298434,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 197,
+      "branchname": "אפרת",
+      "branchtypename": "סוכנות א",
+      "city": "אפרת",
+      "street": "נצר ישי",
+      "house": 3,
+      "zip": "9043602",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.6526954,
+      "geocode_longitude": 35.1500385,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 200,
+      "branchname": "היחידה המרכזית אילת",
+      "branchtypename": "סניף",
+      "city": "אילת",
+      "street": "שד התמרים",
+      "house": 19,
+      "zip": "8801416",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 29.5559411,
+      "geocode_longitude": 34.9519313,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 208,
+      "branchname": "נווה הדרים",
+      "branchtypename": "סוכנות א",
+      "city": "אשקלון",
+      "street": "יהדות ספרד",
+      "house": 54,
+      "zip": "7868088",
+      "area": "לכיש",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.6755398,
+      "geocode_longitude": 34.5854125,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 209,
+      "branchname": "סאלח אדין רהט",
+      "branchtypename": "סוכנות א",
+      "city": "רהט",
+      "street": "צלאח אלדין",
+      "house": 237,
+      "zip": "8535700",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.399078,
+      "geocode_longitude": 34.748416,
+      "ExtraServices": []
+    },
+    {
+      "branchnumber": 210,
+      "branchname": "היחידה המרכזית אשקלון",
+      "branchtypename": "סניף",
+      "city": "אשקלון",
+      "street": "הרצל",
+      "house": 18,
+      "zip": "7860117",
+      "area": "לכיש",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.66321,
+      "geocode_longitude": 34.586038,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 212,
+      "branchname": "אפרידר",
+      "branchtypename": "סוכנות א",
+      "city": "אשקלון",
+      "street": "אורט",
+      "house": 24,
+      "zip": "7836039",
+      "area": "לכיש",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.6722005,
+      "geocode_longitude": 34.5687703,
+      "ExtraServices": []
+    },
+    {
+      "branchnumber": 220,
+      "branchname": "סניף מרכזי באר שבע ",
+      "branchtypename": "סניף",
+      "city": "באר שבע",
+      "street": "שד רגר יצחק",
+      "house": 9,
+      "zip": "8489506",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.2450798,
+      "geocode_longitude": 34.7956043,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 221,
+      "branchname": "ערערה (בנגב) ערוער",
+      "branchtypename": "סוכנות א",
+      "city": "ערערה-בנגב",
+      "street": "רחוב ראשי ",
+      "house": 0,
+      "zip": "8491100",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.160927,
+      "geocode_longitude": 35.019757,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 223,
+      "branchname": "שכון ד' מרכז גילת",
+      "branchtypename": "סוכנות א",
+      "city": "באר שבע",
+      "street": "אברהם אבינו",
+      "house": 31,
+      "zip": "8455002",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.2650944,
+      "geocode_longitude": 34.7935616,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 224,
+      "branchname": "נוה נוי",
+      "branchtypename": "סוכנות א",
+      "city": "באר שבע",
+      "street": "שטה",
+      "house": 44,
+      "zip": "8484476",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.252973,
+      "geocode_longitude": 34.791462,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 225,
+      "branchname": "היחידה המרכזית עומר",
+      "branchtypename": "סניף",
+      "city": "עומר",
+      "street": "רותם",
+      "house": 17,
+      "zip": "8496500",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.2645541,
+      "geocode_longitude": 34.847265,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 227,
+      "branchname": "חורה",
+      "branchtypename": "סוכנות א",
+      "city": "חורה",
+      "street": "אלנור",
+      "house": 22,
+      "zip": "8573000",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.300399,
+      "geocode_longitude": 34.935688,
+      "ExtraServices": []
+    },
+    {
+      "branchnumber": 230,
+      "branchname": "שכון ה' היעלים",
+      "branchtypename": "סוכנות א",
+      "city": "באר שבע",
+      "street": "שד יעלים",
+      "house": 42,
+      "zip": "8473917",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.251061,
+      "geocode_longitude": 34.779133,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 231,
+      "branchname": "קניון אביה",
+      "branchtypename": "סוכנות א",
+      "city": "באר שבע",
+      "street": "מבצע יואב",
+      "house": 49,
+      "zip": "8479601",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.263578,
+      "geocode_longitude": 34.779239,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 237,
+      "branchname": "היחידה המרכזית רהט",
+      "branchtypename": "סניף",
+      "city": "רהט",
+      "street": null,
+      "house": 0,
+      "zip": "8535700",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.394548,
+      "geocode_longitude": 34.753934,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 239,
+      "branchname": "לקיה",
+      "branchtypename": "סוכנות א",
+      "city": "לקיה",
+      "street": "שכונה 3",
+      "house": 18,
+      "zip": "8499100",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.324884,
+      "geocode_longitude": 34.866219,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 240,
+      "branchname": " סניף מרכזי קרית גת",
+      "branchtypename": "סניף",
+      "city": "קריית גת",
+      "street": "הגפן",
+      "house": 7,
+      "zip": "8201085",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.6066815,
+      "geocode_longitude": 34.7706425,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 241,
+      "branchname": "שכונה ג (שדרות גת) ",
+      "branchtypename": "סוכנות א",
+      "city": "קריית גת",
+      "street": "שדרות גת",
+      "house": 42,
+      "zip": "8208233",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "08-6600050",
+      "geocode_latitude": 31.6111303,
+      "geocode_longitude": 34.7658069,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 246,
+      "branchname": "בני עייש",
+      "branchtypename": "סוכנות א",
+      "city": "בני עי\"ש",
+      "street": "בגין מנחם",
+      "house": 4,
+      "zip": "6070004",
+      "area": "לכיש",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.790235,
+      "geocode_longitude": 34.759291,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 250,
+      "branchname": "היחידה המרכזית אופקים",
+      "branchtypename": "סניף",
+      "city": "אופקים",
+      "street": "גולומב",
+      "house": 1,
+      "zip": "8753501",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.3157681,
+      "geocode_longitude": 34.6193349,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 251,
+      "branchname": "היחידה המרכזית דימונה",
+      "branchtypename": "סניף",
+      "city": "דימונה",
+      "street": "מ\"ג המעפילים",
+      "house": 5,
+      "zip": "8613602",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.066701,
+      "geocode_longitude": 35.034233,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 253,
+      "branchname": "סוכנות ירוחם",
+      "branchtypename": "סוכנות א",
+      "city": "ירוחם",
+      "street": "בורנשטיין צבי",
+      "house": 655,
+      "zip": "8050340",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 30.987432,
+      "geocode_longitude": 34.930692,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 254,
+      "branchname": "היחידה המרכזית מצפה רמון",
+      "branchtypename": "סניף",
+      "city": "מצפה רמון",
+      "street": "שד בן גוריון",
+      "house": 8,
+      "zip": "8060000",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 30.6119815,
+      "geocode_longitude": 34.8029741,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 256,
+      "branchname": "היחידה המרכזית נתיבות",
+      "branchtypename": "סניף",
+      "city": "נתיבות",
+      "street": "יהדות צרפת",
+      "house": 4,
+      "zip": "8767580",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.423196,
+      "geocode_longitude": 34.595254,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 257,
+      "branchname": "רפיח ים נתיבות",
+      "branchtypename": "סוכנות א",
+      "city": "נתיבות",
+      "street": "רפיח ים",
+      "house": 30,
+      "zip": "8767173",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.4186,
+      "geocode_longitude": 34.564319,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 258,
+      "branchname": "היחידה המרכזית ערד",
+      "branchtypename": "סניף",
+      "city": "ערד",
+      "street": "בן יאיר אלעזר",
+      "house": 35,
+      "zip": "8905819",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.2582578,
+      "geocode_longitude": 35.209699,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 261,
+      "branchname": "כסייפה",
+      "branchtypename": "סוכנות א",
+      "city": "כסיפה",
+      "street": "שכונה 43 ",
+      "house": 163,
+      "zip": "8492300",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.239444,
+      "geocode_longitude": 35.062546,
+      "ExtraServices": []
+    },
+    {
+      "branchnumber": 262,
+      "branchname": "סוכנות שגב שלום ",
+      "branchtypename": "סוכנות א",
+      "city": "שגב-שלום",
+      "street": "אלשיח'עדה",
+      "house": 89,
+      "zip": "8574000",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.194069,
+      "geocode_longitude": 34.84043,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 275,
+      "branchname": "סוכנות צוחר ",
+      "branchtypename": "סוכנות א",
+      "city": "צוחר",
+      "street": "מרכז מסחרי ",
+      "house": 0,
+      "zip": "8547500",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.23717,
+      "geocode_longitude": 34.426444,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 277,
+      "branchname": "מיתר ",
+      "branchtypename": "סוכנות א",
+      "city": "מיתר",
+      "street": "מרכז היישוב",
+      "house": 0,
+      "zip": "8502500",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.327011,
+      "geocode_longitude": 34.943213,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 278,
+      "branchname": "להבים",
+      "branchtypename": "סוכנות א",
+      "city": "להבים",
+      "street": "שד' תמר",
+      "house": 1,
+      "zip": "8533800",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.372541,
+      "geocode_longitude": 34.8047708,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 281,
+      "branchname": "תל שבע",
+      "branchtypename": "סוכנות א",
+      "city": "תל שבע",
+      "street": null,
+      "house": 0,
+      "zip": "8495000",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.243299,
+      "geocode_longitude": 34.854354,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 295,
+      "branchname": "סוכנות העיר אשקלון",
+      "branchtypename": "סוכנות א",
+      "city": "אשקלון",
+      "street": "העבודה",
+      "house": 21,
+      "zip": "7861044",
+      "area": "לכיש",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.6663619,
+      "geocode_longitude": 34.589982,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 297,
+      "branchname": "אל מוכתר רהט",
+      "branchtypename": "סוכנות א",
+      "city": "רהט",
+      "street": "מרכז מסחרי רהט",
+      "house": 0,
+      "zip": "8535700",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.505464,
+      "geocode_longitude": 34.746604,
+      "ExtraServices": []
+    },
+    {
+      "branchnumber": 299,
+      "branchname": "היחידה המרכזית שדרות",
+      "branchtypename": "סניף",
+      "city": "שדרות",
+      "street": "משעול הנשיא",
+      "house": 8,
+      "zip": "8712808",
+      "area": "נגב",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.5253641,
+      "geocode_longitude": 34.5931537,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 300,
+      "branchname": "היחידה המרכזית אשדוד",
+      "branchtypename": "סניף",
+      "city": "אשדוד",
+      "street": "רוגוזין",
+      "house": 7,
+      "zip": "7727301",
+      "area": "לכיש",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.8069611,
+      "geocode_longitude": 34.6443176,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 304,
+      "branchname": "בעל הנס",
+      "branchtypename": "סוכנות א",
+      "city": "אשדוד",
+      "street": "רשב\"י",
+      "house": 12,
+      "zip": "7765033",
+      "area": "לכיש",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.7890544,
+      "geocode_longitude": 34.6647739,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 308,
+      "branchname": "העצמאות  אשדוד",
+      "branchtypename": "סוכנות א",
+      "city": "אשדוד",
+      "street": "העצמאות",
+      "house": 26,
+      "zip": "7745226",
+      "area": "לכיש",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.791111,
+      "geocode_longitude": 34.645151,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 310,
+      "branchname": "היחידה המרכזית בית שמש",
+      "branchtypename": "סניף",
+      "city": "בית שמש",
+      "street": "בן צבי",
+      "house": 24,
+      "zip": "9903024",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.7487261,
+      "geocode_longitude": 34.9889906,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 315,
+      "branchname": "גבעת שרת",
+      "branchtypename": "סוכנות א",
+      "city": "בית שמש",
+      "street": "ראובן",
+      "house": 1,
+      "zip": "9954401",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.7389978,
+      "geocode_longitude": 34.9911651,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 318,
+      "branchname": "רובע י\"ג",
+      "branchtypename": "סוכנות א",
+      "city": "אשדוד",
+      "street": "המלך דוד",
+      "house": 18,
+      "zip": "7748109",
+      "area": "לכיש",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.7760173,
+      "geocode_longitude": 34.6417835,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 324,
+      "branchname": "שכון המזרח",
+      "branchtypename": "סניף",
+      "city": "ראשון לציון",
+      "street": "שד יעקב",
+      "house": 43,
+      "zip": "7553607",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.9547182,
+      "geocode_longitude": 34.8218825,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 325,
+      "branchname": "רמת אליהו",
+      "branchtypename": "סוכנות א",
+      "city": "ראשון לציון",
+      "street": "צייטלין",
+      "house": 24,
+      "zip": "7561230",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.9851301,
+      "geocode_longitude": 34.7876798,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 326,
+      "branchname": "היחידה המרכזית הרצל ראשל\"צ",
+      "branchtypename": "סניף",
+      "city": "ראשון לציון",
+      "street": "הרצל",
+      "house": 30,
+      "zip": "7528809",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.9690431,
+      "geocode_longitude": 34.8040499,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 327,
+      "branchname": "קידמת ראשון",
+      "branchtypename": "סוכנות א",
+      "city": "ראשון לציון",
+      "street": "ראובן ובת שבע",
+      "house": 4,
+      "zip": "7535704",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.9707764,
+      "geocode_longitude": 34.815358,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 331,
+      "branchname": "קרית משה רחובות",
+      "branchtypename": "סוכנות א",
+      "city": "רחובות",
+      "street": "גבריאלוב",
+      "house": 12,
+      "zip": "7638247",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.8858337,
+      "geocode_longitude": 34.7880114,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 333,
+      "branchname": "הרצל רחובות",
+      "branchtypename": "סניף",
+      "city": "רחובות",
+      "street": "הרצל",
+      "house": 165,
+      "zip": "7626714",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.8971111,
+      "geocode_longitude": 34.8105111,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 336,
+      "branchname": " נחל דולב ",
+      "branchtypename": "סוכנות א",
+      "city": "בית שמש",
+      "street": "נחל דולב",
+      "house": 19,
+      "zip": "9962125",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.7136155,
+      "geocode_longitude": 34.9983216,
+      "ExtraServices": []
+    },
+    {
+      "branchnumber": 346,
+      "branchname": "אזור התעשיה הקלה",
+      "branchtypename": "סוכנות א",
+      "city": "אשדוד",
+      "street": "העבודה",
+      "house": 65,
+      "zip": "7760049",
+      "area": "לכיש",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.808814,
+      "geocode_longitude": 34.6656565,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 348,
+      "branchname": "רובע ט'",
+      "branchtypename": "סוכנות א",
+      "city": "אשדוד",
+      "street": "גיא אוני",
+      "house": 2,
+      "zip": "7764450",
+      "area": "לכיש",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.785043,
+      "geocode_longitude": 34.65962,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 349,
+      "branchname": "נוה ים",
+      "branchtypename": "סוכנות א",
+      "city": "ראשון לציון",
+      "street": "הנחשול",
+      "house": 30,
+      "zip": "7543730",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.984393,
+      "geocode_longitude": 34.7824942,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 353,
+      "branchname": "מודיעין סנטר ",
+      "branchtypename": "סוכנות א",
+      "city": "מודיעין-מכבים-רעות",
+      "street": "צאלון",
+      "house": 21,
+      "zip": "7171519",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.9059559,
+      "geocode_longitude": 35.0170017,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 358,
+      "branchname": "תמר",
+      "branchtypename": "סוכנות א",
+      "city": "ביתר עילית",
+      "street": "הר\"ן",
+      "house": 6,
+      "zip": "9056506",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.7050513,
+      "geocode_longitude": 35.1169982,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 360,
+      "branchname": "רובע טו' (טופז)",
+      "branchtypename": "סוכנות א",
+      "city": "אשדוד",
+      "street": "שד מונטיפיורי",
+      "house": 6,
+      "zip": "7766406",
+      "area": "לכיש",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.7719316,
+      "geocode_longitude": 34.6243096,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 366,
+      "branchname": "ינה ",
+      "branchtypename": "סוכנות א",
+      "city": "רמלה",
+      "street": "היצירה",
+      "house": 21,
+      "zip": "7255618",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "08-9292065",
+      "geocode_latitude": 31.9335203,
+      "geocode_longitude": 34.8830607,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 367,
+      "branchname": "נוה אילן",
+      "branchtypename": "סוכנות א",
+      "city": "יבנה",
+      "street": "חרוב",
+      "house": 2,
+      "zip": "8151202",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.8781996,
+      "geocode_longitude": 34.7354496,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 372,
+      "branchname": "גבעת ברנר",
+      "branchtypename": "סוכנות א",
+      "city": "גבעת ברנר",
+      "street": null,
+      "house": 0,
+      "zip": "6094800",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.86661,
+      "geocode_longitude": 34.802254,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 373,
+      "branchname": "סוכנות גדרה  ",
+      "branchtypename": "סוכנות א",
+      "city": "גדרה",
+      "street": "פייבל",
+      "house": 3,
+      "zip": "7057102",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.8153542,
+      "geocode_longitude": 34.7770786,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 374,
+      "branchname": "בית אריה",
+      "branchtypename": "סוכנות א",
+      "city": "בית אריה",
+      "street": "הזית",
+      "house": 1,
+      "zip": "7194700",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 32.0340568,
+      "geocode_longitude": 35.0508432,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 375,
+      "branchname": "קניון לוד",
+      "branchtypename": "סוכנות א",
+      "city": "לוד",
+      "street": "שד הציונות",
+      "house": 1,
+      "zip": "7127710",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.9455551,
+      "geocode_longitude": 34.8921663,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 378,
+      "branchname": "היחידה המרכזית יבנה",
+      "branchtypename": "סניף",
+      "city": "יבנה",
+      "street": "שד דואני",
+      "house": 46,
+      "zip": "8155022",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.869229,
+      "geocode_longitude": 34.744245,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 381,
+      "branchname": "מזכרת בתיה",
+      "branchtypename": "סניף",
+      "city": "מזכרת בתיה",
+      "street": "שד אליהו",
+      "house": 11,
+      "zip": "7685135",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.8546342,
+      "geocode_longitude": 34.842758,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 383,
+      "branchname": "סניף מרכזי נס ציונה",
+      "branchtypename": "סניף",
+      "city": "נס ציונה",
+      "street": "הבנים",
+      "house": 3,
+      "zip": "7407103",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.9292719,
+      "geocode_longitude": 34.7993619,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 387,
+      "branchname": "היחידה המרכזית קרית מלאכי",
+      "branchtypename": "סניף",
+      "city": "קריית מלאכי",
+      "street": "רש\"י",
+      "house": 1,
+      "zip": "8302058",
+      "area": "לכיש",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.7285302,
+      "geocode_longitude": 34.7481103,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 396,
+      "branchname": "קניון עזריאלי ברמלה",
+      "branchtypename": "סוכנות א",
+      "city": "רמלה",
+      "street": "רזיאל דוד",
+      "house": 1,
+      "zip": "7250038",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.9257367,
+      "geocode_longitude": 34.8638844,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 397,
+      "branchname": "היחידה המרכזית מודיעין",
+      "branchtypename": "סניף",
+      "city": "מודיעין-מכבים-רעות",
+      "street": "שדרות דם המכבים",
+      "house": 28,
+      "zip": "7178594",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.9061025,
+      "geocode_longitude": 35.005832,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 398,
+      "branchname": "שכונת חב\"ד קרית מלאכי",
+      "branchtypename": "סוכנות א",
+      "city": "קריית מלאכי",
+      "street": "נחלת הר חב\"ד",
+      "house": 4,
+      "zip": "8303306",
+      "area": "לכיש",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.7305935,
+      "geocode_longitude": 34.7391356,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 399,
+      "branchname": "גן יבנה",
+      "branchtypename": "סוכנות א",
+      "city": "גן יבנה",
+      "street": "הרצל",
+      "house": 20,
+      "zip": "7080920",
+      "area": "לכיש",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.7881247,
+      "geocode_longitude": 34.7106833,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 413,
+      "branchname": "יד אליהו",
+      "branchtypename": "סניף",
+      "city": "תל אביב - יפו",
+      "street": "השלושה",
+      "house": 2,
+      "zip": "6706054",
+      "area": "איזור ת\"א",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.061711,
+      "geocode_longitude": 34.788543,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 414,
+      "branchname": "יפו שדרות ירושלים",
+      "branchtypename": "סניף",
+      "city": "תל אביב - יפו",
+      "street": "שד' ירושלים",
+      "house": 12,
+      "zip": "6802106",
+      "area": "איזור ת\"א",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0556586,
+      "geocode_longitude": 34.7595109,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 415,
+      "branchname": "הדר יוסף",
+      "branchtypename": "סניף",
+      "city": "תל אביב - יפו",
+      "street": "קהילת לבוב",
+      "house": 24,
+      "zip": "6972506",
+      "area": "איזור ת\"א",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.1103831,
+      "geocode_longitude": 34.8218609,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 417,
+      "branchname": "מרכזת הצפון (אבן גבירול)",
+      "branchtypename": "סניף",
+      "city": "תל אביב - יפו",
+      "street": "אבן גבירול",
+      "house": 170,
+      "zip": "6203223",
+      "area": "איזור ת\"א",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0918101,
+      "geocode_longitude": 34.7832278,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post",
+        "EnableLeadForThisBranch"
+      ]
+    },
+    {
+      "branchnumber": 419,
+      "branchname": "צהלה",
+      "branchtypename": "סניף",
+      "city": "תל אביב - יפו",
+      "street": "יהונתן",
+      "house": 4,
+      "zip": "6908172",
+      "area": "איזור ת\"א",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.1220342,
+      "geocode_longitude": 34.8350219,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 420,
+      "branchname": "קרית שלום",
+      "branchtypename": "סניף",
+      "city": "תל אביב - יפו",
+      "street": "הקשת",
+      "house": 6,
+      "zip": "6676506",
+      "area": "איזור ת\"א",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.042193,
+      "geocode_longitude": 34.7750548,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 421,
+      "branchname": "הירקון",
+      "branchtypename": "סניף",
+      "city": "תל אביב - יפו",
+      "street": "הירקון",
+      "house": 61,
+      "zip": "6343217",
+      "area": "איזור ת\"א",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0756374,
+      "geocode_longitude": 34.7665517,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "דואר בקליק",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 423,
+      "branchname": "חשמונאים",
+      "branchtypename": "סניף",
+      "city": "תל אביב - יפו",
+      "street": "החשמונאים",
+      "house": 88,
+      "zip": "6713305",
+      "area": "איזור ת\"א",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0694088,
+      "geocode_longitude": 34.7835154,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 426,
+      "branchname": "שכונת התקוה",
+      "branchtypename": "סניף",
+      "city": "תל אביב - יפו",
+      "street": "אצ\"ל",
+      "house": 16,
+      "zip": "6712808",
+      "area": "איזור ת\"א",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0534047,
+      "geocode_longitude": 34.7913784,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 429,
+      "branchname": "האוניברסיטה",
+      "branchtypename": "סניף",
+      "city": "תל אביב - יפו",
+      "street": "לבנון חיים",
+      "house": 67,
+      "zip": "6910302",
+      "area": "איזור ת\"א",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.1141398,
+      "geocode_longitude": 34.8012257,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 431,
+      "branchname": "מגדל שלום",
+      "branchtypename": "סניף",
+      "city": "תל אביב - יפו",
+      "street": "אחד העם",
+      "house": 9,
+      "zip": "6525101",
+      "area": "איזור ת\"א",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0637223,
+      "geocode_longitude": 34.7696201,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "דואר בקליק",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 449,
+      "branchname": "תל כביר נווה עופר",
+      "branchtypename": "סניף",
+      "city": "תל אביב - יפו",
+      "street": "גרינבוים",
+      "house": 41,
+      "zip": "6810980",
+      "area": "איזור גנים",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0410558,
+      "geocode_longitude": 34.7657032,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 464,
+      "branchname": "נחלת יצחק",
+      "branchtypename": "סוכנות א",
+      "city": "תל אביב - יפו",
+      "street": "נחלת יצחק",
+      "house": 18,
+      "zip": "6744815",
+      "area": "איזור גנים",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0743199,
+      "geocode_longitude": 34.7980392,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 466,
+      "branchname": "סוכנות לוינסקי",
+      "branchtypename": "סוכנות א",
+      "city": "תל אביב - יפו",
+      "street": "לוינסקי",
+      "house": 108,
+      "zip": "6699001",
+      "area": "איזור ת\"א",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0560774,
+      "geocode_longitude": 34.7795297,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 467,
+      "branchname": "ביזנס פארק",
+      "branchtypename": "סוכנות א",
+      "city": "הרצליה",
+      "street": "מדינת היהודים",
+      "house": 85,
+      "zip": "4676670",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.1669919,
+      "geocode_longitude": 34.8108401,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "דואר בקליק",
+        "Click2Post",
+        "EnableLeadForThisBranch"
+      ]
+    },
+    {
+      "branchnumber": 469,
+      "branchname": "רמת השקמה",
+      "branchtypename": "סניף",
+      "city": "רמת גן",
+      "street": "בניהו",
+      "house": 29,
+      "zip": "5221537",
+      "area": "איזור גנים",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0496259,
+      "geocode_longitude": 34.8156569,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 473,
+      "branchname": "בת חפר",
+      "branchtypename": "סוכנות א",
+      "city": "בת חפר",
+      "street": null,
+      "house": 0,
+      "zip": "4284200",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.333714,
+      "geocode_longitude": 35.013729,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 476,
+      "branchname": "פולג",
+      "branchtypename": "סוכנות א",
+      "city": "נתניה",
+      "street": "אמנון ותמר",
+      "house": 6,
+      "zip": "4220209",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.2749061,
+      "geocode_longitude": 34.8480378,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 489,
+      "branchname": "ניסנבאום",
+      "branchtypename": "סוכנות א",
+      "city": "בת ים",
+      "street": "הרב ניסנבוים יצחק",
+      "house": 35,
+      "zip": "5962029",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 32.022818,
+      "geocode_longitude": 34.7911727,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 490,
+      "branchname": "אלעד",
+      "branchtypename": "סניף",
+      "city": "אלעד",
+      "street": "שמעון בן שטח",
+      "house": 10,
+      "zip": "4082610",
+      "area": "איזור גנים",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0550502,
+      "geocode_longitude": 34.9607377,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 492,
+      "branchname": "סוכנות דואר טירה ",
+      "branchtypename": "סוכנות א",
+      "city": "טירה",
+      "street": "טארק עבד אלחי",
+      "house": 30,
+      "zip": "4491500",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.2295646,
+      "geocode_longitude": 34.9483369,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 495,
+      "branchname": "נוה חוף",
+      "branchtypename": "סוכנות א",
+      "city": "ראשון לציון",
+      "street": "ארגמן",
+      "house": 12,
+      "zip": "7570912",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.9970609,
+      "geocode_longitude": 34.7441621,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 496,
+      "branchname": "השכונה הירוקה",
+      "branchtypename": "סוכנות א",
+      "city": "כפר סבא",
+      "street": "אנגל",
+      "house": 78,
+      "zip": "4465140",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.1981077,
+      "geocode_longitude": 34.890305,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 500,
+      "branchname": "רבי עקיבא",
+      "branchtypename": "סניף",
+      "city": "בני ברק",
+      "street": "רבי עקיבא",
+      "house": 75,
+      "zip": "5154101",
+      "area": "איזור ת\"א",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0862547,
+      "geocode_longitude": 34.8307379,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 501,
+      "branchname": "רוגובין שפע סטוק גבעת שמואל ",
+      "branchtypename": "סוכנות א",
+      "city": "גבעת שמואל",
+      "street": "בגין מנחם",
+      "house": 38,
+      "zip": "5400203",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.077327,
+      "geocode_longitude": 34.8543621,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 503,
+      "branchname": "סניף מרכזי ויטה בני ברק",
+      "branchtypename": "סניף",
+      "city": "בני ברק",
+      "street": "בן גוריון דוד",
+      "house": 11,
+      "zip": "5126015",
+      "area": "איזור גנים",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0940263,
+      "geocode_longitude": 34.8223512,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 505,
+      "branchname": "איירפורט סיטי ",
+      "branchtypename": "סוכנות א",
+      "city": "נמל תעופה בן גוריון",
+      "street": "הגולן",
+      "house": 43,
+      "zip": "7019900",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 32.0004465,
+      "geocode_longitude": 34.8706095,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 506,
+      "branchname": "קדימה",
+      "branchtypename": "סוכנות א",
+      "city": "קדימה",
+      "street": "החסידה",
+      "house": 1,
+      "zip": "6092000",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.2693583,
+      "geocode_longitude": 34.9171848,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 515,
+      "branchname": "רמת הנשיא בת ים",
+      "branchtypename": "סוכנות א",
+      "city": "בת ים",
+      "street": "כהן אלי",
+      "house": 24,
+      "zip": "5964419",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 32.0131978,
+      "geocode_longitude": 34.7587028,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 516,
+      "branchname": "היחידה המרכזית בת-ים",
+      "branchtypename": "סניף",
+      "city": "בת ים",
+      "street": "שד העצמאות",
+      "house": 67,
+      "zip": "5931501",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 32.0281114,
+      "geocode_longitude": 34.748518,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 520,
+      "branchname": "יחידה מרכזית גבעתיים",
+      "branchtypename": "סניף",
+      "city": "גבעתיים",
+      "street": "הלמד הא",
+      "house": 61,
+      "zip": "5340813",
+      "area": "איזור גנים",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.073685,
+      "geocode_longitude": 34.8082979,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "דואר בקליק",
+        "הדפסת תעודה",
+        "Click2Post",
+        "EnableLeadForThisBranch"
+      ]
+    },
+    {
+      "branchnumber": 525,
+      "branchname": "קרית אריה",
+      "branchtypename": "סוכנות א",
+      "city": "פתח תקווה",
+      "street": "זולא אמיל",
+      "house": 39,
+      "zip": "4951623",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.096022,
+      "geocode_longitude": 34.8540093,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 528,
+      "branchname": "הבנים (הרב קוק)",
+      "branchtypename": "סוכנות א",
+      "city": "בני ברק",
+      "street": "רבי עקיבא",
+      "house": 34,
+      "zip": "5127238",
+      "area": "איזור גנים",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0887038,
+      "geocode_longitude": 34.8266326,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 530,
+      "branchname": "חולון",
+      "branchtypename": "סניף",
+      "city": "חולון",
+      "street": "ההסתדרות",
+      "house": 36,
+      "zip": "5838002",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 32.017748,
+      "geocode_longitude": 34.7712578,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 533,
+      "branchname": "יחידה מרכזית אגרובנק חנקין",
+      "branchtypename": "סניף",
+      "city": "חולון",
+      "street": "חנקין",
+      "house": 48,
+      "zip": "5833014",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 32.0223541,
+      "geocode_longitude": 34.7787766,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 539,
+      "branchname": "הרצל ראשון לציון",
+      "branchtypename": "סוכנות א",
+      "city": "ראשון לציון",
+      "street": "הרצל",
+      "house": 94,
+      "zip": "7525304",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.9624957,
+      "geocode_longitude": 34.8028238,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 540,
+      "branchname": "היחידה המרכזית רמלה",
+      "branchtypename": "סניף",
+      "city": "רמלה",
+      "street": "מס דני",
+      "house": 2,
+      "zip": "7240201",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.928604,
+      "geocode_longitude": 34.870648,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 546,
+      "branchname": "ניר צבי",
+      "branchtypename": "סוכנות א",
+      "city": "ניר צבי",
+      "street": null,
+      "house": 0,
+      "zip": "7290500",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.954403,
+      "geocode_longitude": 34.861529,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 550,
+      "branchname": "סילבר רמת-גן",
+      "branchtypename": "סניף",
+      "city": "רמת גן",
+      "street": "דרך אבא הלל",
+      "house": 7,
+      "zip": "5252204",
+      "area": "איזור גנים",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0844574,
+      "geocode_longitude": 34.803052,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 552,
+      "branchname": "תל השומר בי\"ח",
+      "branchtypename": "סוכנות א",
+      "city": "רמת גן",
+      "street": "קציר",
+      "house": 1,
+      "zip": "5265601",
+      "area": "איזור גנים",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.048835,
+      "geocode_longitude": 34.848779,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 553,
+      "branchname": "כפר המכביה",
+      "branchtypename": "סוכנות ב",
+      "city": "רמת גן",
+      "street": "ברנשטיין פרץ",
+      "house": 7,
+      "zip": "5224771",
+      "area": "איזור גנים",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0539314,
+      "geocode_longitude": 34.8256689,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 556,
+      "branchname": "ג'לג'וליה",
+      "branchtypename": "סוכנות א",
+      "city": "ג'לג'וליה",
+      "street": null,
+      "house": 160,
+      "zip": "4585000",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.1524568,
+      "geocode_longitude": 34.9539749,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 560,
+      "branchname": "רמת יצחק",
+      "branchtypename": "סניף",
+      "city": "רמת גן",
+      "street": "שדרות ירושלים",
+      "house": 25,
+      "zip": "5238115",
+      "area": "איזור גנים",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0748663,
+      "geocode_longitude": 34.8218073,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 564,
+      "branchname": "נוה רם",
+      "branchtypename": "סניף",
+      "city": "רמת גן",
+      "street": "אצל",
+      "house": 6,
+      "zip": "5227403",
+      "area": "איזור גנים",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0663439,
+      "geocode_longitude": 34.8299452,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 568,
+      "branchname": "רמת אפעל",
+      "branchtypename": "סוכנות א",
+      "city": "רמת גן",
+      "street": "החוגה רמת אפעל",
+      "house": 1,
+      "zip": "5290294",
+      "area": "איזור גנים",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0463787,
+      "geocode_longitude": 34.8344387,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 570,
+      "branchname": "המחסן החד פעמי ",
+      "branchtypename": "סוכנות א",
+      "city": "בני ברק",
+      "street": "עזרא",
+      "house": 11,
+      "zip": "5154908",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0799128,
+      "geocode_longitude": 34.8394568,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 571,
+      "branchname": "סניף מרכזי אור יהודה",
+      "branchtypename": "סניף",
+      "city": "אור יהודה",
+      "street": "סעדון אליהו",
+      "house": 130,
+      "zip": "6039730",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 32.025965,
+      "geocode_longitude": 34.8593539,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 572,
+      "branchname": "אזור",
+      "branchtypename": "סוכנות א",
+      "city": "אזור",
+      "street": "שפינוזה",
+      "house": 2,
+      "zip": "5800901",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 32.0236523,
+      "geocode_longitude": 34.8036395,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 573,
+      "branchname": "באר יעקב ",
+      "branchtypename": "סוכנות א",
+      "city": "באר יעקב",
+      "street": "שא נס",
+      "house": 17,
+      "zip": "7030861",
+      "area": "דן",
+      "region": "דרום",
+      "telephone": "171",
+      "geocode_latitude": 31.9417761,
+      "geocode_longitude": 34.8336997,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 574,
+      "branchname": "בית דגן",
+      "branchtypename": "סוכנות א",
+      "city": "בית דגן",
+      "street": "בגין מנחם",
+      "house": 9,
+      "zip": "5020000",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 32.0027376,
+      "geocode_longitude": 34.8293285,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 581,
+      "branchname": "היחידה המרכזית דוד המלך",
+      "branchtypename": "סניף",
+      "city": "לוד",
+      "street": "שד דוד המלך",
+      "house": 1,
+      "zip": "7127224",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 31.9469192,
+      "geocode_longitude": 34.8916316,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 584,
+      "branchname": "נווה מונוסון",
+      "branchtypename": "סוכנות ב",
+      "city": "יהוד-מונוסון",
+      "street": "שוהם נוה אפרים",
+      "house": 1,
+      "zip": "6019000",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 32.0287739,
+      "geocode_longitude": 34.8737748,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 588,
+      "branchname": "שוהם מרקט",
+      "branchtypename": "סוכנות א",
+      "city": "שוהם",
+      "street": "דקל",
+      "house": 30,
+      "zip": "6082280",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 32.0065004,
+      "geocode_longitude": 34.9511782,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 590,
+      "branchname": "סניף קיראון",
+      "branchtypename": "סניף",
+      "city": "קריית אונו",
+      "street": "שלמה המלך",
+      "house": 6,
+      "zip": "5542106",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 32.0538099,
+      "geocode_longitude": 34.8587843,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 591,
+      "branchname": "גני תקוה",
+      "branchtypename": "סניף",
+      "city": "גני תקווה",
+      "street": "דרך ההדרים",
+      "house": 7,
+      "zip": "5590126",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 32.0561677,
+      "geocode_longitude": 34.8822603,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 599,
+      "branchname": "יהוד ",
+      "branchtypename": "סניף",
+      "city": "יהוד-מונוסון",
+      "street": "ויצמן",
+      "house": 7,
+      "zip": "5623503",
+      "area": "יהודה ושומרון",
+      "region": "ירושלים יהודה ושומרון",
+      "telephone": "171",
+      "geocode_latitude": 32.0292976,
+      "geocode_longitude": 34.8917117,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 600,
+      "branchname": "היחידה המרכזית הוד השרון",
+      "branchtypename": "סניף",
+      "city": "הוד השרון",
+      "street": "דרך רמתים",
+      "house": 45,
+      "zip": "4532403",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.1581507,
+      "geocode_longitude": 34.8947393,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 601,
+      "branchname": "מגדיאל-ברגע באחרון",
+      "branchtypename": "סוכנות א",
+      "city": "הוד השרון",
+      "street": "חנקין",
+      "house": 8,
+      "zip": "4531208",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "09-7749373",
+      "geocode_latitude": 32.1599398,
+      "geocode_longitude": 34.9044473,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 608,
+      "branchname": "אזור תעשיה רעננה",
+      "branchtypename": "סוכנות א",
+      "city": "רעננה",
+      "street": "המלאכה",
+      "house": 2,
+      "zip": "4366101",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.1974322,
+      "geocode_longitude": 34.8782996,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 610,
+      "branchname": "היחידה המרכזית הרצליה",
+      "branchtypename": "סניף",
+      "city": "הרצליה",
+      "street": "סוקולוב",
+      "house": 68,
+      "zip": "4649799",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.1668681,
+      "geocode_longitude": 34.8477213,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 616,
+      "branchname": "צמרות",
+      "branchtypename": "סוכנות א",
+      "city": "הרצליה",
+      "street": "צמרות",
+      "house": 2,
+      "zip": "4642402",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.1512671,
+      "geocode_longitude": 34.8438714,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 620,
+      "branchname": "יחידה מרכזית כפר סבא",
+      "branchtypename": "סניף",
+      "city": "כפר סבא",
+      "street": "התחיה",
+      "house": 7,
+      "zip": "4425009",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.1752569,
+      "geocode_longitude": 34.9042893,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 621,
+      "branchname": "טייבה דרום",
+      "branchtypename": "סוכנות א",
+      "city": "טייבה",
+      "street": null,
+      "house": 24,
+      "zip": "4040000",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.266892,
+      "geocode_longitude": 35.009675,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "דואר בקליק",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 623,
+      "branchname": "פרדסיה",
+      "branchtypename": "סוכנות א",
+      "city": "פרדסיה",
+      "street": "הברוש",
+      "house": 28,
+      "zip": "4281500",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.3072939,
+      "geocode_longitude": 34.9104981,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 630,
+      "branchname": "היחידה המרכזית נתניה",
+      "branchtypename": "סניף",
+      "city": "נתניה",
+      "street": "הרצל",
+      "house": 59,
+      "zip": "4239024",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.326966,
+      "geocode_longitude": 34.8626286,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 633,
+      "branchname": "חנות הסלולר \"נתניה צפון\"",
+      "branchtypename": "סוכנות א",
+      "city": "נתניה",
+      "street": "גולומב",
+      "house": 1,
+      "zip": "4224701",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.337446,
+      "geocode_longitude": 34.8657469,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 634,
+      "branchname": "כוכב יאיר ",
+      "branchtypename": "סוכנות א",
+      "city": "כוכב יאיר",
+      "street": "מרכז מסחרי, כוכב יאיר",
+      "house": 0,
+      "zip": "4486400",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.2190345,
+      "geocode_longitude": 34.9815889,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 636,
+      "branchname": "סמילנסקי",
+      "branchtypename": "סניף",
+      "city": "נתניה",
+      "street": "סמילנסקי",
+      "house": 8,
+      "zip": "4243211",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.3280313,
+      "geocode_longitude": 34.8558488,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 638,
+      "branchname": "שכון ותיקים",
+      "branchtypename": "סוכנות א",
+      "city": "נתניה",
+      "street": "ויתקין",
+      "house": 53,
+      "zip": "4237627",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.3159514,
+      "geocode_longitude": 34.8852926,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 640,
+      "branchname": "היחידה המרכזית פתח תקוה",
+      "branchtypename": "סניף",
+      "city": "פתח תקווה",
+      "street": "הראשונים",
+      "house": 13,
+      "zip": "4926040",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0879988,
+      "geocode_longitude": 34.888255,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 641,
+      "branchname": "בי\"ח בילינסון",
+      "branchtypename": "סוכנות א",
+      "city": "פתח תקווה",
+      "street": "ז'בוטינסקי",
+      "house": 39,
+      "zip": "4941492",
+      "area": "איזור גנים",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.091128,
+      "geocode_longitude": 34.8685356,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 642,
+      "branchname": "כפר גנים",
+      "branchtypename": "סוכנות א",
+      "city": "פתח תקווה",
+      "street": "העצמאות",
+      "house": 65,
+      "zip": "4937999",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0747615,
+      "geocode_longitude": 34.8694273,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 645,
+      "branchname": "גולד (ירקונים)",
+      "branchtypename": "סוכנות א",
+      "city": "פתח תקווה",
+      "street": "גרין יונה",
+      "house": 9,
+      "zip": "4927266",
+      "area": "איזור גנים",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0988331,
+      "geocode_longitude": 34.8982198,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 647,
+      "branchname": "מחנה יהודה (ברזיל הקטנה)",
+      "branchtypename": "סוכנות א",
+      "city": "פתח תקווה",
+      "street": "בן דוד יצחק",
+      "house": 11,
+      "zip": "4939311",
+      "area": "איזור ת\"א",
+      "region": "תל אביב והמרכז",
+      "telephone": null,
+      "geocode_latitude": 32.081389,
+      "geocode_longitude": 34.8971693,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 650,
+      "branchname": "היחידה המרכזית רמת השרון",
+      "branchtypename": "סניף",
+      "city": "רמת השרון",
+      "street": "דרך ראשונים",
+      "house": 88,
+      "zip": "4724226",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.1366997,
+      "geocode_longitude": 34.8420132,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 655,
+      "branchname": "אזור תעשיה נורדאו",
+      "branchtypename": "סוכנות א",
+      "city": "נתניה",
+      "street": "יד חרוצים",
+      "house": 11,
+      "zip": "4250511",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.27996,
+      "geocode_longitude": 34.864172,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 661,
+      "branchname": "סוכנות אבן יהודה",
+      "branchtypename": "סוכנות א",
+      "city": "אבן יהודה",
+      "street": "בני בנימין",
+      "house": 1,
+      "zip": "4053142",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.2694045,
+      "geocode_longitude": 34.8894739,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 664,
+      "branchname": "מושב בית יצחק",
+      "branchtypename": "סוכנות א",
+      "city": "בית יצחק-שער חפר",
+      "street": null,
+      "house": 0,
+      "zip": "4292000",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.33558,
+      "geocode_longitude": 34.8895,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 671,
+      "branchname": "טייבה צפון",
+      "branchtypename": "סוכנות א",
+      "city": "טייבה",
+      "street": null,
+      "house": 24,
+      "zip": "4040000",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.266892,
+      "geocode_longitude": 35.009675,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "דואר בקליק",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 673,
+      "branchname": "מושב כפר ויתקין",
+      "branchtypename": "סוכנות א",
+      "city": "כפר ויתקין",
+      "street": "רחוב ראשי ",
+      "house": 0,
+      "zip": "4020000",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.380541,
+      "geocode_longitude": 34.875308,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 675,
+      "branchname": "סוכנות כפר יונה",
+      "branchtypename": "סוכנות א",
+      "city": "כפר יונה",
+      "street": "יחזקאל",
+      "house": 1,
+      "zip": "4034084",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.3190466,
+      "geocode_longitude": 34.9299841,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 676,
+      "branchname": "פארק אפק",
+      "branchtypename": "סוכנות א",
+      "city": "ראש העין",
+      "street": "המלאכה",
+      "house": 4,
+      "zip": "4809106",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.108756,
+      "geocode_longitude": 34.9658355,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 678,
+      "branchname": "כפר קאסם",
+      "branchtypename": "סוכנות א",
+      "city": "כפר קאסם",
+      "street": null,
+      "house": 0,
+      "zip": "4881000",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.114093,
+      "geocode_longitude": 34.972767,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 685,
+      "branchname": "קרית מטלון",
+      "branchtypename": "סוכנות א",
+      "city": "פתח תקווה",
+      "street": "המגשימים",
+      "house": 20,
+      "zip": "4934829",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0874062,
+      "geocode_longitude": 34.8531613,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 690,
+      "branchname": "קלנסווה",
+      "branchtypename": "סוכנות א",
+      "city": "קלנסווה",
+      "street": "אבן רושד",
+      "house": 0,
+      "zip": "4064000",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": null,
+      "geocode_latitude": 32.287958,
+      "geocode_longitude": 34.974856,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 691,
+      "branchname": "סניף מרכזי ראש העין",
+      "branchtypename": "סניף",
+      "city": "ראש העין",
+      "street": "שבזי",
+      "house": 27,
+      "zip": "4802130",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.0968127,
+      "geocode_longitude": 34.9441764,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 695,
+      "branchname": "היחידה המרכזית רעננה",
+      "branchtypename": "סניף",
+      "city": "רעננה",
+      "street": "אופסטרלנד",
+      "house": 4,
+      "zip": "4335004",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.1808,
+      "geocode_longitude": 34.8701093,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 699,
+      "branchname": "יחידה מרכזית תל מונד",
+      "branchtypename": "סניף",
+      "city": "תל מונד",
+      "street": "הדקל",
+      "house": 50,
+      "zip": "4060050",
+      "area": "איזור השרון",
+      "region": "תל אביב והמרכז",
+      "telephone": "171",
+      "geocode_latitude": 32.2532035,
+      "geocode_longitude": 34.9184522,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 701,
+      "branchname": "שער פלמר",
+      "branchtypename": "סניף",
+      "city": "חיפה",
+      "street": "שער פלמר",
+      "house": 1,
+      "zip": "3303139",
+      "area": "חיפה",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.8198019,
+      "geocode_longitude": 34.999984,
+      "ExtraServices": [
+        "הסטות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 702,
+      "branchname": "אחוזה (מוריה)",
+      "branchtypename": "סניף",
+      "city": "חיפה",
+      "street": "שד מוריה",
+      "house": 122,
+      "zip": "3461813",
+      "area": "חיפה",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.7884388,
+      "geocode_longitude": 34.9863803,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 708,
+      "branchname": "נתיב חן",
+      "branchtypename": "סניף",
+      "city": "חיפה",
+      "street": "טבנקין יצחק",
+      "house": 2,
+      "zip": "3224003",
+      "area": "חיפה",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.7962908,
+      "geocode_longitude": 35.0099965,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 710,
+      "branchname": "הנביאים",
+      "branchtypename": "סניף",
+      "city": "חיפה",
+      "street": "הנביאים",
+      "house": 22,
+      "zip": "3310401",
+      "area": "חיפה",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.8128525,
+      "geocode_longitude": 34.9952087,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 713,
+      "branchname": "בן גוריון",
+      "branchtypename": "סוכנות א",
+      "city": "חיפה",
+      "street": "שד בן גוריון",
+      "house": 27,
+      "zip": "3502121",
+      "area": "חיפה",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.8203988,
+      "geocode_longitude": 34.9909282,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "דואר בקליק",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 722,
+      "branchname": "קיו מובייל בנימינה",
+      "branchtypename": "סוכנות א",
+      "city": "בנימינה",
+      "street": "השריג",
+      "house": 2,
+      "zip": "3056502",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.5176642,
+      "geocode_longitude": 34.9403543,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 723,
+      "branchname": "אום אל פאחם - שאגור",
+      "branchtypename": "סוכנות א",
+      "city": "אום אל-פחם",
+      "street": "שאגור",
+      "house": 1,
+      "zip": "3001000",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.51096,
+      "geocode_longitude": 35.15002,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 728,
+      "branchname": "מת\"ם - חיפה",
+      "branchtypename": "סוכנות א",
+      "city": "חיפה",
+      "street": "סחרוב אנדרה",
+      "house": 6,
+      "zip": "3508406",
+      "area": "חיפה",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.7914439,
+      "geocode_longitude": 34.9583956,
+      "ExtraServices": [
+        null
+      ]
+    },
+    {
+      "branchnumber": 738,
+      "branchname": "נצרת שכ' מזרחית",
+      "branchtypename": "סוכנות א",
+      "city": "נצרת",
+      "street": "רח 4059",
+      "house": 10,
+      "zip": "1608710",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.6995796,
+      "geocode_longitude": 35.3017645,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 740,
+      "branchname": "עילבון",
+      "branchtypename": "סוכנות ב",
+      "city": "עיילבון",
+      "street": null,
+      "house": 0,
+      "zip": "1697200",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.837949,
+      "geocode_longitude": 35.399996,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 742,
+      "branchname": "הר יונה",
+      "branchtypename": "סוכנות א",
+      "city": "נוף הגליל",
+      "street": "לבנה",
+      "house": 2,
+      "zip": "1780052",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.7280974,
+      "geocode_longitude": 35.3393192,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 751,
+      "branchname": "קרית הטכניון",
+      "branchtypename": "סוכנות א",
+      "city": "חיפה",
+      "street": "שד שיקגו",
+      "house": 1,
+      "zip": "3200004",
+      "area": "חיפה",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.7940463,
+      "geocode_longitude": 34.989571,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 757,
+      "branchname": "מרכז חורב",
+      "branchtypename": "סוכנות א",
+      "city": "חיפה",
+      "street": "חורב",
+      "house": 15,
+      "zip": "3434119",
+      "area": "חיפה",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.7843377,
+      "geocode_longitude": 34.9870127,
+      "ExtraServices": [
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 758,
+      "branchname": "אלקודס אום אל פחם",
+      "branchtypename": "סוכנות א",
+      "city": "אום אל-פחם",
+      "street": "אלקודס",
+      "house": 36,
+      "zip": "3001000",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": null,
+      "geocode_latitude": 32.52499,
+      "geocode_longitude": 35.15823,
+      "ExtraServices": []
+    },
+    {
+      "branchnumber": 762,
+      "branchname": "הנשיא",
+      "branchtypename": "סוכנות א",
+      "city": "חיפה",
+      "street": "שד הנשיא",
+      "house": 37,
+      "zip": "3464428",
+      "area": "חיפה",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.8134944,
+      "geocode_longitude": 34.9815357,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 776,
+      "branchname": "שעב",
+      "branchtypename": "סוכנות ב",
+      "city": "שעב",
+      "street": "בלקיס",
+      "house": 0,
+      "zip": "2016500",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.8910592,
+      "geocode_longitude": 35.2379601,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 779,
+      "branchname": "בית ג'ן",
+      "branchtypename": "סוכנות א",
+      "city": "בית ג'ן",
+      "street": "אלג'רמק",
+      "house": 0,
+      "zip": "2499000",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.9632488,
+      "geocode_longitude": 35.3753344,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 783,
+      "branchname": "מכר-ג'דיידה",
+      "branchtypename": "סוכנות א",
+      "city": "ג'דיידה-מכר",
+      "street": "1034",
+      "house": 0,
+      "zip": "2510500",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.928656,
+      "geocode_longitude": 35.150573,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 786,
+      "branchname": "בועיינה-נג'ידאת",
+      "branchtypename": "סוכנות ב",
+      "city": "בועיינה-נוג'ידאת",
+      "street": "רחוב ראשי",
+      "house": 0,
+      "zip": "1692400",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.807711,
+      "geocode_longitude": 35.36527,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 787,
+      "branchname": "מג'דל שמס",
+      "branchtypename": "סוכנות א",
+      "city": "מג'דל שמס",
+      "street": null,
+      "house": 0,
+      "zip": "1243800",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 33.2690961,
+      "geocode_longitude": 35.772122,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 788,
+      "branchname": "דיר חנא",
+      "branchtypename": "סוכנות ב",
+      "city": "דייר חנא",
+      "street": null,
+      "house": 0,
+      "zip": "2497300",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "788",
+      "geocode_latitude": 32.862316,
+      "geocode_longitude": 35.365253,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 794,
+      "branchname": "קיסריה",
+      "branchtypename": "סוכנות א",
+      "city": "קיסריה",
+      "street": "שד רוטשילד",
+      "house": 0,
+      "zip": "3088900",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.51381,
+      "geocode_longitude": 34.9048,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 796,
+      "branchname": "כפר ורדים",
+      "branchtypename": "סוכנות א",
+      "city": "כפר ורדים",
+      "street": null,
+      "house": 0,
+      "zip": "2514700",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.9984423,
+      "geocode_longitude": 35.28108,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 798,
+      "branchname": "היחידה המרכזית קצרין",
+      "branchtypename": "סניף",
+      "city": "קצרין",
+      "street": "דליות",
+      "house": 6,
+      "zip": "1290414",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.9943939,
+      "geocode_longitude": 35.6898138,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 799,
+      "branchname": "סוכנות חריש",
+      "branchtypename": "סוכנות א",
+      "city": "חריש",
+      "street": "דרך ארץ",
+      "house": 59,
+      "zip": "3761131",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.27569,
+      "geocode_longitude": 35.01486,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 800,
+      "branchname": "היחידה המרכזית חדרה",
+      "branchtypename": "סניף",
+      "city": "חדרה",
+      "street": "הרברט סמואל",
+      "house": 54,
+      "zip": "3831628",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.436662,
+      "geocode_longitude": 34.918228,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 803,
+      "branchname": "נוה חיים",
+      "branchtypename": "סוכנות א",
+      "city": "חדרה",
+      "street": "אהרונוביץ",
+      "house": 1,
+      "zip": "3844501",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.4473397,
+      "geocode_longitude": 34.9038137,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 805,
+      "branchname": "כפר מנדא",
+      "branchtypename": "סוכנות א",
+      "city": "כפר מנדא",
+      "street": null,
+      "house": 0,
+      "zip": "1790700",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.81236,
+      "geocode_longitude": 35.258613,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 806,
+      "branchname": "א.ת עפולה",
+      "branchtypename": "סוכנות א",
+      "city": "עפולה",
+      "street": "שד בגין מנחם",
+      "house": 80,
+      "zip": "1871356",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.6038213,
+      "geocode_longitude": 35.2987274,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 807,
+      "branchname": "ביר אל מכסור",
+      "branchtypename": "סוכנות ב",
+      "city": "ביר אל-מכסור",
+      "street": "אל-מרג'",
+      "house": 1,
+      "zip": "1792500",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.78318,
+      "geocode_longitude": 35.220341,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 808,
+      "branchname": "דבורייה",
+      "branchtypename": "סוכנות א",
+      "city": "דבוריה",
+      "street": "אלזהראא",
+      "house": 5,
+      "zip": "1691000",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.7357018,
+      "geocode_longitude": 35.3419549,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 810,
+      "branchname": "היחידה המרכזית אום אל פחם",
+      "branchtypename": "סניף",
+      "city": "אום אל-פחם",
+      "street": "אלמדינה",
+      "house": 10,
+      "zip": "3001000",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.5319435,
+      "geocode_longitude": 35.1502501,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 811,
+      "branchname": "סניף מרכזי אור עקיבא",
+      "branchtypename": "סניף",
+      "city": "אור עקיבא",
+      "street": "רוטשילד",
+      "house": 18,
+      "zip": "3063217",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.5066741,
+      "geocode_longitude": 34.9150426,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 812,
+      "branchname": "איעבלין",
+      "branchtypename": "סוכנות א",
+      "city": "אעבלין",
+      "street": "רחוב ראשי",
+      "house": 0,
+      "zip": "3001200",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.821799,
+      "geocode_longitude": 35.19012,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 819,
+      "branchname": "מרכזי באקה אל גרבייה",
+      "branchtypename": "סניף",
+      "city": "באקה אל-גרביה",
+      "street": "אלח'ולפאא אלראשדון",
+      "house": 27,
+      "zip": "3010000",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.24564,
+      "geocode_longitude": 35.02432,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 820,
+      "branchname": "כאוכב אבו אל היג'א",
+      "branchtypename": "סוכנות ב",
+      "city": "כאוכב אבו אל-היג'א",
+      "street": "שכונה צפונית",
+      "house": 0,
+      "zip": "2018500",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.831888,
+      "geocode_longitude": 35.248701,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 823,
+      "branchname": "גבעת-רם כרמיאל",
+      "branchtypename": "סוכנות א",
+      "city": "כרמיאל",
+      "street": "אסיף",
+      "house": 46,
+      "zip": "2196101",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.9113695,
+      "geocode_longitude": 35.2752672,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 824,
+      "branchname": "גבעת עדה",
+      "branchtypename": "סוכנות ב",
+      "city": "גבעת עדה",
+      "street": "הזית",
+      "house": 33,
+      "zip": "3780800",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.517412,
+      "geocode_longitude": 35.00661,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 825,
+      "branchname": "אום אל פחם-מרכז",
+      "branchtypename": "סוכנות א",
+      "city": "אום אל-פחם",
+      "street": "דרך אלבאטן",
+      "house": 4,
+      "zip": "3001000",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.31064,
+      "geocode_longitude": 35.09097,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 827,
+      "branchname": "שמורת זכרון",
+      "branchtypename": "סוכנות א",
+      "city": "זכרון יעקב",
+      "street": "השמורה",
+      "house": 2,
+      "zip": "3094071",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.5657969,
+      "geocode_longitude": 34.943429,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 828,
+      "branchname": "קרית בנימין",
+      "branchtypename": "סוכנות א",
+      "city": "קריית אתא",
+      "street": "זבולון",
+      "house": 91,
+      "zip": "2806407",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.8034576,
+      "geocode_longitude": 35.0916249,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 829,
+      "branchname": "ג'ת",
+      "branchtypename": "סוכנות א",
+      "city": "ג'ת",
+      "street": "רחוב ראשי",
+      "house": 0,
+      "zip": "3009100",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.39693,
+      "geocode_longitude": 35.035914,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 830,
+      "branchname": " דאלית אל כרמל",
+      "branchtypename": "סוכנות א",
+      "city": "דאלית אל-כרמל",
+      "street": "שייח חמוד נסראלדין",
+      "house": 0,
+      "zip": "3005600",
+      "area": "חיפה",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.693796,
+      "geocode_longitude": 35.055447,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 835,
+      "branchname": "היחידה המרכזית זכרון יעקב",
+      "branchtypename": "סניף",
+      "city": "זכרון יעקב",
+      "street": "הנדיב",
+      "house": 17,
+      "zip": "3091118",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.574211,
+      "geocode_longitude": 34.9541348,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 837,
+      "branchname": "טירת הכרמל",
+      "branchtypename": "סוכנות א",
+      "city": "טירת כרמל",
+      "street": "מלחמת ששת הימים",
+      "house": 5,
+      "zip": "3901738",
+      "area": "חיפה",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.7590929,
+      "geocode_longitude": 34.9730296,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 839,
+      "branchname": "היחידה המרכזית יקנעם עילית",
+      "branchtypename": "סניף",
+      "city": "יקנעם עילית",
+      "street": "צאלים",
+      "house": 3,
+      "zip": "2061502",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.660225,
+      "geocode_longitude": 35.104606,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 842,
+      "branchname": "פוריידיס",
+      "branchtypename": "סוכנות א",
+      "city": "פוריידיס",
+      "street": "רחוב ראשי",
+      "house": 0,
+      "zip": "3089800",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.597351,
+      "geocode_longitude": 34.951899,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 843,
+      "branchname": "כפר המכבי",
+      "branchtypename": "סוכנות א",
+      "city": "כפר המכבי",
+      "street": null,
+      "house": 0,
+      "zip": "3003000",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.791804,
+      "geocode_longitude": 35.114793,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 845,
+      "branchname": "כפר חסידים",
+      "branchtypename": "סוכנות א",
+      "city": "כפר חסידים ב'",
+      "street": null,
+      "house": 0,
+      "zip": "2049000",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.750515,
+      "geocode_longitude": 35.088281,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 846,
+      "branchname": "טמרה מול",
+      "branchtypename": "סוכנות א",
+      "city": "טמרה",
+      "street": "רחוב ראשי ",
+      "house": 0,
+      "zip": "3081100",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.8507,
+      "geocode_longitude": 35.20101,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 847,
+      "branchname": "כפר קרע",
+      "branchtypename": "סוכנות א",
+      "city": "כפר קרע",
+      "street": "חמזה בן עבד אלמוטלב",
+      "house": 25,
+      "zip": "3007500",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.5076838,
+      "geocode_longitude": 35.0609517,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 852,
+      "branchname": "נהלל",
+      "branchtypename": "סוכנות ב",
+      "city": "נהלל",
+      "street": "רחוב ראשי",
+      "house": 0,
+      "zip": "1060000",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "04-8371737",
+      "geocode_latitude": 32.690807,
+      "geocode_longitude": 35.19609,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 853,
+      "branchname": "היחידה המרכזית נשר",
+      "branchtypename": "סניף",
+      "city": "נשר",
+      "street": "דרך השלום",
+      "house": 16,
+      "zip": "3665160",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.7712244,
+      "geocode_longitude": 35.0452122,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 854,
+      "branchname": "באקה אל גרביה צפון",
+      "branchtypename": "סוכנות א",
+      "city": "באקה אל-גרביה",
+      "street": "אלקודס",
+      "house": 27,
+      "zip": "3010000",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.399055,
+      "geocode_longitude": 35.0494262,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 855,
+      "branchname": "ככר ההסתדרות נשר",
+      "branchtypename": "סוכנות א",
+      "city": "נשר",
+      "street": "דרך השלום",
+      "house": 70,
+      "zip": "3665144",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.766171,
+      "geocode_longitude": 35.051848,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 857,
+      "branchname": "מזרעה",
+      "branchtypename": "סוכנות א",
+      "city": "מזרעה",
+      "street": "רחוב ראשי",
+      "house": 0,
+      "zip": "2280700",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "04-9822337",
+      "geocode_latitude": 32.98367,
+      "geocode_longitude": 35.09894,
+      "ExtraServices": []
+    },
+    {
+      "branchnumber": 861,
+      "branchname": "ערה",
+      "branchtypename": "סוכנות א",
+      "city": "ערה",
+      "street": "עארה",
+      "house": 0,
+      "zip": "3002500",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.5051748,
+      "geocode_longitude": 35.077434,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 862,
+      "branchname": "ערערה",
+      "branchtypename": "סוכנות א",
+      "city": "ערערה",
+      "street": "אלדהראת",
+      "house": 0,
+      "zip": "3002600",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.496323,
+      "geocode_longitude": 35.097292,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 863,
+      "branchname": "עתלית",
+      "branchtypename": "סוכנות א",
+      "city": "עתלית",
+      "street": "ההרדוף",
+      "house": 0,
+      "zip": "3030000",
+      "area": "חיפה",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.691335,
+      "geocode_longitude": 34.940421,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 864,
+      "branchname": "מרכזי פרדס חנה-כרכור",
+      "branchtypename": "סניף",
+      "city": "פרדס חנה-כרכור",
+      "street": "דרך הבנים",
+      "house": 1,
+      "zip": "3707352",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.4745754,
+      "geocode_longitude": 34.9715466,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 865,
+      "branchname": "פארק תעשיה קיסריה",
+      "branchtypename": "סוכנות א",
+      "city": "קיסריה",
+      "street": "חלמיש",
+      "house": 7,
+      "zip": "3079579",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "04-6272117",
+      "geocode_latitude": 32.4828516,
+      "geocode_longitude": 34.9480861,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 867,
+      "branchname": "היחידה המרכזית קרית אתא",
+      "branchtypename": "סניף",
+      "city": "קריית אתא",
+      "street": "המיסדים",
+      "house": 1,
+      "zip": "2850706",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.8059597,
+      "geocode_longitude": 35.1056189,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 870,
+      "branchname": "היחידה המרכזית קריית ביאליק",
+      "branchtypename": "סניף",
+      "city": "קריית ביאליק",
+      "street": "שד ירושלים",
+      "house": 15,
+      "zip": "2703124",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.823929,
+      "geocode_longitude": 35.082668,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 871,
+      "branchname": "חנויות קריית ביאליק",
+      "branchtypename": "סוכנות ב",
+      "city": "קריית ביאליק",
+      "street": "העמקים",
+      "house": 12,
+      "zip": "2701404",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.816741,
+      "geocode_longitude": 35.0791617,
+      "ExtraServices": []
+    },
+    {
+      "branchnumber": 874,
+      "branchname": "סוכנות קרית חיים",
+      "branchtypename": "סוכנות א",
+      "city": "קריית חיים",
+      "street": "אח\"י אילת",
+      "house": 13,
+      "zip": "2630660",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.8220056,
+      "geocode_longitude": 35.068407,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 875,
+      "branchname": "קרית חיים מערבית",
+      "branchtypename": "סוכנות א",
+      "city": "קריית חיים",
+      "street": "ארן זלמן",
+      "house": 56,
+      "zip": "2628858",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.8329948,
+      "geocode_longitude": 35.0599755,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 877,
+      "branchname": "היחידה המרכזית קרית טבעון",
+      "branchtypename": "סניף",
+      "city": "קריית טבעון",
+      "street": "רקפות",
+      "house": 2,
+      "zip": "3605302",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.7232963,
+      "geocode_longitude": 35.130433,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "דואר בקליק",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 878,
+      "branchname": "ק. עמל קרית טבעון",
+      "branchtypename": "סוכנות א",
+      "city": "קריית טבעון",
+      "street": "זבולון",
+      "house": 2,
+      "zip": "3608002",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "04-9831343",
+      "geocode_latitude": 32.7119702,
+      "geocode_longitude": 35.1246596,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 879,
+      "branchname": "סניף מרכזי קרית ים",
+      "branchtypename": "סניף",
+      "city": "קריית ים",
+      "street": "בובר מרטין",
+      "house": 3,
+      "zip": "2902409",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.8429897,
+      "geocode_longitude": 35.068157,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 882,
+      "branchname": "סניף גושן קריית מוצקין",
+      "branchtypename": "סניף",
+      "city": "קריית מוצקין",
+      "street": "שד גושן משה",
+      "house": 92,
+      "zip": "2631123",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.8326325,
+      "geocode_longitude": 35.0739972,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 883,
+      "branchname": "עמק חפר",
+      "branchtypename": "מסירת דואר בלבד",
+      "city": "פארק תעשיות עמק חפר",
+      "street": "החריש",
+      "house": 20,
+      "zip": "3877701",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.4048824,
+      "geocode_longitude": 34.8967208,
+      "ExtraServices": []
+    },
+    {
+      "branchnumber": 885,
+      "branchname": "בענה",
+      "branchtypename": "סוכנות א",
+      "city": "בענה",
+      "street": "לוביה",
+      "house": 10,
+      "zip": "2018900",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.929538,
+      "geocode_longitude": 35.271917,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 888,
+      "branchname": "רמת ישי",
+      "branchtypename": "סוכנות א",
+      "city": "רמת ישי",
+      "street": "אקליפטוס",
+      "house": 3,
+      "zip": "3006464",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.7075197,
+      "geocode_longitude": 35.1738584,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 892,
+      "branchname": "בוקעאתא",
+      "branchtypename": "סוכנות א",
+      "city": "בוקעאתא",
+      "street": "רחוב ראשי ",
+      "house": 0,
+      "zip": "1243700",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 33.2026555,
+      "geocode_longitude": 35.7942819,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 899,
+      "branchname": "שפרעם ",
+      "branchtypename": "סוכנות א",
+      "city": "שפרעם",
+      "street": "שייח' אמין טריף",
+      "house": 32,
+      "zip": "2020000",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.8078157,
+      "geocode_longitude": 35.1637798,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 900,
+      "branchname": "היחידה המרכזית טבריה",
+      "branchtypename": "סניף",
+      "city": "טבריה",
+      "street": "אלחדיף",
+      "house": 1,
+      "zip": "1424301",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.7900176,
+      "geocode_longitude": 35.5397168,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 901,
+      "branchname": "שכון ד רסקו",
+      "branchtypename": "סוכנות א",
+      "city": "טבריה",
+      "street": "אור חיים",
+      "house": 11,
+      "zip": "1443110",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.7788682,
+      "geocode_longitude": 35.5179393,
+      "ExtraServices": [
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 906,
+      "branchname": "זרזיר",
+      "branchtypename": "סוכנות א",
+      "city": "זרזיר",
+      "street": "אלסלאם",
+      "house": 0,
+      "zip": "3657100",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.728255,
+      "geocode_longitude": 35.213921,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 908,
+      "branchname": "כפר מעיליא",
+      "branchtypename": "סוכנות א",
+      "city": "מעיליא",
+      "street": "רחוב ראשי",
+      "house": 0,
+      "zip": "2514000",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 33.027194,
+      "geocode_longitude": 35.256304,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 909,
+      "branchname": "ריינה",
+      "branchtypename": "סוכנות א",
+      "city": "ריינה",
+      "street": "רחוב ראשי",
+      "house": 0,
+      "zip": "1694000",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.727382,
+      "geocode_longitude": 35.319309,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 910,
+      "branchname": "היחידה המרכזית נהריה",
+      "branchtypename": "סניף",
+      "city": "נהריה",
+      "street": "שד הגעתון",
+      "house": 40,
+      "zip": "2238020",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 33.0072296,
+      "geocode_longitude": 35.0922137,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 912,
+      "branchname": "עילוט",
+      "branchtypename": "סוכנות ב",
+      "city": "עילוט",
+      "street": "רחוב ראשי",
+      "house": 0,
+      "zip": "1697000",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.717249,
+      "geocode_longitude": 35.261482,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 914,
+      "branchname": "עמידר נהריה",
+      "branchtypename": "סוכנות ג",
+      "city": "נהריה",
+      "street": "הרצל",
+      "house": 1,
+      "zip": "2240801",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 33.0157353,
+      "geocode_longitude": 35.0965645,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 917,
+      "branchname": "אבו סנאן",
+      "branchtypename": "סוכנות א",
+      "city": "אבו סנאן",
+      "street": null,
+      "house": 0,
+      "zip": "2490500",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.95803,
+      "geocode_longitude": 35.171969,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 920,
+      "branchname": "היחידה המרכזית עכו",
+      "branchtypename": "סניף",
+      "city": "עכו",
+      "street": "העצמאות",
+      "house": 11,
+      "zip": "2432257",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.9297499,
+      "geocode_longitude": 35.0718864,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 921,
+      "branchname": "עכו העתיקה",
+      "branchtypename": "סוכנות א",
+      "city": "עכו",
+      "street": "ויצמן",
+      "house": 1,
+      "zip": "2430122",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.9232759,
+      "geocode_longitude": 35.0708807,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 925,
+      "branchname": "גבעת טרומפלדור",
+      "branchtypename": "סוכנות א",
+      "city": "נהריה",
+      "street": "טרומפלדור",
+      "house": 33,
+      "zip": "2229204",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 33.0193584,
+      "geocode_longitude": 35.1075413,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 926,
+      "branchname": "ירכא",
+      "branchtypename": "סוכנות א",
+      "city": "ירכא",
+      "street": "אלהלאל",
+      "house": 1,
+      "zip": "2496700",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.959513,
+      "geocode_longitude": 35.218696,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 927,
+      "branchname": "נחף",
+      "branchtypename": "סוכנות ב",
+      "city": "נחף",
+      "street": null,
+      "house": 0,
+      "zip": "2013700",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.934675,
+      "geocode_longitude": 35.31652,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 930,
+      "branchname": "היחידה המרכזית עפולה",
+      "branchtypename": "סניף",
+      "city": "עפולה",
+      "street": "הרב לוין",
+      "house": 18,
+      "zip": "1839018",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.60995,
+      "geocode_longitude": 35.28683,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 932,
+      "branchname": "גבעת המורה",
+      "branchtypename": "סניף",
+      "city": "עפולה",
+      "street": "הנרייטה סולד",
+      "house": 8,
+      "zip": "1870008",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.6237308,
+      "geocode_longitude": 35.3295925,
+      "ExtraServices": [
+        "הסטות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 938,
+      "branchname": "מסעדה",
+      "branchtypename": "סוכנות א",
+      "city": "מסעדה",
+      "street": "רחוב ראשי",
+      "house": 0,
+      "zip": "1243500",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 33.232255,
+      "geocode_longitude": 35.7555895,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 940,
+      "branchname": "היחידה המרכזית צפת",
+      "branchtypename": "סניף",
+      "city": "צפת",
+      "street": "הפלמ\"ח",
+      "house": 100,
+      "zip": "1321505",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.9638968,
+      "geocode_longitude": 35.4961911,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 947,
+      "branchname": "סוכנות מרכז עופר",
+      "branchtypename": "סוכנות א",
+      "city": "נוף הגליל",
+      "street": "דרך החטיבות",
+      "house": 1,
+      "zip": "1776701",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.6987281,
+      "geocode_longitude": 35.3118825,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 949,
+      "branchname": "סוכנות מג'אר",
+      "branchtypename": "סוכנות א",
+      "city": "מגאר",
+      "street": "רחוב ראשי",
+      "house": 1,
+      "zip": "2012800",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.880901,
+      "geocode_longitude": 35.411552,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 951,
+      "branchname": "איכסאל",
+      "branchtypename": "סוכנות א",
+      "city": "אכסאל",
+      "street": null,
+      "house": 0,
+      "zip": "1692000",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.682085,
+      "geocode_longitude": 35.320743,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 952,
+      "branchname": "אפיקים",
+      "branchtypename": "סוכנות א",
+      "city": "אפיקים",
+      "street": null,
+      "house": 0,
+      "zip": "1514800",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.679951,
+      "geocode_longitude": 35.578487,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 955,
+      "branchname": "סניף מרכזי בית שאן",
+      "branchtypename": "סניף",
+      "city": "בית שאן",
+      "street": "ירושלים הבירה",
+      "house": 1,
+      "zip": "1177001",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.49863,
+      "geocode_longitude": 35.4976525,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 956,
+      "branchname": "גוש חלב (ג'ש)",
+      "branchtypename": "סוכנות ב",
+      "city": "ג'ש (גוש חלב)",
+      "street": "רחוב ראשי",
+      "house": 0,
+      "zip": "1387200",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 33.0209853,
+      "geocode_longitude": 35.4509603,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 959,
+      "branchname": "דיר אל אסד",
+      "branchtypename": "סוכנות ב",
+      "city": "דייר אל-אסד",
+      "street": "שיח מחמוד אלאסדי",
+      "house": 9,
+      "zip": "2018800",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.93445,
+      "geocode_longitude": 35.268394,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 960,
+      "branchname": "סוכנות חצור הגלילית",
+      "branchtypename": "סוכנות א",
+      "city": "חצור הגלילית",
+      "street": "ההסתדרות",
+      "house": 1,
+      "zip": "1031605",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.981386,
+      "geocode_longitude": 35.543146,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 961,
+      "branchname": "טורעאן",
+      "branchtypename": "סוכנות א",
+      "city": "טורעאן",
+      "street": "כביש ראשי",
+      "house": 0,
+      "zip": "1695000",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.775137,
+      "geocode_longitude": 35.378344,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 963,
+      "branchname": "יפיע",
+      "branchtypename": "סוכנות א",
+      "city": "יפיע",
+      "street": null,
+      "house": 0,
+      "zip": "1695500",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.6840853,
+      "geocode_longitude": 35.2765602,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 964,
+      "branchname": "כאבול",
+      "branchtypename": "סוכנות א",
+      "city": "כאבול",
+      "street": null,
+      "house": 0,
+      "zip": "2496300",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "046808888",
+      "geocode_latitude": 32.8699737,
+      "geocode_longitude": 35.2054376,
+      "ExtraServices": [
+        "הסטות"
+      ]
+    },
+    {
+      "branchnumber": 967,
+      "branchname": "כפר יאסיף",
+      "branchtypename": "סוכנות א",
+      "city": "כפר יאסיף",
+      "street": null,
+      "house": 0,
+      "zip": "2490800",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.9520318,
+      "geocode_longitude": 35.1599957,
+      "ExtraServices": []
+    },
+    {
+      "branchnumber": 968,
+      "branchname": "כפר כנא",
+      "branchtypename": "סוכנות א",
+      "city": "כפר כנא",
+      "street": "",
+      "house": 0,
+      "zip": "1693000",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.7481978,
+      "geocode_longitude": 35.3438402,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 969,
+      "branchname": "היחידה המרכזית כרמיאל",
+      "branchtypename": "סניף",
+      "city": "כרמיאל",
+      "street": "הגליל",
+      "house": 8,
+      "zip": "2192104",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.9190769,
+      "geocode_longitude": 35.3038159,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 971,
+      "branchname": "מג'ד אל כרום",
+      "branchtypename": "סוכנות א",
+      "city": "מג'ד אל כרום",
+      "street": "אבן סינא",
+      "house": 24,
+      "zip": "2019000",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.920132,
+      "geocode_longitude": 35.25665,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 973,
+      "branchname": "היחידה המרכזית מגדל העמק",
+      "branchtypename": "סניף",
+      "city": "מגדל העמק",
+      "street": "הזית",
+      "house": 5,
+      "zip": "2301105",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.40276,
+      "geocode_longitude": 35.14194,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 977,
+      "branchname": "ג'וליס",
+      "branchtypename": "סוכנות א",
+      "city": "ג'ולס",
+      "street": null,
+      "house": 0,
+      "zip": "2498000",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.94498,
+      "geocode_longitude": 35.184243,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 978,
+      "branchname": "זלפה",
+      "branchtypename": "סוכנות ב",
+      "city": "מעלה עירון",
+      "street": null,
+      "house": 0,
+      "zip": "3092000",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.54906,
+      "geocode_longitude": 35.1869,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 979,
+      "branchname": "סניף מרכזי מעלות תרשיחא",
+      "branchtypename": "סניף",
+      "city": "מעלות-תרשיחא",
+      "street": "הרב קוק",
+      "house": 14,
+      "zip": "2103108",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 33.0142382,
+      "geocode_longitude": 35.2829413,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 981,
+      "branchname": "סוכנות מוסקובייה",
+      "branchtypename": "סוכנות א",
+      "city": "נצרת",
+      "street": "רח' 6077",
+      "house": 4,
+      "zip": "1605404",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.706255,
+      "geocode_longitude": 35.3002789,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 983,
+      "branchname": "היחידה המרכזית נוף הגליל",
+      "branchtypename": "סניף",
+      "city": "נוף הגליל",
+      "street": "עצמון",
+      "house": 20,
+      "zip": "1765307",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.7079265,
+      "geocode_longitude": 35.3241975,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 984,
+      "branchname": "סחנין מרכזי",
+      "branchtypename": "סוכנות א",
+      "city": "סח'נין",
+      "street": "הגליל",
+      "house": 81,
+      "zip": "3081000",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.863392,
+      "geocode_longitude": 35.292601,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 986,
+      "branchname": "עראבה",
+      "branchtypename": "סוכנות א",
+      "city": "עראבה",
+      "street": "רחוב ראשי",
+      "house": 0,
+      "zip": "3081200",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.853705,
+      "geocode_longitude": 35.337167,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 987,
+      "branchname": "כיכר העיר",
+      "branchtypename": "סניף",
+      "city": "נצרת",
+      "street": "תופיק זיאד",
+      "house": 3047,
+      "zip": "1600987",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.697326,
+      "geocode_longitude": 35.2978125,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 988,
+      "branchname": "סוכנות ראש פינה",
+      "branchtypename": "סוכנות א",
+      "city": "ראש פינה",
+      "street": "גיא אוני",
+      "house": 0,
+      "zip": "1200000",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.9731719,
+      "geocode_longitude": 35.5347205,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 992,
+      "branchname": "שכ' דרומית חרוד",
+      "branchtypename": "סוכנות א",
+      "city": "נוף הגליל",
+      "street": "חרוד",
+      "house": 7,
+      "zip": "1758404",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.69363,
+      "geocode_longitude": 35.31626,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 993,
+      "branchname": "רמה",
+      "branchtypename": "סוכנות א",
+      "city": "ראמה",
+      "street": "כביש ראשי",
+      "house": 0,
+      "zip": "3005500",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.937112,
+      "geocode_longitude": 35.366984,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 995,
+      "branchname": "שלומי",
+      "branchtypename": "סוכנות א",
+      "city": "שלומי",
+      "street": null,
+      "house": 0,
+      "zip": "2283200",
+      "area": "מפרץ",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 33.072609,
+      "geocode_longitude": 35.145945,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 997,
+      "branchname": "יחידה מרכזית טמרה ",
+      "branchtypename": "סניף",
+      "city": "טמרה",
+      "street": "רחוב ראשי",
+      "house": 0,
+      "zip": "3081100",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.851145,
+      "geocode_longitude": 35.201239,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 998,
+      "branchname": "כפר עין מאהל",
+      "branchtypename": "סוכנות ב",
+      "city": "עין מאהל",
+      "street": "רחוב ראשי",
+      "house": 0,
+      "zip": "1790200",
+      "area": "עמקים",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 32.724295,
+      "geocode_longitude": 35.353369,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "Click2Post"
+      ]
+    },
+    {
+      "branchnumber": 999,
+      "branchname": "היחידה המרכזית קרית שמונה",
+      "branchtypename": "סניף",
+      "city": "קריית שמונה",
+      "street": "כיכר צה\"ל",
+      "house": 110,
+      "zip": "1103310",
+      "area": "גליל",
+      "region": "צפון",
+      "telephone": "171",
+      "geocode_latitude": 33.2075773,
+      "geocode_longitude": 35.5687572,
+      "ExtraServices": [
+        "הסטות",
+        "החזרות",
+        "הדפסת תעודה",
+        "Click2Post"
+      ]
+    }
+  ]
+}

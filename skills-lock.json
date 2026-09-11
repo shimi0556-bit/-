@@ -1,11 +1,203 @@
 {
   "version": 1,
   "skills": {
+    "Brainstorming Ideas Into Designs": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/collaboration/brainstorming/SKILL.md",
+      "computedHash": "162dafa2122d61cd5effbd17d49d99529c089cb20082617ef18a56ccc1a987d0"
+    },
+    "Code Review Reception": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/collaboration/receiving-code-review/SKILL.md",
+      "computedHash": "a75c16d8bfc40230a8c6425a3e681f56650483bb612a2e7fb9de637ebcff42d1"
+    },
+    "Collision-Zone Thinking": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/problem-solving/collision-zone-thinking/SKILL.md",
+      "computedHash": "cce3d2c9d49a81f167afa8531a8ffd374aac18cfbcdde325d7082df65973cb26"
+    },
+    "Condition-Based Waiting": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/testing/condition-based-waiting/SKILL.md",
+      "computedHash": "89e4fcdbc494a0a783430541cdf164ff3ea116d659a5edc945d83cd0bc5a3c48"
+    },
+    "Defense-in-Depth Validation": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/debugging/defense-in-depth/SKILL.md",
+      "computedHash": "3c3db99b109eaae5b3b2b8755c0d0664cde6590ef7d7d90ad4879ce0b22a139d"
+    },
+    "Dispatching Parallel Agents": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/collaboration/dispatching-parallel-agents/SKILL.md",
+      "computedHash": "1025ca3dc6517fb50a944b5d34c1243c113c69caa67ab670c46396d8435f69f5"
+    },
+    "Executing Plans": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/collaboration/executing-plans/SKILL.md",
+      "computedHash": "cd4f6fe3433e7118b2102ed1dcbd4654ec2c1c449ea91bfa333fd4cf4f25cd24"
+    },
+    "Finishing a Development Branch": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/collaboration/finishing-a-development-branch/SKILL.md",
+      "computedHash": "a39b90d5b328578ee28fa582c2788c396cba4a5beedf39dd401c430c22aacdf5"
+    },
+    "Gardening Skills Wiki": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/meta/gardening-skills-wiki/SKILL.md",
+      "computedHash": "2a09676931f4cda4b337a47a8c1c8f649cbd3751f8b76e5cc9b62b395aecadce"
+    },
+    "Getting Started with Skills": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/using-skills/SKILL.md",
+      "computedHash": "33ecf2f89b3d99afb647543ff60fef8310a455731503e6b9d4aded5c832c0191"
+    },
+    "Inversion Exercise": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/problem-solving/inversion-exercise/SKILL.md",
+      "computedHash": "56039d40fca1909f7e67988b6f7275b224d3d1de4518b8547ef5784c5fcfef7c"
+    },
+    "Meta-Pattern Recognition": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/problem-solving/meta-pattern-recognition/SKILL.md",
+      "computedHash": "6d13c05fe7a8685546a6b70ba206719e7009790c5446084582833906665e5250"
+    },
+    "Preserving Productive Tensions": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/architecture/preserving-productive-tensions/SKILL.md",
+      "computedHash": "67f2e4f255e131734b892105fadd0b1ba49cd50c0a7cfe8f293b22278b2d060b"
+    },
+    "Pulling Updates from Skills Repository": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/meta/pulling-updates-from-skills-repository/SKILL.md",
+      "computedHash": "2a073464dae51556a294438377dd2bcbe020a16f805b938bb49010bc83ec1f36"
+    },
+    "Remembering Conversations": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/collaboration/remembering-conversations/SKILL.md",
+      "computedHash": "09f394916c8d91797bee35e0d638110dec756b578b5d5384c41981816f2cc1f9"
+    },
+    "Requesting Code Review": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/collaboration/requesting-code-review/SKILL.md",
+      "computedHash": "433ad0be654f19a5dd85c1633930f52743f2d424a468baa692bb38c1d6789f0e"
+    },
+    "Root Cause Tracing": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/debugging/root-cause-tracing/SKILL.md",
+      "computedHash": "681ed311e21b850f504cd7aa6c2c21ba477a1cb6797834f569b23df44e7fd42c"
+    },
+    "Scale Game": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/problem-solving/scale-game/SKILL.md",
+      "computedHash": "decc9621932531d418e3ab109cfcd4fe4cc42ddfe9c8b74f0ac897ca4bc97100"
+    },
+    "Sharing Skills": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/meta/sharing-skills/SKILL.md",
+      "computedHash": "8ff613f3cdaf8354f6bdff3258ac5a716fed7724e0a9daeb84075540aa0d6a83"
+    },
+    "Simplification Cascades": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/problem-solving/simplification-cascades/SKILL.md",
+      "computedHash": "8900e59240e7b6b7ede22f76e92d223cc76c17c65da7449d58da0592d29be5c3"
+    },
+    "Subagent-Driven Development": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/collaboration/subagent-driven-development/SKILL.md",
+      "computedHash": "05262a9bf326c02dac20abd2c008fb4e32573531102a3c79e72ed39f7254a2f9"
+    },
+    "Systematic Debugging": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/debugging/systematic-debugging/SKILL.md",
+      "computedHash": "7945407a2a7dcce93f27961e5359fe39363ba06a743f8758458eb2942caa7cd9"
+    },
+    "Test-Driven Development (TDD)": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/testing/test-driven-development/SKILL.md",
+      "computedHash": "6ddfc058c51139a1304d2b0d2cfe03268c82138cc2c3c2bc6070cf37a9f8b2b2"
+    },
+    "Testing Anti-Patterns": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/testing/testing-anti-patterns/SKILL.md",
+      "computedHash": "1ca5523b902fa359ff3733ed0fb6db494ac53aa2206231785caa11dfc26dc8a0"
+    },
+    "Testing Skills With Subagents": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/meta/testing-skills-with-subagents/SKILL.md",
+      "computedHash": "fd054d37cc627409b2fb31ffd2d18891072397406b9c5b98189171eff5d4f9c3"
+    },
+    "Tracing Knowledge Lineages": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/research/tracing-knowledge-lineages/SKILL.md",
+      "computedHash": "e79b7e0029cc0f7805a723992240af6bf10ba84ccf2d7e6c110fe365ad42aba1"
+    },
+    "Using Git Worktrees": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/collaboration/using-git-worktrees/SKILL.md",
+      "computedHash": "46218cd09fff54cde072e3e46ea8ec15ac8bc78b81e0e4105b7576a585e7d840"
+    },
+    "Verification Before Completion": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/debugging/verification-before-completion/SKILL.md",
+      "computedHash": "e92d5a3644dd565321def4dd1a40c08dd5e2e19e76cfe848ec09110b7ff50c99"
+    },
+    "When Stuck - Problem-Solving Dispatch": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/problem-solving/when-stuck/SKILL.md",
+      "computedHash": "60c81e81f23332c8125a635f70a062bed94fc0d2c57f01235fb0fd0341b3fc97"
+    },
+    "Writing Plans": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/collaboration/writing-plans/SKILL.md",
+      "computedHash": "2a94f07591ee1e474665d589ab73d0e83be4071647f1bb639cf6a86d650353c3"
+    },
+    "Writing Skills": {
+      "source": "obra/superpowers-skills",
+      "sourceType": "github",
+      "skillPath": "skills/meta/writing-skills/SKILL.md",
+      "computedHash": "37949349003b108dcff63c1df9f8b2f969cc718fa7506ed47648d40f2f39a4e5"
+    },
     "analytics-metrics": {
       "source": "hoodini/ai-agents-skills",
       "sourceType": "github",
       "skillPath": "skills/analytics-metrics/SKILL.md",
       "computedHash": "e3e9a408e00744f3aab3640f8357725ae0267f2f6d85f0a0aaabeca3132017f9"
+    },
+    "ben-gurion-flight-board": {
+      "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
+      "sourceType": "github",
+      "skillPath": "skills/ben-gurion-flight-board/SKILL.md",
+      "computedHash": "d9af4e0da2aaa07d57374ae6778178e251ac566f5435c669010841e5cb96e54e"
     },
     "cinematic-scrub-landing": {
       "source": "hoodini/ai-agents-skills",
@@ -19,11 +211,29 @@
       "skillPath": "skills/director/SKILL.md",
       "computedHash": "27ed84589cb37b020176c261781b0dc4a7d362904b2e8affbad5f137a06c4efd"
     },
+    "discover-israel-skills": {
+      "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
+      "sourceType": "github",
+      "skillPath": "skills/discover-israel-skills/SKILL.md",
+      "computedHash": "6877efe43cddd54f9a5b5be609bc45a68e970b4e9005080e1374e03f4dae8c56"
+    },
+    "drug-co-il-lookup": {
+      "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
+      "sourceType": "github",
+      "skillPath": "skills/drug-co-il-lookup/SKILL.md",
+      "computedHash": "8631efb277d64bf5c628ba66753555d93e0a083ab11cb3f81d5c2acde8dff01c"
+    },
     "fal-ai": {
       "source": "hoodini/ai-agents-skills",
       "sourceType": "github",
       "skillPath": "skills/fal-ai/SKILL.md",
       "computedHash": "de15d718548d8a638b9adb7d30df7d944a85363bfa33def39ed16ef4b519f17d"
+    },
+    "fiber-availability-check": {
+      "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
+      "sourceType": "github",
+      "skillPath": "skills/fiber-availability-check/SKILL.md",
+      "computedHash": "293b0529f9bfde792749645f39234b2fb4a02c92bfebd4562c64a6875f99005b"
     },
     "figma": {
       "source": "hoodini/ai-agents-skills",
@@ -31,17 +241,77 @@
       "skillPath": "skills/figma/SKILL.md",
       "computedHash": "31776d07ec44f5e948f3f0bd14aa421a872a97883a2a90c3bfb391e0bfaf336b"
     },
+    "home-front-command-guidelines": {
+      "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
+      "sourceType": "github",
+      "skillPath": "skills/home-front-command-guidelines/SKILL.md",
+      "computedHash": "3873f4fc2f72ff562579572aa0bbddc4fe14e5f917657c2fb244826d53fd63ed"
+    },
     "image-master": {
       "source": "hoodini/ai-agents-skills",
       "sourceType": "github",
       "skillPath": "skills/image-master/SKILL.md",
       "computedHash": "8ec4b7e89851600aa0bff20cca335f31a65d41145155a68f89a48ef207dbd540"
     },
+    "install-companion-plugins": {
+      "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
+      "sourceType": "github",
+      "skillPath": "skills/install-companion-plugins/SKILL.md",
+      "computedHash": "6e57a25ea0f1026880eee2316fd86b381f91c533415f69d793b2d53b5f17a10d"
+    },
+    "israel-conferences": {
+      "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
+      "sourceType": "github",
+      "skillPath": "skills/israel-conferences/SKILL.md",
+      "computedHash": "b7bc7f7695c3221700af319346457b03d6dcf4f822331df392bc7c738e9941cc"
+    },
+    "israel-drugs-registry-lookup": {
+      "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
+      "sourceType": "github",
+      "skillPath": "skills/israel-drugs-registry-lookup/SKILL.md",
+      "computedHash": "0e753e1800185cc82901ba12ee2cecf67b354b6e2e63e7e9e915f954d7cd9e2c"
+    },
+    "israel-news-rss": {
+      "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
+      "sourceType": "github",
+      "skillPath": "skills/israel-news-rss/SKILL.md",
+      "computedHash": "e15e37aa1f603df8f7af03276a247025a5f88b7c913461031139996d90acdf2c"
+    },
+    "israel-post-appointment": {
+      "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
+      "sourceType": "github",
+      "skillPath": "skills/israel-post-appointment/SKILL.md",
+      "computedHash": "09af252ad6fe67dc537f227ce903eb6467bf3a902425de00adb92aa630d718bb"
+    },
+    "kol-zchut-lookup": {
+      "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
+      "sourceType": "github",
+      "skillPath": "skills/kol-zchut-lookup/SKILL.md",
+      "computedHash": "7384fc6bcbb4f5a27af94ebd7c7a0c5c3ff882cb2289c30bcac0bb4981710a91"
+    },
+    "list-skills": {
+      "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
+      "sourceType": "github",
+      "skillPath": "skills/list-skills/SKILL.md",
+      "computedHash": "cd40f95d13c4e1fd8aac1b88fa58efa27ce03328617e6f5efbedc4334198b2cd"
+    },
+    "medicine-availability-check": {
+      "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
+      "sourceType": "github",
+      "skillPath": "skills/medicine-availability-check/SKILL.md",
+      "computedHash": "ea6d3d75225a0266cc6a680c92d7753f558eb7e5cdb514e439d4da7c6736f2a8"
+    },
     "mermaid-diagrams": {
       "source": "hoodini/ai-agents-skills",
       "sourceType": "github",
       "skillPath": "skills/mermaid-diagrams/SKILL.md",
       "computedHash": "8d181c5a2f7609c3fec86a2a41fbe0d02494734f1824644e9f301b2b25912390"
+    },
+    "miklatim-lookup": {
+      "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
+      "sourceType": "github",
+      "skillPath": "skills/miklatim-lookup/SKILL.md",
+      "computedHash": "add4508637bcacc8c0f5667a38c6efd0c2f5a56b65fc7ca24feca4445059ec3f"
     },
     "mobile-responsiveness": {
       "source": "hoodini/ai-agents-skills",
@@ -54,6 +324,12 @@
       "sourceType": "github",
       "skillPath": "skills/nano-banana-pro/SKILL.md",
       "computedHash": "847324e0bfe9acfdf880da102a537c0225c85b5db063d8a0dec0e4a2bc14bf69"
+    },
+    "nsc-travel-threat": {
+      "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
+      "sourceType": "github",
+      "skillPath": "skills/nsc-travel-threat/SKILL.md",
+      "computedHash": "f7f3691844b8a285e73c26de10625544846af7698421c6574c1bb9b6d3c8b0e5"
     },
     "owasp-security": {
       "source": "hoodini/ai-agents-skills",
@@ -139,6 +415,12 @@
       "skillPath": "skills/remotion-upgrade/SKILL.md",
       "computedHash": "ba240a4330910fab849044988696eb87b7736e3e28a802a364930c3ed8824b27"
     },
+    "salary-conversion": {
+      "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
+      "sourceType": "github",
+      "skillPath": "skills/salary-conversion/SKILL.md",
+      "computedHash": "659359ba4cfe62f1ad47c4eb9468309d5b66c96fc0c7469a344ad1a0f593344a"
+    },
     "shabbat-times": {
       "source": "hoodini/ai-agents-skills",
       "sourceType": "github",
@@ -199,6 +481,12 @@
       "skillPath": "skills/threejs-qa-release/SKILL.md",
       "computedHash": "8ce5e122e056d57cdab4248bb9a51923082ed0c1ac24282edf654bf19bd97e59"
     },
+    "update-plugin-readme": {
+      "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
+      "sourceType": "github",
+      "skillPath": "skills/update-plugin-readme/SKILL.md",
+      "computedHash": "4293ab12c33525580fcb5e7e644510d5d71108e5798c0f3b8e5d73add8e07d73"
+    },
     "ux-design-systems": {
       "source": "hoodini/ai-agents-skills",
       "sourceType": "github",
@@ -240,6 +528,12 @@
       "sourceType": "github",
       "skillPath": "skills/yuv-viral-video/SKILL.md",
       "computedHash": "5ee8fd0922b07102b9e1b536a3903b5c336d9ba1fdb612e217f408adb72f4490"
+    },
+    "maccabi-medicine-lookup": {
+      "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
+      "sourceType": "github",
+      "skillPath": "skills/maccabi-medicine-lookup/SKILL.md",
+      "computedHash": "890a46b79dd09db4f8339a04b8b6fa547354d631fc23cdad2941766ee65277e9"
     }
   }
 }

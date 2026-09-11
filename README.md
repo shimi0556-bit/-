@@ -39,6 +39,14 @@ Installed via the [`skills`](https://www.npmjs.com/package/skills) CLI and track
 **From [majidmanzarpour/threejs-game-skills](https://github.com/majidmanzarpour/threejs-game-skills)** (build/upgrade/finish Three.js browser games — pairs well with `skyhawk-flight-simulator/`):
 `threejs-game-director` (entrypoint/router), `threejs-gameplay-systems`, `threejs-aaa-graphics-builder`, `threejs-game-ui-designer`, `threejs-3d-generator`, `threejs-image-generator`, `threejs-audio-generator`, `threejs-debug-profiler`, `threejs-qa-release`
 
+**From [obra/superpowers-skills](https://github.com/obra/superpowers-skills)** (the skills behind the 200k+-star Superpowers agentic-development framework — TDD, debugging, planning, and creative problem-solving):
+`test-driven-development-tdd`, `systematic-debugging`, `root-cause-tracing`, `defense-in-depth-validation`, `verification-before-completion`, `condition-based-waiting`, `testing-anti-patterns`, `testing-skills-with-subagents`, `brainstorming-ideas-into-designs`, `writing-plans`, `executing-plans`, `dispatching-parallel-agents`, `subagent-driven-development`, `requesting-code-review`, `code-review-reception`, `using-git-worktrees`, `finishing-a-development-branch`, `preserving-productive-tensions`, `remembering-conversations`, `collision-zone-thinking`, `inversion-exercise`, `meta-pattern-recognition`, `scale-game`, `simplification-cascades`, `tracing-knowledge-lineages`, `when-stuck-problem-solving-dispatch`, `writing-skills`, `sharing-skills`, `gardening-skills-wiki`, `pulling-updates-from-skills-repository`, `getting-started-with-skills`
+
+**From [danielrosehill/Claude-Israel-Agent-Skills-Plugin](https://github.com/danielrosehill/Claude-Israel-Agent-Skills-Plugin)** (Israel/Hebrew-specific: government, healthcare, emergency preparedness, finance, news):
+`israel-post-appointment`, `kol-zchut-lookup`, `miklatim-lookup`, `home-front-command-guidelines`, `nsc-travel-threat`, `israel-news-rss`, `ben-gurion-flight-board`, `salary-conversion`, `fiber-availability-check`, `israel-conferences`, `israel-drugs-registry-lookup`, `drug-co-il-lookup`, `medicine-availability-check`, `maccabi-medicine-lookup`, `list-skills`, `discover-israel-skills`, `install-companion-plugins`, `update-plugin-readme`
+
+`maccabi-medicine-lookup` hit the same upstream YAML bug as `yuv-viral-video` above (unquoted `description:` with a bare `: `) and was vendored manually the same way. Four other skills in this plugin (`add-skill-to-plugin`, `environment-check`, `jerusalem-council-meetings`, `jerusalem-municipality-report`) have the identical bug and were left unvendored — narrow/meta-tooling skills, not worth the manual fix unless needed.
+
 To add more skills: `npx skills add <owner>/<repo> -s <skill-name> -y`
 
 ## Notes
