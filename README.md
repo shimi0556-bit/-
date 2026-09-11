@@ -17,8 +17,11 @@ A personal playground repo: vendored tools/apps and Claude Code skills, collecte
 | [`tokana/`](tokana) | Local Claude Code token-usage analyzer + statusline — reads Claude Code's own usage receipts, no API key needed. Source: [hoodini/tokana](https://github.com/hoodini/tokana) | `cd tokana && bun install && bun run dev` (indexes usage, then serves the dashboard) |
 | [`logan-cli/`](logan-cli) | Terminal coding agent (Rust) built on xAI's Grok models — a fork of xAI's open-source Grok Build. **Alternative to Claude Code**, needs its own `XAI_API_KEY`. Source: [hoodini/logan-cli](https://github.com/hoodini/logan-cli) | `cd logan-cli && cargo build --release` |
 | [`tuning-numbers/`](tuning-numbers) | Interactive, scroll-driven lesson on how neural networks train and how it scales to an LLM — all math runs live in-browser, gradient-checked. Source: [hoodini/tuning-numbers](https://github.com/hoodini/tuning-numbers) | `cd tuning-numbers/site && npm install && npm run dev` |
+| [`claude-hud/`](claude-hud) | Claude Code plugin — real-time statusline HUD showing context usage, active tools, running agents, and todo progress, zero config. Source: [jarrodwatts/claude-hud](https://github.com/jarrodwatts/claude-hud) | `npm install` inside the folder, then follow the plugin's `README.md` (or install as a Claude Code plugin via its marketplace manifest) |
 
-Most of these were vendored (copied in, not submoduled) from [hoodini](https://github.com/hoodini) (Yuval Avidani)'s public GitHub repos.
+Most of these were vendored (copied in, not submoduled) from [hoodini](https://github.com/hoodini) (Yuval Avidani)'s public GitHub repos; `claude-hud` is from a different, much more widely-used author (jarrodwatts, 27.9k★).
+
+**Not vendored:** [poloclub/transformer-explainer](https://github.com/poloclub/transformer-explainer) — a well-known interactive visualization of how a GPT-2 transformer works, live at [poloclub.github.io/transformer-explainer](https://poloclub.github.io/transformer-explainer). Skipped because it bundles ~627MB of real GPT-2 ONNX model weights (~1.2GB total repo) — too heavy to vendor into git. Just visit the live demo.
 
 ## Claude Code skills
 
@@ -29,6 +32,9 @@ Installed via the [`skills`](https://www.npmjs.com/package/skills) CLI and track
 
 **From [hoodini/ai-agents-skills](https://github.com/hoodini/ai-agents-skills):**
 `video-edit`, `video-to-landing-page`, `parallax-landing-page`, `cinematic-scrub-landing`, `image-master`, `nano-banana-pro`, `fal-ai`, `mermaid-diagrams`, `analytics-metrics`, `ux-design-systems`, `owasp-security`, `web-accessibility`, `mobile-responsiveness`, `shabbat-times`
+
+**From [majidmanzarpour/threejs-game-skills](https://github.com/majidmanzarpour/threejs-game-skills)** (build/upgrade/finish Three.js browser games — pairs well with `skyhawk-flight-simulator/`):
+`threejs-game-director` (entrypoint/router), `threejs-gameplay-systems`, `threejs-aaa-graphics-builder`, `threejs-game-ui-designer`, `threejs-3d-generator`, `threejs-image-generator`, `threejs-audio-generator`, `threejs-debug-profiler`, `threejs-qa-release`
 
 To add more skills: `npx skills add <owner>/<repo> -s <skill-name> -y`
 
