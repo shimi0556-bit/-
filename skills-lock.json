@@ -193,6 +193,18 @@
       "skillPath": "skills/analytics-metrics/SKILL.md",
       "computedHash": "e3e9a408e00744f3aab3640f8357725ae0267f2f6d85f0a0aaabeca3132017f9"
     },
+    "baoyu-comic": {
+      "source": "JimLiu/baoyu-skills",
+      "sourceType": "github",
+      "skillPath": "skills/baoyu-comic/SKILL.md",
+      "computedHash": "e55622735e6c6d43a5d718429e5ec7d122a93189c666be475ffac8fe0e40e070"
+    },
+    "baoyu-image-gen": {
+      "source": "JimLiu/baoyu-skills",
+      "sourceType": "github",
+      "skillPath": "skills/baoyu-image-gen/SKILL.md",
+      "computedHash": "90b3b4cd8ae115c3a8eedd69439485cb449b04879ac2c60ceaa7071ecddd44b2"
+    },
     "ben-gurion-flight-board": {
       "source": "danielrosehill/Claude-Israel-Agent-Skills-Plugin",
       "sourceType": "github",

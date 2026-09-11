@@ -50,6 +50,9 @@ Installed via the [`skills`](https://www.npmjs.com/package/skills) CLI and track
 **From [anthropics/skills](https://github.com/anthropics/skills)** (Anthropic's own official examples — most others in this collection, like `pdf`/`docx`/`pptx`/`xlsx`/`mcp-builder`/`canvas-design`, are already active as Claude Code's built-in skills, so only the ones not built in were added):
 `webapp-testing` (Playwright toolkit for testing the web apps vendored in this repo), `frontend-design` (distinctive UI direction, avoids generic "AI slop" defaults), `discernment-nudge` (appends fact/assumption-checking follow-up questions after a substantive answer), `internal-comms` (templates for status reports, incident reports, leadership updates)
 
+**From [JimLiu/baoyu-skills](https://github.com/JimLiu/baoyu-skills)** (comic creation):
+`baoyu-comic` — knowledge/educational comic creator: 6 art styles × 7 tones × 7 panel layouts plus 5 presets (incl. Logicomix-style), builds a storyboard with consistent characters across panels, renders a final PDF. `baoyu-image-gen` — the image-rendering backend it uses (OpenAI GPT Image, Azure, Google, DashScope, Z.AI, MiniMax, Replicate, and more); **needs an API key for one of those providers to actually render panels** — it only builds prompts/storyboard without one. The rest of that repo (WeChat/Weibo/X posting, reverse-engineered "danger-*" skills, etc.) was left out as out of scope / not vetted.
+
 To add more skills: `npx skills add <owner>/<repo> -s <skill-name> -y`
 
 ## Notes
