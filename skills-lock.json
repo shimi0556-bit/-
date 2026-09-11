@@ -1,6 +1,60 @@
 {
   "version": 1,
   "skills": {
+    "analytics-metrics": {
+      "source": "hoodini/ai-agents-skills",
+      "sourceType": "github",
+      "skillPath": "skills/analytics-metrics/SKILL.md",
+      "computedHash": "e3e9a408e00744f3aab3640f8357725ae0267f2f6d85f0a0aaabeca3132017f9"
+    },
+    "cinematic-scrub-landing": {
+      "source": "hoodini/ai-agents-skills",
+      "sourceType": "github",
+      "skillPath": "skills/cinematic-scrub-landing/SKILL.md",
+      "computedHash": "d567568e4545dfb91bce38bfa3ee5c3a2a7c0e0dd6a50d3a0a76ed3eddb8dc47"
+    },
+    "fal-ai": {
+      "source": "hoodini/ai-agents-skills",
+      "sourceType": "github",
+      "skillPath": "skills/fal-ai/SKILL.md",
+      "computedHash": "de15d718548d8a638b9adb7d30df7d944a85363bfa33def39ed16ef4b519f17d"
+    },
+    "image-master": {
+      "source": "hoodini/ai-agents-skills",
+      "sourceType": "github",
+      "skillPath": "skills/image-master/SKILL.md",
+      "computedHash": "8ec4b7e89851600aa0bff20cca335f31a65d41145155a68f89a48ef207dbd540"
+    },
+    "mermaid-diagrams": {
+      "source": "hoodini/ai-agents-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mermaid-diagrams/SKILL.md",
+      "computedHash": "8d181c5a2f7609c3fec86a2a41fbe0d02494734f1824644e9f301b2b25912390"
+    },
+    "mobile-responsiveness": {
+      "source": "hoodini/ai-agents-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mobile-responsiveness/SKILL.md",
+      "computedHash": "d40ffbede786927da70723ebd4bfd332505d04f495e7e75ab4b6651a13006a62"
+    },
+    "nano-banana-pro": {
+      "source": "hoodini/ai-agents-skills",
+      "sourceType": "github",
+      "skillPath": "skills/nano-banana-pro/SKILL.md",
+      "computedHash": "847324e0bfe9acfdf880da102a537c0225c85b5db063d8a0dec0e4a2bc14bf69"
+    },
+    "owasp-security": {
+      "source": "hoodini/ai-agents-skills",
+      "sourceType": "github",
+      "skillPath": "skills/owasp-security/SKILL.md",
+      "computedHash": "96ddeeb1eab361ebb8e18c1770a3baab804526fb94966f644a21ae72cc7841e2"
+    },
+    "parallax-landing-page": {
+      "source": "hoodini/ai-agents-skills",
+      "sourceType": "github",
+      "skillPath": "skills/parallax-landing-page/SKILL.md",
+      "computedHash": "d8fbcf2d51a02368fd5c5d5365b135d98c1697774cba7b16bf5de8b9f649e615"
+    },
     "remotion-best-practices": {
       "source": "remotion-dev/skills",
       "sourceType": "github",
@@ -72,6 +126,36 @@
       "sourceType": "github",
       "skillPath": "skills/remotion-upgrade/SKILL.md",
       "computedHash": "ba240a4330910fab849044988696eb87b7736e3e28a802a364930c3ed8824b27"
+    },
+    "shabbat-times": {
+      "source": "hoodini/ai-agents-skills",
+      "sourceType": "github",
+      "skillPath": "skills/shabbat-times/SKILL.md",
+      "computedHash": "650c2defd349692caacba6ce8d4452459039a5e643b760000d6be4b9cf756801"
+    },
+    "ux-design-systems": {
+      "source": "hoodini/ai-agents-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ux-design-systems/SKILL.md",
+      "computedHash": "3013c21a051a284095ce7d2ef770c2c6fdb7d7643c5dcb8a042a4acd9b660baf"
+    },
+    "video-edit": {
+      "source": "hoodini/ai-agents-skills",
+      "sourceType": "github",
+      "skillPath": "skills/video-edit/SKILL.md",
+      "computedHash": "cf65595e8d1a870a144813ed71d5b182db17925c6c588e71373e86886b4b864d"
+    },
+    "video-to-landing-page": {
+      "source": "hoodini/ai-agents-skills",
+      "sourceType": "github",
+      "skillPath": "skills/video-to-landing-page/SKILL.md",
+      "computedHash": "f17ee0a1fc06945b56bb0705f7559d8c254480cbba7c24c6fa309f46049bb27e"
+    },
+    "web-accessibility": {
+      "source": "hoodini/ai-agents-skills",
+      "sourceType": "github",
+      "skillPath": "skills/web-accessibility/SKILL.md",
+      "computedHash": "c097775d156645fb8b9994e461598518d91837eebc3f7e61a2f8bd18479bafda"
     }
   }
 }
