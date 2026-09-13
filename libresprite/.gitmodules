@@ -1,0 +1,6 @@
+[submodule "third_party/simpleini"]
+	path = third_party/simpleini
+	url = https://github.com/aseprite/simpleini.git
+[submodule "src/flic"]
+	path = src/flic
+	url = https://github.com/aseprite/flic.git
