@@ -1,0 +1,30 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Environment
+.env
+.env.*
+
+# Lint / test / coverage
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Eval run artifacts
+eval/results/
+
+# MCPB bundle build artifact (published to Smithery, not committed)
+*.mcpb
+
+# Editor
+.vscode/
+.idea/
+*.swp

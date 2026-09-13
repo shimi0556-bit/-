@@ -1,0 +1,215 @@
+extends GutTest
+
+# Validates the explicit tool registry: lookup, count, duplicate detection,
+# empty-name rejection. No editor dependencies.
+
+const ToolRegistry = preload("res://addons/com.gladekit.mcp-bridge/bridge/tool_registry.gd")
+const ITool = preload("res://addons/com.gladekit.mcp-bridge/tools/i_tool.gd")
+
+
+class _StubTool extends ITool:
+	func _init(n: String) -> void:
+		tool_name = n
+		requires_edit_mode = false
+
+	func execute(_args: Dictionary) -> Dictionary:
+		return {"success": true, "message": "stub"}
+
+
+# ── Registry self-population from preloads ────────────────────────────────
+
+func test_registry_contains_all_mvp_tools() -> void:
+	var registry = ToolRegistry.new()
+	# Phase 2 scene/node (12, incl. set_node_resource + set_node_property)
+	# + script (5) = 17;
+	# Phase 3 camera/light (2) + resource (2) + physics (1) + scene_io (4)
+	# + runtime (7) + uid (2) = 18; Phase 5 signal (3); create_resource (1);
+	# project introspection get_project_info + list_assets (2) = 40;
+	# v0.5.0 UI/Control (6) = 46; v0.5.2 structured runtime-event
+	# observation (3) = 49; v0.5.3 lighting & environment (4 — set/get
+	# light_properties + set/get world_environment) = 53;
+	# v0.6.0 animation (5 — add_animation_to_player + add_animation_track +
+	# add_animation_keyframe + set_animation_properties +
+	# get_animation_player_info) = 58; add_input_action (1) = 59;
+	# set_node_property (1) = 60; v0.7.0 asset pipeline import_asset +
+	# list_imported_assets (2) = 62; 2D foundation create_sprite_2d +
+	# create_animated_sprite_2d (2) = 64; 2D batch 2 create_tilemap_layer +
+	# set_tilemap_cells + create_parallax_2d (3) = 67;
+	# v0.6.7 audio create_audio_player + set_audio_player_properties (2) = 69;
+	# v0.6.8 AnimationTree state machine create_animation_tree +
+	# add_state_machine_state + add_state_machine_transition +
+	# get_animation_tree_info (4) = 73; create_third_person_controller (1) = 74;
+	# create_2d_controller (1) = 75; create_particles_2d (1) = 76;
+	# create_screen_shake (1) = 77; set_tilemap_collision (1) = 78;
+	# 2D gameplay loop create_game_manager + create_collectible +
+	# create_hazard (3) = 81; create_enemy_2d (1) = 82;
+	# menu / scene-flow create_main_menu + create_pause_menu (2) = 84;
+	# create_enemy_3d (1) = 85; 3D navigation add_navigation_agent +
+	# bake_navigation_mesh (2) = 87; create_particles_3d (1) = 88;
+	# create_projectile (1) = 89; create_health (1) = 90;
+	# create_health_bar (1) = 91; create_moving_platform (1) = 92;
+	# create_blend_space_2d (1) = 93; create_juice (1) = 94;
+	# set_particles_properties (1) = 95; create_scene_transition (1) = 96;
+	# look_at_game_view (1) = 97;
+	# find_references (1) = 98; find_scene_usages (1) = 99;
+	# create_blend_space_1d (1) = 100; arrange_nodes (1) = 101;
+	# raycast (1) = 102; overlap_shape (1) = 103; shape_cast (1) = 104;
+	# snap_to_ground (1) = 105; configure_physics_body (1, was registered
+	# earlier but never added to this tally — corrected here) = 106;
+	# run_gameplay_probe (1) = 107; check_script_errors (1) = 108.
+	# The running tally above had drifted 2 behind the actual registration list
+	# (as it did once before for configure_physics_body): a live bridge reports
+	# 110 registered tools via tools/list, which returns _tools.keys() and is the
+	# same set get_tool_count() sizes. Corrected to the measured 110 — prefer the
+	# bridge's own count over this comment if the two ever disagree again.
+	# (create_camera_3d → create_camera was a rename, not an add; it stays callable
+	# via a registry alias which does NOT count toward get_tool_count.)
+	# set_node_transform_batch (1) = 111.
+	# Build/export — get_export_info + create_export_preset + export_project
+	# (3) = 114. Confirmed by a real engine boot reporting
+	# "v0.7.12, 114 tools registered".
+	# get_session_summary (1, v0.7.13) = 115.
+	assert_eq(registry.get_tool_count(), 115, "Catalog should register exactly 115 tools")
+
+	# Critical names that must be present for the schema-mock layer to wire
+	# up correctly. Failing here means a registration line went missing.
+	var expected_names := [
+		# Phase 2 — Scene / Node
+		"get_scene_tree", "get_node_info", "find_nodes", "create_node",
+		"create_primitive_3d", "create_sprite_2d", "create_animated_sprite_2d",
+		"create_tilemap_layer", "set_tilemap_cells", "set_tilemap_collision",
+		"create_parallax_2d", "create_moving_platform",
+		"delete_node", "rename_node", "duplicate_node",
+		"set_node_parent", "set_node_transform", "set_node_transform_batch",
+		"arrange_nodes", "snap_to_ground", "set_node_resource",
+		# Phase 2 — Script
+		"create_script", "modify_script", "get_script_content", "find_scripts",
+		"find_references", "find_scene_usages", "check_script_errors",
+		"attach_script_to_node", "create_third_person_controller",
+		"create_2d_controller", "create_screen_shake", "create_juice", "create_scene_transition",
+		"create_game_manager", "create_collectible", "create_hazard", "create_enemy_2d",
+		# Camera / Light (create_camera is dimension-aware; create_camera_3d
+		# remains a registry alias, asserted separately below)
+		"create_camera", "create_light",
+		# Phase 3 — Resource
+		"create_material", "set_material_property", "create_resource",
+		# Phase 3 — Physics
+		"create_physics_body", "raycast", "overlap_shape", "shape_cast",
+		# Particles / juice
+		"create_particles_2d",
+		# Phase 3 — Scene I/O
+		"create_scene", "open_scene", "save_scene", "instantiate_scene",
+		# Phase 3 — Runtime / process
+		"get_play_mode_state", "get_selection", "get_godot_console_logs",
+		"run_project", "stop_project", "get_debug_output", "launch_editor",
+		# Input-driven gameplay probe (run_project's "does the gameplay work?" sibling)
+		"run_gameplay_probe",
+		# Phase 3 — UID (4.4+)
+		"get_uid", "update_project_uids",
+		# Phase 5 — Signal wiring (persistent, scene-saved)
+		"connect_signal", "list_signal_connections", "disconnect_signal",
+		# Project introspection + input map
+		"get_project_info", "list_assets", "add_input_action",
+		# v0.5.0 — UI / Control
+		"create_control", "set_control_anchors", "set_control_text",
+		"set_control_size", "list_ui_hierarchy", "create_theme",
+		# Menu / scene-flow (title screen + pause overlay)
+		"create_main_menu", "create_pause_menu",
+		# Combat HUD — health bar that follows a create_health component
+		"create_health_bar",
+		# v0.5.2 — Structured runtime-event observation
+		"start_runtime_observation", "stop_runtime_observation",
+		"get_runtime_events",
+		# v0.5.3 — Lighting & environment
+		"set_light_properties", "get_light_info",
+		"set_world_environment", "get_world_environment",
+		# v0.6.0 — Animation
+		"add_animation_to_player", "add_animation_track",
+		"add_animation_keyframe", "set_animation_properties",
+		"get_animation_player_info",
+		# v0.7.0 — Asset pipeline (async download + install; license audit)
+		"import_asset", "list_imported_assets",
+		# v0.6.7 — Audio (place a player + wire a stream)
+		"create_audio_player", "set_audio_player_properties",
+		# v0.6.8 — AnimationTree state machine (Animator-Controller analog)
+		"create_animation_tree", "add_state_machine_state",
+		"add_state_machine_transition", "get_animation_tree_info",
+		# v0.7.3 — AnimationTree 2D blend space (directional sprite animation)
+		"create_blend_space_2d",
+		# v0.7.5 — AnimationTree 1D blend space (speed-based locomotion)
+		"create_blend_space_1d",
+		# 3D enemy + navmesh pursuit
+		"create_enemy_3d", "add_navigation_agent", "bake_navigation_mesh",
+		# Particles / juice — 3D twin of create_particles_2d
+		"create_particles_3d",
+		# Particle tuning — adjust an existing GPUParticles2D/3D after create
+		"set_particles_properties",
+		# Combat — the shoot verb (projectile + shooter, 2D/3D)
+		"create_projectile",
+		# Combat — reusable HP component (completes shoot -> damage -> death)
+		"create_health",
+	]
+	for expected in expected_names:
+		assert_true(registry.has_tool(expected), "Missing registration for tool '%s'" % expected)
+
+
+func test_get_tool_returns_instance() -> void:
+	var registry = ToolRegistry.new()
+	var t = registry.get_tool("get_scene_tree")
+	assert_not_null(t)
+	assert_eq(t.tool_name, "get_scene_tree")
+
+
+func test_get_tool_unknown_returns_null() -> void:
+	var registry = ToolRegistry.new()
+	assert_null(registry.get_tool("not_a_real_tool"))
+
+
+# ── Backward-compat aliases ───────────────────────────────────────────────
+
+func test_alias_resolves_to_canonical_tool() -> void:
+	var registry = ToolRegistry.new()
+	# create_camera_3d is the legacy name; it must still dispatch to the
+	# dimension-aware create_camera tool (same instance).
+	assert_true(registry.has_tool("create_camera_3d"), "Legacy alias must resolve")
+	var aliased = registry.get_tool("create_camera_3d")
+	var canonical = registry.get_tool("create_camera")
+	assert_not_null(aliased)
+	assert_eq(aliased, canonical, "Alias must return the same instance as the canonical tool")
+	assert_eq(aliased.tool_name, "create_camera", "Alias instance keeps its canonical tool_name")
+
+
+func test_alias_excluded_from_count_and_names() -> void:
+	var registry = ToolRegistry.new()
+	# Aliases are invisible to the catalog: the agent is steered to the
+	# canonical name, and the parity/catalog tests count canonical tools only.
+	assert_false(registry.get_tool_names().has("create_camera_3d"),
+		"Alias must not appear in get_tool_names()")
+
+
+func test_get_tool_names_sorted() -> void:
+	var registry = ToolRegistry.new()
+	var names := registry.get_tool_names()
+	var sorted_copy := names.duplicate()
+	sorted_copy.sort()
+	assert_eq(names, sorted_copy, "get_tool_names() must return sorted output")
+
+
+# ── register_tool guards ──────────────────────────────────────────────────
+
+func test_register_tool_rejects_empty_name() -> void:
+	var registry = ToolRegistry.new()
+	var initial: int = registry.get_tool_count()
+	# Suppress the push_error so it doesn't fail the GUT run.
+	registry.register_tool(_StubTool.new(""))
+	assert_eq(registry.get_tool_count(), initial, "Empty-name registration must be a no-op")
+
+
+func test_register_tool_rejects_duplicate() -> void:
+	var registry = ToolRegistry.new()
+	var initial: int = registry.get_tool_count()
+	# Re-register get_scene_tree's name — should be rejected.
+	registry.register_tool(_StubTool.new("get_scene_tree"))
+	assert_eq(registry.get_tool_count(), initial, "Duplicate-name registration must be a no-op")
+	# Original tool should still be the one stored.
+	assert_eq(registry.get_tool("get_scene_tree").tool_name, "get_scene_tree")

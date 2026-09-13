@@ -1,0 +1,83 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gladekit-mcp"
+version = "0.7.23"
+description = "MCP server for Unity game development — connect Cursor, Claude Code, Windsurf, and other AI clients to your Unity Editor."
+readme = "README.md"
+license = "MIT"
+# 3.11+ is required: bridge.py uses asyncio.timeout() (added in 3.11) on the
+# Godot WebSocket path. The CI matrix only exercises 3.11/3.12, so a >=3.10
+# claim would ship a version that breaks every Godot call on 3.10 with a
+# misleading "bridge unreachable" error.
+requires-python = ">=3.11"
+dependencies = [
+    # Both bounds are load-bearing, and the range is deliberately wide: this
+    # package is usually installed into an environment its host application
+    # controls, so every version excluded here is a host it cannot coexist with.
+    #
+    # Floor: 1.10 is the first release carrying both TransportSecuritySettings
+    # (DNS-rebinding protection for the HTTP transport) and types.ContentBlock.
+    # Those are requirements, not refinements, so they set the floor honestly.
+    # Later niceties do not: see optional_kwargs() in sdk_compat.py, which drops
+    # arguments an older SDK never had rather than letting one raise the floor.
+    #
+    # Ceiling: 2.0 redesigned the low-level Server API — the @server.list_tools()
+    # / @server.call_tool() decorators were removed in favour of constructor
+    # callbacks. sdk_compat.py binds our handlers to whichever generation is
+    # importable, so both are supported, but 3.x is presumed breaking until
+    # proven otherwise.
+    #
+    # CI runs the full suite at the floor, at the newest 1.x, and at the newest
+    # 2.x. A bound nothing exercises is a guess; test_dependency_bounds.py fails
+    # if a job ever resolves an SDK outside what is declared here.
+    "mcp[cli]>=1.10,<3",
+    # Used directly by sdk_compat.py to validate tool arguments on SDK 2.x,
+    # which (unlike 1.x) does not validate them for us. Already a hard
+    # dependency of both SDK generations — declared explicitly because we
+    # import it rather than relying on it arriving transitively.
+    "jsonschema>=4.20.0",
+    "httpx>=0.25.0",
+    "openai>=1.0.0",
+    "numpy>=1.21.0",
+    # websockets is the transport for the Godot bridge (Unity uses httpx).
+    # 13+ has the asyncio client interface bridge.py uses. Kept as a hard
+    # dependency even at 0.6.8 (pre-Godot-release) so the import-time
+    # check in bridge.py works for early adopters running from source.
+    "websockets>=13.0",
+]
+
+[project.optional-dependencies]
+# HTTP transport uses starlette + uvicorn. Both are already transitive deps of
+# mcp>=1.0 — this extra exists purely for explicit documentation / pinning.
+http = [
+    "starlette>=0.27",
+    "uvicorn>=0.31",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.4",
+    "httpx>=0.27",
+]
+
+[project.scripts]
+gladekit-mcp = "gladekit_mcp:main"
+gladekit = "gladekit_mcp:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gladekit_mcp"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]  # long lines are unavoidable in tool-description strings

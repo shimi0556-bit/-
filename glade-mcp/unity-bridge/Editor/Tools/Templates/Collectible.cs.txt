@@ -1,0 +1,61 @@
+using UnityEngine;
+
+// A pickup (coin / star / orb). When the player (tag 'Player') enters its trigger
+// it adds to the score via the GameManager and removes itself. Degrades
+// gracefully when no GameManager is in the scene (it simply disappears on
+// pickup) — pair with create_game_manager so the score actually counts. One
+// vetted script is shared by every collectible in the level; each carries its
+// own `value`.
+//
+// Dimension-agnostic: the SAME script serves 2D and 3D games. Unity dispatches
+// OnTriggerEnter for 3D physics and OnTriggerEnter2D for 2D physics, so a
+// collectible built with a 3D SphereCollider and one built with a 2D
+// CircleCollider both work with no code change — the tool that spawns it decides
+// the geometry. There is deliberately no [RequireComponent(typeof(Collider))]:
+// that would force a 3D collider onto a 2D pickup alongside its Collider2D.
+public class Collectible : MonoBehaviour
+{
+    [Tooltip("Score added when this collectible is picked up.")]
+    public int value = 1;
+
+    private bool collected;
+
+    private void Start()
+    {
+        // Be robust no matter how the collider was authored — assert the trigger
+        // flag on whichever collider (3D or 2D) is present.
+        var col = GetComponent<Collider>();
+        if (col != null) col.isTrigger = true;
+        var col2D = GetComponent<Collider2D>();
+        if (col2D != null) col2D.isTrigger = true;
+
+        // Register so the GameManager can detect a collect-them-all win.
+        if (GameManager.Instance != null) GameManager.Instance.RegisterCollectible();
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player")) Collect();
+    }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.CompareTag("Player")) Collect();
+    }
+
+    // Single collection path shared by both physics dispatchers — guards against
+    // double-scoring before the object is destroyed.
+    private void Collect()
+    {
+        if (collected) return;
+        collected = true;
+
+        var gm = GameManager.Instance;
+        if (gm != null)
+        {
+            gm.AddScore(value);
+            gm.NotifyCollectibleCollected();
+        }
+        Destroy(gameObject);
+    }
+}
