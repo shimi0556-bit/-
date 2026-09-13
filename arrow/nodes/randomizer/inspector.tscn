@@ -1,0 +1,22 @@
+[gd_scene load_steps=2 format=3 uid="uid://v8ma4wqd4i2t"]
+
+[ext_resource type="Script" uid="uid://dag4in5pvrwja" path="res://nodes/randomizer/inspector.gd" id="1_864vw"]
+
+[node name="Randomizer" type="VBoxContainer"]
+offset_right = 256.0
+offset_bottom = 58.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_864vw")
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 2
+text = "RANDOMIZER_INSPECTOR_FIELD_SLOTS_COUNT"
+
+[node name="Slots" type="SpinBox" parent="."]
+layout_mode = 2
+min_value = 2.0
+max_value = 10.0
+value = 2.0
+rounded = true
+alignment = 1

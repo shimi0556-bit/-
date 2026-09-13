@@ -1,0 +1,48 @@
+[gd_scene load_steps=3 format=3 uid="uid://bfc7r0anbuju6"]
+
+[ext_resource type="Texture2D" uid="uid://dcy0o5rrn15bo" path="res://nodes/condition/icon.svg" id="1_jg108"]
+[ext_resource type="Script" uid="uid://b3aj8qo23nmev" path="res://nodes/condition/console.gd" id="1_r5l4s"]
+
+[node name="Condition" type="PanelContainer"]
+offset_right = 256.0
+offset_bottom = 31.0
+size_flags_horizontal = 3
+script = ExtResource("1_r5l4s")
+
+[node name="Play" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Icon" type="Button" parent="Play"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+focus_mode = 0
+mouse_filter = 2
+disabled = true
+icon = ExtResource("1_jg108")
+flat = true
+icon_alignment = 1
+expand_icon = true
+
+[node name="Statement" type="Label" parent="Play"]
+custom_minimum_size = Vector2(64, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+text = "[Statement]"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="False" type="Button" parent="Play"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConditionConsoleFalse"
+text = "CONDITION_CONSOLE_FALSE"
+
+[node name="True" type="Button" parent="Play"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConditionConsoleTrue"
+text = "CONDITION_CONSOLE_TRUE"

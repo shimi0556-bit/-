@@ -1,0 +1,40 @@
+[gd_scene load_steps=3 format=3 uid="uid://bjnlph2cvsls8"]
+
+[ext_resource type="Texture2D" uid="uid://brbd17qb1dm1l" path="res://nodes/macro_use/icon.svg" id="1_545ix"]
+[ext_resource type="Script" uid="uid://c6jyy4rplod17" path="res://nodes/macro_use/node.gd" id="1_brkvu"]
+
+[node name="MacroUse" type="GraphNode"]
+offset_right = 256.0
+resizable = true
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = true
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+script = ExtResource("1_brkvu")
+
+[node name="Display" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Kind" type="Button" parent="Display"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+mouse_filter = 2
+disabled = true
+text = "Macro Use"
+icon = ExtResource("1_545ix")
+flat = true
+text_overrun_behavior = 3
+expand_icon = true
+
+[node name="Title" type="Label" parent="Display"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "[Macro Title]"
+horizontal_alignment = 1
+vertical_alignment = 1

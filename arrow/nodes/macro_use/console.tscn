@@ -1,0 +1,56 @@
+[gd_scene load_steps=3 format=3 uid="uid://yes3kfl1mar5"]
+
+[ext_resource type="Texture2D" uid="uid://brbd17qb1dm1l" path="res://nodes/macro_use/icon.svg" id="1_cbg1x"]
+[ext_resource type="Script" uid="uid://bydlwgiyvqhiv" path="res://nodes/macro_use/console.gd" id="1_e678b"]
+
+[node name="MacroUse" type="PanelContainer"]
+offset_right = 256.0
+offset_bottom = 31.0
+size_flags_horizontal = 3
+script = ExtResource("1_e678b")
+
+[node name="Play" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Head" type="HBoxContainer" parent="Play"]
+layout_mode = 2
+
+[node name="Icon" type="Button" parent="Play/Head"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+focus_mode = 0
+mouse_filter = 2
+disabled = true
+icon = ExtResource("1_cbg1x")
+flat = true
+icon_alignment = 1
+expand_icon = true
+
+[node name="Title" type="Label" parent="Play/Head"]
+custom_minimum_size = Vector2(64, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+text = "[Macro Title]"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="SubConsole" type="PanelContainer" parent="Play"]
+layout_mode = 2
+
+[node name="Terminal" type="VBoxContainer" parent="Play/SubConsole"]
+layout_mode = 2
+
+[node name="Actions" type="HBoxContainer" parent="Play"]
+layout_mode = 2
+alignment = 2
+
+[node name="Skip" type="Button" parent="Play/Actions"]
+layout_mode = 2
+text = "MACRO_USE_CONSOLE_ACT_SKIP"
+
+[node name="Replay" type="Button" parent="Play/Actions"]
+layout_mode = 2
+disabled = true
+text = "MACRO_USE_CONSOLE_ACT_PLAY"

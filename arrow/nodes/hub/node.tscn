@@ -1,0 +1,31 @@
+[gd_scene load_steps=3 format=3 uid="uid://bhqd5mjh3fj1w"]
+
+[ext_resource type="Script" uid="uid://cgs5tgnm1i77f" path="res://nodes/hub/node.gd" id="1_clcer"]
+[ext_resource type="Texture2D" uid="uid://csd3jcsheiq0c" path="res://nodes/hub/icon.svg" id="1_nlr1k"]
+
+[node name="Hub" type="GraphNode"]
+offset_right = 128.0
+offset_bottom = 86.0
+mouse_filter = 1
+resizable = true
+slot/0/left_enabled = false
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = true
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+script = ExtResource("1_clcer")
+
+[node name="Kind" type="Button" parent="."]
+layout_mode = 2
+focus_mode = 0
+mouse_filter = 2
+disabled = true
+text = "Hub"
+icon = ExtResource("1_nlr1k")
+flat = true
+text_overrun_behavior = 3
+expand_icon = true

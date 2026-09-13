@@ -1,0 +1,71 @@
+[gd_scene load_steps=3 format=3 uid="uid://bymcd0j14vbv2"]
+
+[ext_resource type="Texture2D" uid="uid://cx836tmywk8hs" path="res://nodes/tag_match/icon.svg" id="1_74vst"]
+[ext_resource type="Script" uid="uid://du5wooobj6tbb" path="res://nodes/tag_match/console.gd" id="1_x8x8f"]
+
+[node name="TagMatch" type="PanelContainer"]
+offset_right = 256.0
+size_flags_horizontal = 3
+script = ExtResource("1_x8x8f")
+
+[node name="Play" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Head" type="HBoxContainer" parent="Play"]
+layout_mode = 2
+
+[node name="Icon" type="Button" parent="Play/Head"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+focus_mode = 0
+mouse_filter = 2
+disabled = true
+icon = ExtResource("1_74vst")
+flat = true
+icon_alignment = 1
+expand_icon = true
+
+[node name="Name" type="Label" parent="Play/Head"]
+layout_mode = 2
+text = "[Character Name]"
+
+[node name="Body" type="HBoxContainer" parent="Play"]
+layout_mode = 2
+
+[node name="Color" type="ColorRect" parent="Play/Body"]
+custom_minimum_size = Vector2(4, 0)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Matchable" type="VBoxContainer" parent="Play/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Tag" type="Label" parent="Play/Body/Matchable"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "[Tag Key]"
+horizontal_alignment = 1
+
+[node name="Manual" type="VBoxContainer" parent="Play/Body/Matchable"]
+layout_mode = 2
+
+[node name="Patterns" type="OptionButton" parent="Play/Body/Matchable/Manual"]
+layout_mode = 2
+
+[node name="Actions" type="HBoxContainer" parent="Play/Body/Matchable/Manual"]
+layout_mode = 2
+alignment = 2
+
+[node name="Eol" type="Button" parent="Play/Body/Matchable/Manual/Actions"]
+layout_mode = 2
+text = "TAG_MATCH_CONSOLE_ACT_EOL"
+
+[node name="Match" type="Button" parent="Play/Body/Matchable/Manual/Actions"]
+layout_mode = 2
+text = "TAG_MATCH_CONSOLE_ACT_MATCH"
+
+[node name="Matched" type="Label" parent="Play/Body/Matchable"]
+layout_mode = 2
+text = "[Matched Pattern | EOL]"
+horizontal_alignment = 1

@@ -1,0 +1,42 @@
+[gd_scene load_steps=3 format=3 uid="uid://1stsb577fkwl"]
+
+[ext_resource type="Script" uid="uid://8he10fo7xbuo" path="res://nodes/variable_update/node.gd" id="1_c4luj"]
+[ext_resource type="Texture2D" uid="uid://bgcst2eb58xgr" path="res://nodes/variable_update/icon.svg" id="1_u4hop"]
+
+[node name="VariableUpdate" type="GraphNode"]
+offset_right = 256.0
+resizable = true
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = true
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+script = ExtResource("1_c4luj")
+
+[node name="Display" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Kind" type="Button" parent="Display"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+mouse_filter = 2
+disabled = true
+text = "Variable Update"
+icon = ExtResource("1_u4hop")
+flat = true
+text_overrun_behavior = 3
+expand_icon = true
+
+[node name="Expression" type="Label" parent="Display"]
+custom_minimum_size = Vector2(64, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+text = "[Expression]"
+horizontal_alignment = 1
+autowrap_mode = 3

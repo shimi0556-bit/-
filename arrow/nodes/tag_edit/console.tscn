@@ -1,0 +1,57 @@
+[gd_scene load_steps=3 format=3 uid="uid://gj6h5naho5xm"]
+
+[ext_resource type="Texture2D" uid="uid://b76d3868erbte" path="res://nodes/tag_edit/icon.svg" id="1_1ud8y"]
+[ext_resource type="Script" uid="uid://oaqy1uya7juc" path="res://nodes/tag_edit/console.gd" id="1_jhmsq"]
+
+[node name="TagEdit" type="PanelContainer"]
+offset_right = 256.0
+size_flags_horizontal = 3
+script = ExtResource("1_jhmsq")
+
+[node name="Play" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Head" type="HBoxContainer" parent="Play"]
+layout_mode = 2
+
+[node name="Icon" type="Button" parent="Play/Head"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+focus_mode = 0
+mouse_filter = 2
+disabled = true
+icon = ExtResource("1_1ud8y")
+flat = true
+icon_alignment = 1
+expand_icon = true
+
+[node name="Name" type="Label" parent="Play/Head"]
+layout_mode = 2
+text = "[Character Name]"
+
+[node name="Body" type="HBoxContainer" parent="Play"]
+layout_mode = 2
+
+[node name="Color" type="ColorRect" parent="Play/Body"]
+custom_minimum_size = Vector2(4, 0)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Tag" type="Label" parent="Play/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "[Tag: Value]"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Actions" type="HBoxContainer" parent="Play"]
+layout_mode = 2
+alignment = 2
+
+[node name="Skip" type="Button" parent="Play/Actions"]
+layout_mode = 2
+text = "TAG_EDIT_CONSOLE_ACT_SKIP"
+
+[node name="Apply" type="Button" parent="Play/Actions"]
+layout_mode = 2
+text = "[Method]"

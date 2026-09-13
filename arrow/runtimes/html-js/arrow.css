@@ -1,0 +1,767 @@
+/* Arrow HTML-JS Runtime: Main style sheet */
+
+/* General */
+
+/* General: Theme Color Schemes */
+:root { /* light theme */
+    --color-0: rgb(255, 255, 255);
+    --color-1: rgb(249, 249, 250);
+    --color-2: rgb(26, 0, 52);
+    --color-3: rgb(0, 21, 41);
+    --color-4: rgb(230, 230, 230);
+    --color-5: rgb(0, 98, 128);
+    --color-6: rgb(90, 90, 90);
+    --color-7: rgb(170, 170, 170);
+    --color-e: rgb(255, 0, 0);
+}
+:root[data-theme^='dark'] { /* dark theme */
+    --color-0: rgb(0, 0, 0);
+    --color-1: rgb(30, 30, 30);
+    --color-2: rgb(255, 252, 222);
+    --color-3: rgb(255, 206, 97);
+    --color-4: rgb(49, 49, 49);
+    --color-5: rgb(18, 226, 176);
+    --color-6: rgb(181, 181, 181);
+    --color-7: rgb(142, 117, 64);
+    --color-e: rgb(255, 0, 0);
+}
+
+/* General: Normals */
+:root {
+    --font: monospace, sans-serif;
+    font-family: var(--font);
+    background-color: var(--color-1);
+    color: var(--color-2);
+    font-size: 16px;
+    font-weight: 400;
+    --font-weight-emphasis: 500;
+    --font-weight-buttons: 700;
+    --font-weight-buttons-secondary: 400;
+    width: 100vw;
+    line-height: 1.15; /* Correct the line height in all browsers */
+    /* To prevent adjustments of font size after orientation changes in iOS : */
+    /* -webkit-text-size-adjust: 100%; */
+    --transition-time-medium: 0.5s;
+    --border-width-normal: 1px;
+    --border-color-normal: var(--color-4);
+}
+/* scrollbar */
+:root{ /* firefox */
+    scrollbar-color: var(--color-7) var(--color-4);
+    scrollbar-width: auto; /* or `thin` ? */
+}
+/* chrome */
+:root::-webkit-scrollbar {
+    height: 100%;
+    width: 0.75rem;
+}
+:root::-webkit-scrollbar-track-piece {
+    background-color: var(--color-4);
+}
+:root::-webkit-scrollbar-thumb {
+    background-color: var(--color-7);
+}
+body {
+    padding: 0; margin: 0; /* reset */
+    font-family: var(--font);
+    width: 95vw;
+    margin: 0 2.5vw;
+    overflow-x: hidden;
+    box-sizing: border-box;
+    border: none; outline: none;
+    padding: 0.25rem 1rem;
+}
+body > :first-child {
+    margin-top: 1rem !important;
+}
+p, pre {
+    overflow: visible;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    font-size: 1.124rem;
+    line-height: 1.5em;
+}
+h1, h2, h3, h4, h5, h6 {
+    font-weight: normal;
+    margin: 1em 0 0.1em 0;
+}
+h1 { font-size: 1.5em; }
+h2 { font-size: 1.4em; }
+h3 { font-size: 1.3em; }
+h4 { font-size: 1.2em; }
+h5 { font-size: 1.1em; }
+h6 { font-size: 1.0em; }
+a {
+    color: var(--color-2);
+    background-color: transparent;
+    text-decoration: underline;
+    cursor: pointer;
+}
+form, fieldset, div {
+    width: 100%;
+    box-sizing: border-box;
+    border-color: var(--color-6);
+    border-width: 1px;
+    margin: 0.5rem 0;
+}
+input, button { /* normalize */
+    overflow: visible;
+    text-transform: none;
+    font-family: inherit;
+    font-size: 100%;
+    line-height: 1.15;
+    margin: 0;
+}
+input, button {
+    margin: 0.25rem 0;
+    box-sizing: content-box;
+}
+input, input::placeholder {
+    font-family: var(--font);
+}
+input[type='text']::placeholder {
+    color: var(--color-7);
+}
+input[type='text'], input[type='number'] {
+    border: solid 2px var(--color-6);
+    padding: 0.25rem 0.5rem;
+    letter-spacing: 0.125rem;
+    vertical-align: middle;
+    border-radius: 0.25rem;
+    text-align: center;
+}
+input[type='text'], input[type='number'], input[type='text']::placeholder {
+    height: 2rem;
+    font-size: 1rem;
+}
+input[type='text'], input[type='number'] {
+    border-color: var(--color-4);
+    background-color: var(--color-0);
+    color: var(--color-3);
+}
+button, input[type='button'], input[type='submit'] {
+    font-size: 1rem;
+    font-weight: var(--font-weight-buttons);
+    height: 1.75rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.25rem;
+    border: none;
+    background-color: var(--color-4);
+    color: var(--color-5);
+    cursor: pointer;
+    outline: none;
+}
+button::-moz-focus-inner, button:active,
+input[type='button']::-moz-focus-inner, input[type='button']:active,
+input[type='submit']::-moz-focus-inner, input[type='submit']:active { /* reset */
+    border-style: none;
+    border: none;
+    padding: 0.25rem 0.75rem;
+    outline: none;
+}
+button:hover, input[type='button']:hover, input[type='submit']:hover {
+    color: var(--color-3);
+}
+button:active, input[type='button']:active, input[type='submit']:active {
+    color: var(--color-0);
+    background-color: var(--color-5);
+}
+button:disabled {
+    filter: grayscale(1) opacity(0.5);
+}
+textarea {
+    display: block;
+    width: 100%;
+    height: 16vh;
+    font-family: inherit;
+    line-height: 1.15;
+    font-size: 0.9rem;
+    margin: 0.25rem 0;
+    padding: 1rem;
+    box-sizing: border-box;
+    border: solid 1px var(--color-6);
+    background-color: var(--color-0);
+    color: var(--color-3);
+    resize: vertical;
+    margin-bottom: 0.75rem;
+    overflow: auto; /* remove the default vertical scrollbar in IE 10+ */
+}
+fieldset {
+    display: block;
+    box-sizing: border-box;
+    margin-top: 0.75rem;
+    border-color: var(--color-6);
+    padding: 0.35em 0.75em 0.625em; /* normalize */
+}
+legend {
+    text-align: left;
+    color: var(--color-6);
+    box-sizing: border-box;
+    display: table;
+    max-width: 100%;
+    font-size: 0.9em;
+    padding: 0 0.25em;
+    white-space: normal;
+}
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type="number"] {
+    /* text-align: center; */
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+select {
+    font-size: 1rem;
+    background-color: var(--color-1);
+    color: var(--color-2);
+    font-family: var(--font);
+}
+em {
+    font-style: italic;
+}
+u {
+    text-decoration: underline;
+}
+strong {
+    font-weight: bolder;
+}
+
+/* Header */
+
+header {
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: solid var(--border-width-normal) var(--border-color-normal);
+}
+header > h1 {
+    font-size: 2.5rem;
+    font-weight: 300;
+    margin: 2rem 0;
+}
+header > h2 {
+    font-size: 1.5rem;
+    margin: 1.5rem 0;
+    font-weight: 300;
+}
+header > h2 span {
+    font-size: 0.75em;
+    vertical-align: top;
+}
+
+/* Main */
+
+main {}
+
+#console { /* body > main > #console */
+    /*
+    You can style the content in the #console 
+    based on the play's variables, i.e. `#console[data-<variable-name>] {}`
+    e.g.
+    `#console[data-health_state='critical'] { color: red; }`
+    */
+}
+
+#content { /* body > main > #console > #content */
+    /*
+    Nodes are appended in this element with selectors resembling:
+    `#content .node[data-name][data-type][data-uid]`
+    with a `[data-played='true|false']` to indicate if they are played (automatically or by user interaction.)
+    `#content` itself comes with `[data-open-nodes]`
+    which is set to a list of space-separated node names (lowercased with whitespaces replaced by dashes.)
+    */
+}
+
+/*
+End-of-line (`.eol`) element is added automatically by the runtime (if `DO_NOT_PRINT_EOL_MESSAGE !== true`,)
+whenever a sub-plot-line can not progress any further (i.e. no more nodes forward in that branch.)
+*/
+#content .eol {
+    margin-top: 2rem;
+    color: var(--color-7);
+    /*
+    On top of `DO_NOT_PRINT_EOL_MESSAGE` constant in `arrow.js` file,
+    you can uncomment following line if you don't want any end message.
+    */
+    /* display: none; */
+}
+
+/* Footer */
+
+footer {
+    border-top: solid var(--border-width-normal) var(--border-color-normal);
+    font-size: 0.8rem;
+    margin-top: 5rem;
+    margin-bottom:5rem;
+    padding-top: 0.25em;
+    /* text-align: center; */
+}
+footer a {
+    color: var(--color-3);
+    text-decoration: none;
+}
+footer a:hover {
+    color: var(--color-5);
+}
+footer a:active{
+    color: var(--color-3);
+}
+footer p {
+    font-size: 0.9rem;
+    padding: 0.25em 0;
+    margin: 0;
+}
+footer p:first-of-type {
+    margin-top: 1rem;
+}
+footer button:not(:first-of-type) {
+    margin: 0 0.5rem;
+}
+
+/* ---------- */
+/* Node Types */
+/* ---------- */
+
+.node {
+    --shown-skipped-node-opacity: 0.7;
+    /* General node transition */
+    transition: filter var(--transition-time-medium) ease-in-out;
+}
+
+.node[data-skipped='true'] > *:not(button) {
+    filter: opacity( var(--shown-skipped-node-opacity) );
+}
+
+/* HINT: You can remove this block if you want to display skipped nodes anyway */
+.node[data-played='true'][data-skipped='true'] {
+    display: none;
+}
+
+/* content */
+.node[data-type='content'] {
+    /* It may come with [data-auto='true'] or [data-clear='true'] */
+}
+.node[data-type='content'] button { /* both buttons */
+    margin: 0.25rem;
+}
+.node[data-type='content'][data-played='true'] button {
+    display: none;
+}
+
+/* condition */
+.node[data-type='condition'] {}
+.node[data-type='condition'][data-played='true'] {
+    display: none;
+}
+.node[data-type='condition'] /*code*/.statement {}
+.node[data-type='condition'] button {
+    margin: 0.5rem;
+}
+
+/* dialog */
+.node[data-type='dialog'] {
+    /* It may come with [data-playable='true'] when it's intended to be manually playable by user */
+}
+.node[data-type='dialog'] /*div*/.character-profile {
+    /*
+    It comes with `[data-name]` and `[data-id]`, set to the character's name (unescaped) and UID,
+    and `--character-color: #<character-hex-color>;` css variable set inline.
+    It can also have `[data-tag-<key>='<value>']` attribute for each existent tag.
+    */
+}
+.node[data-type='dialog'] /*div.character-profile*/.character-name {
+    word-break: break-all;
+}
+.node[data-type='dialog'] /*div.character-profile*/.character-name::before {
+    content: "";
+    display: inline-block;
+    width: 0.75rem;
+    height: 0.75rem;
+    vertical-align: middle;
+    margin: 0.5rem;
+    border: solid 0.125rem var(--color-7);
+    transform: translateY( calc( -0.125rem / 2 ) );
+    border-radius: 100%;
+    background-color: var(--character-color);
+}
+.node[data-type='dialog'] /*div.character-profile*/.character-name::after {
+    content: ":";
+}
+.node[data-type='dialog'] /*ol*/.dialog-lines {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.node[data-type='dialog'] /*ol*/.dialog-lines li { /* each line */
+    margin: 0.5rem 2rem;
+    border-left: dashed 0.125rem var(--color-5);
+    padding-left: 1rem;
+    cursor: pointer;
+    font-weight: var(--font-weight-buttons);
+    text-decoration: underline;
+    font-size: 1.125em;
+}
+.node[data-type='dialog'] /*ol*/.dialog-lines li:hover {
+    color: var(--color-5);
+}
+.node[data-type='dialog'] /*p*/.dialog-played-line {
+    font-size: 1.1em;
+    font-weight: var(--font-weight-emphasis);
+    border-left: solid 0.125rem var(--color-6);
+    padding: 0.75em;
+    margin: 0.5rem 2rem;
+}
+.node[data-type='dialog'][data-played='true'] .dialog-lines {
+    display: none;
+}
+
+/* entry */
+.node[data-type='entry'] {}
+.node[data-type='entry'][data-played='true'] {
+    display: none;
+}
+.node[data-type='entry'] /*em*/.plaque {}
+.node[data-type='entry'] span { /* (Entry mark if no plaque is set) */ }
+.node[data-type='entry'] button {
+    margin: 0.75rem;
+}
+
+/* frame */
+.node[data-type='frame'] {}
+.node[data-type='frame'] p {
+    /* The frame label. `--frame-color` is set inline. */
+    color: var(--frame-color);
+    border: solid 0.125rem var(--frame-color);
+    border-radius: 1rem;
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+
+}
+.node[data-type='frame'] button {
+    margin: 0.5rem;
+}
+.node[data-type='frame'][data-played='true'] p {
+    filter: opacity( 0.5 );
+}
+.node[data-type='frame'][data-played='true'] button {
+    display: none;
+}
+
+/* generator */
+.node[data-type='generator'] {}
+.node[data-type='generator'][data-played='true'] {
+    display: none;
+}
+.node[data-type='generator'] /*code*/.expression {}
+.node[data-type='generator'] button {
+    margin: 0.5rem;
+}
+
+/* hub */
+.node[data-type='hub'] {}
+.node[data-type='hub'][data-played='true'] {
+    display: none;
+}
+.node[data-type='hub'] span { /* (Hub mark) */ }
+.node[data-type='hub'] button {
+    margin: 0.75rem;
+}
+
+/* interaction */
+.node[data-type='interaction'] {}
+.node[data-type='interaction'] /*ol*/.interaction-actions {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.node[data-type='interaction'] /*ol*/.interaction-actions li { /* each line */
+    margin: 0.5rem 0;
+    border-left: dashed 0.125rem var(--color-5);
+    padding-left: 1rem;
+    cursor: pointer;
+    font-weight: var(--font-weight-buttons);
+    text-decoration: underline;
+    font-size: 1.125em;
+}
+.node[data-type='interaction'] /*ol*/.interaction-actions li:hover {
+    color: var(--color-5);
+}
+.node[data-type='interaction'] /*p*/.interaction-played-action {
+    font-size: 1.1em;
+    font-weight: var(--font-weight-emphasis);
+    border-left: solid 0.125rem var(--color-6);
+    padding: 0.75em;
+    margin: 0.5rem 0;
+}
+.node[data-type='interaction'][data-played='true'] .interaction-actions {
+    display: none;
+}
+
+/* jump */
+.node[data-type='jump'] {
+    /* It comes with `[data-target]` set to the destination node's UID. */
+}
+.node[data-type='jump'][data-played='true'] {
+    display: none;
+}
+.node[data-type='jump'] /*em*/.reason {}
+.node[data-type='jump'] span { /* (Jump mark if no reason is set) */ }
+.node[data-type='jump'] button {
+    margin: 0.75rem;
+}
+
+/* macro_use */
+.node[data-type='macro_use'] {
+    /* It also comes with `[data-macro]` set to the UID of the used macro */
+    position: relative;
+    border: dashed 0.125rem var(--color-4);
+    padding: 2rem;
+}
+.node[data-type='macro_use'] > span { /* macro label */
+    position: absolute;
+    top: -0.125rem;
+    right: -0.125rem;
+    border-bottom-left-radius: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    background: var(--color-4);
+    color: var(--color-6);
+    word-break: break-all;
+}
+.node[data-type='macro_use'] > button:nth-of-type(1) { /* replay */ }
+.node[data-type='macro_use'] > button:nth-of-type(1):disabled {
+    display: none;
+}
+.node[data-type='macro_use'] > button:nth-of-type(2) { /* skip */
+    position: absolute;
+    bottom: -0.125rem;
+    right: -0.125rem;
+    margin: 0;
+}
+.node[data-type='macro_use'][data-played='true'] > button {
+    display: none;
+}
+
+/* marker */
+.node[data-type='marker'] {}
+.node[data-type='marker'] p { /* (The marker label) */
+    /* `--marker-color` is set inline. */
+    color: var(--marker-color);
+    border: solid 0.125rem var(--marker-color);
+    border-radius: 1rem;
+    display: inline-block;
+    padding: 0.25rem 1rem;
+    
+}
+.node[data-type='marker'] button {
+    margin: 0.5rem;
+}
+.node[data-type='marker'][data-played='true'] p {
+    filter: opacity( 0.5 );
+}
+.node[data-type='marker'][data-played='true'] button {
+    display: none;
+}
+/* [data-theme^='dark'] .node[data-type='marker'] { filter: invert(1); } */
+
+/* monolog */
+.node[data-type='monolog'] {
+    /* It may come with [data-auto='true'] or [data-clear='true'] */
+}
+.node[data-type='monolog'] /*div*/.character-profile {
+    /*
+    It comes with `[data-name]` and `[data-id]`, set to the character's name (unescaped) and UID,
+    and `--character-color: #<character-hex-color>;` css variable set inline.
+    It can also have `[data-tag-<key>='<value>']` attribute for each existent tag.
+    */
+}
+.node[data-type='monolog'] /*div.character-profile*/.character-name {
+    word-break: break-all;
+}
+.node[data-type='monolog'] /*div.character-profile*/.character-name::before {
+    content: "";
+    display: inline-block;
+    width: 0.75rem;
+    height: 0.75rem;
+    vertical-align: middle;
+    margin: 0.5rem;
+    border: solid 0.125rem var(--color-7);
+    transform: translateY( calc( -0.125rem / 2 ) );
+    border-radius: 100%;
+    background-color: var(--character-color);
+}
+.node[data-type='monolog'] /*div.character-profile*/.character-name::after {
+    content: ":";
+}
+.node[data-type='monolog'] pre { /* (the monolog) */
+    font-size: 1.1em;
+    font-weight: var(--font-weight-emphasis);
+    border-left: solid 0.125rem var(--color-6);
+    padding: 0.75em;
+    margin: 0.5rem 2rem;
+}
+.node[data-type='monolog'] button { /* both buttons */
+    margin: 0.25rem;
+}
+.node[data-type='monolog'][data-played='true'] button {
+    display: none;
+}
+
+/* randomizer */
+.node[data-type='randomizer'] {}
+.node[data-type='randomizer'][data-played='true'] {
+    display: none;
+}
+.node[data-type='randomizer'] span { /* (Randomizer mark) */ }
+.node[data-type='randomizer'] button {
+    margin: 0.75rem;
+}
+
+/* sequencer */
+.node[data-type='sequencer'] {}
+.node[data-type='sequencer'][data-played='true'] {
+    display: none;
+}
+.node[data-type='sequencer'] span { /* (Sequencer mark) */ }
+.node[data-type='sequencer'] button { /* both skip and play buttons */
+    margin: 0.75rem;
+}
+
+/* tag_edit */
+.node[data-type='tag_edit'] {}
+.node[data-type='tag_edit'][data-played='true'] {
+    display: none;
+}
+.node[data-type='tag_edit'] > code { /* (valid) */
+    /* The target character color `--character-color` is set inline. */
+    /* It also comes with `[data-character-id]` and `[data-character-name]` as well */
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    margin-bottom: 0.5rem;
+    border: solid 0.125rem var(--character-color);
+    border-left-width: 1.5rem;
+    border-top-right-radius: 0.125rem;
+    border-bottom-right-radius: 0.125rem;
+    /* color: var(--character-color); */
+    margin-inline-end: 0.75rem;
+    word-break: break-all;
+}
+.node[data-type='tag_edit'] > span { /* (invalid) */
+    display: inline-block;
+    margin-inline-end: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+.node[data-type='tag_edit'] button { /* both skip and apply */
+    margin: 0.25rem;
+}
+
+/* tag_match */
+.node[data-type='tag_match'] {}
+.node[data-type='tag_match'] > span { /* (invalid) */
+    display: inline-block;
+    margin-bottom: 0.5rem;
+    margin-inline-end: 0.75rem;
+}
+.node[data-type='tag_match'][data-played='true'] {
+    display: none;
+}
+.node[data-type='tag_match'] > div {
+    /* The target character color `--character-color` is set inline. */
+    /* It also comes with `[data-character-id]` and `[data-character-name]` as well */
+    display: inline;
+    padding: 0.5rem 1rem;
+    margin-bottom: 0.5rem;
+    border: dashed 0.125rem var(--character-color);
+    border-left-width: 1.5rem;
+    border-left-style: solid;
+    margin-inline-end: 0.75rem;
+    word-break: break-all;
+}
+.node[data-type='tag_match'] > div > select {
+    margin-left: 1rem;
+}
+.node[data-type='tag_match'] button { /* both skip and apply */
+    margin: 0.25rem;
+}
+
+/* tag_pass */
+.node[data-type='tag_pass'] {}
+.node[data-type='tag_pass'][data-played='true'] {
+    display: none;
+}
+.node[data-type='tag_pass'] > code { /* (valid) */
+    /* The target character color `--character-color` is set inline. */
+    /* It also comes with `[data-character-id]` and `[data-character-name]` as well */
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    margin-bottom: 0.5rem;
+    border: dashed 0.125rem var(--character-color);
+    border-left-width: 1.5rem;
+    border-left-style: solid;
+    margin-inline-end: 0.75rem;
+    word-break: break-all;
+}
+.node[data-type='tag_pass'] > code > div { /* (tag group) */
+    margin: 0;
+}
+.node[data-type='tag_pass'] > code > div > span { /* (checkable) */
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    margin: 0.25rem 0.5rem;
+    border: solid 0.125rem var(--character-color);
+    border-radius: 1rem;
+    word-break: break-all;
+}
+.node[data-type='tag_pass'] > span { /* (invalid) */
+    display: inline-block;
+    margin-bottom: 0.5rem;
+    margin-inline-end: 0.75rem;
+}
+.node[data-type='tag_pass'] button { /* both skip and apply */
+    margin: 0.25rem;
+}
+
+/* user_input */
+.node[data-type='user_input'] {}
+.node[data-type='user_input'] input {
+    margin-right: 1rem;
+}
+.node[data-type='user_input'][data-valid='false'] input {
+    border-color: var(--color-e);
+}
+.node[data-type='user_input'] p {}
+.node[data-type='user_input'] label {
+    margin-right: 1rem;
+    cursor: pointer;
+    font-weight: var(--font-weight-buttons);
+}
+.node[data-type='user_input']:not([data-played='true']) label:hover {
+    color: var(--color-5);
+}
+.node[data-type='user_input'][data-played='true'] input,
+.node[data-type='user_input'][data-played='true'] label {
+    pointer-events: none;
+}
+.node[data-type='user_input'] button { /* both buttons */
+    margin: 0.25rem;
+}
+.node[data-type='user_input'][data-played='true'] button {
+    display: none;
+}
+.node[data-type='user_input'][data-valid='false'] button:nth-of-type(1) { /* apply/continue */
+    filter: grayscale(1) opacity(0.5);
+}
+.node[data-type='user_input'][data-valid='false'] button:nth-of-type(2) { /* skip */ }
+
+/* variable_update */
+.node[data-type='variable_update'] {}
+.node[data-type='variable_update'][data-played='true'] {
+    display: none;
+}
+.node[data-type='variable_update'] /*code*/.expression {
+    word-break: break-all;
+}
+.node[data-type='variable_update'] button {
+    margin: 0.5rem;
+}

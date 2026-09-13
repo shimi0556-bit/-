@@ -1,0 +1,30 @@
+[gd_scene load_steps=2 format=3 uid="uid://d2uv3abgmsult"]
+
+[ext_resource type="Script" uid="uid://blc1twdikjts4" path="res://nodes/sequencer/inspector.gd" id="1_1dnp5"]
+
+[node name="Sequencer" type="VBoxContainer"]
+offset_right = 256.0
+offset_bottom = 58.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_1dnp5")
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 2
+text = "SEQUENCER_INSPECTOR_FIELD_SEQ_LENGTH"
+
+[node name="Slots" type="SpinBox" parent="."]
+layout_mode = 2
+min_value = 2.0
+max_value = 10.0
+value = 2.0
+rounded = true
+alignment = 1
+
+[node name="Warning" type="Label" parent="."]
+layout_mode = 2
+tooltip_text = "SEQUENCER_INSPECTOR_HANDLE_WITH_CARE_EXTRA_INFO"
+mouse_filter = 0
+mouse_default_cursor_shape = 16
+theme_type_variation = &"LabelTransparent"
+text = "SEQUENCER_INSPECTOR_HANDLE_WITH_CARE"

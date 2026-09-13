@@ -1,0 +1,54 @@
+[gd_scene load_steps=3 format=3 uid="uid://c3b65w5oenkhe"]
+
+[ext_resource type="Script" uid="uid://cefhgsxqro5eo" path="res://nodes/generator/node.gd" id="1_bm164"]
+[ext_resource type="Texture2D" uid="uid://352dfaufpmcc" path="res://nodes/generator/icon.svg" id="1_jimer"]
+
+[node name="Generator" type="GraphNode"]
+offset_right = 256.0
+resizable = true
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = true
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+script = ExtResource("1_bm164")
+
+[node name="Display" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Kind" type="Button" parent="Display"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+mouse_filter = 2
+disabled = true
+text = "Generator"
+icon = ExtResource("1_jimer")
+flat = true
+text_overrun_behavior = 3
+expand_icon = true
+
+[node name="Method" type="Label" parent="Display"]
+custom_minimum_size = Vector2(64, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+text = "[Method]"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Arguments" type="Label" parent="Display"]
+layout_mode = 2
+text = "[Arguments]"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Target" type="Label" parent="Display"]
+layout_mode = 2
+text = "[Target]"
+horizontal_alignment = 1
+autowrap_mode = 3

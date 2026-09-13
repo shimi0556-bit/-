@@ -1,0 +1,65 @@
+[gd_scene load_steps=6 format=3 uid="uid://e5j12ty6d0ql"]
+
+[ext_resource type="Texture2D" uid="uid://4xglpbpbvntu" path="res://nodes/entry/icon.svg" id="1_nfyq4"]
+[ext_resource type="Script" uid="uid://331lvxn0kgp7" path="res://nodes/entry/console.gd" id="1_qu4w8"]
+[ext_resource type="Texture2D" uid="uid://dd1eyrl7g6b00" path="res://nodes/entry/interface.svg" id="2_v773j"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ixm1o"]
+atlas = ExtResource("2_v773j")
+region = Rect2(0, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_kerq1"]
+atlas = ExtResource("2_v773j")
+region = Rect2(48, 0, 48, 48)
+
+[node name="Entry" type="PanelContainer"]
+offset_right = 256.0
+size_flags_horizontal = 3
+script = ExtResource("1_qu4w8")
+
+[node name="Play" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Head" type="HBoxContainer" parent="Play"]
+layout_mode = 2
+
+[node name="Icon" type="Button" parent="Play/Head"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+focus_mode = 0
+mouse_filter = 2
+disabled = true
+icon = ExtResource("1_nfyq4")
+flat = true
+text_overrun_behavior = 3
+expand_icon = true
+
+[node name="Plaque" type="Label" parent="Play/Head"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "[Plaque]"
+horizontal_alignment = 1
+
+[node name="ForProject" type="Button" parent="Play/Head"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+focus_mode = 0
+disabled = true
+icon = SubResource("AtlasTexture_ixm1o")
+flat = true
+icon_alignment = 1
+expand_icon = true
+
+[node name="ForScene" type="Button" parent="Play/Head"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+focus_mode = 0
+disabled = true
+icon = SubResource("AtlasTexture_kerq1")
+flat = true
+icon_alignment = 1
+expand_icon = true
+
+[node name="Action" type="Button" parent="Play"]
+layout_mode = 2
+text = "[Node Name]"

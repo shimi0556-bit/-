@@ -1,0 +1,22 @@
+[gd_scene load_steps=2 format=3 uid="uid://ufpp6vby6ei"]
+
+[ext_resource type="Script" uid="uid://b45onjj77djqj" path="res://nodes/hub/inspector.gd" id="1_cqbq8"]
+
+[node name="Hub" type="VBoxContainer"]
+offset_right = 256.0
+offset_bottom = 58.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_cqbq8")
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 2
+text = "HUB_INSPECTOR_FIELD_SLOTS_COUNT"
+
+[node name="Slots" type="SpinBox" parent="."]
+layout_mode = 2
+min_value = 2.0
+max_value = 10.0
+value = 2.0
+rounded = true
+alignment = 1

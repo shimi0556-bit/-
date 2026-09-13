@@ -1,0 +1,90 @@
+[gd_scene load_steps=4 format=3 uid="uid://b5lvllb73nda3"]
+
+[ext_resource type="Script" uid="uid://ceo5xvh6nq78u" path="res://nodes/variable_update/inspector.gd" id="1_wf655"]
+[ext_resource type="Texture2D" uid="uid://by8lwldcvhfq0" path="res://assets/symbols.png" id="2_xyrmn"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_8w2qn"]
+atlas = ExtResource("2_xyrmn")
+region = Rect2(192, 192, 48, 48)
+
+[node name="VariableUpdate" type="VBoxContainer"]
+offset_right = 256.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_wf655")
+
+[node name="Update" type="Label" parent="."]
+layout_mode = 2
+text = "VARIABLE_UPDATE_INSPECTOR_FIELD_UPDATE"
+
+[node name="Variable" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="List" type="OptionButton" parent="Variable"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Filtered" type="Button" parent="Variable"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "VARIABLE_UPDATE_INSPECTOR_APPLY_GLOBAL_VAR_FILTERS_TOOLTIP"
+toggle_mode = true
+icon = SubResource("AtlasTexture_8w2qn")
+icon_alignment = 1
+expand_icon = true
+
+[node name="By" type="Label" parent="."]
+layout_mode = 2
+text = "VARIABLE_UPDATE_INSPECTOR_FIELD_BY"
+
+[node name="Operator" type="OptionButton" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="To" type="Label" parent="."]
+layout_mode = 2
+text = "VARIABLE_UPDATE_INSPECTOR_FIELD_TO"
+
+[node name="With" type="PanelContainer" parent="."]
+layout_mode = 2
+
+[node name="Parameter" type="HBoxContainer" parent="With"]
+layout_mode = 2
+
+[node name="Mode" type="OptionButton" parent="With/Parameter"]
+layout_mode = 2
+
+[node name="Value" type="MarginContainer" parent="With/Parameter"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Static" type="MarginContainer" parent="With/Parameter/Value"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="String" type="LineEdit" parent="With/Parameter/Value/Static"]
+layout_mode = 2
+placeholder_text = "VARIABLE_UPDATE_INSPECTOR_PARAM_STR_PLACEHOLDER"
+alignment = 1
+
+[node name="Number" type="SpinBox" parent="With/Parameter/Value/Static"]
+visible = false
+layout_mode = 2
+allow_greater = true
+allow_lesser = true
+alignment = 1
+
+[node name="Boolean" type="OptionButton" parent="With/Parameter/Value/Static"]
+visible = false
+layout_mode = 2
+selected = 0
+item_count = 2
+popup/item_0/text = "VARIABLE_UPDATE_INSPECTOR_PARAM_BOOL_TRUE"
+popup/item_0/id = 1
+popup/item_1/text = "VARIABLE_UPDATE_INSPECTOR_PARAM_BOOL_FALSE"
+popup/item_1/id = 0
+
+[node name="Variable" type="OptionButton" parent="With/Parameter/Value"]
+layout_mode = 2
+size_flags_horizontal = 3

@@ -1,0 +1,36 @@
+[gd_scene load_steps=2 format=3 uid="uid://dmbsjuahu2g0k"]
+
+[ext_resource type="Script" uid="uid://cb5014v2ypw7m" path="res://nodes/jump/inspector.gd" id="1_ebnsr"]
+
+[node name="Jump" type="VBoxContainer"]
+offset_right = 256.0
+offset_bottom = 156.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_ebnsr")
+
+[node name="ReasonLabel" type="Label" parent="."]
+layout_mode = 2
+text = "JUMP_INSPECTOR_FIELD_REASON"
+
+[node name="Reason" type="LineEdit" parent="."]
+layout_mode = 2
+placeholder_text = "JUMP_INSPECTOR_FIELD_REASON_PLACEHOLDER"
+
+[node name="DestinationLabel" type="Label" parent="."]
+layout_mode = 2
+text = "JUMP_INSPECTOR_FIELD_DESTINATION"
+
+[node name="Destination" type="LineEdit" parent="."]
+layout_mode = 2
+placeholder_text = "JUMP_INSPECTOR_FIELD_DESTINATION_PLACEHOLDER"
+
+[node name="Suggestion" type="MarginContainer" parent="."]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_right = 8
+
+[node name="List" type="ItemList" parent="Suggestion"]
+layout_mode = 2

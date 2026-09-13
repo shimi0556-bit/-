@@ -1,0 +1,57 @@
+[gd_scene load_steps=3 format=3 uid="uid://b7w3stm3boigu"]
+
+[ext_resource type="Script" uid="uid://dvib5pofvto7d" path="res://nodes/content/console.gd" id="1_eh460"]
+[ext_resource type="Texture2D" uid="uid://bpus4yo1eik44" path="res://nodes/content/icon.svg" id="1_t6viu"]
+
+[node name="Content" type="PanelContainer"]
+offset_right = 256.0
+offset_bottom = 100.0
+size_flags_horizontal = 3
+script = ExtResource("1_eh460")
+
+[node name="Play" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Head" type="HBoxContainer" parent="Play"]
+layout_mode = 2
+
+[node name="Icon" type="Button" parent="Play/Head"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+focus_mode = 0
+mouse_filter = 2
+disabled = true
+icon = ExtResource("1_t6viu")
+flat = true
+icon_alignment = 1
+expand_icon = true
+
+[node name="Title" type="RichTextLabel" parent="Play/Head"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_type_variation = &"RichTextLabelH3"
+bbcode_enabled = true
+text = "[Rich [color=yellow]Title[/color]]"
+fit_content = true
+
+[node name="BriefLegacy" type="RichTextLabel" parent="Play"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+bbcode_enabled = true
+text = "[Rich [color=green]Brief[/color] (legacy)]"
+fit_content = true
+
+[node name="Content" type="RichTextLabel" parent="Play"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+bbcode_enabled = true
+text = "[Rich [color=red]Content [/color] all with [i]BBCode[/i] support]"
+fit_content = true
+
+[node name="Continue" type="Button" parent="Play"]
+layout_mode = 2
+size_flags_horizontal = 8
+text = "CONTENT_CONSOLE_CONTINUE_BTN"

@@ -1,0 +1,54 @@
+[gd_scene load_steps=3 format=3 uid="uid://h6vgr2pclvw3"]
+
+[ext_resource type="Script" uid="uid://bi56ep45k7mm8" path="res://nodes/interaction/console.gd" id="1_2yu6f"]
+[ext_resource type="Texture2D" uid="uid://b8w0dovf3nrpu" path="res://nodes/interaction/icon.svg" id="1_g0frf"]
+
+[node name="Interaction" type="PanelContainer"]
+offset_right = 256.0
+size_flags_horizontal = 3
+script = ExtResource("1_2yu6f")
+
+[node name="Play" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Head" type="HBoxContainer" parent="Play"]
+layout_mode = 2
+
+[node name="Icon" type="Button" parent="Play/Head"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+focus_mode = 0
+mouse_filter = 2
+disabled = true
+icon = ExtResource("1_g0frf")
+flat = true
+icon_alignment = 1
+expand_icon = true
+
+[node name="Name" type="Label" parent="Play/Head"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"LabelTransparent"
+text = "[Node Name]"
+text_overrun_behavior = 3
+
+[node name="Choices" type="VBoxContainer" parent="Play"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SampleX" type="Button" parent="Play/Choices"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Action Choice X."
+
+[node name="SampleY" type="Button" parent="Play/Choices"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Action Choice Y!"
+
+[node name="Chosen" type="Label" parent="Play"]
+visible = false
+layout_mode = 2
+text = "[Played Action]"
+horizontal_alignment = 1
+autowrap_mode = 3

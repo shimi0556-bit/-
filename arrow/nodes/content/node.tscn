@@ -1,0 +1,87 @@
+[gd_scene load_steps=6 format=3 uid="uid://cw6ktxdssxm37"]
+
+[ext_resource type="Texture2D" uid="uid://bpus4yo1eik44" path="res://nodes/content/icon.svg" id="1_iqc4k"]
+[ext_resource type="Script" uid="uid://ct0uvxyl4a0cy" path="res://nodes/content/node.gd" id="1_xitt4"]
+[ext_resource type="Texture2D" uid="uid://br5terfalq4el" path="res://nodes/content/interface.svg" id="2_cuthi"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_v1bxf"]
+atlas = ExtResource("2_cuthi")
+region = Rect2(0, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_binra"]
+atlas = ExtResource("2_cuthi")
+region = Rect2(48, 0, 48, 48)
+
+[node name="Content" type="GraphNode"]
+offset_right = 256.0
+resizable = true
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = true
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+script = ExtResource("1_xitt4")
+
+[node name="Display" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Head" type="HBoxContainer" parent="Display"]
+layout_mode = 2
+
+[node name="Kind" type="Button" parent="Display/Head"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+mouse_filter = 2
+disabled = true
+text = "Content"
+icon = ExtResource("1_iqc4k")
+flat = true
+text_overrun_behavior = 3
+expand_icon = true
+
+[node name="AutoPlay" type="Button" parent="Display/Head"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+focus_mode = 0
+mouse_filter = 2
+disabled = true
+icon = SubResource("AtlasTexture_v1bxf")
+flat = true
+icon_alignment = 1
+expand_icon = true
+
+[node name="ClearPage" type="Button" parent="Display/Head"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+focus_mode = 0
+mouse_filter = 2
+disabled = true
+icon = SubResource("AtlasTexture_binra")
+flat = true
+icon_alignment = 1
+expand_icon = true
+
+[node name="Title" type="RichTextLabel" parent="Display"]
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_type_variation = &"RichTextLabelH3"
+bbcode_enabled = true
+text = "[Rich [color=yellow]Title[/color]]"
+fit_content = true
+autowrap_mode = 0
+
+[node name="Brief" type="RichTextLabel" parent="Display"]
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+bbcode_enabled = true
+text = "[Rich [color=red]Content [/color] [color=green]Brief[/color] with [i]BBCode[/i] support]"
+fit_content = true

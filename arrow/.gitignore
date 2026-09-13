@@ -1,0 +1,8 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# Arrow ignores
+*.arrow
+.arrow.config
+.arrow.project

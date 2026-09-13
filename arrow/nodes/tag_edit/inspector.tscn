@@ -1,0 +1,50 @@
+[gd_scene load_steps=4 format=3 uid="uid://cyjxrkfvr8ese"]
+
+[ext_resource type="Script" uid="uid://hpoxnri5dloe" path="res://nodes/tag_edit/inspector.gd" id="1_1l8m3"]
+[ext_resource type="Texture2D" uid="uid://by8lwldcvhfq0" path="res://assets/symbols.png" id="2_jhwa2"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_sgnlk"]
+atlas = ExtResource("2_jhwa2")
+region = Rect2(192, 192, 48, 48)
+
+[node name="TagEdit" type="VBoxContainer"]
+offset_right = 256.0
+offset_bottom = 179.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_1l8m3")
+
+[node name="Character" type="Label" parent="."]
+layout_mode = 2
+text = "TAG_EDIT_INSPECTOR_FIELD_CHARACTER"
+
+[node name="Selector" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="List" type="OptionButton" parent="Selector"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Filtered" type="Button" parent="Selector"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "TAG_EDIT_INSPECTOR_APPLY_GLOBAL_CHAR_FILTERS_TOOLTIP"
+toggle_mode = true
+icon = SubResource("AtlasTexture_sgnlk")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Edit" type="Label" parent="."]
+layout_mode = 2
+text = "TAG_EDIT_INSPECTOR_FIELD_EDIT"
+
+[node name="Method" type="OptionButton" parent="."]
+layout_mode = 2
+
+[node name="Key" type="LineEdit" parent="."]
+layout_mode = 2
+placeholder_text = "TAG_EDIT_INSPECTOR_FIELD_KEY_PLACEHOLDER"
+
+[node name="Value" type="LineEdit" parent="."]
+layout_mode = 2
+placeholder_text = "TAG_EDIT_INSPECTOR_FIELD_VALUE_PLACEHOLDER"

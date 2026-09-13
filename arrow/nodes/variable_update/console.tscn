@@ -1,0 +1,49 @@
+[gd_scene load_steps=3 format=3 uid="uid://cvh7ssxuvoh1q"]
+
+[ext_resource type="Script" uid="uid://dj1mpv3w0m6va" path="res://nodes/variable_update/console.gd" id="1_f6lt3"]
+[ext_resource type="Texture2D" uid="uid://bgcst2eb58xgr" path="res://nodes/variable_update/icon.svg" id="1_yvu5q"]
+
+[node name="VariableUpdate" type="PanelContainer"]
+offset_right = 256.0
+offset_bottom = 31.0
+size_flags_horizontal = 3
+script = ExtResource("1_f6lt3")
+
+[node name="Play" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Head" type="HBoxContainer" parent="Play"]
+layout_mode = 2
+
+[node name="Icon" type="Button" parent="Play/Head"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+focus_mode = 0
+mouse_filter = 2
+disabled = true
+icon = ExtResource("1_yvu5q")
+flat = true
+icon_alignment = 1
+expand_icon = true
+
+[node name="Expression" type="Label" parent="Play/Head"]
+custom_minimum_size = Vector2(64, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+text = "[Expression]"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Actions" type="HBoxContainer" parent="Play"]
+layout_mode = 2
+alignment = 2
+
+[node name="Dismiss" type="Button" parent="Play/Actions"]
+layout_mode = 2
+text = "VARIABLE_UPDATE_CONSOLE_ACT_DISMISS"
+
+[node name="Apply" type="Button" parent="Play/Actions"]
+layout_mode = 2
+text = "VARIABLE_UPDATE_CONSOLE_ACT_APPLY"

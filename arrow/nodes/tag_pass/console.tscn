@@ -1,0 +1,88 @@
+[gd_scene load_steps=3 format=3 uid="uid://dp2viojv8bp0b"]
+
+[ext_resource type="Texture2D" uid="uid://b568msdfakrr1" path="res://nodes/tag_pass/icon.svg" id="1_k7ju6"]
+[ext_resource type="Script" uid="uid://wmanqqn0ea53" path="res://nodes/tag_pass/console.gd" id="1_v4yj5"]
+
+[node name="TagPass" type="PanelContainer"]
+offset_right = 256.0
+size_flags_horizontal = 3
+script = ExtResource("1_v4yj5")
+
+[node name="Play" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Head" type="HBoxContainer" parent="Play"]
+layout_mode = 2
+
+[node name="Icon" type="Button" parent="Play/Head"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+focus_mode = 0
+mouse_filter = 2
+disabled = true
+icon = ExtResource("1_k7ju6")
+flat = true
+icon_alignment = 1
+expand_icon = true
+
+[node name="Name" type="Label" parent="Play/Head"]
+layout_mode = 2
+text = "[Character Name]"
+
+[node name="Body" type="HBoxContainer" parent="Play"]
+layout_mode = 2
+
+[node name="Color" type="ColorRect" parent="Play/Body"]
+custom_minimum_size = Vector2(4, 0)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Checkables" type="VBoxContainer" parent="Play/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Method" type="Label" parent="Play/Body/Checkables"]
+layout_mode = 2
+text = "[Method]"
+horizontal_alignment = 1
+
+[node name="Invalid" type="Label" parent="Play/Body/Checkables"]
+visible = false
+layout_mode = 2
+text = "TAG_PASS_CONSOLE_INVALID"
+horizontal_alignment = 1
+
+[node name="Margin" type="MarginContainer" parent="Play/Body/Checkables"]
+layout_mode = 2
+
+[node name="Tags" type="HFlowContainer" parent="Play/Body/Checkables/Margin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="NoTagsToCheck" type="Label" parent="Play/Body/Checkables/Margin"]
+layout_mode = 2
+text = "TAG_PASS_CONSOLE_NOTHING_TO_CHECK"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TagTemplate" type="Label" parent="Play/Body/Checkables/Margin"]
+visible = false
+layout_mode = 2
+text = "[Tag-Key: Value]"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Actions" type="HBoxContainer" parent="Play/Body/Checkables"]
+layout_mode = 2
+alignment = 2
+
+[node name="False" type="Button" parent="Play/Body/Checkables/Actions"]
+layout_mode = 2
+theme_type_variation = &"TagPassConsoleFalse"
+text = "TAG_PASS_CONSOLE_FALSE"
+
+[node name="True" type="Button" parent="Play/Body/Checkables/Actions"]
+layout_mode = 2
+theme_type_variation = &"TagPassConsoleTrue"
+text = "TAG_PASS_CONSOLE_TRUE"

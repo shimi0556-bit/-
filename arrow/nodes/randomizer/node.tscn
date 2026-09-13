@@ -1,0 +1,30 @@
+[gd_scene load_steps=3 format=3 uid="uid://b3668r6tcfg2b"]
+
+[ext_resource type="Script" uid="uid://b1jayh7bkmsii" path="res://nodes/randomizer/node.gd" id="1_bqq00"]
+[ext_resource type="Texture2D" uid="uid://dmmij6c5intyk" path="res://nodes/randomizer/icon.svg" id="1_dnea6"]
+
+[node name="Randomizer" type="GraphNode"]
+offset_right = 168.0
+mouse_filter = 1
+resizable = true
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+script = ExtResource("1_bqq00")
+
+[node name="Kind" type="Button" parent="."]
+layout_mode = 2
+focus_mode = 0
+mouse_filter = 2
+disabled = true
+text = "Randomizer"
+icon = ExtResource("1_dnea6")
+flat = true
+text_overrun_behavior = 3
+expand_icon = true

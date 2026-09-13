@@ -1,0 +1,76 @@
+[gd_scene load_steps=5 format=3 uid="uid://dyrlrme3vre0c"]
+
+[ext_resource type="Script" uid="uid://bvgjd1qucratw" path="res://nodes/tag_match/inspector.gd" id="1_lrar4"]
+[ext_resource type="Texture2D" uid="uid://by8lwldcvhfq0" path="res://assets/symbols.png" id="2_ogosw"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_2tsxu"]
+atlas = ExtResource("2_ogosw")
+region = Rect2(192, 192, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7x4sk"]
+atlas = ExtResource("2_ogosw")
+region = Rect2(240, 48, 48, 48)
+
+[node name="TagMatch" type="VBoxContainer"]
+offset_right = 256.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_lrar4")
+
+[node name="Character" type="Label" parent="."]
+layout_mode = 2
+text = "TAG_MATCH_INSPECTOR_FIELD_CHARACTER"
+
+[node name="Selector" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="List" type="OptionButton" parent="Selector"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Filtered" type="Button" parent="Selector"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "TAG_MATCH_INSPECTOR_APPLY_GLOBAL_CHAR_FILTERS_TOOLTIP"
+toggle_mode = true
+icon = SubResource("AtlasTexture_2tsxu")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Tag" type="Label" parent="."]
+layout_mode = 2
+text = "TAG_MATCH_INSPECTOR_FIELD_KEY"
+
+[node name="TagKey" type="LineEdit" parent="."]
+layout_mode = 2
+placeholder_text = "TAG_MATCH_INSPECTOR_FIELD_KEY_PLACEHOLDER"
+
+[node name="Entries" type="Label" parent="."]
+layout_mode = 2
+text = "TAG_MATCH_INSPECTOR_FIELD_PATTERNS"
+
+[node name="Pattern" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Edit" type="LineEdit" parent="Pattern"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Tools" type="MenuButton" parent="Pattern"]
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+icon = SubResource("AtlasTexture_7x4sk")
+flat = false
+icon_alignment = 1
+expand_icon = true
+
+[node name="Patterns" type="ItemList" parent="."]
+custom_minimum_size = Vector2(0, 96)
+layout_mode = 2
+size_flags_vertical = 3
+select_mode = 1
+allow_rmb_select = true
+
+[node name="RegExp" type="CheckBox" parent="."]
+layout_mode = 2
+text = "TAG_MATCH_INSPECTOR_OPT_REGEX"

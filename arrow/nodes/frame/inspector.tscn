@@ -1,0 +1,63 @@
+[gd_scene load_steps=2 format=3 uid="uid://dpegivfdbf43n"]
+
+[ext_resource type="Script" uid="uid://c2u24lfbc5fh7" path="res://nodes/frame/inspector.gd" id="1_8qlpy"]
+
+[node name="Frame" type="VBoxContainer"]
+offset_right = 256.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_8qlpy")
+
+[node name="Color" type="Label" parent="."]
+layout_mode = 2
+text = "FRAME_INSPECTOR_FIELD_COLOR"
+
+[node name="ColorPicker" type="ColorPickerButton" parent="."]
+layout_mode = 2
+text = "[Frame Color]"
+color = Color(0, 0.643137, 0.392157, 1)
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 2
+text = "FRAME_INSPECTOR_FIELD_LABEL"
+
+[node name="TextEdit" type="TextEdit" parent="."]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Width" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Width"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "FRAME_INSPECTOR_FIELD_WIDTH"
+
+[node name="Value" type="SpinBox" parent="Width"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 3.0
+min_value = 128.0
+max_value = 999.0
+value = 128.0
+rounded = true
+allow_greater = true
+
+[node name="Height" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Height"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "FRAME_INSPECTOR_FIELD_HEIGHT"
+
+[node name="Value" type="SpinBox" parent="Height"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 3.0
+min_value = 128.0
+max_value = 999.0
+value = 128.0
+rounded = true
+allow_greater = true

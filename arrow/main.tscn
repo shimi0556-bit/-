@@ -1,0 +1,2216 @@
+[gd_scene load_steps=60 format=3 uid="uid://bqitgi15pxprx"]
+
+[ext_resource type="Texture2D" uid="uid://c1d56i348qty0" path="res://assets/about_splash.png" id="1_ktviq"]
+[ext_resource type="Theme" uid="uid://7iui7va3jch8" path="res://assets/themes/dark.tres" id="1_nah4y"]
+[ext_resource type="Script" uid="uid://d2dqlejd8wkmp" path="res://scripts/main.gd" id="2_nfnrg"]
+[ext_resource type="Script" uid="uid://txsvpiln3mx8" path="res://scripts/editor/panels/about.gd" id="3_1hktc"]
+[ext_resource type="Script" uid="uid://ci0xmj8gvrfrv" path="res://scripts/editor/panels/preferences.gd" id="5_dexb8"]
+[ext_resource type="Script" uid="uid://bq37p0ajhdhca" path="res://scripts/editor/panels/preferences_ald_menu.gd" id="6_uff3i"]
+[ext_resource type="Texture2D" uid="uid://by8lwldcvhfq0" path="res://assets/symbols.png" id="7_0tmvq"]
+[ext_resource type="Script" uid="uid://d080fqskcyp66" path="res://scripts/editor/panels/authors.gd" id="8_klf5l"]
+[ext_resource type="Script" uid="uid://bvw4nbovr3xlb" path="res://scripts/editor/panels/new_document_prompt.gd" id="9_kh4o4"]
+[ext_resource type="Script" uid="uid://si3j0l23kh4l" path="res://scripts/editor/panels/path_dialog.gd" id="10_nf8xx"]
+[ext_resource type="Script" uid="uid://bd7reaqw2uepb" path="res://scripts/editor/panels/notification.gd" id="10_w548v"]
+[ext_resource type="Script" uid="uid://dingbnv5b8yi2" path="res://scripts/editor/panels/inspector.gd" id="12_renut"]
+[ext_resource type="Script" uid="uid://bkq53dviq5vd4" path="res://scripts/editor/panels/inspector_project.gd" id="13_xkghd"]
+[ext_resource type="Script" uid="uid://7lmmabrdq1b8" path="res://scripts/editor/panels/inspector_project_properties.gd" id="14_h0gnp"]
+[ext_resource type="Script" uid="uid://bvymgyyw1dr57" path="res://scripts/editor/panels/inspector_project_new_menu.gd" id="14_tk6u0"]
+[ext_resource type="Script" uid="uid://0qu620b3n6ic" path="res://scripts/editor/panels/inspector_node.gd" id="16_v0k7j"]
+[ext_resource type="Script" uid="uid://dgwu5810elkls" path="res://scripts/editor/panels/inspector_scenes.gd" id="17_hvt6o"]
+[ext_resource type="Script" uid="uid://d2o4elkhen4as" path="res://scripts/editor/panels/inspector_macros.gd" id="18_8y6h6"]
+[ext_resource type="Script" uid="uid://bhx6pvnbf04sv" path="res://scripts/editor/panels/inspector_variables.gd" id="19_rrn5c"]
+[ext_resource type="Script" uid="uid://ciawewnvbxsrh" path="res://scripts/editor/panels/inspector_characters.gd" id="20_71821"]
+[ext_resource type="Script" uid="uid://dt088d4i2xmgk" path="res://scripts/editor/panels/console.gd" id="21_k3mxj"]
+[ext_resource type="Script" uid="uid://bp2jgos1hx3h3" path="res://scripts/editor/grid_context_menu.gd" id="22_qw7b1"]
+[ext_resource type="Script" uid="uid://qo67xt5fxmxk" path="res://scripts/editor/editor.gd" id="23_850di"]
+[ext_resource type="Script" uid="uid://yaa461su2was" path="res://scripts/editor/app_menu.gd" id="23_s1o1v"]
+[ext_resource type="Script" uid="uid://bcbgosl1ltjeu" path="res://scripts/editor/new_release_check.gd" id="24_2ksii"]
+[ext_resource type="Script" uid="uid://dtgkmktkucufh" path="res://scripts/editor/grid_graph_edit.gd" id="25_3y1ae"]
+[ext_resource type="Script" uid="uid://bahvfetu2v2m8" path="res://scripts/editor/minimap.gd" id="26_g6oda"]
+[ext_resource type="Script" uid="uid://le3w7a81gfye" path="res://scripts/editor/query.gd" id="27_oamwo"]
+[ext_resource type="Script" uid="uid://c14jytxi60272" path="res://scripts/editor/quick_preferences.gd" id="28_jwiiu"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_6unog"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(0, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_1mvp3"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(48, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_erl4q"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(48, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_nb1b5"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(0, 48, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_yjkme"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(48, 48, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_3t2oi"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(144, 48, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jgf31"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(96, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fimxt"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(144, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_73xki"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(0, 96, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7jppa"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(240, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mpora"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(0, 144, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gxh6s"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(48, 144, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_yujvl"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(48, 96, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_plcb7"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(96, 96, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_lea63"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(144, 96, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_20hje"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(96, 144, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_55qnl"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(96, 48, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_spigt"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(192, 240, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_e13h5"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(0, 240, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_yk16d"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(48, 240, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ygpkh"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(96, 240, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_whf1p"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(144, 240, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ok1su"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(0, 192, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_y4ukx"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(48, 192, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mksnb"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(192, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_c0enu"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(192, 48, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_h8feu"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(192, 96, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_bxg2x"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(144, 144, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_tx0hw"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(144, 192, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_so6me"]
+atlas = ExtResource("7_0tmvq")
+region = Rect2(96, 192, 48, 48)
+
+[node name="Main" type="PanelContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_nah4y")
+script = ExtResource("2_nfnrg")
+
+[node name="Overlays" type="CanvasLayer" parent="."]
+layer = 2
+
+[node name="Control" type="Control" parent="Overlays"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 2
+theme = ExtResource("1_nah4y")
+
+[node name="Blocker" type="ColorRect" parent="Overlays/Control"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_force_pass_scroll_events = false
+color = Color(0.24, 0.24, 0.24, 0.729412)
+
+[node name="About" type="PanelContainer" parent="Overlays/Control"]
+visible = false
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.2
+anchor_top = 0.2
+anchor_right = 0.8
+anchor_bottom = 0.8
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("3_1hktc")
+
+[node name="Margin" type="MarginContainer" parent="Overlays/Control/About"]
+layout_mode = 2
+theme_type_variation = &"Margin16"
+
+[node name="Half" type="HBoxContainer" parent="Overlays/Control/About/Margin"]
+layout_mode = 2
+
+[node name="Left" type="VBoxContainer" parent="Overlays/Control/About/Margin/Half"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+
+[node name="Splash" type="TextureRect" parent="Overlays/Control/About/Margin/Half/Left"]
+layout_mode = 2
+size_flags_vertical = 3
+texture = ExtResource("1_ktviq")
+expand_mode = 4
+stretch_mode = 6
+
+[node name="Information" type="VBoxContainer" parent="Overlays/Control/About/Margin/Half/Left"]
+layout_mode = 2
+
+[node name="Version" type="Label" parent="Overlays/Control/About/Margin/Half/Left/Information"]
+layout_mode = 2
+text = "[v3.x]"
+
+[node name="Website" type="LinkButton" parent="Overlays/Control/About/Margin/Half/Left/Information"]
+layout_mode = 2
+text = "Website"
+
+[node name="Repository" type="LinkButton" parent="Overlays/Control/About/Margin/Half/Left/Information"]
+layout_mode = 2
+text = "Repository"
+
+[node name="Documentation" type="LinkButton" parent="Overlays/Control/About/Margin/Half/Left/Information"]
+layout_mode = 2
+text = "Documentation"
+
+[node name="Right" type="VBoxContainer" parent="Overlays/Control/About/Margin/Half"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+theme_type_variation = &"BoxGap8"
+
+[node name="Tabs" type="TabContainer" parent="Overlays/Control/About/Margin/Half/Right"]
+layout_mode = 2
+size_flags_vertical = 3
+tab_alignment = 2
+current_tab = 0
+
+[node name="Hello" type="RichTextLabel" parent="Overlays/Control/About/Margin/Half/Right/Tabs"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_type_variation = &"RichTextLabelPadded"
+bbcode_enabled = true
+text = "WELCOME_MESSAGE"
+text_direction = 3
+metadata/_tab_index = 0
+
+[node name="Copyright" type="RichTextLabel" parent="Overlays/Control/About/Margin/Half/Right/Tabs"]
+visible = false
+layout_mode = 2
+theme_type_variation = &"RichTextLabelPadded"
+text = "[Will be Auto-generated]"
+metadata/_tab_index = 1
+
+[node name="Toolbar" type="HBoxContainer" parent="Overlays/Control/About/Margin/Half/Right"]
+layout_mode = 2
+alignment = 2
+
+[node name="Close" type="Button" parent="Overlays/Control/About/Margin/Half/Right/Toolbar"]
+layout_mode = 2
+text = "Close"
+
+[node name="Preferences" type="PanelContainer" parent="Overlays/Control"]
+visible = false
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.2
+anchor_top = 0.2
+anchor_right = 0.8
+anchor_bottom = 0.8
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("5_dexb8")
+
+[node name="Margin" type="MarginContainer" parent="Overlays/Control/Preferences"]
+layout_mode = 2
+theme_type_variation = &"Margin8"
+
+[node name="Sections" type="VBoxContainer" parent="Overlays/Control/Preferences/Margin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+theme_type_variation = &"BoxGap8"
+
+[node name="Toolbar" type="HBoxContainer" parent="Overlays/Control/Preferences/Margin/Sections"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Overlays/Control/Preferences/Margin/Sections/Toolbar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"LabelH2"
+text = "Preferences"
+
+[node name="Dismiss" type="Button" parent="Overlays/Control/Preferences/Margin/Sections/Toolbar"]
+layout_mode = 2
+size_flags_vertical = 4
+text = "Dismiss"
+
+[node name="Confirm" type="Button" parent="Overlays/Control/Preferences/Margin/Sections/Toolbar"]
+layout_mode = 2
+size_flags_vertical = 4
+text = "Confirm"
+
+[node name="Configs" type="PanelContainer" parent="Overlays/Control/Preferences/Margin/Sections"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Scroll" type="ScrollContainer" parent="Overlays/Control/Preferences/Margin/Sections/Configs"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Params" type="VBoxContainer" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_type_variation = &"BoxGap8"
+
+[node name="Interface" type="Label" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params"]
+layout_mode = 2
+theme_type_variation = &"LabelH3"
+text = "User Interface"
+
+[node name="Theme" type="PanelContainer" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params"]
+layout_mode = 2
+
+[node name="Selector" type="VBoxContainer" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params/Theme"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params/Theme/Selector"]
+layout_mode = 2
+text = "Theme"
+
+[node name="Options" type="OptionButton" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params/Theme/Selector"]
+layout_mode = 2
+
+[node name="Language" type="PanelContainer" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params"]
+layout_mode = 2
+
+[node name="Selector" type="VBoxContainer" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params/Language"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params/Language/Selector"]
+layout_mode = 2
+text = "Language"
+
+[node name="Options" type="OptionButton" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params/Language/Selector"]
+layout_mode = 2
+
+[node name="DataManagement" type="Label" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params"]
+layout_mode = 2
+theme_type_variation = &"LabelH3"
+text = "Data Management"
+
+[node name="WorkDir" type="PanelContainer" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params"]
+layout_mode = 2
+
+[node name="Selector" type="VBoxContainer" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params/WorkDir"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params/WorkDir/Selector"]
+layout_mode = 2
+text = "Work Directory"
+
+[node name="Tools" type="HBoxContainer" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params/WorkDir/Selector"]
+layout_mode = 2
+
+[node name="Path" type="LineEdit" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params/WorkDir/Selector/Tools"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "user://"
+placeholder_text = "[Working Directory Path]"
+editable = false
+
+[node name="Select" type="Button" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params/WorkDir/Selector/Tools"]
+layout_mode = 2
+text = "Select"
+
+[node name="Reset" type="MenuButton" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params/WorkDir/Selector/Tools"]
+layout_mode = 2
+text = "Reset"
+flat = false
+script = ExtResource("6_uff3i")
+
+[node name="History" type="PanelContainer" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params"]
+layout_mode = 2
+
+[node name="Selector" type="VBoxContainer" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params/History"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params/History/Selector"]
+layout_mode = 2
+text = "History (Undo/Redo)"
+
+[node name="Size" type="HBoxContainer" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params/History/Selector"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params/History/Selector/Size"]
+layout_mode = 2
+text = "Size"
+
+[node name="Value" type="SpinBox" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params/History/Selector/Size"]
+layout_mode = 2
+size_flags_horizontal = 3
+rounded = true
+allow_greater = true
+
+[node name="info" type="TextureRect" parent="Overlays/Control/Preferences/Margin/Sections/Configs/Scroll/Params/History/Selector/Size"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+tooltip_text = "HISTORY_SIZE_TOOLTIP"
+mouse_filter = 0
+texture = SubResource("AtlasTexture_6unog")
+expand_mode = 3
+stretch_mode = 5
+
+[node name="Authors" type="PanelContainer" parent="Overlays/Control"]
+visible = false
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.2
+anchor_top = 0.2
+anchor_right = 0.8
+anchor_bottom = 0.8
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("8_klf5l")
+
+[node name="Margin" type="MarginContainer" parent="Overlays/Control/Authors"]
+layout_mode = 2
+theme_type_variation = &"Margin8"
+
+[node name="Sections" type="VBoxContainer" parent="Overlays/Control/Authors/Margin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+theme_type_variation = &"BoxGap8"
+
+[node name="Toolbar" type="HBoxContainer" parent="Overlays/Control/Authors/Margin/Sections"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Overlays/Control/Authors/Margin/Sections/Toolbar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"LabelH2"
+text = "Authors"
+
+[node name="Close" type="Button" parent="Overlays/Control/Authors/Margin/Sections/Toolbar"]
+layout_mode = 2
+size_flags_vertical = 4
+text = "Close"
+
+[node name="Management" type="PanelContainer" parent="Overlays/Control/Authors/Margin/Sections"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Parts" type="VBoxContainer" parent="Overlays/Control/Authors/Margin/Sections/Management"]
+layout_mode = 2
+theme_type_variation = &"BoxGap8"
+
+[node name="Contributors" type="PanelContainer" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Tools" type="VBoxContainer" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts/Contributors"]
+layout_mode = 2
+theme_type_variation = &"BoxGap8"
+
+[node name="Label" type="Label" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts/Contributors/Tools"]
+layout_mode = 2
+text = "Contributors"
+
+[node name="List" type="ItemList" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts/Contributors/Tools"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Editor" type="PanelContainer" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts/Contributors/Tools"]
+layout_mode = 2
+
+[node name="Author" type="VBoxContainer" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts/Contributors/Tools/Editor"]
+layout_mode = 2
+theme_type_variation = &"BoxGap8"
+
+[node name="Data" type="PanelContainer" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts/Contributors/Tools/Editor/Author"]
+layout_mode = 2
+
+[node name="Identity" type="VBoxContainer" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts/Contributors/Tools/Editor/Author/Data"]
+layout_mode = 2
+
+[node name="Unique" type="HBoxContainer" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts/Contributors/Tools/Editor/Author/Data/Identity"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts/Contributors/Tools/Editor/Author/Data/Identity/Unique"]
+layout_mode = 2
+text = "AUID"
+
+[node name="Uid" type="SpinBox" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts/Contributors/Tools/Editor/Author/Data/Identity/Unique"]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "AUID_TOOLTIP"
+alignment = 1
+
+[node name="Active" type="CheckBox" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts/Contributors/Tools/Editor/Author/Data/Identity/Unique"]
+layout_mode = 2
+tooltip_text = "ACTIVE_CONTRIBUTOR_TOOLTIP"
+text = "Active Contributor"
+
+[node name="Information" type="HBoxContainer" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts/Contributors/Tools/Editor/Author/Data/Identity"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts/Contributors/Tools/Editor/Author/Data/Identity/Information"]
+layout_mode = 2
+text = "Info"
+
+[node name="Input" type="LineEdit" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts/Contributors/Tools/Editor/Author/Data/Identity/Information"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "John Doe (contributor@project.tld)"
+
+[node name="Actions" type="HBoxContainer" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts/Contributors/Tools/Editor/Author"]
+layout_mode = 2
+alignment = 2
+
+[node name="Remove" type="Button" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts/Contributors/Tools/Editor/Author/Actions"]
+layout_mode = 2
+text = "Remove"
+
+[node name="Apply" type="Button" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts/Contributors/Tools/Editor/Author/Actions"]
+layout_mode = 2
+text = "Apply"
+
+[node name="Chapter" type="PanelContainer" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts"]
+layout_mode = 2
+
+[node name="Editor" type="HBoxContainer" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts/Chapter"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts/Chapter/Editor"]
+layout_mode = 2
+text = "Chapter"
+
+[node name="Id" type="SpinBox" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts/Chapter/Editor"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 3.0
+tooltip_text = "CHAPTER_ID_TOOLTIP"
+alignment = 1
+
+[node name="Update" type="Button" parent="Overlays/Control/Authors/Margin/Sections/Management/Parts/Chapter/Editor"]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "CHAPTER_ID_UPDATE_TOOLTIP"
+text = "Update"
+icon = SubResource("AtlasTexture_1mvp3")
+icon_alignment = 2
+expand_icon = true
+
+[node name="NewDocument" type="PanelContainer" parent="Overlays/Control"]
+visible = false
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.2
+anchor_top = 0.4
+anchor_right = 0.8
+anchor_bottom = 0.6
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("9_kh4o4")
+
+[node name="Margin" type="MarginContainer" parent="Overlays/Control/NewDocument"]
+layout_mode = 2
+theme_type_variation = &"Margin8"
+
+[node name="Sections" type="VBoxContainer" parent="Overlays/Control/NewDocument/Margin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+theme_type_variation = &"BoxGap8"
+
+[node name="Label" type="Label" parent="Overlays/Control/NewDocument/Margin/Sections"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"LabelH2"
+text = "New Document"
+
+[node name="Path" type="PanelContainer" parent="Overlays/Control/NewDocument/Margin/Sections"]
+layout_mode = 2
+
+[node name="Structure" type="VBoxContainer" parent="Overlays/Control/NewDocument/Margin/Sections/Path"]
+layout_mode = 2
+theme_type_variation = &"BoxGap8"
+
+[node name="Title" type="HBoxContainer" parent="Overlays/Control/NewDocument/Margin/Sections/Path/Structure"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Overlays/Control/NewDocument/Margin/Sections/Path/Structure/Title"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Title"
+
+[node name="Value" type="LineEdit" parent="Overlays/Control/NewDocument/Margin/Sections/Path/Structure/Title"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 3.0
+placeholder_text = "Project or Chapter Title"
+
+[node name="Filename" type="HBoxContainer" parent="Overlays/Control/NewDocument/Margin/Sections/Path/Structure"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Overlays/Control/NewDocument/Margin/Sections/Path/Structure/Filename"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Filename"
+
+[node name="Value" type="LineEdit" parent="Overlays/Control/NewDocument/Margin/Sections/Path/Structure/Filename"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 3.0
+placeholder_text = "(without extension)"
+
+[node name="Warning" type="Button" parent="Overlays/Control/NewDocument/Margin/Sections/Path/Structure"]
+visible = false
+layout_mode = 2
+text = "Filename's already used or invalid"
+icon = SubResource("AtlasTexture_erl4q")
+flat = true
+expand_icon = true
+
+[node name="Preview" type="HBoxContainer" parent="Overlays/Control/NewDocument/Margin/Sections/Path/Structure"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Overlays/Control/NewDocument/Margin/Sections/Path/Structure/Preview"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Full Path"
+
+[node name="Value" type="LineEdit" parent="Overlays/Control/NewDocument/Margin/Sections/Path/Structure/Preview"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 3.0
+placeholder_text = "[Generated]"
+editable = false
+
+[node name="Actions" type="HBoxContainer" parent="Overlays/Control/NewDocument/Margin/Sections"]
+layout_mode = 2
+alignment = 2
+
+[node name="Dismiss" type="Button" parent="Overlays/Control/NewDocument/Margin/Sections/Actions"]
+layout_mode = 2
+text = "Dismiss"
+
+[node name="Confirm" type="Button" parent="Overlays/Control/NewDocument/Margin/Sections/Actions"]
+layout_mode = 2
+text = "Create"
+
+[node name="PathDialog" type="FileDialog" parent="Overlays/Control"]
+initial_position = 4
+size = Vector2i(768, 512)
+ok_button_text = "Select Current Folder"
+mode_overrides_title = false
+file_mode = 2
+access = 1
+show_hidden_files = true
+script = ExtResource("10_nf8xx")
+
+[node name="Notification" type="ColorRect" parent="Overlays/Control"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.24, 0.24, 0.24, 0.729412)
+script = ExtResource("10_w548v")
+
+[node name="Panel" type="Panel" parent="Overlays/Control/Notification"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -150.0
+offset_right = 300.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Colorband" type="ColorRect" parent="Overlays/Control/Notification/Panel"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+size_flags_horizontal = 0
+color = Color(1, 0.483333, 0, 1)
+
+[node name="Margin" type="MarginContainer" parent="Overlays/Control/Notification/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"Margin16"
+
+[node name="Sections" type="VBoxContainer" parent="Overlays/Control/Notification/Panel/Margin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+theme_type_variation = &"BoxGap16"
+
+[node name="Heading" type="Label" parent="Overlays/Control/Notification/Panel/Margin/Sections"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"LabelH2"
+text = "[Heading]"
+
+[node name="Message" type="RichTextLabel" parent="Overlays/Control/Notification/Panel/Margin/Sections"]
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "[i][Message Here!][/i]"
+text_direction = 3
+
+[node name="Actions" type="HBoxContainer" parent="Overlays/Control/Notification/Panel/Margin/Sections"]
+layout_mode = 2
+alignment = 2
+
+[node name="Dismiss" type="Button" parent="Overlays/Control/Notification/Panel/Margin/Sections/Actions"]
+layout_mode = 2
+text = "Dismiss"
+
+[node name="Spacer" type="MarginContainer" parent="Overlays/Control/Notification/Panel/Margin/Sections/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Custom" type="HBoxContainer" parent="Overlays/Control/Notification/Panel/Margin/Sections/Actions"]
+layout_mode = 2
+
+[node name="Action" type="Button" parent="Overlays/Control/Notification/Panel/Margin/Sections/Actions/Custom"]
+layout_mode = 2
+text = "[Action(s)]"
+
+[node name="FloatingTools" type="CanvasLayer" parent="."]
+
+[node name="Control" type="Control" parent="FloatingTools"]
+layout_direction = 2
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 2
+theme = ExtResource("1_nah4y")
+
+[node name="Inspector" type="PanelContainer" parent="FloatingTools/Control"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.7
+anchor_top = 0.115
+anchor_right = 0.975
+anchor_bottom = 0.855
+script = ExtResource("12_renut")
+
+[node name="Sections" type="VBoxContainer" parent="FloatingTools/Control/Inspector"]
+layout_direction = 1
+layout_mode = 2
+
+[node name="Titlebar" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections"]
+layout_mode = 2
+
+[node name="Drag" type="Button" parent="FloatingTools/Control/Inspector/Sections/Titlebar"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+mouse_default_cursor_shape = 6
+disabled = true
+text = "Inspector"
+icon = SubResource("AtlasTexture_nb1b5")
+flat = true
+alignment = 0
+expand_icon = true
+
+[node name="TabSelector" type="MenuButton" parent="FloatingTools/Control/Inspector/Sections/Titlebar"]
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+icon = SubResource("AtlasTexture_yjkme")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Resizer" type="Button" parent="FloatingTools/Control/Inspector/Sections/Titlebar"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 11
+disabled = true
+icon = SubResource("AtlasTexture_3t2oi")
+flat = true
+icon_alignment = 1
+expand_icon = true
+
+[node name="Tabs" type="TabContainer" parent="FloatingTools/Control/Inspector/Sections"]
+layout_mode = 2
+size_flags_vertical = 3
+current_tab = 0
+
+[node name="Project" type="PanelContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs"]
+layout_mode = 2
+script = ExtResource("13_xkghd")
+metadata/_tab_index = 0
+
+[node name="Listing" type="VBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project"]
+layout_mode = 2
+
+[node name="Filters" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Listing"]
+layout_mode = 2
+
+[node name="Input" type="LineEdit" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Listing/Filters"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Filter Projects"
+clear_button_enabled = true
+
+[node name="Reverse" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Listing/Filters"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "FILTER_REVERSE_TOOLTIP"
+toggle_mode = true
+icon = SubResource("AtlasTexture_jgf31")
+expand_icon = true
+
+[node name="Alphabetical" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Listing/Filters"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "SORT_AZ_OR_UID_TOOLTIP"
+toggle_mode = true
+icon = SubResource("AtlasTexture_fimxt")
+expand_icon = true
+
+[node name="VSplit" type="VSplitContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Listing"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Items" type="ItemList" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Listing/VSplit"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Description" type="RichTextLabel" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Listing/VSplit"]
+visible = false
+layout_mode = 2
+bbcode_enabled = true
+text = "[ [color=green]Project descriptions[/color] are fetched from the notes on the [color=yellow]entry node[/color] of the selected one ]"
+fit_content = true
+
+[node name="Actions" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Listing"]
+layout_mode = 2
+
+[node name="New" type="MenuButton" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Listing/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "New"
+flat = false
+script = ExtResource("14_tk6u0")
+
+[node name="Open" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Listing/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Open"
+
+[node name="Remove" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Listing/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Remove"
+
+[node name="Properties" type="VBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project"]
+visible = false
+layout_mode = 2
+script = ExtResource("14_h0gnp")
+
+[node name="Title" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Properties"]
+layout_mode = 2
+
+[node name="Value" type="LineEdit" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Properties/Title"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "[Project Title]"
+alignment = 1
+
+[node name="Set" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Properties/Title"]
+layout_mode = 2
+text = "Set"
+
+[node name="Actions" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Properties"]
+layout_mode = 2
+
+[node name="Authors" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Properties/Actions"]
+layout_mode = 2
+text = "Authors"
+
+[node name="Spacer" type="MarginContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Properties/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Export" type="MenuButton" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Properties/Actions"]
+layout_mode = 2
+text = "Export"
+flat = false
+
+[node name="Close" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Properties/Actions"]
+layout_mode = 2
+text = "Close"
+
+[node name="Drafts" type="PanelContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Properties"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Management" type="VBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Properties/Drafts"]
+layout_mode = 2
+
+[node name="LastSave" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Properties/Drafts/Management"]
+layout_mode = 2
+tooltip_text = "Latest Save"
+
+[node name="Timestamp" type="LineEdit" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Properties/Drafts/Management/LastSave"]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Latest Save"
+placeholder_text = "[Timestamp]"
+editable = false
+
+[node name="Revert" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Properties/Drafts/Management/LastSave"]
+layout_mode = 2
+tooltip_text = "Revert to the Latest Save"
+text = "Revert"
+
+[node name="Snapshots" type="PanelContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Properties/Drafts/Management"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VBox" type="VBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Properties/Drafts/Management/Snapshots"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Properties/Drafts/Management/Snapshots/VBox"]
+layout_mode = 2
+text = "Snapshots"
+
+[node name="List" type="ItemList" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Properties/Drafts/Management/Snapshots/VBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Actions" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Properties/Drafts/Management/Snapshots/VBox"]
+layout_mode = 2
+
+[node name="Take" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Properties/Drafts/Management/Snapshots/VBox/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "New"
+
+[node name="Restore" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Properties/Drafts/Management/Snapshots/VBox/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Restore"
+
+[node name="Preview" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Properties/Drafts/Management/Snapshots/VBox/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Preview"
+
+[node name="Remove" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Project/Properties/Drafts/Management/Snapshots/VBox/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Rem."
+
+[node name="Node" type="PanelContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs"]
+visible = false
+layout_mode = 2
+script = ExtResource("16_v0k7j")
+metadata/_tab_index = 1
+
+[node name="Properties" type="VBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node"]
+visible = false
+layout_mode = 2
+
+[node name="Header" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node/Properties"]
+layout_mode = 2
+
+[node name="Type" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node/Properties/Header"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+focus_mode = 0
+disabled = true
+flat = true
+icon_alignment = 1
+expand_icon = true
+
+[node name="Name" type="LineEdit" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node/Properties/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Unique Node Name"
+alignment = 1
+
+[node name="Uid" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node/Properties/Header"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+icon = SubResource("AtlasTexture_73xki")
+expand_icon = true
+
+[node name="Focus" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node/Properties/Header"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "NODE_FOCUS_BTN_TOOLTIP"
+icon = SubResource("AtlasTexture_7jppa")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Parameters" type="VSplitContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node/Properties"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SubInspector" type="PanelContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node/Properties/Parameters"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 3.0
+
+[node name="Holder" type="ScrollContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node/Properties/Parameters/SubInspector"]
+layout_mode = 2
+follow_focus = true
+
+[node name="Notes" type="TextEdit" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node/Properties/Parameters"]
+layout_mode = 2
+size_flags_vertical = 3
+placeholder_text = "[Notes]"
+wrap_mode = 1
+
+[node name="Versioning" type="PanelContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node/Properties"]
+layout_mode = 2
+
+[node name="Tools" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node/Properties/Versioning"]
+layout_mode = 2
+
+[node name="Previous" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node/Properties/Versioning/Tools"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "Previous Local History Modification"
+icon = SubResource("AtlasTexture_mpora")
+expand_icon = true
+
+[node name="Reset" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node/Properties/Versioning/Tools"]
+layout_mode = 2
+tooltip_text = "Reset Node Parameters (Ctrl + Shift + Minus)"
+text = "Reset"
+
+[node name="Next" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node/Properties/Versioning/Tools"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "Next Local History Modification"
+icon = SubResource("AtlasTexture_gxh6s")
+expand_icon = true
+
+[node name="Spacer" type="MarginContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node/Properties/Versioning/Tools"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Skipped" type="CheckBox" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node/Properties/Versioning/Tools"]
+layout_mode = 2
+tooltip_text = "SKIP_NODES_TOOLTIP"
+text = "Skip"
+
+[node name="Update" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node/Properties/Versioning/Tools"]
+layout_mode = 2
+tooltip_text = "Update Node (Ctrl + Shift + Plus)"
+text = "Update"
+
+[node name="References" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node/Properties"]
+layout_mode = 2
+
+[node name="Previous" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node/Properties/References"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "Locate Previous Referrer"
+icon = SubResource("AtlasTexture_yujvl")
+expand_icon = true
+
+[node name="Referrers" type="MenuButton" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node/Properties/References"]
+layout_mode = 2
+text = "Ref(s)"
+
+[node name="Next" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node/Properties/References"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "Locate Next Referrer"
+icon = SubResource("AtlasTexture_plcb7")
+expand_icon = true
+
+[node name="Scoped" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node/Properties/References"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "Scoped (Filter for Scene)"
+toggle_mode = true
+icon = SubResource("AtlasTexture_lea63")
+expand_icon = true
+
+[node name="Blocker" type="Label" parent="FloatingTools/Control/Inspector/Sections/Tabs/Node"]
+self_modulate = Color(1, 1, 1, 0.5)
+layout_mode = 2
+size_flags_vertical = 1
+text = "NODES_TAB_BLOCKER"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Scenes" type="PanelContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs"]
+visible = false
+layout_mode = 2
+script = ExtResource("17_hvt6o")
+metadata/_tab_index = 2
+
+[node name="Manager" type="VBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Scenes"]
+layout_mode = 2
+
+[node name="Filters" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Scenes/Manager"]
+layout_mode = 2
+
+[node name="Input" type="LineEdit" parent="FloatingTools/Control/Inspector/Sections/Tabs/Scenes/Manager/Filters"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Filter Scenes"
+clear_button_enabled = true
+
+[node name="Reverse" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Scenes/Manager/Filters"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "FILTER_REVERSE_TOOLTIP"
+toggle_mode = true
+icon = SubResource("AtlasTexture_jgf31")
+expand_icon = true
+
+[node name="Alphabetical" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Scenes/Manager/Filters"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "SORT_AZ_OR_UID_TOOLTIP"
+toggle_mode = true
+icon = SubResource("AtlasTexture_fimxt")
+expand_icon = true
+
+[node name="Listing" type="VSplitContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Scenes/Manager"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Items" type="ItemList" parent="FloatingTools/Control/Inspector/Sections/Tabs/Scenes/Manager/Listing"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Description" type="RichTextLabel" parent="FloatingTools/Control/Inspector/Sections/Tabs/Scenes/Manager/Listing"]
+visible = false
+layout_mode = 2
+bbcode_enabled = true
+text = "[ [color=green]Scene descriptions[/color] are fetched from the notes on the [color=yellow]entry node[/color] of the selected one ]"
+fit_content = true
+
+[node name="Configs" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Scenes/Manager"]
+layout_mode = 2
+
+[node name="Uid" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Scenes/Manager/Configs"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+icon = SubResource("AtlasTexture_73xki")
+expand_icon = true
+
+[node name="Name" type="LineEdit" parent="FloatingTools/Control/Inspector/Sections/Tabs/Scenes/Manager/Configs"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Unique Scene Name"
+alignment = 1
+
+[node name="Set" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Scenes/Manager/Configs"]
+layout_mode = 2
+text = "Set"
+
+[node name="Actions" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Scenes/Manager"]
+layout_mode = 2
+
+[node name="New" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Scenes/Manager/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "New"
+
+[node name="Remove" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Scenes/Manager/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Remove"
+
+[node name="Open" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Scenes/Manager/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Open"
+
+[node name="Macros" type="PanelContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs"]
+visible = false
+layout_mode = 2
+script = ExtResource("18_8y6h6")
+metadata/_tab_index = 3
+
+[node name="Manager" type="VBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Macros"]
+layout_mode = 2
+
+[node name="Filters" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Macros/Manager"]
+layout_mode = 2
+
+[node name="Input" type="LineEdit" parent="FloatingTools/Control/Inspector/Sections/Tabs/Macros/Manager/Filters"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Filter Macros"
+clear_button_enabled = true
+
+[node name="Scoped" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Macros/Manager/Filters"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "Scoped (Filter for Scene)"
+toggle_mode = true
+icon = SubResource("AtlasTexture_lea63")
+expand_icon = true
+
+[node name="Reverse" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Macros/Manager/Filters"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "FILTER_REVERSE_TOOLTIP"
+toggle_mode = true
+icon = SubResource("AtlasTexture_jgf31")
+expand_icon = true
+
+[node name="Alphabetical" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Macros/Manager/Filters"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "SORT_AZ_OR_UID_TOOLTIP"
+toggle_mode = true
+icon = SubResource("AtlasTexture_fimxt")
+expand_icon = true
+
+[node name="Listing" type="VSplitContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Macros/Manager"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Items" type="ItemList" parent="FloatingTools/Control/Inspector/Sections/Tabs/Macros/Manager/Listing"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Description" type="RichTextLabel" parent="FloatingTools/Control/Inspector/Sections/Tabs/Macros/Manager/Listing"]
+visible = false
+layout_mode = 2
+bbcode_enabled = true
+text = "[ [color=green]Macro descriptions[/color] are fetched from the notes on the [color=yellow]entry node[/color] of the selected one ]"
+fit_content = true
+
+[node name="Configs" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Macros/Manager"]
+layout_mode = 2
+
+[node name="Uid" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Macros/Manager/Configs"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+icon = SubResource("AtlasTexture_73xki")
+expand_icon = true
+
+[node name="Name" type="LineEdit" parent="FloatingTools/Control/Inspector/Sections/Tabs/Macros/Manager/Configs"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Unique Macro Name"
+alignment = 1
+
+[node name="Set" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Macros/Manager/Configs"]
+layout_mode = 2
+text = "Set"
+
+[node name="Instances" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Macros/Manager"]
+layout_mode = 2
+alignment = 1
+
+[node name="Previous" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Macros/Manager/Instances"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "Locate Previous Referrer"
+icon = SubResource("AtlasTexture_yujvl")
+expand_icon = true
+
+[node name="Referrers" type="MenuButton" parent="FloatingTools/Control/Inspector/Sections/Tabs/Macros/Manager/Instances"]
+layout_mode = 2
+text = "Instance(s)"
+
+[node name="Next" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Macros/Manager/Instances"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "Locate Next Referrer"
+icon = SubResource("AtlasTexture_plcb7")
+expand_icon = true
+
+[node name="Scoped" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Macros/Manager/Instances"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "Scoped (Filter for Scene)"
+toggle_mode = true
+icon = SubResource("AtlasTexture_lea63")
+expand_icon = true
+
+[node name="Actions" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Macros/Manager"]
+layout_mode = 2
+
+[node name="New" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Macros/Manager/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "New"
+
+[node name="Remove" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Macros/Manager/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Remove"
+
+[node name="Open" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Macros/Manager/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Open"
+
+[node name="Variables" type="PanelContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs"]
+visible = false
+layout_mode = 2
+script = ExtResource("19_rrn5c")
+metadata/_tab_index = 4
+
+[node name="Manager" type="VBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables"]
+layout_mode = 2
+
+[node name="Filters" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager"]
+layout_mode = 2
+
+[node name="Input" type="LineEdit" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Filters"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Filter Variables"
+clear_button_enabled = true
+
+[node name="Type" type="OptionButton" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Filters"]
+layout_mode = 2
+tooltip_text = "Filter by Type"
+selected = 0
+fit_to_longest_item = false
+item_count = 4
+popup/item_0/text = "Any"
+popup/item_0/id = 0
+popup/item_1/text = "Num"
+popup/item_1/id = 1
+popup/item_2/text = "Str"
+popup/item_2/id = 2
+popup/item_3/text = "Bool"
+popup/item_3/id = 3
+
+[node name="Scoped" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Filters"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "Scoped (Filter for Scene)"
+toggle_mode = true
+icon = SubResource("AtlasTexture_lea63")
+expand_icon = true
+
+[node name="Reverse" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Filters"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "FILTER_REVERSE_TOOLTIP"
+toggle_mode = true
+icon = SubResource("AtlasTexture_jgf31")
+expand_icon = true
+
+[node name="Alphabetical" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Filters"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "SORT_AZ_OR_UID_TOOLTIP"
+toggle_mode = true
+icon = SubResource("AtlasTexture_fimxt")
+expand_icon = true
+
+[node name="List" type="ItemList" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Editor" type="PanelContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager"]
+layout_mode = 2
+
+[node name="Tools" type="VBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Editor"]
+layout_mode = 2
+
+[node name="Identifier" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Editor/Tools"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Editor/Tools/Identifier"]
+layout_mode = 2
+text = "Name"
+
+[node name="Name" type="LineEdit" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Editor/Tools/Identifier"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Unique Variable Name"
+alignment = 1
+
+[node name="Uid" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Editor/Tools/Identifier"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+icon = SubResource("AtlasTexture_73xki")
+expand_icon = true
+
+[node name="Initial" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Editor/Tools"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Editor/Tools/Initial"]
+layout_mode = 2
+text = "Initial"
+
+[node name="Value" type="MarginContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Editor/Tools/Initial"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="String" type="LineEdit" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Editor/Tools/Initial/Value"]
+layout_mode = 2
+placeholder_text = "Str Value"
+alignment = 1
+
+[node name="Number" type="SpinBox" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Editor/Tools/Initial/Value"]
+visible = false
+layout_mode = 2
+allow_greater = true
+allow_lesser = true
+alignment = 1
+
+[node name="Boolean" type="OptionButton" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Editor/Tools/Initial/Value"]
+visible = false
+layout_mode = 2
+selected = 0
+item_count = 2
+popup/item_0/text = "True"
+popup/item_0/id = 1
+popup/item_1/text = "False"
+popup/item_1/id = 0
+
+[node name="Actions" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Editor/Tools"]
+layout_mode = 2
+
+[node name="Remove" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Editor/Tools/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Remove"
+
+[node name="Spacer" type="MarginContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Editor/Tools/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Update" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Editor/Tools/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Update"
+
+[node name="References" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Editor/Tools"]
+layout_mode = 2
+alignment = 1
+
+[node name="Previous" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Editor/Tools/References"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "Locate Previous Referrer"
+icon = SubResource("AtlasTexture_yujvl")
+expand_icon = true
+
+[node name="Referrers" type="MenuButton" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Editor/Tools/References"]
+layout_mode = 2
+text = "Reference(s)"
+
+[node name="Next" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Editor/Tools/References"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "Locate Next Referrer"
+icon = SubResource("AtlasTexture_plcb7")
+expand_icon = true
+
+[node name="Scoped" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Editor/Tools/References"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "Scoped (Filter for Scene)"
+toggle_mode = true
+icon = SubResource("AtlasTexture_lea63")
+expand_icon = true
+
+[node name="Creation" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager"]
+layout_mode = 2
+
+[node name="Type" type="OptionButton" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Creation"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="New" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Variables/Manager/Creation"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "New"
+
+[node name="Characters" type="PanelContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs"]
+visible = false
+layout_mode = 2
+script = ExtResource("20_71821")
+metadata/_tab_index = 5
+
+[node name="Manager" type="VBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters"]
+layout_mode = 2
+
+[node name="Filters" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager"]
+layout_mode = 2
+
+[node name="Input" type="LineEdit" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Filters"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Filter Characters"
+clear_button_enabled = true
+
+[node name="Scoped" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Filters"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "Scoped (Filter for Scene)"
+toggle_mode = true
+icon = SubResource("AtlasTexture_lea63")
+expand_icon = true
+
+[node name="Reverse" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Filters"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "FILTER_REVERSE_TOOLTIP"
+toggle_mode = true
+icon = SubResource("AtlasTexture_jgf31")
+expand_icon = true
+
+[node name="Alphabetical" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Filters"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "SORT_AZ_OR_UID_TOOLTIP"
+toggle_mode = true
+icon = SubResource("AtlasTexture_fimxt")
+expand_icon = true
+
+[node name="List" type="ItemList" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Editor" type="PanelContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Tools" type="VBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Editor"]
+layout_mode = 2
+
+[node name="Configs" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Editor/Tools"]
+layout_mode = 2
+
+[node name="Uid" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Editor/Tools/Configs"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+icon = SubResource("AtlasTexture_73xki")
+expand_icon = true
+
+[node name="Color" type="ColorPickerButton" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Editor/Tools/Configs"]
+layout_mode = 2
+size_flags_horizontal = 3
+color = Color(0, 1, 0, 1)
+edit_alpha = false
+
+[node name="Name" type="LineEdit" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Editor/Tools/Configs"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 4.0
+placeholder_text = "Unique Character Name"
+alignment = 1
+
+[node name="Set" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Editor/Tools/Configs"]
+layout_mode = 2
+text = "Set"
+
+[node name="Tags" type="PanelContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Editor/Tools"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Initials" type="VBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Editor/Tools/Tags"]
+layout_mode = 2
+
+[node name="Scroll" type="ScrollContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Editor/Tools/Tags/Initials"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Pairs" type="HFlowContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Editor/Tools/Tags/Initials/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="None" type="Label" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Editor/Tools/Tags/Initials/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+text = "No Initial Tag"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Edit" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Editor/Tools/Tags/Initials"]
+layout_mode = 2
+
+[node name="Key" type="LineEdit" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Editor/Tools/Tags/Initials/Edit"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Key"
+
+[node name="Value" type="LineEdit" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Editor/Tools/Tags/Initials/Edit"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Value"
+
+[node name="Overset" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Editor/Tools/Tags/Initials/Edit"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "Oversets (adds or updates) a tag"
+icon = SubResource("AtlasTexture_20hje")
+expand_icon = true
+
+[node name="Appearances" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Editor/Tools"]
+layout_mode = 2
+alignment = 1
+
+[node name="Previous" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Editor/Tools/Appearances"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "Locate Previous Referrer"
+icon = SubResource("AtlasTexture_yujvl")
+expand_icon = true
+
+[node name="Referrers" type="MenuButton" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Editor/Tools/Appearances"]
+layout_mode = 2
+text = "Appearance(s)"
+
+[node name="Next" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Editor/Tools/Appearances"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "Locate Next Referrer"
+icon = SubResource("AtlasTexture_plcb7")
+expand_icon = true
+
+[node name="Scoped" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Editor/Tools/Appearances"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "Scoped (Filter for Scene)"
+toggle_mode = true
+icon = SubResource("AtlasTexture_lea63")
+expand_icon = true
+
+[node name="Actions" type="HBoxContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager"]
+layout_mode = 2
+
+[node name="New" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "New"
+
+[node name="Spacer" type="MarginContainer" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Remove" type="Button" parent="FloatingTools/Control/Inspector/Sections/Tabs/Characters/Manager/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Remove"
+
+[node name="Console" type="PanelContainer" parent="FloatingTools/Control"]
+visible = false
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.46
+anchor_top = 0.115
+anchor_right = 0.69
+anchor_bottom = 0.855
+script = ExtResource("21_k3mxj")
+
+[node name="Sections" type="VBoxContainer" parent="FloatingTools/Control/Console"]
+layout_direction = 1
+layout_mode = 2
+
+[node name="Titlebar" type="HBoxContainer" parent="FloatingTools/Control/Console/Sections"]
+layout_mode = 2
+
+[node name="Drag" type="Button" parent="FloatingTools/Control/Console/Sections/Titlebar"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+mouse_default_cursor_shape = 6
+disabled = true
+text = "Console"
+icon = SubResource("AtlasTexture_55qnl")
+flat = true
+alignment = 0
+expand_icon = true
+
+[node name="Resizer" type="Button" parent="FloatingTools/Control/Console/Sections/Titlebar"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 11
+disabled = true
+icon = SubResource("AtlasTexture_3t2oi")
+flat = true
+icon_alignment = 1
+expand_icon = true
+
+[node name="Interpreter" type="PanelContainer" parent="FloatingTools/Control/Console/Sections"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Split" type="VSplitContainer" parent="FloatingTools/Control/Console/Sections/Interpreter"]
+layout_mode = 2
+
+[node name="Display" type="PanelContainer" parent="FloatingTools/Control/Console/Sections/Interpreter/Split"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Scroll" type="ScrollContainer" parent="FloatingTools/Control/Console/Sections/Interpreter/Split/Display"]
+layout_mode = 2
+
+[node name="Terminal" type="VBoxContainer" parent="FloatingTools/Control/Console/Sections/Interpreter/Split/Display/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="States" type="VBoxContainer" parent="FloatingTools/Control/Console/Sections/Interpreter/Split"]
+layout_mode = 2
+
+[node name="Characters" type="PanelContainer" parent="FloatingTools/Control/Console/Sections/Interpreter/Split/States"]
+layout_mode = 2
+
+[node name="Current" type="VBoxContainer" parent="FloatingTools/Control/Console/Sections/Interpreter/Split/States/Characters"]
+layout_mode = 2
+
+[node name="List" type="OptionButton" parent="FloatingTools/Control/Console/Sections/Interpreter/Split/States/Characters/Current"]
+layout_mode = 2
+
+[node name="Current" type="VBoxContainer" parent="FloatingTools/Control/Console/Sections/Interpreter/Split/States/Characters/Current"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Scroll" type="ScrollContainer" parent="FloatingTools/Control/Console/Sections/Interpreter/Split/States/Characters/Current/Current"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Pairs" type="HFlowContainer" parent="FloatingTools/Control/Console/Sections/Interpreter/Split/States/Characters/Current/Current/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="None" type="Label" parent="FloatingTools/Control/Console/Sections/Interpreter/Split/States/Characters/Current/Current/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+text = "No Initial Tags"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Edit" type="HBoxContainer" parent="FloatingTools/Control/Console/Sections/Interpreter/Split/States/Characters/Current/Current"]
+layout_mode = 2
+
+[node name="Key" type="LineEdit" parent="FloatingTools/Control/Console/Sections/Interpreter/Split/States/Characters/Current/Current/Edit"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Key"
+
+[node name="Value" type="LineEdit" parent="FloatingTools/Control/Console/Sections/Interpreter/Split/States/Characters/Current/Current/Edit"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Value"
+
+[node name="Overset" type="Button" parent="FloatingTools/Control/Console/Sections/Interpreter/Split/States/Characters/Current/Current/Edit"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "Oversets (adds or updates) a tag"
+icon = SubResource("AtlasTexture_20hje")
+expand_icon = true
+
+[node name="Variables" type="PanelContainer" parent="FloatingTools/Control/Console/Sections/Interpreter/Split/States"]
+layout_mode = 2
+
+[node name="Current" type="VBoxContainer" parent="FloatingTools/Control/Console/Sections/Interpreter/Split/States/Variables"]
+layout_mode = 2
+
+[node name="List" type="OptionButton" parent="FloatingTools/Control/Console/Sections/Interpreter/Split/States/Variables/Current"]
+layout_mode = 2
+
+[node name="State" type="HBoxContainer" parent="FloatingTools/Control/Console/Sections/Interpreter/Split/States/Variables/Current"]
+layout_mode = 2
+
+[node name="Value" type="MarginContainer" parent="FloatingTools/Control/Console/Sections/Interpreter/Split/States/Variables/Current/State"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="String" type="LineEdit" parent="FloatingTools/Control/Console/Sections/Interpreter/Split/States/Variables/Current/State/Value"]
+layout_mode = 2
+placeholder_text = "Str Value"
+alignment = 1
+
+[node name="Number" type="SpinBox" parent="FloatingTools/Control/Console/Sections/Interpreter/Split/States/Variables/Current/State/Value"]
+visible = false
+layout_mode = 2
+allow_greater = true
+allow_lesser = true
+alignment = 1
+
+[node name="Boolean" type="OptionButton" parent="FloatingTools/Control/Console/Sections/Interpreter/Split/States/Variables/Current/State/Value"]
+visible = false
+layout_mode = 2
+selected = 0
+item_count = 2
+popup/item_0/text = "True"
+popup/item_0/id = 1
+popup/item_1/text = "False"
+popup/item_1/id = 0
+
+[node name="Update" type="Button" parent="FloatingTools/Control/Console/Sections/Interpreter/Split/States/Variables/Current/State"]
+layout_mode = 2
+text = "Update"
+
+[node name="Toolbar" type="HBoxContainer" parent="FloatingTools/Control/Console/Sections"]
+layout_mode = 2
+
+[node name="Settings" type="MenuButton" parent="FloatingTools/Control/Console/Sections/Toolbar"]
+layout_mode = 2
+text = "Settings"
+flat = false
+
+[node name="Spacer" type="MarginContainer" parent="FloatingTools/Control/Console/Sections/Toolbar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Close" type="Button" parent="FloatingTools/Control/Console/Sections/Toolbar"]
+layout_mode = 2
+tooltip_text = "Hides Console Preserving the State"
+text = "Close"
+
+[node name="Clear" type="Button" parent="FloatingTools/Control/Console/Sections/Toolbar"]
+layout_mode = 2
+tooltip_text = "Clears Console & State of Play"
+text = "Clear"
+
+[node name="Back" type="Button" parent="FloatingTools/Control/Console/Sections/Toolbar"]
+layout_mode = 2
+text = "Back"
+
+[node name="Context" type="PopupPanel" parent="FloatingTools/Control"]
+position = Vector2i(200, 200)
+size = Vector2i(256, 256)
+script = ExtResource("22_qw7b1")
+
+[node name="Menu" type="VBoxContainer" parent="FloatingTools/Control/Context"]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 252.0
+offset_bottom = 252.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Node" type="PanelContainer" parent="FloatingTools/Control/Context/Menu"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Types" type="VBoxContainer" parent="FloatingTools/Control/Context/Menu/Node"]
+layout_mode = 2
+
+[node name="List" type="ItemList" parent="FloatingTools/Control/Context/Menu/Node/Types"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+fixed_icon_size = Vector2i(48, 24)
+
+[node name="Actions" type="HBoxContainer" parent="FloatingTools/Control/Context/Menu/Node/Types"]
+layout_mode = 2
+
+[node name="Filter" type="LineEdit" parent="FloatingTools/Control/Context/Menu/Node/Types/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Filter Node Types"
+clear_button_enabled = true
+
+[node name="Insert" type="Button" parent="FloatingTools/Control/Context/Menu/Node/Types/Actions"]
+layout_mode = 2
+text = "Insert"
+
+[node name="Tools" type="HBoxContainer" parent="FloatingTools/Control/Context/Menu"]
+layout_mode = 2
+
+[node name="ClearClipboard" type="Button" parent="FloatingTools/Control/Context/Menu/Tools"]
+visible = false
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Clear Clipboard"
+icon = SubResource("AtlasTexture_spigt")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Copy" type="Button" parent="FloatingTools/Control/Context/Menu/Tools"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Copy Node(s)"
+icon = SubResource("AtlasTexture_e13h5")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Cut" type="Button" parent="FloatingTools/Control/Context/Menu/Tools"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Cut Node(s)"
+icon = SubResource("AtlasTexture_yk16d")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Paste" type="Button" parent="FloatingTools/Control/Context/Menu/Tools"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Paste Node(s)"
+icon = SubResource("AtlasTexture_ygpkh")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Remove" type="Button" parent="FloatingTools/Control/Context/Menu/Tools"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Remove Node(s)"
+icon = SubResource("AtlasTexture_whf1p")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Editor" type="VBoxContainer" parent="."]
+layout_mode = 2
+alignment = 1
+script = ExtResource("23_850di")
+
+[node name="Top" type="PanelContainer" parent="Editor"]
+layout_mode = 2
+
+[node name="Bar" type="HBoxContainer" parent="Editor/Top"]
+layout_mode = 2
+theme_type_variation = &"BoxGap8"
+alignment = 1
+
+[node name="AppMenu" type="MenuButton" parent="Editor/Top/Bar"]
+custom_minimum_size = Vector2(96, 0)
+layout_mode = 2
+text = "Arrow"
+flat = false
+script = ExtResource("23_s1o1v")
+
+[node name="NewReleaseCheck" type="Button" parent="Editor/Top/Bar"]
+visible = false
+layout_mode = 2
+text = "[New Version ?]"
+script = ExtResource("24_2ksii")
+
+[node name="History" type="PanelContainer" parent="Editor/Top/Bar"]
+layout_mode = 2
+
+[node name="Tools" type="HBoxContainer" parent="Editor/Top/Bar/History"]
+layout_mode = 2
+alignment = 1
+
+[node name="Undo" type="Button" parent="Editor/Top/Bar/History/Tools"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+tooltip_text = "History Undo (Ctrl + Z)"
+icon = SubResource("AtlasTexture_ok1su")
+expand_icon = true
+
+[node name="Redo" type="Button" parent="Editor/Top/Bar/History/Tools"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+tooltip_text = "History Redo (Ctrl + Shift + Z)"
+icon = SubResource("AtlasTexture_y4ukx")
+expand_icon = true
+
+[node name="ProjectTitle" type="Label" parent="Editor/Top/Bar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "[Project Title]"
+horizontal_alignment = 1
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="Play" type="PanelContainer" parent="Editor/Top/Bar"]
+layout_mode = 2
+
+[node name="From" type="HBoxContainer" parent="Editor/Top/Bar/Play"]
+layout_mode = 2
+
+[node name="ProjectEntry" type="Button" parent="Editor/Top/Bar/Play/From"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+tooltip_text = "Play from Project Entry (F4)"
+icon = SubResource("AtlasTexture_mksnb")
+expand_icon = true
+
+[node name="SceneEntry" type="Button" parent="Editor/Top/Bar/Play/From"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+tooltip_text = "Play from Scene Entry (F5)"
+icon = SubResource("AtlasTexture_c0enu")
+expand_icon = true
+
+[node name="ShowConsole" type="Button" parent="Editor/Top/Bar/Play/From"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+tooltip_text = "Show Console (F6)"
+icon = SubResource("AtlasTexture_55qnl")
+expand_icon = true
+
+[node name="SelectedNode" type="Button" parent="Editor/Top/Bar/Play/From"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+tooltip_text = "Play Selected Node (F7)"
+icon = SubResource("AtlasTexture_h8feu")
+expand_icon = true
+
+[node name="Save" type="Button" parent="Editor/Top/Bar"]
+custom_minimum_size = Vector2(94, 0)
+layout_mode = 2
+size_flags_vertical = 4
+tooltip_text = "Save Document (Ctrl + S)"
+theme_type_variation = &"SaveButton"
+text = "Save"
+icon = SubResource("AtlasTexture_bxg2x")
+expand_icon = true
+
+[node name="Indicator" type="ColorRect" parent="Editor/Top/Bar/Save"]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.9
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+color = Color(0.74902, 0.121569, 0.54902, 1)
+
+[node name="Center" type="Control" parent="Editor"]
+layout_direction = 2
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Grid" type="GraphEdit" parent="Editor/Center"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+snapping_distance = 5
+right_disconnects = true
+zoom_min = 0.1
+zoom_max = 4.0
+zoom_step = 1.1
+minimap_enabled = false
+minimap_size = Vector2(1024, 256)
+show_zoom_label = true
+script = ExtResource("25_3y1ae")
+
+[node name="MiniMap" type="Panel" parent="Editor/Center"]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 25.0
+offset_top = -100.0
+offset_right = 300.0
+offset_bottom = -25.0
+
+[node name="Area" type="Control" parent="Editor/Center/MiniMap"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("26_g6oda")
+
+[node name="Bottom" type="PanelContainer" parent="Editor"]
+layout_mode = 2
+
+[node name="Bar" type="HBoxContainer" parent="Editor/Bottom"]
+layout_mode = 2
+theme_type_variation = &"BoxGap8"
+
+[node name="SceneTitle" type="Label" parent="Editor/Bottom/Bar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "[Current Scene]"
+horizontal_alignment = 1
+vertical_alignment = 1
+text_overrun_behavior = 4
+
+[node name="Query" type="PanelContainer" parent="Editor/Bottom/Bar"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+script = ExtResource("27_oamwo")
+
+[node name="Tools" type="HBoxContainer" parent="Editor/Bottom/Bar/Query"]
+layout_mode = 2
+
+[node name="Input" type="LineEdit" parent="Editor/Bottom/Bar/Query/Tools"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Query"
+alignment = 1
+clear_button_enabled = true
+
+[node name="Mode" type="OptionButton" parent="Editor/Bottom/Bar/Query/Tools"]
+layout_mode = 2
+selected = 0
+item_count = 1
+popup/item_0/text = "[Mode]"
+popup/item_0/id = 0
+
+[node name="Scoped" type="Button" parent="Editor/Bottom/Bar/Query/Tools"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+tooltip_text = "SCOPED_QUERY_TOOLTIP"
+toggle_mode = true
+icon = SubResource("AtlasTexture_lea63")
+expand_icon = true
+
+[node name="Search" type="Button" parent="Editor/Bottom/Bar/Query/Tools"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+tooltip_text = "Query (Ctrl + Q)"
+icon = SubResource("AtlasTexture_tx0hw")
+expand_icon = true
+
+[node name="References" type="HBoxContainer" parent="Editor/Bottom/Bar/Query/Tools"]
+layout_mode = 2
+alignment = 1
+
+[node name="Previous" type="Button" parent="Editor/Bottom/Bar/Query/Tools/References"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+tooltip_text = "Locate Previous Match (Ctrl + 1)"
+icon = SubResource("AtlasTexture_yujvl")
+expand_icon = true
+
+[node name="Matches" type="MenuButton" parent="Editor/Bottom/Bar/Query/Tools/References"]
+layout_mode = 2
+text = "[S:T Matches]"
+
+[node name="Next" type="Button" parent="Editor/Bottom/Bar/Query/Tools/References"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+tooltip_text = "Locate Next Match (Ctrl + 2)"
+icon = SubResource("AtlasTexture_plcb7")
+expand_icon = true
+
+[node name="Quick" type="PanelContainer" parent="Editor/Bottom/Bar"]
+layout_mode = 2
+
+[node name="Access" type="HBoxContainer" parent="Editor/Bottom/Bar/Quick"]
+layout_mode = 2
+
+[node name="InspectorVisibility" type="Button" parent="Editor/Bottom/Bar/Quick/Access"]
+custom_minimum_size = Vector2(128, 24)
+layout_mode = 2
+tooltip_text = "Toggle Inspector Panel (Ctrl + P)"
+toggle_mode = true
+button_pressed = true
+text = "Inspect."
+icon = SubResource("AtlasTexture_nb1b5")
+expand_icon = true
+
+[node name="SpecialPreferences" type="MenuButton" parent="Editor/Bottom/Bar/Quick/Access"]
+custom_minimum_size = Vector2(128, 24)
+layout_mode = 2
+text = "Quick Pref."
+icon = SubResource("AtlasTexture_so6me")
+flat = false
+expand_icon = true
+script = ExtResource("28_jwiiu")

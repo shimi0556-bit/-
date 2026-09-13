@@ -1,0 +1,66 @@
+[gd_scene load_steps=6 format=3 uid="uid://dhrbtdtnpb0py"]
+
+[ext_resource type="Texture2D" uid="uid://bfwq660mjjbvh" path="res://nodes/frame/icon.svg" id="1_1aa52"]
+[ext_resource type="Script" uid="uid://5nucv4do3g0" path="res://nodes/frame/node.gd" id="1_62jka"]
+[ext_resource type="Theme" uid="uid://7iui7va3jch8" path="res://assets/themes/dark.tres" id="1_frbiq"]
+[ext_resource type="Texture2D" uid="uid://ewpcrgloao1w" path="res://nodes/frame/interface.svg" id="2_cs7cu"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_8dto0"]
+atlas = ExtResource("2_cs7cu")
+region = Rect2(0, 0, 48, 48)
+
+[node name="Frame" type="GraphNode"]
+offset_right = 256.0
+offset_bottom = 104.0
+size_flags_horizontal = 4
+size_flags_vertical = 4
+mouse_filter = 1
+theme = ExtResource("1_frbiq")
+theme_type_variation = &"Frame"
+resizable = true
+title = "[Node Name]"
+slot/0/left_enabled = false
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+script = ExtResource("1_62jka")
+
+[node name="Display" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Head" type="HBoxContainer" parent="Display"]
+layout_mode = 2
+
+[node name="Kind" type="Button" parent="Display/Head"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+mouse_filter = 2
+disabled = true
+text = "Frame"
+icon = ExtResource("1_1aa52")
+flat = true
+text_overrun_behavior = 3
+expand_icon = true
+
+[node name="Collapse" type="Button" parent="Display/Head"]
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+focus_mode = 0
+toggle_mode = true
+icon = SubResource("AtlasTexture_8dto0")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Info" type="RichTextLabel" parent="Display"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+bbcode_enabled = true
+text = "[Rich [color=red]Frame [/color] [color=green]Label[/color] with [i]BBCode[/i] support]"
+fit_content = true

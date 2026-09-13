@@ -1,0 +1,34 @@
+[gd_scene load_steps=4 format=3 uid="uid://oi4x5trvf28x"]
+
+[ext_resource type="Texture2D" uid="uid://by8lwldcvhfq0" path="res://assets/symbols.png" id="1_fdbdm"]
+[ext_resource type="Script" uid="uid://w7dt2t814bv5" path="res://nodes/macro_use/inspector.gd" id="1_ql46j"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_e0vxc"]
+atlas = ExtResource("1_fdbdm")
+region = Rect2(192, 192, 48, 48)
+
+[node name="MacroUse" type="VBoxContainer"]
+offset_right = 256.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_ql46j")
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 2
+text = "MACRO_USE_INSPECTOR_FIELD_MACRO"
+
+[node name="Macro" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="List" type="OptionButton" parent="Macro"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Filtered" type="Button" parent="Macro"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+tooltip_text = "MACRO_USE_INSPECTOR_APPLY_GLOBAL_MACRO_FILTERS_TOOLTIP"
+toggle_mode = true
+icon = SubResource("AtlasTexture_e0vxc")
+icon_alignment = 1
+expand_icon = true

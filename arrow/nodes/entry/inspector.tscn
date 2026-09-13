@@ -1,0 +1,53 @@
+[gd_scene load_steps=5 format=3 uid="uid://bys6jumeefm11"]
+
+[ext_resource type="Script" uid="uid://cskkt1t8xpf0f" path="res://nodes/entry/inspector.gd" id="1_61hvh"]
+[ext_resource type="Texture2D" uid="uid://dd1eyrl7g6b00" path="res://nodes/entry/interface.svg" id="1_akn8x"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_p5h66"]
+atlas = ExtResource("1_akn8x")
+region = Rect2(0, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hp71p"]
+atlas = ExtResource("1_akn8x")
+region = Rect2(48, 0, 48, 48)
+
+[node name="Entry" type="VBoxContainer"]
+offset_right = 256.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_61hvh")
+
+[node name="PlaqueLabel" type="Label" parent="."]
+layout_mode = 2
+text = "ENTRY_INSPECTOR_FIELD_PLAQUE"
+
+[node name="Plaque" type="LineEdit" parent="."]
+layout_mode = 2
+
+[node name="Active" type="Label" parent="."]
+layout_mode = 2
+tooltip_text = "ENTRY_INSPECTOR_FIELD_ACTIVE_TOOLTIP"
+mouse_filter = 0
+text = "ENTRY_INSPECTOR_FIELD_ACTIVE_FOR"
+
+[node name="ForProject" type="CheckBox" parent="."]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+focus_mode = 0
+disabled = true
+text = "ENTRY_INSPECTOR_OPT_PROJECT"
+icon = SubResource("AtlasTexture_p5h66")
+flat = true
+icon_alignment = 2
+expand_icon = true
+
+[node name="ForScene" type="CheckBox" parent="."]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+focus_mode = 0
+disabled = true
+text = "ENTRY_INSPECTOR_OPT_SCENE"
+icon = SubResource("AtlasTexture_hp71p")
+flat = true
+icon_alignment = 2
+expand_icon = true
