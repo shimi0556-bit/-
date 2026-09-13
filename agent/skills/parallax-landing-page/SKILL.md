@@ -162,6 +162,10 @@ These are baked into the reference and break the experience if violated:
 - **Frame names are `frame-NNN.jpg`** zero-padded to the width of the total (3 digits is the standard since clips < 1000 frames; the JS auto-computes counter width from the total).
 - **The slug is the folder name AND the HTML filename basename** — `hope/`, `hope.html`. No exceptions; the integration steps assume this.
 
+## Connected tools available this session
+
+This skill is frame-extraction-driven and doesn't need external imagery for the hero itself. If a section needs a supporting still (e.g. a showcase index card thumbnail) and the Unsplash connector is available, `search_photos` is a faster path than generating one — but never for the 5 scrub frames themselves, which must come from the user's actual clip.
+
 ## Where to look when you get stuck
 
 - The reference showcase bundled in this repo: [`examples/parasites/`](../../examples/parasites/) — github.html, lion.html, hope.html, style.css, parallax.js, index.html. If your output diverges visibly from those, you've drifted; reread.

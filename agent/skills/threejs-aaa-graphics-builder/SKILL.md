@@ -40,6 +40,8 @@ With keys set, generated assets belong on the hero surfaces — player, characte
 
 Use the director's `references/asset-recovery.md`: recover transient failures and accepted tasks before fallback. Missing keys, exhausted credits, or exhausted bounded recovery permit a local replacement with the remaining quality gap reported. A single timeout is not evidence that generation is unavailable.
 
+When the Adobe for creativity connector is available, its `image_apply_*` / `image_adjust_*` tools are a fast way to grade a batch of `threejs-image-generator` textures to one consistent palette, and `image_vectorize` cleans up decals and trim-sheet elements without a second AI generation call.
+
 For animated assets inspect motion as well as silhouettes: locomotion, blend transitions, foot contacts, hit timing, and secondary motion in real gameplay. A focused independent critique may identify defects after a substantial pass; the lead remains responsible for the final score and integration.
 
 ## Report

@@ -25,6 +25,10 @@ Load `threejs-image-generator` when logos, icons, GUI art, faction marks, menu b
 6. Wire UI to game state rather than duplicating game rules inside UI code.
 7. Check text fit and overlap with the longest likely values, safe areas, touch targets, and real state changes on both viewports.
 
+## Connected tools available this session
+
+When the Figma connector is available and the game has (or should have) a UI design file, use `get_design_context` / `get_screenshot` to work from the actual mockup instead of re-deriving hierarchy from scratch, and `use_figma` to push a HUD/menu design back for a human designer to review.
+
 ## What goes wrong
 
 A generic dashboard of stat cards · UI covering the player, threats, or the next decision · text that shifts and clips on mobile · decorative panels that reduce readability · touch controls that look right but emit no intents.

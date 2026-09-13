@@ -428,6 +428,12 @@ Report the dev URL it printed, the palette + arc you chose, and the section type
 
 ---
 
+## Connected tools available this session
+
+If the user has no product/subject photo to drop in step 1, and the Unsplash connector is available, `search_photos` can source a real photo for the polaroid bento (Type B) or hero side accent — real photography still beats a generated placeholder per hard rule #10. Don't substitute Unsplash for the hero video itself; the mouse-scrub effect needs the user's actual clip.
+
+---
+
 ## Reference implementation
 
 The Bamba (במבה) site at <https://github.com/hoodini/bamba> — RTL Hebrew landing for an Israeli snack with all five sections, the mouse-scrub baby backdrop, clickable navbar, and real Osem brand assets. When something in this skill is ambiguous, that repo is ground truth.

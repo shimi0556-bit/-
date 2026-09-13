@@ -58,6 +58,10 @@ Final path: `~/Documents/yuv-projects/landings/<slug>/`. Tell the user where the
 - Below-hero sections: light canvas (white in Neon mode, off-white in Warm Editorial, bone if going generic-warm), large Anton heading, body copy in Inter at 18–22px, CTA as a sharp pill (`border-radius: 999px`) — pink fill in Neon mode, brand-appropriate color otherwise.
 - For Hebrew: respect RTL, use Rubik 900 for headlines, Assistant 400/500 for body.
 
+## Connected tools available this session
+
+For the below-hero sections, if the brief needs supporting imagery beyond the extracted video frames and the Unsplash connector is available, `search_photos` is faster than generating a placeholder. Keep it out of the sticky hero itself — that must stay the real extracted frames.
+
 ## File references
 
 | File | Purpose |

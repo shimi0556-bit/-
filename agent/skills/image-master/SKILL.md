@@ -127,5 +127,11 @@ The brief rewards **range across style, setting, and discipline** — so a SET n
 ## Tool note
 Default target is whatever the user names; **Reve 2.0** is the contest tool — layout-first, native 4K, best-in-class legible text, extreme prompt adherence, but weak on dense multi-subject scenes / liquids / crowds and it ignores negatives. Lean into 1–2 hero subjects and **edit the one weak element rather than re-rolling.** Full per-tool quirks in `references/06`.
 
+## Connected tools available this session
+
+When the Adobe for creativity or Unsplash connectors are available, use them to support the craft above — they don't replace prompt-engineering, they extend it:
+- **Unsplash** (`search_photos`) — pull a real reference photo before locking POV/light in Phase 1, so the Capture Stack describes an actual scene rather than an imagined one.
+- **Adobe for creativity** — after generation, `image_remove_background` / `image_crop_and_resize` / `find_fonts` for compositing exact quoted typography in post (per the Text & Typography rule above — never trust a model to render brand-exact or Hebrew text), and the `image_adjust_*` / `image_apply_*` tools for the one-weak-element fix in Phase 5 instead of a full re-roll.
+
 ## The one-line reminder to give the user
 *"Realism is won in words before the first generation — name the camera, name the one light, name the pores, and describe what you DO want. Then inspect like a forensic analyst before you submit."*

@@ -185,6 +185,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 export const useTheme = () => useContext(ThemeContext);
 ```
 
+## Connected tools available this session
+
+- **Figma** — when a design system already exists in Figma, pull the source of truth with `get_variable_defs` / `get_design_context` instead of re-guessing tokens, and push new components back with `use_figma`. Prefer Figma as the token source of truth over hand-authored values whenever a file is available.
+- **Canva** — `list-brand-kits` / `get-brand-template-dataset` for teams whose color/type standards live in a Canva Brand Kit rather than Figma.
+
 ## Resources
 
 - **Tailwind CSS**: https://tailwindcss.com

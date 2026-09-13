@@ -70,6 +70,10 @@ Convert PNGs to runtime formats deliberately: PNG where alpha matters (UI, icons
 
 Inspect the image before spending on image-to-3D or dependent variants. Check how runtime images look in the game, not just that the file was written. Preserve useful existing images when the user changes requirements, and update the project note instead of regenerating everything.
 
+## Connected tools available this session
+
+When the Adobe for creativity connector is available, it complements the Gemini pipeline above for post-processing rather than generation: `image_remove_background` for clean decal/icon alpha, `image_vectorize` for crisp scalable UI marks, `image_apply_preset` / `image_adjust_hsl` for palette-matching a batch of textures. Unsplash (`search_photos`) is useful for real-world material/lighting references before writing a texture prompt, not as a source of shippable game assets.
+
 ## Recovery
 
 For coordinated games use the director's `references/asset-recovery.md`. Missing credentials or exhausted credits permit an honest local alternative; a transient error does not. Distinguish invalid input and authentication from service failures. Do not blindly retry an uncertain paid generation: preserve existing files and reconcile the provider result first. This command has no Tripo-style task resume interface. Continue independent game work while only the dependent image work is blocked.

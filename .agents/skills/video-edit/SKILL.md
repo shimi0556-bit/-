@@ -113,6 +113,10 @@ To deliver **both** 16:9 and 9:16 in one go, run two render commands (in paralle
 - The `remove-background` webm keeps the original RGB and writes only the alpha mask — `ffprobe` reports `yuv420p`, which looks like "no alpha". Confirm via `TAG:ALPHA_MODE=1` or composite over a solid colour.
 - Outro/end cards with burned-in text — do NOT caption over them; they collide.
 
+## Connected tools available this session
+
+If the source audio is noisy before transcription (step 3), the Adobe for creativity connector's `media_enhance_speech` can clean it up before running Whisper — cheaper than re-shooting and often improves transcript accuracy on the Hebrew path. The HyperFrames MCP connector itself is not the render path here: on a CLI agent like this one its `compose`/`render_video` tools are disabled in favor of the local `npx hyperframes` CLI this workflow already drives — no change needed there.
+
 ## File references
 
 | File | Purpose |

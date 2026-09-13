@@ -228,6 +228,10 @@ function Component() {
 }
 ```
 
+## Connected tools available this session
+
+When a Figma connector is available and the responsive layout is meant to match an existing design file, pull the actual breakpoint frames with `get_design_context` / `get_screenshot` rather than guessing spacing and type scale from a single desktop mock.
+
 ## Resources
 
 - **Responsive Design**: https://web.dev/learn/design/

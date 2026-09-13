@@ -238,6 +238,10 @@ export async function POST(request: NextRequest) {
 | Cost | Lower | Higher |
 | Best For | Previews, high-volume | Production, professional |
 
+## Connected tools available this session
+
+Beyond the raw Gemini API calls above, when the Adobe for creativity connector is available it can post-process an already-generated image without a second model call: `image_crop_and_resize` to hit an exact aspect ratio, `image_remove_background` for compositing, `image_adjust_brightness_and_contrast` / `image_apply_auto_tone` for quick correction. If the target is a design document rather than a raw file, `export_html_to_express` (Adobe) or `import-design-from-url` / `create-design-from-candidate` (Canva) can bring a generated image straight into an editable design.
+
 ## Resources
 
 - **Documentation**: https://ai.google.dev/gemini-api/docs/image-generation
