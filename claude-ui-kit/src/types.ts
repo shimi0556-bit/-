@@ -5,6 +5,11 @@ export interface TextBlock {
   text: string;
 }
 
+export interface ImageBlock {
+  type: 'image';
+  source: { type: 'base64'; media_type: string; data: string } | { type: 'url'; url: string };
+}
+
 export interface ToolUseBlock {
   type: 'tool_use';
   id: string;
@@ -19,7 +24,7 @@ export interface ToolResultBlock {
   isError?: boolean;
 }
 
-export type ContentBlock = TextBlock | ToolUseBlock | ToolResultBlock;
+export type ContentBlock = TextBlock | ImageBlock | ToolUseBlock | ToolResultBlock;
 
 export interface ChatMessage {
   id: string;
@@ -28,4 +33,13 @@ export interface ChatMessage {
   createdAt?: number;
   /** True while this message's text is still arriving (shows a blinking cursor). */
   streaming?: boolean;
+}
+
+/** A file picked, dropped, or pasted into ChatInput, staged before send. */
+export interface Attachment {
+  id: string;
+  file: File;
+  /** Object URL for local preview — caller/consumer should not persist this. */
+  previewUrl: string;
+  kind: 'image' | 'file';
 }

@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
-import type { ChatMessage } from '../types';
+import { fileToBase64 } from '../utils/file';
+import type { Attachment, ChatMessage, ContentBlock, ImageBlock } from '../types';
 
 /**
  * Streams a reply for the given message history, invoking `onDelta` with each
@@ -26,8 +27,24 @@ export function useClaudeChat({ initialMessages = [], stream }: UseClaudeChatOpt
   messagesRef.current = messages;
 
   const sendMessage = useCallback(
-    async (text: string) => {
-      const userMessage: ChatMessage = { id: nextId(), role: 'user', content: text, createdAt: Date.now() };
+    async (text: string, attachments: Attachment[] = []) => {
+      const imageBlocks: ImageBlock[] = await Promise.all(
+        attachments
+          .filter((a) => a.kind === 'image')
+          .map(async (a): Promise<ImageBlock> => {
+            const { mediaType, data } = await fileToBase64(a.file);
+            return { type: 'image', source: { type: 'base64', media_type: mediaType, data } };
+          }),
+      );
+
+      const content: ContentBlock[] = text ? [...imageBlocks, { type: 'text', text }] : imageBlocks;
+
+      const userMessage: ChatMessage = {
+        id: nextId(),
+        role: 'user',
+        content: imageBlocks.length > 0 ? content : text,
+        createdAt: Date.now(),
+      };
       const assistantId = nextId();
       const assistantMessage: ChatMessage = {
         id: assistantId,

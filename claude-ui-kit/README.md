@@ -1,10 +1,10 @@
 # claude-ui-kit
 
 React components for building chat interfaces powered by Claude — message
-bubbles with Markdown and code-block rendering, tool-call cards, a typing
-indicator, an auto-resizing chat input, and a `ChatWindow` that wires them
-together. Ships as a small, themeable design system (CSS variables, light +
-dark) rather than a full framework.
+bubbles with Markdown and code-block rendering, tool-call cards, image
+attachments with a lightbox, a typing indicator, an auto-resizing chat input,
+and a `ChatWindow` that wires them together. Ships as a small, themeable
+design system (CSS variables, light + dark) rather than a full framework.
 
 ## Install
 
@@ -62,6 +62,8 @@ export function App() {
 | `Markdown` | GFM Markdown renderer with fenced code blocks |
 | `CodeBlock` | Code block with a language tag and copy button |
 | `ToolCallCard` | Collapsible `tool_use` / `tool_result` display |
+| `MessageImage`, `Lightbox` | Renders an `image` content block, click to view full-size |
+| `AttachmentChip` | Staged-attachment preview shown above the input before sending |
 | `Avatar`, `TypingIndicator` | Small building blocks used by the above |
 
 Each component also works standalone if you want to build your own layout
@@ -73,14 +75,37 @@ instead of `ChatWindow`.
 interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
-  content: string | ContentBlock[]; // text | tool_use | tool_result blocks
+  content: string | ContentBlock[]; // text | image | tool_use | tool_result blocks
   streaming?: boolean; // shows a blinking cursor while true
 }
 ```
 
 `content` can be a plain string, or an array of blocks mirroring the shape of
-the Anthropic Messages API content blocks (`text`, `tool_use`, `tool_result`),
-so you can pass a model response straight through with minimal mapping.
+the Anthropic Messages API content blocks (`text`, `image`, `tool_use`,
+`tool_result`), so you can pass a model response straight through with
+minimal mapping.
+
+## Attachments & images
+
+`ChatInput` (and `ChatWindow`) include a paperclip button, drag-and-drop onto
+the input, and paste-from-clipboard — all staged as `Attachment[]` and shown
+as `AttachmentChip` previews before sending. By default only images are
+accepted (`accept="image/*"`); pass a wider `accept` and handle non-image
+`Attachment.kind === 'file'` yourself if you need documents too.
+
+`useClaudeChat`'s `sendMessage(text, attachments)` converts image attachments
+to base64 `image` content blocks and includes them in the user message it
+hands to your `stream` function — the same message array your backend can
+forward to the Anthropic Messages API almost as-is:
+
+```tsx
+const { sendMessage } = useClaudeChat({ stream });
+// user picks/drops/pastes a photo, types a caption, hits send:
+<ChatWindow messages={messages} onSend={sendMessage} accept="image/*" maxAttachments={4} />
+```
+
+Received images render the same way — a `MessageBubble` with an `image` block
+shows a thumbnail that opens in a full-size `Lightbox` on click.
 
 ## Theming
 

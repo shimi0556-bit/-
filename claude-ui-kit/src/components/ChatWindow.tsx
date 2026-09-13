@@ -1,16 +1,19 @@
 import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
-import type { ChatMessage } from '../types';
+import type { Attachment, ChatMessage } from '../types';
 
 export interface ChatWindowProps {
   messages: ChatMessage[];
-  onSend: (text: string) => void;
+  onSend: (text: string, attachments: Attachment[]) => void;
   isThinking?: boolean;
   disabled?: boolean;
   placeholder?: string;
   userLabel?: string;
   userAvatarSrc?: string;
   assistantAvatarSrc?: string;
+  /** File types accepted by the attachment picker/drop zone. Defaults to images only. */
+  accept?: string;
+  maxAttachments?: number;
   className?: string;
 }
 
@@ -23,6 +26,8 @@ export function ChatWindow({
   userLabel,
   userAvatarSrc,
   assistantAvatarSrc,
+  accept,
+  maxAttachments,
   className,
 }: ChatWindowProps) {
   return (
@@ -34,7 +39,7 @@ export function ChatWindow({
         userAvatarSrc={userAvatarSrc}
         assistantAvatarSrc={assistantAvatarSrc}
       />
-      <ChatInput onSend={onSend} disabled={disabled} placeholder={placeholder} />
+      <ChatInput onSend={onSend} disabled={disabled} placeholder={placeholder} accept={accept} maxAttachments={maxAttachments} />
     </div>
   );
 }

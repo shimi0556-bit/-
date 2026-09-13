@@ -1,7 +1,7 @@
 {
   "name": "claude-ui-kit",
-  "version": "0.1.0",
-  "description": "React UI components for building chat interfaces powered by Claude — message bubbles, streaming text, tool-call cards, and a chat input, styled and themeable out of the box.",
+  "version": "0.2.0",
+  "description": "React UI components for building chat interfaces powered by Claude — message bubbles, streaming text, tool-call cards, image attachments, and a chat input, styled and themeable out of the box.",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",

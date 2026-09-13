@@ -1,7 +1,8 @@
 import { Avatar } from './Avatar';
 import { Markdown } from './Markdown';
+import { MessageImage } from './MessageImage';
 import { ToolCallCard } from './ToolCallCard';
-import type { ChatMessage, ContentBlock, ToolResultBlock, ToolUseBlock } from '../types';
+import type { ChatMessage, ContentBlock, ImageBlock, ToolResultBlock, ToolUseBlock } from '../types';
 
 export interface MessageBubbleProps {
   message: ChatMessage;
@@ -30,6 +31,9 @@ export function MessageBubble({ message, userLabel, userAvatarSrc, assistantAvat
         {blocks.map((block, i) => {
           if (block.type === 'text') {
             return <Markdown key={i} content={block.text} />;
+          }
+          if (block.type === 'image') {
+            return <MessageImage key={i} block={block as ImageBlock} />;
           }
           if (block.type === 'tool_use') {
             const call = block as ToolUseBlock;

@@ -12,6 +12,15 @@ export type { MarkdownProps } from './Markdown';
 export { ToolCallCard } from './ToolCallCard';
 export type { ToolCallCardProps } from './ToolCallCard';
 
+export { MessageImage } from './MessageImage';
+export type { MessageImageProps } from './MessageImage';
+
+export { Lightbox } from './Lightbox';
+export type { LightboxProps } from './Lightbox';
+
+export { AttachmentChip } from './AttachmentChip';
+export type { AttachmentChipProps } from './AttachmentChip';
+
 export { MessageBubble } from './MessageBubble';
 export type { MessageBubbleProps } from './MessageBubble';
 

@@ -12,10 +12,30 @@ const SAMPLE_REPLY = [
   "I'll also check something for you.",
 ].join('');
 
+const demoImageSvg =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="160">' +
+  '<rect width="240" height="160" fill="#c15f3c"/>' +
+  '<text x="20" y="90" font-family="sans-serif" font-size="20" fill="white">Sample image</text>' +
+  '</svg>';
+const demoImageBase64 = typeof window !== 'undefined' ? window.btoa(demoImageSvg) : '';
+
 const initialMessages: ChatMessage[] = [
-  { id: 'seed-1', role: 'user', content: 'Can you show me a TypeScript add function?' },
   {
-    id: 'seed-2',
+    id: 'seed-0',
+    role: 'user',
+    content: [
+      { type: 'image', source: { type: 'base64', media_type: 'image/svg+xml', data: demoImageBase64 } },
+      { type: 'text', text: 'What is in this image?' },
+    ],
+  },
+  {
+    id: 'seed-1',
+    role: 'assistant',
+    content: "It's a solid orange rectangle labeled “Sample image”.",
+  },
+  { id: 'seed-2', role: 'user', content: 'Can you show me a TypeScript add function?' },
+  {
+    id: 'seed-3',
     role: 'assistant',
     content: [
       { type: 'text', text: 'Sure, here you go:\n\n```ts\nfunction add(a: number, b: number) {\n  return a + b;\n}\n```' },
@@ -31,7 +51,8 @@ const initialMessages: ChatMessage[] = [
 ];
 
 // Fakes a streaming backend for the demo. A real implementation calls your
-// server, which in turn streams from the Anthropic Messages API.
+// server, which in turn streams from the Anthropic Messages API — including
+// any image blocks staged via the attachment picker on the last user turn.
 const fakeStream: StreamFn = async (_messages, onDelta) => {
   for (const char of SAMPLE_REPLY) {
     await new Promise((r) => setTimeout(r, 12));
