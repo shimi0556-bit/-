@@ -19,8 +19,10 @@ A personal playground repo: vendored tools/apps and Claude Code skills, collecte
 | [`tuning-numbers/`](tuning-numbers) | Interactive, scroll-driven lesson on how neural networks train and how it scales to an LLM — all math runs live in-browser, gradient-checked. Source: [hoodini/tuning-numbers](https://github.com/hoodini/tuning-numbers) | `cd tuning-numbers/site && npm install && npm run dev` |
 | [`claude-hud/`](claude-hud) | Claude Code plugin — real-time statusline HUD showing context usage, active tools, running agents, and todo progress, zero config. Source: [jarrodwatts/claude-hud](https://github.com/jarrodwatts/claude-hud) | `npm install` inside the folder, then follow the plugin's `README.md` (or install as a Claude Code plugin via its marketplace manifest) |
 | [`gods-eye-view/`](gods-eye-view) | "A spy satellite simulator in your browser, except the data is real" — a photorealistic 3D globe (Cesium/Google 3D Tiles) with live flight tracking, AIS vessels, public CCTV feeds, weather, and voice control. Most layers work keyless with fallbacks; live data layers need free API keys (see `.env.example`). Source: [bilawalsidhu/gods-eye-view](https://github.com/bilawalsidhu/gods-eye-view) | `npm install && npm run dev` |
+| [`claude-spark-pack/`](claude-spark-pack) | Self-contained cinematic "Claude Spark Engine" HTML page (Hebrew RTL, dark neon) plus the nested `cinematic-spark` skill. Pairs with `cinematic-spark` in `.claude/skills`. | Open `spark.html` directly |
+| [`claude-grok-mcp-bridge/`](claude-grok-mcp-bridge) | Python MCP server — shared mailbox and task board between Claude and Grok Bot (Streamable HTTP + OAuth, or local stdio). Needs a local `BRIDGE_TOKEN` (see `.env.example`; no secrets committed). | `cd claude-grok-mcp-bridge && cp .env.example .env && uv sync --group dev && uv run claude-grok-mcp-bridge http` |
 
-Most of these were vendored (copied in, not submoduled) from [hoodini](https://github.com/hoodini) (Yuval Avidani)'s public GitHub repos; `claude-hud` and `gods-eye-view` are from different, independent authors (jarrodwatts, 27.9k★; bilawalsidhu, 25.6k★).
+Most of these were vendored (copied in, not submoduled) from [hoodini](https://github.com/hoodini) (Yuval Avidani)'s public GitHub repos; `claude-hud` and `gods-eye-view` are from different, independent authors (jarrodwatts, 27.9k★; bilawalsidhu, 25.6k★). `claude-spark-pack/`, `claude-grok-mcp-bridge/`, and `claude-skills/` are local packs added to this playground (not from those GitHub sources).
 
 **Not vendored:** [poloclub/transformer-explainer](https://github.com/poloclub/transformer-explainer) — a well-known interactive visualization of how a GPT-2 transformer works, live at [poloclub.github.io/transformer-explainer](https://poloclub.github.io/transformer-explainer). Skipped because it bundles ~627MB of real GPT-2 ONNX model weights (~1.2GB total repo) — too heavy to vendor into git. Just visit the live demo.
 
@@ -36,6 +38,9 @@ Installed via the [`skills`](https://www.npmjs.com/package/skills) CLI and track
 
 **From [majidmanzarpour/threejs-game-skills](https://github.com/majidmanzarpour/threejs-game-skills)** (build/upgrade/finish Three.js browser games — pairs well with `skyhawk-flight-simulator/`):
 `threejs-game-director` (entrypoint/router), `threejs-gameplay-systems`, `threejs-aaa-graphics-builder`, `threejs-game-ui-designer`, `threejs-3d-generator`, `threejs-image-generator`, `threejs-audio-generator`, `threejs-debug-profiler`, `threejs-qa-release`
+
+**Local / this repo** (canonical copies in [`claude-skills/`](claude-skills), installed into `.agents/skills` and symlinked into `.claude/skills`):
+`cinematic-spark` (pairs with `claude-spark-pack/`), `claude-grok-bridge` (pairs with `claude-grok-mcp-bridge/`)
 
 To add more skills: `npx skills add <owner>/<repo> -s <skill-name> -y`
 

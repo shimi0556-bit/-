@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="מנוע ניצוצות Claude — Claude Spark Engine" />
+  <title>מנוע ניצוצות Claude · Claude Spark Engine</title>
+  <style>
+    :root {
+      --bg-0: #05050c;
+      --bg-1: #0a0a18;
+      --bg-2: #101028;
+      --indigo: #1a1040;
+      --cyan: #00f0ff;
+      --cyan-dim: #00b8c4;
+      --magenta: #ff2bd6;
+      --magenta-dim: #c41a9e;
+      --text: #e8f0ff;
+      --text-muted: #8a9bb8;
+      --card-bg: rgba(16, 16, 40, 0.85);
+      --border: rgba(0, 240, 255, 0.18);
+      --glow-cyan: 0 0 24px rgba(0, 240, 255, 0.35);
+      --glow-magenta: 0 0 24px rgba(255, 43, 214, 0.35);
+      --radius: 14px;
+      --font: system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, "Noto Sans Hebrew", "Arial Hebrew", sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg-0);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.55;
+      overflow-x: hidden;
+    }
+
+    /* Ambient background */
+    .bg-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 10%, rgba(26, 16, 64, 0.9), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 85% 20%, rgba(255, 43, 214, 0.12), transparent 50%),
+        radial-gradient(ellipse 50% 60% at 50% 90%, rgba(0, 240, 255, 0.08), transparent 55%),
+        var(--bg-0);
+    }
+
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.07;
+      background-image:
+        linear-gradient(rgba(0, 240, 255, 0.4) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 240, 255, 0.4) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 3rem;
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 2.5rem 1rem 2rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      color: var(--cyan);
+      border: 1px solid rgba(0, 240, 255, 0.35);
+      background: rgba(0, 240, 255, 0.06);
+      margin-bottom: 1.25rem;
+      box-shadow: var(--glow-cyan);
+    }
+
+    .badge::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 8px var(--cyan);
+      animation: pulse-dot 1.8s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.75); }
+    }
+
+    .hero h1 {
+      font-size: clamp(1.85rem, 5.5vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 0.65rem;
+      background: linear-gradient(
+        110deg,
+        var(--cyan) 0%,
+        #7af0ff 25%,
+        var(--magenta) 50%,
+        #ff7ae8 75%,
+        var(--cyan) 100%
+      );
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: gradient-shift 6s ease infinite;
+      filter: drop-shadow(0 0 28px rgba(0, 240, 255, 0.25));
+    }
+
+    @keyframes gradient-shift {
+      0% { background-position: 0% center; }
+      50% { background-position: 100% center; }
+      100% { background-position: 0% center; }
+    }
+
+    .hero .sub {
+      color: var(--text-muted);
+      font-size: clamp(0.95rem, 2.5vw, 1.1rem);
+      max-width: 36rem;
+      margin: 0 auto 1.5rem;
+    }
+
+    .hero .en-label {
+      font-size: 0.8rem;
+      color: var(--magenta);
+      opacity: 0.85;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 0.35rem;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Buttons */
+    .btn {
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      padding: 0.7rem 1.35rem;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid var(--cyan);
+      outline-offset: 3px;
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--cyan), #00c4d4);
+      color: #05050c;
+      box-shadow: var(--glow-cyan);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 0 32px rgba(0, 240, 255, 0.55);
+      transform: translateY(-1px);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--magenta);
+      box-shadow: var(--glow-magenta);
+      color: #fff;
+    }
+
+    .btn-copy {
+      background: linear-gradient(135deg, var(--magenta), #d41ab0);
+      color: #fff;
+      box-shadow: var(--glow-magenta);
+    }
+
+    .btn-copy:hover {
+      box-shadow: 0 0 32px rgba(255, 43, 214, 0.55);
+      transform: translateY(-1px);
+    }
+
+    .btn-copy.copied {
+      background: linear-gradient(135deg, #00d68f, #00b874);
+      box-shadow: 0 0 24px rgba(0, 214, 143, 0.4);
+    }
+
+    /* Layout: cards + preview */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 860px) {
+      .main-grid {
+        grid-template-columns: 1fr 1.05fr;
+        align-items: start;
+      }
+    }
+
+    .section-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      margin-bottom: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .section-label::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--border), transparent);
+    }
+
+    /* Cards */
+    .cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    @media (max-width: 480px) {
+      .cards { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      position: relative;
+      text-align: right;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.05rem 1.1rem;
+      cursor: pointer;
+      transition: border-color 0.2s ease, box-shadow 0.25s ease, transform 0.15s ease, background 0.2s ease;
+      overflow: hidden;
+      font-family: inherit;
+      color: inherit;
+      width: 100%;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.06), rgba(255, 43, 214, 0.04));
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      pointer-events: none;
+    }
+
+    .card:hover,
+    .card:focus-visible {
+      border-color: rgba(0, 240, 255, 0.55);
+      box-shadow: var(--glow-cyan);
+      transform: translateY(-2px);
+      outline: none;
+    }
+
+    .card:hover::before,
+    .card:focus-visible::before { opacity: 1; }
+
+    .card.active {
+      border-color: var(--magenta);
+      box-shadow: var(--glow-magenta);
+      background: rgba(255, 43, 214, 0.08);
+    }
+
+    .card.active:hover {
+      border-color: var(--magenta);
+      box-shadow: 0 0 28px rgba(255, 43, 214, 0.45);
+    }
+
+    .card-icon {
+      font-size: 1.45rem;
+      margin-bottom: 0.4rem;
+      line-height: 1;
+      filter: drop-shadow(0 0 6px rgba(0, 240, 255, 0.4));
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+      color: #fff;
+    }
+
+    .card-en {
+      font-size: 0.7rem;
+      color: var(--cyan-dim);
+      letter-spacing: 0.04em;
+      margin-bottom: 0.35rem;
+    }
+
+    .card-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* Preview panel */
+    .preview {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.15rem 1.2rem 1.25rem;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+      position: sticky;
+      top: 1rem;
+      min-height: 280px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .preview-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.85rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .preview-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+    }
+
+    .preview-title span.en {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--cyan-dim);
+      letter-spacing: 0.05em;
+      margin-top: 0.15rem;
+    }
+
+    .twist {
+      display: none;
+      margin-bottom: 0.75rem;
+      padding: 0.55rem 0.75rem;
+      border-radius: 8px;
+      background: rgba(255, 43, 214, 0.1);
+      border: 1px solid rgba(255, 43, 214, 0.3);
+      font-size: 0.85rem;
+      color: #ffb8ef;
+    }
+
+    .twist.visible { display: block; }
+
+    .twist strong { color: var(--magenta); }
+
+    .prompt-box {
+      flex: 1;
+      background: rgba(5, 5, 12, 0.7);
+      border: 1px solid rgba(0, 240, 255, 0.12);
+      border-radius: 10px;
+      padding: 0.9rem 1rem;
+      font-size: 0.82rem;
+      line-height: 1.65;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 420px;
+      overflow-y: auto;
+      direction: rtl;
+      text-align: right;
+    }
+
+    .prompt-box:empty::before,
+    .prompt-placeholder {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .prompt-box::-webkit-scrollbar { width: 6px; }
+    .prompt-box::-webkit-scrollbar-track { background: transparent; }
+    .prompt-box::-webkit-scrollbar-thumb {
+      background: rgba(0, 240, 255, 0.25);
+      border-radius: 3px;
+    }
+
+    .preview-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-top: 0.9rem;
+    }
+
+    .status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      min-height: 1.2em;
+      margin-top: 0.5rem;
+    }
+
+    .status.ok { color: #00d68f; }
+
+    /* Footer */
+    footer {
+      margin-top: 2.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    footer code {
+      color: var(--cyan);
+      font-size: 0.78rem;
+      background: rgba(0, 240, 255, 0.08);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+    }
+
+    footer .spark-line {
+      margin-top: 0.4rem;
+      opacity: 0.7;
+    }
+
+    /* Flash on random pick */
+    @keyframes card-flash {
+      0% { box-shadow: 0 0 0 rgba(255, 43, 214, 0); }
+      40% { box-shadow: 0 0 40px rgba(255, 43, 214, 0.7); }
+      100% { box-shadow: var(--glow-magenta); }
+    }
+
+    .card.flash { animation: card-flash 0.7s ease; }
+  </style>
+</head>
+<body>
+  <div class="bg-layer" aria-hidden="true"></div>
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <div class="wrap">
+    <header class="hero">
+      <div class="badge" role="status">Claude Spark Engine · חי</div>
+      <p class="en-label">Claude Spark Engine</p>
+      <h1>מנוע ניצוצות Claude</h1>
+      <p class="sub">
+        בחר ניצוץ → העתק פרומפט מוכן → הדבק ב־Claude Code / Claude.ai ובנה משהו מדליק.
+      </p>
+      <div class="hero-actions">
+        <button type="button" class="btn btn-primary" id="btn-random" aria-label="הגרל ניצוץ אקראי">
+          🎲 הגרל ניצוץ
+        </button>
+        <button type="button" class="btn btn-ghost" id="btn-clear" aria-label="נקה תצוגה מקדימה">
+          נקה
+        </button>
+      </div>
+    </header>
+
+    <div class="main-grid">
+      <section aria-labelledby="cards-label">
+        <p class="section-label" id="cards-label">שישה ניצוצות · Sparks</p>
+        <div class="cards" id="cards" role="list"></div>
+      </section>
+
+      <section class="preview" aria-labelledby="preview-label">
+        <div class="preview-header">
+          <div>
+            <p class="section-label" id="preview-label" style="margin-bottom:0.35rem">תצוגה מקדימה</p>
+            <h2 class="preview-title" id="preview-title">
+              בחר ניצוץ
+              <span class="en">Pick a spark</span>
+            </h2>
+          </div>
+        </div>
+        <div class="twist" id="twist" role="status" aria-live="polite"></div>
+        <div class="prompt-box" id="prompt-box" tabindex="0" role="region" aria-label="תוכן הפרומפט">
+          <span class="prompt-placeholder">לחץ על כרטיס ניצוץ — הפרומפט יופיע כאן, מוכן להדבקה.</span>
+        </div>
+        <div class="preview-actions">
+          <button type="button" class="btn btn-copy" id="btn-copy" disabled aria-label="העתק פרומפט ללוח">
+            📋 העתק פרומפט
+          </button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+      </section>
+    </div>
+
+    <footer>
+      <p>קובץ ה־skill נמצא ליד העמוד הזה · <code>cinematic-spark/SKILL.md</code></p>
+      <p class="spark-line">Built for שימי · Dark neon · No CDN · No tracking</p>
+    </footer>
+  </div>
+
+  <script>
+(function () {
+  "use strict";
+
+  var twists = [
+    "טוויסט: הוסף מצב לילה קולנועי עם פרלקס עדין על ה־hero.",
+    "טוויסט: כל אנימציה חייבת להיות 60fps-friendly — העדף transform/opacity.",
+    "טוויסט: הוסף כפתור 'Keep Layout' שמחליף רק וידאו/תמונה בלי לשבור grid.",
+    "טוויסט: RTL מלא בעברית + תוויות EN קצרות ליד כל heading.",
+    "טוויסט: micro-interactions על hover — glow cyan/magenta, לא סגול גנרי.",
+    "טוויסט: scroll-linked section reveal עם IntersectionObserver בלבד (בלי ספריות).",
+    "טוויסט: הוסף 'art direction brief' של 5 שורות לפני הקוד.",
+    "טוויסט: מובייל-first, ואז desktop cinematic wide."
+  ];
+
+  var sparks = [
+    {
+      id: "cinematic-site",
+      icon: "🎬",
+      title: "אתר קולנועי",
+      en: "Cinematic site",
+      hint: "MotionSites vibes · scroll + video",
+      prompt:
+"בנה לי אתר קולנועי מדליק (MotionSites / Oddy vibe) ב־React + Framer Motion (או CSS motion אם מתאים יותר).\n\nדרישות:\n1) קודם — אסוף / הצע 3–5 רפרנסים ויזואליים קצרים (mood: dark, neon, editorial film).\n2) אחר כך — Full Prompt מובנה: art direction, palette (לא סגול AI גנרי אלא אם ביקשתי), typography, motion language, sections.\n3) בנה: hero עם gradient/glow עדין, scroll-linked reveals, וידאו/mp4 או placeholder cinematic.\n4) כשמשנים וידאו בהמשך — רק החלף קישור mp4, אל תשכתב את כל הלייאאוט.\n5) פלט: תוכנית מובנית קצרה → אחר כך קוד.\n6) ענה בעברית כשאני כותב בעברית; שמור על קוד נקי ו־accessible.\n\nהתחל: הצע brief קולנועי ל־landing של מוצר/סטודיו לבחירתך, ואז בנה."
+    },
+    {
+      id: "new-skill",
+      icon: "⚡",
+      title: "Skill חדש",
+      en: "New Claude skill",
+      hint: "SKILL.md · trigger · workflow",
+      prompt:
+"צור לי Claude Skill חדש בפורמט Anthropic (frontmatter + body אימפרטיבי).\n\nדרישות:\n- name + description עם טריגרים חזקים (מתי להפעיל את ה־skill).\n- Body: workflow ברור, למה כל שלב חשוב, anti-slop (כיוון אמנותי קונקרטי).\n- תמיכה בעברית כשהמשתמש כותב בעברית.\n- Output: תוכנית מובנית ואז ארטיפקטים/קוד.\n\nנושא ה־skill (הצע אם לא ציינתי): משהו שעוזר לבנות אתרים/דשבורדים/סוכנים שנראים wow.\n\nהחזר: קובץ SKILL.md מלא מוכן להעתקה + הסבר קצר מתי הוא נדלק."
+    },
+    {
+      id: "mcp-idea",
+      icon: "🔌",
+      title: "MCP רעיון",
+      en: "MCP idea",
+      hint: "Tools · server · cool use-case",
+      prompt:
+"תכנן ותאר MCP server רעיון מדליק-אבל-שימושי ל־Claude.\n\nכלול:\n1) שם + use-case חד-משפטי.\n2) רשימת tools (שם, args, מה מחזירים) — 3–6 כלים.\n3) זרימת עבודה לדוגמה (user → Claude → MCP → תוצאה).\n4) אבטחה / מגבלות (מה לא לעשות).\n5) סקיצה מינימלית של מבנה הפרויקט (קבצים) ואם רלוונטי — TypeScript/Python stub.\n\nהעדף משהו שמתחבר ל־creative builds / cinematic sites / אוטומציה אישית בעברית+אנגלית.\nהתחל עם הרעיון הכי חזק שלך והסבר למה הוא שווה לבנות."
+    },
+    {
+      id: "live-dashboard",
+      icon: "📊",
+      title: "דשבורד חי",
+      en: "Live dashboard",
+      hint: "Realtime UI · neon data",
+      prompt:
+"בנה דשבורד חי (live dashboard) עם אסתטיקה dark neon קולנועית.\n\nדרישות:\n- UI RTL-friendly בעברית + תוויות EN קצרות.\n- כרטיסי KPI, גרף/סדרת נתונים (mock realtime עם setInterval או WebSocket מדומה), טבלת אירועים.\n- אנימציות עדינות (מספרים שעולים, glow על alerts).\n- Responsive, keyboard accessible, בלי CDN אם אפשר (או ציין תלויות מינימליות).\n- Anti-slop: palette קונקרטית (cyan/magenta/indigo), לא 'AI purple mush'.\n\nפלט: תוכנית קצרה → קוד single-file HTML או React לפי מה שמתאים.\nנושא הדשבורד: בחר (למשל ניטור סוכני AI / סטודיו תוכן / MCP health) והסבר למה."
+    },
+    {
+      id: "team-agent",
+      icon: "🤝",
+      title: "סוכן צוות",
+      en: "Team agent",
+      hint: "Multi-role · briefs · handoffs",
+      prompt:
+"עצב לי 'סוכן צוות' ל־Claude: מערכת תפקידים שמשתפת פעולה על בילד אחד.\n\nכלול:\n1) 3–5 תפקידים (למשל: Art Director, Frontend Motion, Prompt Engineer, Critic) עם אחריות ברורה.\n2) פרוטוקול handoff: מה כל תפקיד מעביר הבא.\n3) תבנית brief בעברית שאני ממלא.\n4) כללי anti-slop ו־keep-layout כשעובדים על אתר קולנועי.\n5) דוגמת ריצה קצרה על פרויקט לדוגמה.\n\nהמטרה: שאוכל להדביק את זה ב־Claude ולהריץ צוות מדומה שמביא תוצאה מדליקה בלי בלגן.\nהחזר כמסמך מוכן להדבקה + checklist הפעלה."
+    },
+    {
+      id: "wild-useful",
+      icon: "🧪",
+      title: "ניסוי מטורף-אבל-שימושי",
+      en: "Wild but useful",
+      hint: "Experiment · ship-ready twist",
+      prompt:
+"הצע ניסוי מטורף-אבל-שימושי שבונה Claude Code / Claude.ai ב־שעה–שעתיים.\n\nמבנה התשובה:\n1) שם הניסוי + למה זה מגניב.\n2) מה השימוש האמיתי (לא רק דמו).\n3) Full Prompt מוכן להדבקה שבונה את זה.\n4) קריטריוני הצלחה (3–5).\n5) רעיון iteration הבא בלי לשבור לייאאוט.\n\nכיוון מועדף: משהו ויזואלי/אינטראקטיבי (אתר, כלי, דשבורד, skill+UI) עם אסתטיקה cinematic neon.\nענה בעברית, קוד באנגלית. יאללה — הפתע אותי בבחירה חזקה."
+    }
+  ];
+
+  var cardsEl = document.getElementById("cards");
+  var promptBox = document.getElementById("prompt-box");
+  var previewTitle = document.getElementById("preview-title");
+  var twistEl = document.getElementById("twist");
+  var btnCopy = document.getElementById("btn-copy");
+  var btnRandom = document.getElementById("btn-random");
+  var btnClear = document.getElementById("btn-clear");
+  var statusEl = document.getElementById("status");
+
+  var currentPrompt = "";
+  var currentId = null;
+
+  function setStatus(msg, ok) {
+    statusEl.textContent = msg || "";
+    statusEl.className = "status" + (ok ? " ok" : "");
+  }
+
+  function renderCards() {
+    cardsEl.innerHTML = "";
+    sparks.forEach(function (s, i) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "card";
+      btn.setAttribute("role", "listitem");
+      btn.setAttribute("data-id", s.id);
+      btn.setAttribute("aria-pressed", "false");
+      btn.setAttribute("aria-label", s.title + " — " + s.en);
+      btn.innerHTML =
+        '<div class="card-icon" aria-hidden="true">' + s.icon + "</div>" +
+        '<div class="card-title">' + s.title + "</div>" +
+        '<div class="card-en">' + s.en + "</div>" +
+        '<div class="card-hint">' + s.hint + "</div>";
+      btn.addEventListener("click", function () {
+        selectSpark(s.id, false);
+      });
+      btn.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          selectSpark(s.id, false);
+        }
+      });
+      cardsEl.appendChild(btn);
+    });
+  }
+
+  function findSpark(id) {
+    for (var i = 0; i < sparks.length; i++) {
+      if (sparks[i].id === id) return sparks[i];
+    }
+    return null;
+  }
+
+  function selectSpark(id, withTwist) {
+    var s = findSpark(id);
+    if (!s) return;
+
+    currentId = id;
+    currentPrompt = s.prompt;
+
+    var cards = cardsEl.querySelectorAll(".card");
+    for (var i = 0; i < cards.length; i++) {
+      var active = cards[i].getAttribute("data-id") === id;
+      cards[i].classList.toggle("active", active);
+      cards[i].setAttribute("aria-pressed", active ? "true" : "false");
+      if (active && withTwist) {
+        cards[i].classList.remove("flash");
+        void cards[i].offsetWidth;
+        cards[i].classList.add("flash");
+      }
+    }
+
+    previewTitle.innerHTML =
+      s.icon + " " + s.title +
+      '<span class="en">' + s.en + "</span>";
+
+    if (withTwist) {
+      var tw = twists[Math.floor(Math.random() * twists.length)];
+      twistEl.innerHTML = "<strong>✨ טוויסט:</strong> " + tw.replace(/^טוויסט:\s*/, "");
+      twistEl.classList.add("visible");
+      currentPrompt = s.prompt + "\n\n---\n" + tw;
+    } else {
+      twistEl.classList.remove("visible");
+      twistEl.textContent = "";
+    }
+
+    promptBox.textContent = currentPrompt;
+    btnCopy.disabled = false;
+    setStatus(withTwist ? "ניצוץ אקראי + טוויסט מוכנים להעתקה." : "פרומפט מוכן — לחץ העתק.", true);
+  }
+
+  function clearPreview() {
+    currentId = null;
+    currentPrompt = "";
+    var cards = cardsEl.querySelectorAll(".card");
+    for (var i = 0; i < cards.length; i++) {
+      cards[i].classList.remove("active", "flash");
+      cards[i].setAttribute("aria-pressed", "false");
+    }
+    previewTitle.innerHTML = 'בחר ניצוץ<span class="en">Pick a spark</span>';
+    twistEl.classList.remove("visible");
+    twistEl.textContent = "";
+    promptBox.innerHTML = '<span class="prompt-placeholder">לחץ על כרטיס ניצוץ — הפרומפט יופיע כאן, מוכן להדבקה.</span>';
+    btnCopy.disabled = true;
+    btnCopy.classList.remove("copied");
+    btnCopy.textContent = "📋 העתק פרומפט";
+    setStatus("");
+  }
+
+  function copyPrompt() {
+    if (!currentPrompt) return;
+    var done = function () {
+      btnCopy.classList.add("copied");
+      btnCopy.textContent = "✓ הועתק!";
+      setStatus("הועתק ללוח — הדבק ב־Claude.", true);
+      setTimeout(function () {
+        btnCopy.classList.remove("copied");
+        btnCopy.textContent = "📋 העתק פרומפט";
+      }, 1800);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(currentPrompt).then(done).catch(function () {
+        fallbackCopy(currentPrompt, done);
+      });
+    } else {
+      fallbackCopy(currentPrompt, done);
+    }
+  }
+
+  function fallbackCopy(text, done) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand("copy");
+      done();
+    } catch (e) {
+      setStatus("ההעתקה נכשלה — סמן והעתק ידנית מהתיבה.", false);
+    }
+    document.body.removeChild(ta);
+  }
+
+  function randomSpark() {
+    var idx = Math.floor(Math.random() * sparks.length);
+    if (sparks.length > 1 && sparks[idx].id === currentId) {
+      idx = (idx + 1 + Math.floor(Math.random() * (sparks.length - 1))) % sparks.length;
+    }
+    selectSpark(sparks[idx].id, true);
+    var active = cardsEl.querySelector('.card[data-id="' + sparks[idx].id + '"]');
+    if (active) active.focus();
+  }
+
+  btnCopy.addEventListener("click", copyPrompt);
+  btnRandom.addEventListener("click", randomSpark);
+  btnClear.addEventListener("click", clearPreview);
+
+  renderCards();
+})();
+  </script>
+</body>
+</html>

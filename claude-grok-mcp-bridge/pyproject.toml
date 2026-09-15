@@ -1,0 +1,36 @@
+[project]
+name = "claude-grok-mcp-bridge"
+version = "0.1.0"
+description = "Bidirectional MCP bridge: shared mailbox and task board for Claude and Grok Bot"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Claude-Grok Bridge" }]
+dependencies = [
+    "aiosqlite>=0.22.1",
+    "httpx>=0.28.1",
+    "mcp[cli]>=2.2.0",
+    "pydantic>=2.13.5",
+    "python-dotenv>=1.2.3",
+    "starlette>=1.6.0",
+    "uvicorn>=0.53.0",
+]
+
+[project.scripts]
+claude-grok-mcp-bridge = "claude_grok_mcp_bridge:main"
+
+[build-system]
+requires = ["uv_build>=0.12.13,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
