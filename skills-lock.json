@@ -13,6 +13,18 @@
       "skillPath": "skills/cinematic-scrub-landing/SKILL.md",
       "computedHash": "d567568e4545dfb91bce38bfa3ee5c3a2a7c0e0dd6a50d3a0a76ed3eddb8dc47"
     },
+    "cinematic-spark": {
+      "source": "claude-skills",
+      "sourceType": "local",
+      "skillPath": "cinematic-spark/SKILL.md",
+      "computedHash": "5b1948303f43f58accffaacc73a6b224fe9938e497308c174cd9d1ecc7443186"
+    },
+    "claude-grok-bridge": {
+      "source": "claude-skills",
+      "sourceType": "local",
+      "skillPath": "claude-grok-bridge/SKILL.md",
+      "computedHash": "2f13f698fd28d1bde49adb386117acbef1765947d523d56f0ff21e92572803d4"
+    },
     "fal-ai": {
       "source": "hoodini/ai-agents-skills",
       "sourceType": "github",
