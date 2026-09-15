@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>GitHub AI Tracker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: system-ui, sans-serif; max-width: 780px; margin: 2rem auto; padding: 0 1rem; line-height: 1.4; }
+  h1 { font-size: 1.4rem; }
+  form { display: flex; gap: 0.5rem; margin: 1rem 0; }
+  input[type=text], input[type=password] { flex: 1; padding: 0.5rem; font-size: 1rem; }
+  button { padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; }
+  ul.users { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  ul.users li { background: #8882; border-radius: 999px; padding: 0.25rem 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+  ul.users li button { padding: 0 0.35rem; font-size: 0.8rem; }
+  .event { border-left: 3px solid #8886; padding: 0.5rem 0.75rem; margin-bottom: 0.75rem; }
+  .event .meta { font-size: 0.8rem; opacity: 0.7; }
+  .event .insight { margin-top: 0.25rem; font-style: italic; }
+  .empty { opacity: 0.6; }
+</style>
+</head>
+<body>
+  <h1>GitHub AI Tracker</h1>
+  <p>Track GitHub users; a Claude-powered AI-expert reads each new event and adds a one-line technical insight.</p>
+
+  <form id="watch-form">
+    <input type="text" id="username" placeholder="GitHub username" required />
+    <input type="password" id="apikey" placeholder="API key (if set)" />
+    <button type="submit">Track</button>
+  </form>
+
+  <ul class="users" id="users"></ul>
+
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
+    <h2 style="font-size:1.1rem; margin:0;">Activity</h2>
+    <button id="refresh">Refresh</button>
+  </div>
+  <div id="activity"></div>
+
+<script>
+const apiKeyInput = document.getElementById('apikey');
+
+function headers() {
+  const h = { 'content-type': 'application/json' };
+  if (apiKeyInput.value) h['x-api-key'] = apiKeyInput.value;
+  return h;
+}
+
+async function loadUsers() {
+  const res = await fetch('/api/watch');
+  const { users } = await res.json();
+  const ul = document.getElementById('users');
+  ul.innerHTML = '';
+  if (users.length === 0) {
+    ul.innerHTML = '<li class="empty">No users tracked yet</li>';
+  }
+  for (const u of users) {
+    const li = document.createElement('li');
+    li.textContent = u.username + ' ';
+    const btn = document.createElement('button');
+    btn.textContent = '×';
+    btn.onclick = async () => {
+      await fetch('/api/watch/' + encodeURIComponent(u.username), { method: 'DELETE', headers: headers() });
+      loadUsers();
+    };
+    li.appendChild(btn);
+    ul.appendChild(li);
+  }
+}
+
+async function loadActivity() {
+  const res = await fetch('/api/activity?limit=50');
+  const { activity } = await res.json();
+  const div = document.getElementById('activity');
+  div.innerHTML = '';
+  if (activity.length === 0) {
+    div.innerHTML = '<p class="empty">No activity recorded yet.</p>';
+  }
+  for (const e of activity) {
+    const el = document.createElement('div');
+    el.className = 'event';
+    el.innerHTML = `
+      <div class="meta">${new Date(e.createdAt).toLocaleString()} — <strong>${e.username}</strong> — ${e.type}</div>
+      <div><a href="${e.url}" target="_blank" rel="noopener">${e.headline}</a></div>
+      ${e.aiInsight ? `<div class="insight">${e.aiInsight}</div>` : ''}
+    `;
+    div.appendChild(el);
+  }
+}
+
+document.getElementById('watch-form').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const username = document.getElementById('username').value.trim();
+  if (!username) return;
+  const res = await fetch('/api/watch', { method: 'POST', headers: headers(), body: JSON.stringify({ username }) });
+  if (res.ok) {
+    document.getElementById('username').value = '';
+    loadUsers();
+  } else {
+    const data = await res.json().catch(() => ({}));
+    alert(data.error || 'Failed to add user');
+  }
+});
+
+document.getElementById('refresh').addEventListener('click', loadActivity);
+
+loadUsers();
+loadActivity();
+setInterval(loadActivity, 60000);
+</script>
+</body>
+</html>

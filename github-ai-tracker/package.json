@@ -1,0 +1,17 @@
+{
+  "name": "github-ai-tracker",
+  "version": "1.0.0",
+  "description": "Tracks chosen GitHub users' activity and annotates it with AI-expert commentary via Claude.",
+  "private": true,
+  "type": "commonjs",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

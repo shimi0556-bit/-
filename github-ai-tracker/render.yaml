@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: github-ai-tracker
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: API_KEY
+        sync: false
+      - key: WEBHOOK_URL
+        sync: false
+      - key: POLL_INTERVAL_MINUTES
+        value: "10"
