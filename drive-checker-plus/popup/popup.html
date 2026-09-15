@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Drive Checker Plus</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <img class="logo" src="../icons/icon32.png" alt="" />
+      <h1>Drive</h1>
+      <div class="spacer"></div>
+      <button id="refreshBtn" class="icon-btn" title="Refresh">&#8635;</button>
+      <button id="settingsBtn" class="icon-btn" title="Settings">&#9881;</button>
+    </header>
+
+    <div class="search-row">
+      <input
+        id="searchInput"
+        type="text"
+        placeholder="Search Drive"
+        autocomplete="off"
+      />
+    </div>
+
+    <main id="content">
+      <div id="signedOutView" class="state-view" hidden>
+        <p>Sign in with your Google account to see your recent Drive files.</p>
+        <button id="signInBtn" class="primary-btn">Sign in to Google Drive</button>
+      </div>
+
+      <div id="loadingView" class="state-view">
+        <p>Loading&hellip;</p>
+      </div>
+
+      <div id="errorView" class="state-view" hidden>
+        <p id="errorMessage">Something went wrong.</p>
+        <button id="retryBtn" class="primary-btn">Retry</button>
+      </div>
+
+      <ul id="fileList" class="file-list" hidden></ul>
+
+      <div id="emptyView" class="state-view" hidden>
+        <p>No files found.</p>
+      </div>
+    </main>
+
+    <footer class="bottombar">
+      <a id="openDriveLink" href="https://drive.google.com" target="_blank" rel="noopener"
+        >Open Google Drive</a
+      >
+    </footer>
+
+    <script src="../shared/constants.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

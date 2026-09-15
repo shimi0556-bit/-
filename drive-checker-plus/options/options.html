@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Drive Checker Plus — Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <img src="../icons/icon48.png" alt="" />
+        <h1>Drive Checker Plus</h1>
+      </header>
+
+      <section class="card">
+        <h2>Checking for updates</h2>
+
+        <label class="field">
+          <span>Check for changes every</span>
+          <select id="pollInterval">
+            <option value="1">1 minute</option>
+            <option value="5">5 minutes</option>
+            <option value="10">10 minutes</option>
+            <option value="15">15 minutes</option>
+            <option value="30">30 minutes</option>
+            <option value="60">60 minutes</option>
+          </select>
+        </label>
+
+        <label class="field checkbox">
+          <input type="checkbox" id="notificationsEnabled" />
+          <span>Show a desktop notification for new or changed files</span>
+        </label>
+
+        <label class="field">
+          <span>Files to show in the popup</span>
+          <select id="maxItems">
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="card">
+        <h2>One-time setup: add your own Google OAuth client ID</h2>
+        <p>
+          To keep this extension free of any shared backend, it talks to the Drive API
+          using your own Google Cloud OAuth client. This is a one-time setup:
+        </p>
+        <ol>
+          <li>
+            Go to the
+            <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener"
+              >Google Cloud Console credentials page</a
+            >
+            (create a project first if you don't have one).
+          </li>
+          <li>Enable the <strong>Google Drive API</strong> under "APIs &amp; Services".</li>
+          <li>
+            Create an OAuth client ID of type <strong>Chrome Extension</strong>, using this
+            extension's ID:
+            <code id="extensionId">loading…</code>
+          </li>
+          <li>
+            Copy the generated client ID into <code>manifest.json</code>'s
+            <code>oauth2.client_id</code> field, then reload the extension from
+            <code>chrome://extensions</code>.
+          </li>
+        </ol>
+        <p class="muted">
+          Only the <code>drive.readonly</code> scope is requested — this extension can list
+          and open your files, but cannot edit, delete, or share anything.
+        </p>
+      </section>
+
+      <div class="actions">
+        <button id="saveBtn" class="primary-btn">Save</button>
+        <span id="savedMsg" class="saved-msg" hidden>Saved</span>
+      </div>
+    </div>
+
+    <script src="../shared/constants.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>
