@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>אתר הארטיפקטים שלי</title>
+<meta name="description" content="כל מה שאני בונה — קורסים, כלים וניסויים — במקום אחד, מסודר לפי קטגוריות.">
+<link rel="preload" as="image" href="hero/frame-001.jpg">
+<style>
+  :root{
+    --bg:#FBFAF8; --surface:#FFFFFF; --surface-2:#F4F3EF;
+    --ink:#1A1922; --muted:#6C6A78; --faint:#94919F;
+    --border:#E8E4DC; --border-strong:#DAD5CB;
+    --coral:#E8492A; --teal:#0F8C7E;
+    --ring: rgba(232,73,42,.35);
+    --shadow: 0 1px 2px rgba(20,20,27,.04), 0 12px 30px -18px rgba(20,20,27,.25);
+    --danger:#D64545;
+    --hero-ink:#F5F1EA;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#121118; --surface:#1B1A23; --surface-2:#232230;
+      --ink:#ECEAF2; --muted:#A3A0B0; --faint:#75727F;
+      --border:#2B2A38; --border-strong:#3A3948;
+      --coral:#FF7455; --teal:#37C4B2;
+      --ring: rgba(255,116,85,.4);
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 18px 40px -22px rgba(0,0,0,.7);
+      --danger:#F0716F;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#121118; --surface:#1B1A23; --surface-2:#232230;
+    --ink:#ECEAF2; --muted:#A3A0B0; --faint:#75727F;
+    --border:#2B2A38; --border-strong:#3A3948;
+    --coral:#FF7455; --teal:#37C4B2;
+    --ring: rgba(255,116,85,.4);
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 18px 40px -22px rgba(0,0,0,.7);
+    --danger:#F0716F;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%; scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Segoe UI","Assistant","Rubik","Heebo",system-ui,-apple-system,"Arial",sans-serif;
+    line-height:1.65; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  }
+  .wrap{max-width:1180px; margin:0 auto; padding:0 clamp(20px,4vw,40px)}
+  a{color:inherit}
+
+  /* ---------- topbar ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:40;
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding:16px clamp(20px,4vw,40px);
+    background:color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter:blur(10px) saturate(1.1);
+    border-bottom:1px solid transparent;
+    transition:border-color .25s, background .25s;
+  }
+  .topbar.scrolled{border-bottom-color:var(--border); background:color-mix(in srgb, var(--bg) 96%, transparent)}
+  .brand{display:flex; align-items:center; gap:11px; font-weight:800; letter-spacing:.2px; font-size:15px}
+  .brand .mark{
+    width:34px; height:34px; border-radius:10px; flex:none;
+    background:linear-gradient(135deg,var(--coral),var(--teal));
+    display:grid; place-items:center; color:#fff; font-weight:800; font-size:15px;
+    box-shadow:0 4px 12px -4px var(--ring);
+  }
+  .barbtns{display:flex; align-items:center; gap:8px}
+  .toggle{
+    display:inline-flex; align-items:center; gap:8px; cursor:pointer;
+    background:var(--surface); color:var(--muted); border:1px solid var(--border);
+    border-radius:999px; padding:8px 14px; font:inherit; font-size:13px; font-weight:600;
+    transition:border-color .18s, color .18s, transform .18s;
+  }
+  .toggle:hover{border-color:var(--border-strong); color:var(--ink)}
+  .toggle:active{transform:scale(.97)}
+  .toggle svg{width:16px; height:16px}
+  .toggle:focus-visible{outline:2px solid var(--ring); outline-offset:2px}
+
+  /* ---------- hero (scroll-scrub video) ---------- */
+  .hero{position:relative; height:230vh}
+  .hero-pin{
+    position:sticky; top:0; height:100vh; overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+    background:#0c0b10;
+  }
+  .hero-pin canvas{
+    position:absolute; inset:0; width:100%; height:100%; display:block;
+    filter:saturate(1.05) contrast(1.02);
+  }
+  .hero-scrim{
+    position:absolute; inset:0;
+    background:
+      linear-gradient(180deg, rgba(10,9,14,.35) 0%, rgba(10,9,14,.25) 40%, rgba(10,9,14,.7) 88%, rgba(10,9,14,.92) 100%),
+      radial-gradient(120% 90% at 50% 20%, rgba(10,9,14,0) 0%, rgba(10,9,14,.45) 100%);
+  }
+  .hero-content{
+    position:relative; z-index:2; text-align:center; color:var(--hero-ink);
+    max-width:780px; padding:0 24px; transition:opacity .15s linear, transform .15s linear;
+  }
+  .hero-eyebrow{
+    font-size:12.5px; font-weight:700; letter-spacing:3px; text-transform:uppercase;
+    color:#FFB199; margin:0 0 18px; display:inline-flex; align-items:center; gap:8px;
+  }
+  .hero-eyebrow::before, .hero-eyebrow::after{content:""; width:22px; height:1px; background:currentColor; opacity:.6}
+  .hero h1{
+    margin:0; font-size:clamp(36px,6.4vw,68px); line-height:1.08; font-weight:800;
+    letter-spacing:-.5px; text-wrap:balance;
+  }
+  .hero .lede{
+    margin:22px auto 0; font-size:clamp(15px,2vw,18.5px); color:#D8D4E6; max-width:52ch; text-wrap:pretty;
+  }
+  .hero-cta{
+    margin-top:32px; display:inline-flex; align-items:center; gap:8px;
+    background:linear-gradient(135deg,var(--coral),#ff8a5c); color:#fff;
+    border:none; border-radius:999px; padding:13px 26px; font:inherit; font-size:14.5px; font-weight:700;
+    cursor:pointer; text-decoration:none; box-shadow:0 10px 28px -12px rgba(232,73,42,.55);
+    transition:transform .2s;
+  }
+  .hero-cta:hover{transform:translateY(-2px)}
+  .hero-cta svg{width:16px; height:16px}
+  .scrollcue{
+    position:absolute; z-index:2; bottom:30px; left:50%; transform:translateX(-50%);
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    color:#D8D4E6; font-size:11.5px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+    transition:opacity .3s;
+  }
+  .scrollcue svg{width:18px; height:18px; animation:bob 1.6s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+  .framecount{
+    position:absolute; z-index:2; bottom:26px; inset-inline-end:26px;
+    font-size:11px; font-weight:700; letter-spacing:1px; color:#B9B5CB;
+    font-variant-numeric:tabular-nums; background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.12); border-radius:8px; padding:5px 9px;
+  }
+
+  /* ---------- layout: sidebar + main ---------- */
+  .layout{display:flex; gap:30px; align-items:flex-start; padding-top:clamp(40px,6vw,64px)}
+  .sidebar{
+    flex:0 0 232px; position:sticky; top:82px;
+    background:var(--surface); border:1px solid var(--border); border-radius:16px;
+    padding:18px; box-shadow:var(--shadow);
+  }
+  .sidebar h2{margin:2px 4px 14px; font-size:12.5px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; color:var(--faint)}
+  .catlist{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:3px}
+  .catlist li{display:flex}
+  .catbtn{
+    flex:1; display:flex; align-items:center; justify-content:space-between; gap:8px;
+    background:transparent; border:none; cursor:pointer; text-align:start;
+    color:var(--muted); font:inherit; font-size:14.5px; font-weight:600;
+    border-radius:10px; padding:10px 11px; transition:background .15s, color .15s;
+  }
+  .catbtn:hover{background:var(--surface-2); color:var(--ink)}
+  .catbtn.active{background:color-mix(in srgb, var(--teal) 14%, transparent); color:var(--teal)}
+  .catbtn .n{font-size:12px; font-weight:700; color:var(--faint); background:var(--surface-2); border-radius:999px; padding:2px 8px; font-variant-numeric:tabular-nums}
+  .catbtn.active .n{color:var(--teal); background:color-mix(in srgb, var(--teal) 16%, transparent)}
+  .catrow{display:flex; align-items:center; gap:2px}
+  .catdel{
+    width:26px; height:26px; flex:none; display:grid; place-items:center; cursor:pointer;
+    background:transparent; border:none; color:var(--faint); border-radius:7px; opacity:0;
+    transition:opacity .15s, color .15s, background .15s;
+  }
+  .catrow:hover .catdel{opacity:1}
+  .catdel:hover{color:var(--danger); background:var(--surface-2)}
+  .catdel svg{width:14px; height:14px}
+  .addcat{
+    margin-top:12px; padding-top:12px; border-top:1px solid var(--border);
+  }
+  .addcat button{
+    width:100%; display:flex; align-items:center; justify-content:center; gap:7px;
+    background:var(--surface-2); color:var(--muted); border:1.5px dashed var(--border-strong);
+    border-radius:10px; padding:10px; font:inherit; font-size:13.5px; font-weight:700; cursor:pointer;
+    transition:border-color .15s, color .15s;
+  }
+  .addcat button:hover{border-color:var(--teal); color:var(--teal)}
+  .addcat svg{width:15px; height:15px}
+
+  main{flex:1; min-width:0}
+
+  .section-head{display:flex; align-items:center; gap:16px; margin:0 0 22px; flex-wrap:wrap}
+  .section-head h2{margin:0; font-size:15px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--faint); white-space:nowrap}
+  .section-head .rule{height:1px; background:var(--border); flex:1; min-width:20px}
+  .tools{display:flex; gap:8px; flex-wrap:wrap}
+  .ghost{
+    display:inline-flex; align-items:center; gap:7px; cursor:pointer;
+    background:var(--surface); color:var(--muted); border:1px solid var(--border);
+    border-radius:10px; padding:8px 13px; font:inherit; font-size:13px; font-weight:600;
+    transition:border-color .18s, color .18s, background .18s;
+  }
+  .ghost:hover{border-color:var(--border-strong); color:var(--ink)}
+  .ghost:focus-visible{outline:2px solid var(--ring); outline-offset:2px}
+  .ghost svg{width:15px; height:15px}
+  .btn-primary{
+    display:inline-flex; align-items:center; gap:7px; cursor:pointer;
+    background:var(--ink); color:var(--bg); border:1px solid var(--ink);
+    border-radius:10px; padding:9px 16px; font:inherit; font-size:14px; font-weight:700;
+    transition:transform .18s, opacity .18s;
+  }
+  .btn-primary:hover{transform:translateY(-1px)}
+  .btn-primary:active{transform:none}
+  .btn-primary:focus-visible{outline:2px solid var(--ring); outline-offset:2px}
+  .btn-primary svg{width:16px; height:16px}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:20px}
+
+  .card{
+    position:relative; display:flex; flex-direction:column;
+    background:var(--surface); border:1px solid var(--border); border-radius:18px;
+    padding:26px; text-decoration:none; color:inherit; overflow:hidden;
+    box-shadow:var(--shadow);
+    transition:transform .22s cubic-bezier(.2,.7,.2,1), border-color .22s, box-shadow .22s;
+    --accent:var(--teal);
+  }
+  .card::before{
+    content:""; position:absolute; inset-block-start:0; inset-inline:0; height:3px;
+    background:var(--accent); transform:scaleX(0); transform-origin:inline-start;
+    transition:transform .3s cubic-bezier(.2,.7,.2,1);
+  }
+  a.card:hover{transform:translateY(-4px); border-color:var(--accent); box-shadow:0 1px 2px rgba(20,20,27,.05), 0 24px 46px -22px var(--ring)}
+  a.card:hover::before{transform:scaleX(1)}
+  .card:focus-visible{outline:2px solid var(--accent); outline-offset:3px}
+
+  .chip{
+    align-self:flex-start; display:inline-flex; align-items:center; gap:6px;
+    background:color-mix(in srgb, var(--accent) 14%, transparent); color:var(--accent);
+    border-radius:999px; padding:5px 12px; font-size:12px; font-weight:700; letter-spacing:.3px;
+  }
+  .chip::before{content:""; width:6px; height:6px; border-radius:50%; background:var(--accent)}
+  .card h3{margin:16px 0 2px; font-size:26px; font-weight:800; letter-spacing:-.3px; line-height:1.15; overflow-wrap:anywhere}
+  .card .sub{margin:0; font-size:14.5px; font-weight:600; color:var(--muted)}
+  .card .desc{margin:14px 0 0; font-size:14.5px; color:var(--muted); text-wrap:pretty; overflow-wrap:anywhere}
+  .card .foot{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:22px; padding-top:16px; border-top:1px solid var(--border)}
+  .card .meta{font-size:13px; color:var(--faint); font-weight:600}
+  .card .go{display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:700; color:var(--accent)}
+  .card .go svg{width:15px; height:15px; transition:transform .22s}
+  a.card:hover .go svg{transform:translateX(-4px)}
+  .card .nolink{font-size:13px; color:var(--faint); font-weight:600}
+
+  .rowbtns{position:absolute; inset-block-start:14px; inset-inline-start:14px; display:flex; gap:6px; opacity:0; transition:opacity .18s}
+  .card:hover .rowbtns, .card:focus-within .rowbtns{opacity:1}
+  .icobtn{
+    width:30px; height:30px; display:grid; place-items:center; cursor:pointer;
+    background:var(--surface-2); color:var(--muted); border:1px solid var(--border); border-radius:8px;
+    transition:color .15s, border-color .15s;
+  }
+  .icobtn:hover{color:var(--ink); border-color:var(--border-strong)}
+  .icobtn.del:hover{color:var(--danger); border-color:var(--danger)}
+  .icobtn svg{width:15px; height:15px}
+  .icobtn:focus-visible{outline:2px solid var(--ring); outline-offset:2px}
+
+  .card.add{
+    background:transparent; border:1.5px dashed var(--border-strong); box-shadow:none;
+    align-items:center; justify-content:center; text-align:center; min-height:210px;
+    cursor:pointer; color:var(--muted); gap:10px;
+  }
+  .card.add:hover{border-color:var(--teal); color:var(--teal); transform:translateY(-4px)}
+  .card.add .plus{width:46px; height:46px; border-radius:50%; display:grid; place-items:center; border:1.5px solid currentColor; font-size:24px; font-weight:400; line-height:1}
+  .card.add span{font-size:15px; font-weight:700}
+
+  .empty{
+    grid-column:1/-1; text-align:center; padding:48px 20px; color:var(--muted);
+    background:var(--surface); border:1px dashed var(--border-strong); border-radius:16px; font-size:14.5px;
+  }
+
+  footer{
+    margin-top:clamp(48px,8vw,80px); padding:22px clamp(20px,4vw,40px); border-top:1px solid var(--border);
+    display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; justify-content:space-between; font-size:13px; color:var(--faint);
+    max-width:1180px; margin-inline:auto;
+  }
+
+  /* ---------- modal ---------- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(15,14,20,.55); backdrop-filter:blur(3px);
+    display:none; align-items:center; justify-content:center; padding:20px; z-index:50;
+  }
+  .overlay.open{display:flex}
+  .modal{
+    width:min(520px,100%); max-height:90vh; overflow-y:auto;
+    background:var(--surface); border:1px solid var(--border); border-radius:20px;
+    padding:clamp(22px,4vw,32px); box-shadow:0 30px 70px -30px rgba(0,0,0,.6);
+  }
+  .modal h2{margin:0 0 4px; font-size:22px; font-weight:800; letter-spacing:-.3px}
+  .modal .msub{margin:0 0 22px; font-size:14px; color:var(--muted)}
+  .field{margin-bottom:16px}
+  .field label{display:block; font-size:13px; font-weight:700; color:var(--muted); margin-bottom:7px}
+  .field input[type=text], .field input[type=number], .field textarea, .field select{
+    width:100%; background:var(--bg); color:var(--ink);
+    border:1px solid var(--border); border-radius:11px; padding:11px 13px;
+    font:inherit; font-size:14.5px; transition:border-color .15s, box-shadow .15s;
+  }
+  .field select{cursor:pointer}
+  .field textarea{resize:vertical; min-height:64px}
+  .field input:focus, .field textarea:focus, .field select:focus{outline:none; border-color:var(--teal); box-shadow:0 0 0 3px color-mix(in srgb, var(--teal) 25%, transparent)}
+  .field .hint{font-size:12px; color:var(--faint); margin-top:6px}
+  .two{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  .swatches{display:flex; align-items:center; gap:9px; flex-wrap:wrap}
+  .sw{width:26px; height:26px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:transform .12s}
+  .sw:hover{transform:scale(1.12)}
+  .sw.sel{border-color:var(--ink); box-shadow:0 0 0 2px var(--surface) inset}
+  .sw-custom{width:34px; height:26px; padding:0; border:1px solid var(--border); border-radius:7px; background:none; cursor:pointer}
+  .modal-foot{display:flex; gap:10px; justify-content:flex-start; margin-top:24px}
+  .modal-foot .btn-primary{flex:0 0 auto}
+  .err{color:var(--danger); font-size:12.5px; margin-top:6px; display:none}
+  .err.show{display:block}
+
+  @media (prefers-reduced-motion: no-preference){
+    .reveal{opacity:0; transform:translateY(14px); animation:rise .55s cubic-bezier(.2,.7,.2,1) forwards}
+    @keyframes rise{to{opacity:1; transform:none}}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto}
+    .hero{height:auto}
+    .hero-pin{position:relative; height:100vh}
+  }
+
+  @media (max-width:860px){
+    .layout{flex-direction:column}
+    .sidebar{position:static; width:100%; flex:none}
+    .catlist{flex-direction:row; overflow-x:auto; gap:8px; padding-bottom:4px; -webkit-overflow-scrolling:touch}
+    .catlist li{flex:none}
+    .catbtn{white-space:nowrap}
+    .addcat{margin-top:0; padding-top:10px; border-top:1px solid var(--border)}
+    .addcat button{white-space:nowrap; padding:10px 14px}
+    .sidebar{display:flex; flex-direction:column; gap:0; padding:14px}
+    .sidebar h2{display:none}
+  }
+  @media (max-width:420px){ .two{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+
+  <header class="topbar" id="topbar">
+    <div class="brand"><span class="mark">א</span><span>אתר הארטיפקטים שלי</span></div>
+    <div class="barbtns">
+      <button class="toggle" id="tg" type="button" aria-label="החלף מצב תצוגה">
+        <svg id="tg-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <span id="tg-tx">כהה</span>
+      </button>
+    </div>
+  </header>
+
+  <section class="hero" id="hero">
+    <div class="hero-pin">
+      <canvas id="heroCanvas"></canvas>
+      <div class="hero-scrim"></div>
+      <div class="hero-content" id="heroContent">
+        <p class="hero-eyebrow">הבית של כל מה שאני בונה</p>
+        <h1>אתר הארטיפקטים שלי</h1>
+        <p class="lede">קורסים, כלים וניסויים שיצרתי — מסודרים לפי קטגוריות, פתוחים לתוספות, וזמינים בכל רגע.</p>
+        <a href="#library" class="hero-cta" id="heroCta">
+          לכל הארטיפקטים
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </a>
+      </div>
+      <div class="scrollcue" id="scrollcue">
+        גללו כדי לגלות
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+      </div>
+      <div class="framecount" id="framecount">001 / 147</div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="layout" id="library">
+
+      <aside class="sidebar">
+        <h2>קטגוריות</h2>
+        <ul class="catlist" id="catList"></ul>
+        <div class="addcat">
+          <button type="button" id="addCatBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            קטגוריה חדשה
+          </button>
+        </div>
+      </aside>
+
+      <main>
+        <div class="section-head">
+          <h2 id="gridTitle">הכל</h2>
+          <div class="rule"></div>
+          <div class="tools">
+            <button class="ghost" id="exportBtn" type="button" title="גיבוי כל הארטיפקטים לקובץ">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4M5 21h14"/></svg>
+              גיבוי
+            </button>
+            <button class="ghost" id="importBtn" type="button" title="שחזור ארטיפקטים מקובץ גיבוי">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9M8 13l4-4 4 4M5 3h14"/></svg>
+              שחזור
+            </button>
+            <input type="file" id="importFile" accept="application/json,.json" hidden>
+            <button class="btn-primary" id="addBtn" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              הוסף ארטיפקט
+            </button>
+          </div>
+        </div>
+
+        <div class="grid" id="grid"></div>
+      </main>
+
+    </div>
+
+    <footer>
+      <span>נבנה עם Claude · עברית · RTL</span>
+      <span id="savedNote">הארטיפקטים נשמרים אצלך בדפדפן</span>
+    </footer>
+  </div>
+
+  <!-- modal -->
+  <div class="overlay" id="overlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+      <h2 id="mTitle">הוסף ארטיפקט</h2>
+      <p class="msub">מלא את הפרטים והארטיפקט יתווסף לספרייה.</p>
+      <form id="courseForm">
+        <input type="hidden" id="f-id">
+        <div class="field">
+          <label for="f-title">שם *</label>
+          <input type="text" id="f-title" placeholder="למשל: Make.com" autocomplete="off">
+          <div class="err" id="err-title">צריך שם.</div>
+        </div>
+        <div class="field">
+          <label for="f-sub">כותרת משנה</label>
+          <input type="text" id="f-sub" placeholder="למשל: מהיסוד ועד חיבור התוכנות שלך" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="f-cat">קטגוריה</label>
+          <select id="f-cat"></select>
+        </div>
+        <div class="field">
+          <label>צבע</label>
+          <div class="swatches" id="swatches">
+            <input type="color" class="sw-custom" id="f-color" value="#0F8C7E" title="בחר צבע משלך">
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-desc">תיאור</label>
+          <textarea id="f-desc" placeholder="במשפט–שניים, מה יש כאן"></textarea>
+        </div>
+        <div class="two">
+          <div class="field">
+            <label for="f-ch">מספר פרקים</label>
+            <input type="number" id="f-ch" min="0" placeholder="11" inputmode="numeric">
+          </div>
+          <div class="field">
+            <label for="f-lvl">רמה</label>
+            <input type="text" id="f-lvl" placeholder="מתחיל" list="levels" autocomplete="off">
+            <datalist id="levels"><option value="מתחיל"><option value="בינוני"><option value="מתקדם"></datalist>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-href">קישור</label>
+          <input type="text" id="f-href" placeholder="שם קובץ.html  או  https://..." autocomplete="off" dir="ltr" style="text-align:right">
+          <div class="hint">שם קובץ שיושב באותה תיקייה, או כתובת אינטרנט מלאה.</div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn-primary" type="submit" id="saveBtn">שמור</button>
+          <button class="ghost" type="button" id="cancelBtn">ביטול</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<script>
+(function(){
+  "use strict";
+  var KEY="shimi_courses_v1";
+  var CAT_KEY="shimi_categories_v1";
+  var DEFAULT_CAT="קורסים";
+  var PRESETS=["#0F8C7E","#E8492A","#6C4BD6","#2563C9","#D98A00","#C2478E","#3A8F3A","#0E7C86"];
+
+  var SEED=[
+    {id:"make", title:"Make.com", sub:"מהיסוד ועד חיבור התוכנות שלך", cat:DEFAULT_CAT,
+     desc:"11 פרקים שלוקחים אותך מאפס ב‑Make עד חיבור האפליקציות שאתה בונה לעולם דרך webhooks.",
+     ch:11, lvl:"מתחיל", href:"קורס מאק.html", color:"#0F8C7E"},
+    {id:"canva", title:"Canva AI", sub:"מאפס למקצוען", cat:DEFAULT_CAT,
+     desc:"13 פרקים ו‑24 כלי AI — עיצוב שיווקי ופוסטים, מצגות, ועריכת תמונות ווידאו.",
+     ch:13, lvl:"מתחיל", href:"קורס קנבה.html", color:"#E8492A"}
+  ];
+
+  var root=document.documentElement;
+  var grid=document.getElementById("grid"), gridTitle=document.getElementById("gridTitle");
+  var catList=document.getElementById("catList");
+  var overlay=document.getElementById("overlay"), form=document.getElementById("courseForm");
+  var courses=loadCourses();
+  var categories=loadCategories();
+  var activeCat="all";
+
+  function loadCourses(){
+    try{ var r=localStorage.getItem(KEY); if(r){ var a=JSON.parse(r); if(Array.isArray(a)) return a; } }catch(e){}
+    saveCourses(SEED.slice()); return SEED.slice();
+  }
+  function saveCourses(list){ try{ localStorage.setItem(KEY, JSON.stringify(list)); }catch(e){ note("⚠️ לא הצלחתי לשמור בדפדפן — כדאי לגבות לקובץ."); } }
+
+  function loadCategories(){
+    var list=null;
+    try{ var r=localStorage.getItem(CAT_KEY); if(r){ var a=JSON.parse(r); if(Array.isArray(a) && a.length) list=a; } }catch(e){}
+    if(!list) list=[DEFAULT_CAT];
+    if(list.indexOf(DEFAULT_CAT)===-1) list.unshift(DEFAULT_CAT);
+    // pick up any category referenced by a course but missing from the list
+    courses.forEach(function(c){ if(c.cat && list.indexOf(c.cat)===-1) list.push(c.cat); });
+    saveCategories(list);
+    return list;
+  }
+  function saveCategories(list){ try{ localStorage.setItem(CAT_KEY, JSON.stringify(list)); }catch(e){} }
+
+  function uid(){ return "c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+  function esc(s){ return String(s==null?"":s); }
+  function svg(paths){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+paths+'</svg>'; }
+
+  /* ---------- sidebar / categories ---------- */
+  function renderSidebar(){
+    catList.textContent="";
+
+    var allLi=document.createElement("li");
+    var allBtn=document.createElement("button"); allBtn.type="button"; allBtn.className="catbtn"+(activeCat==="all"?" active":"");
+    var allN=document.createElement("span"); allN.className="n"; allN.textContent=courses.length;
+    allBtn.innerHTML="<span>הכל</span>"; allBtn.appendChild(allN);
+    allBtn.addEventListener("click", function(){ activeCat="all"; renderSidebar(); renderGrid(); });
+    allLi.appendChild(allBtn); catList.appendChild(allLi);
+
+    categories.forEach(function(cat){
+      var li=document.createElement("li"); li.className="catrow";
+      var btn=document.createElement("button"); btn.type="button"; btn.className="catbtn"+(activeCat===cat?" active":"");
+      var count=courses.filter(function(c){ return c.cat===cat; }).length;
+      var n=document.createElement("span"); n.className="n"; n.textContent=count;
+      var nameSpan=document.createElement("span"); nameSpan.textContent=cat;
+      btn.appendChild(nameSpan); btn.appendChild(n);
+      btn.addEventListener("click", function(){ activeCat=cat; renderSidebar(); renderGrid(); });
+      li.appendChild(btn);
+
+      if(cat!==DEFAULT_CAT){
+        var del=document.createElement("button"); del.type="button"; del.className="catdel"; del.title="מחק קטגוריה";
+        del.innerHTML=svg('<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>');
+        del.addEventListener("click", function(e){ e.stopPropagation(); deleteCategory(cat); });
+        li.appendChild(del);
+      }
+      catList.appendChild(li);
+    });
+  }
+
+  function addCategory(){
+    var name=(window.prompt("שם הקטגוריה החדשה:")||"").trim();
+    if(!name) return;
+    if(categories.indexOf(name)!==-1){ activeCat=name; renderSidebar(); renderGrid(); return; }
+    categories.push(name); saveCategories(categories);
+    activeCat=name;
+    renderSidebar(); renderGrid();
+  }
+
+  function deleteCategory(cat){
+    var count=courses.filter(function(c){ return c.cat===cat; }).length;
+    var msg = count>0
+      ? 'למחוק את הקטגוריה "'+cat+'"? '+count+' פריטים יעברו לקטגוריית "'+DEFAULT_CAT+'".'
+      : 'למחוק את הקטגוריה "'+cat+'"?';
+    if(!confirm(msg)) return;
+    if(count>0){
+      courses=courses.map(function(c){ return c.cat===cat ? Object.assign({},c,{cat:DEFAULT_CAT}) : c; });
+      saveCourses(courses);
+    }
+    categories=categories.filter(function(c){ return c!==cat; });
+    saveCategories(categories);
+    if(activeCat===cat) activeCat="all";
+    renderSidebar(); renderGrid();
+  }
+
+  /* ---------- grid ---------- */
+  function renderGrid(){
+    gridTitle.textContent = activeCat==="all" ? "הכל" : activeCat;
+    grid.textContent="";
+    var list = activeCat==="all" ? courses : courses.filter(function(c){ return c.cat===activeCat; });
+
+    if(list.length===0){
+      var empty=document.createElement("div"); empty.className="empty";
+      empty.textContent = "אין עדיין פריטים בקטגוריה הזו — לחצו על \"הוסף ארטיפקט\" כדי להתחיל.";
+      grid.appendChild(empty);
+    }
+
+    list.forEach(function(c,i){
+      var link = c.href && c.href.trim();
+      var el = document.createElement(link ? "a" : "div");
+      el.className="card reveal";
+      el.style.setProperty("--accent", c.color || "#0F8C7E");
+      el.style.animationDelay=(0.04+i*0.05).toFixed(2)+"s";
+      if(link){ el.setAttribute("href", c.href.trim()); if(/^https?:/i.test(c.href.trim())){ el.target="_blank"; el.rel="noopener"; } }
+
+      var ctrl=document.createElement("div"); ctrl.className="rowbtns";
+      var ed=document.createElement("button"); ed.type="button"; ed.className="icobtn"; ed.title="עריכה";
+      ed.innerHTML=svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>');
+      ed.addEventListener("click", function(e){ e.preventDefault(); e.stopPropagation(); openForm(c); });
+      var dl=document.createElement("button"); dl.type="button"; dl.className="icobtn del"; dl.title="מחיקה";
+      dl.innerHTML=svg('<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>');
+      dl.addEventListener("click", function(e){ e.preventDefault(); e.stopPropagation(); del(c); });
+      ctrl.appendChild(ed); ctrl.appendChild(dl); el.appendChild(ctrl);
+
+      var chip=document.createElement("span"); chip.className="chip"; chip.textContent=c.cat||DEFAULT_CAT;
+      el.appendChild(chip);
+
+      var h=document.createElement("h3"); h.textContent=esc(c.title); el.appendChild(h);
+      if(c.sub){ var s=document.createElement("p"); s.className="sub"; s.textContent=c.sub; el.appendChild(s); }
+      if(c.desc){ var d=document.createElement("p"); d.className="desc"; d.textContent=c.desc; el.appendChild(d); }
+
+      var foot=document.createElement("div"); foot.className="foot";
+      var meta=document.createElement("span"); meta.className="meta";
+      var bits=[]; if(c.ch) bits.push(c.ch+" פרקים"); if(c.lvl) bits.push(c.lvl);
+      meta.textContent=bits.join(" · "); foot.appendChild(meta);
+      if(link){
+        var go=document.createElement("span"); go.className="go";
+        go.innerHTML='פתיחה '+svg('<path d="M19 12H5M12 5l-7 7 7 7"/>');
+        foot.appendChild(go);
+      } else {
+        var nl=document.createElement("span"); nl.className="nolink"; nl.textContent="אין קישור"; foot.appendChild(nl);
+      }
+      el.appendChild(foot);
+      grid.appendChild(el);
+    });
+
+    var add=document.createElement("div"); add.className="card add reveal"; add.setAttribute("role","button"); add.tabIndex=0;
+    add.style.animationDelay=(0.04+list.length*0.05).toFixed(2)+"s";
+    add.innerHTML='<span class="plus">+</span><span>הוסף ארטיפקט</span>';
+    add.addEventListener("click", function(){ openForm(null); });
+    add.addEventListener("keydown", function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); openForm(null); } });
+    grid.appendChild(add);
+  }
+
+  /* ---------- form ---------- */
+  var F={ id:"f-id", title:"f-title", sub:"f-sub", cat:"f-cat", color:"f-color", desc:"f-desc", ch:"f-ch", lvl:"f-lvl", href:"f-href" };
+  function $(id){ return document.getElementById(id); }
+
+  function buildSwatches(){
+    var box=document.getElementById("swatches");
+    var custom=document.getElementById("f-color");
+    PRESETS.forEach(function(col){
+      var b=document.createElement("button"); b.type="button"; b.className="sw"; b.style.background=col; b.dataset.col=col; b.title=col;
+      b.addEventListener("click", function(){ custom.value=col; markSel(col); });
+      box.insertBefore(b, custom);
+    });
+    custom.addEventListener("input", function(){ markSel(custom.value); });
+  }
+  function markSel(col){
+    document.querySelectorAll("#swatches .sw").forEach(function(b){
+      b.classList.toggle("sel", (b.dataset.col||"").toLowerCase()===String(col).toLowerCase());
+    });
+  }
+
+  function fillCatSelect(selected){
+    var sel=$(F.cat); sel.textContent="";
+    categories.forEach(function(cat){
+      var o=document.createElement("option"); o.value=cat; o.textContent=cat;
+      if(cat===selected) o.selected=true;
+      sel.appendChild(o);
+    });
+    var newOpt=document.createElement("option"); newOpt.value="__new__"; newOpt.textContent="+ קטגוריה חדשה…";
+    sel.appendChild(newOpt);
+    sel.onchange=function(){
+      if(sel.value==="__new__"){
+        var name=(window.prompt("שם הקטגוריה החדשה:")||"").trim();
+        if(name){
+          if(categories.indexOf(name)===-1){ categories.push(name); saveCategories(categories); }
+          fillCatSelect(name);
+        } else {
+          sel.value=selected || categories[0];
+        }
+      }
+    };
+  }
+
+  function openForm(c){
+    document.getElementById("mTitle").textContent = c ? "עריכת ארטיפקט" : "הוסף ארטיפקט";
+    document.getElementById("saveBtn").textContent = c ? "שמור שינויים" : "שמור";
+    $(F.id).value=c?c.id:"";
+    $(F.title).value=c?c.title||"":"";
+    $(F.sub).value=c?c.sub||"":"";
+    fillCatSelect(c && c.cat ? c.cat : (activeCat!=="all" ? activeCat : categories[0]));
+    $(F.color).value=c&&c.color?c.color:"#0F8C7E";
+    $(F.desc).value=c?c.desc||"":"";
+    $(F.ch).value=c&&c.ch!=null?c.ch:"";
+    $(F.lvl).value=c?c.lvl||"":"";
+    $(F.href).value=c?c.href||"":"";
+    markSel($(F.color).value);
+    document.getElementById("err-title").classList.remove("show");
+    overlay.classList.add("open");
+    setTimeout(function(){ $(F.title).focus(); },30);
+  }
+  function closeForm(){ overlay.classList.remove("open"); }
+
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+    var title=$(F.title).value.trim();
+    if(!title){ document.getElementById("err-title").classList.add("show"); $(F.title).focus(); return; }
+    var cat=$(F.cat).value==="__new__" ? DEFAULT_CAT : $(F.cat).value;
+    var data={
+      title:title, sub:$(F.sub).value.trim(), cat:cat, color:$(F.color).value,
+      desc:$(F.desc).value.trim(), ch:$(F.ch).value.trim()===""?null:(parseInt($(F.ch).value,10)||0),
+      lvl:$(F.lvl).value.trim(), href:$(F.href).value.trim()
+    };
+    var id=$(F.id).value;
+    if(id){ courses=courses.map(function(c){ return c.id===id ? Object.assign({},c,data) : c; }); }
+    else { data.id=uid(); courses.push(data); }
+    saveCourses(courses); renderSidebar(); renderGrid(); closeForm();
+  });
+
+  function del(c){
+    if(!confirm('למחוק את "'+(c.title||"")+'"?')) return;
+    courses=courses.filter(function(x){ return x.id!==c.id; });
+    saveCourses(courses); renderSidebar(); renderGrid();
+  }
+
+  document.getElementById("addBtn").addEventListener("click", function(){ openForm(null); });
+  document.getElementById("addCatBtn").addEventListener("click", addCategory);
+  document.getElementById("cancelBtn").addEventListener("click", closeForm);
+  overlay.addEventListener("click", function(e){ if(e.target===overlay) closeForm(); });
+  document.addEventListener("keydown", function(e){ if(e.key==="Escape" && overlay.classList.contains("open")) closeForm(); });
+
+  document.getElementById("exportBtn").addEventListener("click", function(){
+    var blob=new Blob([JSON.stringify({courses:courses, categories:categories},null,2)],{type:"application/json"});
+    var a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+    a.download="artifacts-backup.json"; a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); },1000);
+  });
+  document.getElementById("importBtn").addEventListener("click", function(){ document.getElementById("importFile").click(); });
+  document.getElementById("importFile").addEventListener("change", function(e){
+    var file=e.target.files[0]; if(!file) return;
+    var r=new FileReader();
+    r.onload=function(){
+      try{
+        var data=JSON.parse(r.result);
+        var newCourses = Array.isArray(data) ? data : data.courses;
+        var newCats = Array.isArray(data) ? null : data.categories;
+        if(!Array.isArray(newCourses)) throw 0;
+        if(!confirm("לשחזר "+newCourses.length+" פריטים? זה יחליף את הרשימה הנוכחית.")) return;
+        newCourses.forEach(function(c){ if(!c.id) c.id=uid(); if(!c.cat) c.cat=DEFAULT_CAT; });
+        courses=newCourses; saveCourses(courses);
+        if(Array.isArray(newCats) && newCats.length){ categories=newCats; if(categories.indexOf(DEFAULT_CAT)===-1) categories.unshift(DEFAULT_CAT); }
+        else { categories=loadCategories(); }
+        saveCategories(categories);
+        activeCat="all";
+        renderSidebar(); renderGrid();
+      }catch(err){ alert("הקובץ לא תקין."); }
+      e.target.value="";
+    };
+    r.readAsText(file);
+  });
+
+  function note(msg){ document.getElementById("savedNote").textContent=msg; }
+
+  /* ---------- theme ---------- */
+  var tg=document.getElementById("tg"), tx=document.getElementById("tg-tx"), ic=document.getElementById("tg-ic");
+  var sun='<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+  var moon='<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';
+  function dark(){ return root.getAttribute("data-theme")==="dark" || (!root.getAttribute("data-theme") && window.matchMedia("(prefers-color-scheme: dark)").matches); }
+  function paint(){ var d=dark(); tx.textContent=d?"בהיר":"כהה"; ic.innerHTML=d?sun:moon; }
+  paint();
+  tg.addEventListener("click", function(){ root.setAttribute("data-theme", dark()?"light":"dark"); paint(); });
+
+  /* ---------- topbar scroll shadow ---------- */
+  var topbar=document.getElementById("topbar");
+  function onTopbarScroll(){ topbar.classList.toggle("scrolled", window.scrollY>40); }
+  window.addEventListener("scroll", onTopbarScroll, {passive:true});
+  onTopbarScroll();
+
+  buildSwatches();
+  renderSidebar();
+  renderGrid();
+})();
+</script>
+
+<script>
+/* ---------- hero scroll-scrub video ---------- */
+(function(){
+  "use strict";
+  var FRAME_COUNT=147, PREFIX="hero/frame-", PAD=3, EXT="jpg";
+  var hero=document.getElementById("hero");
+  var canvas=document.getElementById("heroCanvas");
+  var ctx=canvas.getContext("2d");
+  var heroContent=document.getElementById("heroContent");
+  var scrollcue=document.getElementById("scrollcue");
+  var framecountEl=document.getElementById("framecount");
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var images=new Array(FRAME_COUNT+1);
+  var current=1, dpr=Math.min(window.devicePixelRatio||1,2);
+
+  function pad(n){ n=String(n); while(n.length<PAD) n="0"+n; return n; }
+  function frameSrc(i){ return PREFIX+pad(i)+"."+EXT; }
+
+  function preload(){
+    for(var i=1;i<=FRAME_COUNT;i++){
+      (function(idx){
+        var img=new Image();
+        img.onload=function(){ if(idx===current) draw(idx); };
+        img.src=frameSrc(idx);
+        images[idx]=img;
+      })(i);
+    }
+  }
+
+  function nearestLoaded(idx){
+    for(var d=0; d<=FRAME_COUNT; d++){
+      var a=idx-d, b=idx+d;
+      if(a>=1 && images[a] && images[a].complete && images[a].naturalWidth) return images[a];
+      if(b<=FRAME_COUNT && images[b] && images[b].complete && images[b].naturalWidth) return images[b];
+    }
+    return null;
+  }
+
+  function resize(){
+    canvas.width=Math.round(window.innerWidth*dpr);
+    canvas.height=Math.round(window.innerHeight*dpr);
+    draw(current);
+  }
+
+  function draw(idx){
+    var img=images[idx];
+    if(!img || !img.complete || !img.naturalWidth) img=nearestLoaded(idx);
+    if(!img) return;
+    var cw=canvas.width, ch=canvas.height, iw=img.naturalWidth, ih=img.naturalHeight;
+    var scale=Math.max(cw/iw, ch/ih), dw=iw*scale, dh=ih*scale, dx=(cw-dw)/2, dy=(ch-dh)/2;
+    ctx.clearRect(0,0,cw,ch);
+    ctx.drawImage(img,dx,dy,dw,dh);
+    framecountEl.textContent=pad(idx)+" / "+FRAME_COUNT;
+  }
+
+  function progress(){
+    if(reduceMotion) return 0;
+    var scrollable=hero.offsetHeight-window.innerHeight;
+    if(scrollable<=0) return 0;
+    var rect=hero.getBoundingClientRect();
+    var scrolled=-rect.top;
+    return Math.max(0, Math.min(1, scrolled/scrollable));
+  }
+
+  var ticking=false;
+  function onScroll(){
+    var p=progress();
+    current=Math.max(1, Math.min(FRAME_COUNT, 1+Math.round(p*(FRAME_COUNT-1))));
+    if(!ticking){
+      ticking=true;
+      requestAnimationFrame(function(){ draw(current); ticking=false; });
+    }
+    heroContent.style.opacity=String(Math.max(0, 1 - p/0.35));
+    heroContent.style.transform="translateY("+Math.min(30, p*90)+"px)";
+    scrollcue.style.opacity = p>0.03 ? "0" : "1";
+  }
+
+  window.addEventListener("scroll", onScroll, {passive:true});
+  window.addEventListener("resize", resize);
+  resize();
+  preload();
+  onScroll();
+})();
+</script>
+</body>
+</html>
