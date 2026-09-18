@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>קורס Excel מלא — ממתחילים ועד מקצוענים</title>
+<style>
+  :root{
+    --brand:#1E7145;
+    --brand-dark:#155234;
+    --brand-light:#E7F3EC;
+    --ink:#232323;
+    --muted:#666;
+    --paper:#FAF9F6;
+    --card:#FFFFFF;
+    --border:#E2E7E3;
+    --green:#1E7B45;
+    --green-bg:#E8F5EC;
+    --red:#C23B22;
+    --red-bg:#FCEAE6;
+    --radius:14px;
+    --sidebar-w:300px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Segoe UI","Heebo","Arial Hebrew","Arial",sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    line-height:1.65;
+  }
+  a{color:var(--brand-dark);}
+  h1,h2,h3,h4{line-height:1.3; margin:0 0 .5em;}
+  ::selection{background:var(--brand-light);}
+
+  /* Layout */
+  .app{display:flex; min-height:100vh;}
+  .sidebar{
+    width:var(--sidebar-w); flex:0 0 var(--sidebar-w);
+    background:#16281F; color:#EAF1EC;
+    position:sticky; top:0; height:100vh; overflow-y:auto;
+    padding:18px 16px 40px;
+  }
+  .sidebar .brand{
+    display:flex; align-items:center; gap:10px; margin-bottom:16px;
+    padding:4px 2px;
+  }
+  .brand .logo{
+    width:34px;height:34px;border-radius:8px;
+    background:linear-gradient(135deg,var(--brand),#4FAE7A);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;color:#fff;font-size:18px;flex:none;
+  }
+  .brand .name{font-weight:700; font-size:15px;}
+  .brand .sub{font-size:11.5px; color:#A9BCAF;}
+
+  .progress-wrap{margin:10px 2px 18px;}
+  .progress-label{display:flex; justify-content:space-between; font-size:12px; color:#B7C7BB; margin-bottom:5px;}
+  .progress-bar{height:8px; background:#28392E; border-radius:99px; overflow:hidden;}
+  .progress-fill{height:100%; background:linear-gradient(90deg,var(--brand),#6FCB9A); width:0%; transition:width .4s ease;}
+
+  .search{
+    width:100%; padding:8px 10px; border-radius:9px; border:1px solid #33463A;
+    background:#1F332A; color:#EAF1EC; font-size:13px; margin-bottom:14px;
+  }
+  .search::placeholder{color:#7E9186;}
+
+  .nav-group{margin-bottom:6px;}
+  .nav-group > summary{
+    cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px;
+    padding:9px 8px; border-radius:9px; font-weight:700; font-size:13.5px;
+    color:#EAF1EC;
+  }
+  .nav-group > summary::-webkit-details-marker{display:none;}
+  .nav-group > summary:hover{background:#1F332A;}
+  .nav-group[open] > summary .chev{transform:rotate(90deg);}
+  .chev{transition:transform .15s; font-size:11px; color:#B7C7BB;}
+  .nav-group .badge{
+    margin-inline-start:auto; font-size:10.5px; color:#B7C7BB;
+    background:#1F332A; padding:1px 7px; border-radius:99px;
+  }
+  .nav-links{list-style:none; margin:2px 0 10px; padding-inline-start:6px; border-inline-start:1px dashed #33463A;}
+  .nav-links li{margin:1px 0;}
+  .nav-links a{
+    display:flex; align-items:center; gap:7px; text-decoration:none;
+    color:#CFDDD3; font-size:13px; padding:6px 10px; border-radius:8px;
+  }
+  .nav-links a:hover{background:#1F332A; color:#fff;}
+  .nav-links a.active{background:var(--brand); color:#fff; font-weight:600;}
+  .nav-links .dot{
+    width:15px;height:15px;border-radius:50%;border:1.5px solid #5C7566;flex:none;
+    font-size:10px; display:flex; align-items:center; justify-content:center; color:transparent;
+  }
+  .nav-links a.done .dot{background:var(--green); border-color:var(--green); color:#fff;}
+  .extra-links{margin-top:14px; padding-top:14px; border-top:1px solid #33463A;}
+  .extra-links a{
+    display:flex; align-items:center; gap:8px; text-decoration:none; color:#CFDDD3;
+    font-size:13px; padding:7px 10px; border-radius:8px;
+  }
+  .extra-links a:hover{background:#1F332A; color:#fff;}
+  .extra-links a.active{background:var(--brand); color:#fff;}
+
+  /* Main */
+  .main{flex:1; min-width:0; padding:34px 40px 90px; max-width:900px; margin:0 auto;}
+  .section{display:none; animation:fade .25s ease;}
+  .section.active{display:block;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+
+  .crumb{font-size:12.5px; color:var(--muted); margin-bottom:6px;}
+  .lesson-title{font-size:28px; font-weight:800; margin-bottom:4px;}
+  .lesson-meta{font-size:13px; color:var(--muted); margin-bottom:22px; display:flex; gap:14px; align-items:center;}
+
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+    padding:20px 22px; margin-bottom:18px;
+  }
+  .card h3{font-size:16px; color:var(--brand-dark); margin-bottom:8px;}
+  .content-body p{margin:0 0 12px;}
+  .content-body ul{margin:0 0 12px; padding-inline-start:22px;}
+  .content-body li{margin-bottom:6px;}
+  .content-body strong{color:var(--brand-dark);}
+  code, kbd{
+    background:#EEF3EF; border:1px solid var(--border); border-radius:5px;
+    padding:1px 6px; font-size:.92em; font-family:Consolas,"Courier New",monospace;
+  }
+  kbd{box-shadow:0 1.5px 0 var(--border);}
+
+  .tip-box{
+    background:var(--brand-light); border:1px solid #C9E3D3; border-radius:12px;
+    padding:14px 16px; margin:14px 0; font-size:14px;
+  }
+  .tip-box b{color:var(--brand-dark);}
+  .try-box{
+    background:#EFF2F4; border:1px solid #CFD9E3; border-radius:12px;
+    padding:14px 16px; margin:14px 0; font-size:14px;
+  }
+  .try-box b{color:#2A5C8A;}
+
+  .quiz{background:#FBFDF9; border:1.5px dashed #B9D9C6;}
+  .quiz h3{margin-bottom:12px;}
+  .quiz .q{font-weight:600; margin-bottom:10px;}
+  .quiz .opts{display:flex; flex-direction:column; gap:8px;}
+  .quiz button.opt{
+    text-align:right; padding:10px 14px; border-radius:9px; border:1px solid var(--border);
+    background:#fff; cursor:pointer; font-size:14px; font-family:inherit;
+  }
+  .quiz button.opt:hover{border-color:var(--brand);}
+  .quiz button.opt.correct{background:var(--green-bg); border-color:var(--green); color:var(--green);}
+  .quiz button.opt.wrong{background:var(--red-bg); border-color:var(--red); color:var(--red);}
+  .quiz button.opt:disabled{cursor:default;}
+  .quiz .explain{margin-top:10px; font-size:13.5px; color:var(--muted); display:none;}
+  .quiz .explain.show{display:block;}
+
+  .lesson-footer{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    margin-top:28px; padding-top:18px; border-top:1px solid var(--border);
+  }
+  .btn{
+    display:inline-flex; align-items:center; gap:6px; cursor:pointer; border:none;
+    border-radius:10px; padding:10px 16px; font-size:14px; font-weight:600; font-family:inherit;
+    text-decoration:none;
+  }
+  .btn-primary{background:var(--brand); color:#fff;}
+  .btn-primary:hover{background:var(--brand-dark);}
+  .btn-outline{background:#fff; border:1px solid var(--border); color:var(--ink);}
+  .btn-outline:hover{border-color:var(--brand);}
+  .btn-ghost{background:transparent; color:var(--muted); border:none; font-size:13px;}
+  .mark-done{display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--muted); cursor:pointer; user-select:none;}
+  .mark-done input{width:17px; height:17px; accent-color:var(--green); cursor:pointer;}
+
+  .hero{
+    background:linear-gradient(135deg,var(--brand),#4FAE7A);
+    color:#fff; border-radius:20px; padding:44px 38px; margin-bottom:26px;
+  }
+  .hero h1{font-size:32px; margin-bottom:10px;}
+  .hero p{font-size:15.5px; max-width:640px; opacity:.95;}
+  .hero .stats{display:flex; gap:26px; margin-top:22px; flex-wrap:wrap;}
+  .hero .stat b{display:block; font-size:22px;}
+  .hero .stat span{font-size:12.5px; opacity:.9;}
+
+  .grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:20px 0;}
+  .grid-2{display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin:20px 0;}
+  .mini-card{
+    background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px;
+    cursor:pointer;
+  }
+  .mini-card:hover{border-color:var(--brand);}
+  .mini-card .n{font-size:12px; color:var(--muted);}
+  .mini-card .t{font-weight:700; font-size:14.5px; margin:3px 0;}
+  .mini-card .d{font-size:12.5px; color:var(--muted);}
+
+  table.cheat{width:100%; border-collapse:collapse; font-size:13.5px; margin-bottom:20px;}
+  table.cheat th, table.cheat td{border:1px solid var(--border); padding:8px 12px; text-align:right;}
+  table.cheat th{background:var(--brand-light); color:var(--brand-dark);}
+  table.cheat tr:nth-child(even){background:#FAFAFA;}
+
+  .cert-box{
+    background:var(--card); border:3px double var(--brand); border-radius:16px;
+    padding:40px; text-align:center; margin-top:10px;
+  }
+  .cert-box h2{font-size:26px; color:var(--brand-dark);}
+  .cert-name{font-size:24px; font-weight:800; margin:18px 0; border-bottom:2px solid var(--border); display:inline-block; padding-bottom:6px; min-width:280px;}
+  .cert-input{padding:10px 14px; border:1px solid var(--border); border-radius:9px; font-size:15px; width:280px; text-align:center; font-family:inherit;}
+
+  .topbar-mobile{display:none;}
+  @media (max-width:900px){
+    .app{flex-direction:column;}
+    .sidebar{
+      position:relative; height:auto; width:100%; flex:none;
+      display:none;
+    }
+    .sidebar.open{display:block;}
+    .topbar-mobile{
+      display:flex; align-items:center; justify-content:space-between;
+      background:#16281F; color:#fff; padding:12px 16px; position:sticky; top:0; z-index:10;
+    }
+    .topbar-mobile button{background:var(--brand); color:#fff; border:none; border-radius:8px; padding:8px 12px; font-size:13px;}
+    .main{padding:24px 18px 70px;}
+    .grid-3{grid-template-columns:1fr;}
+    .grid-2{grid-template-columns:1fr;}
+    .hero{padding:28px 22px;}
+  }
+  @media print{
+    .sidebar,.topbar-mobile,.lesson-footer,.quiz{display:none !important;}
+    .section{display:block !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar-mobile">
+  <strong>📈 קורס Excel</strong>
+  <button id="toggleSidebar">☰ תפריט</button>
+</div>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="logo">X</div>
+      <div>
+        <div class="name">קורס Excel מלא</div>
+        <div class="sub">ממתחילים ועד מקצוענים</div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-label"><span>התקדמות</span><span id="progressPct">0%</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <input type="text" class="search" id="searchBox" placeholder="🔍 חיפוש נושא בקורס...">
+
+    <nav id="navContainer"></nav>
+
+    <div class="extra-links">
+      <a href="#intro" data-route="intro">🏠 עמוד הבית</a>
+      <a href="#cheatsheet" data-route="cheatsheet">⌨️ דף קיצורים להדפסה</a>
+      <a href="#final-quiz" data-route="final-quiz">🎯 מבחן מסכם</a>
+      <a href="#certificate" data-route="certificate">🎓 תעודת סיום</a>
+    </div>
+  </aside>
+
+  <main class="main" id="mainContent">
+    <!-- rendered by JS -->
+  </main>
+</div>
+
+<script>
+/* ======================= COURSE DATA ======================= */
+const COURSE = [
+  {
+    id:"m1", title:"שלב 1 · מתחילים", icon:"🟢",
+    lessons:[
+      {
+        id:"m1l1", title:"הכרת הממשק",
+        content:`
+          <p>אקסל בנוי מרשת ענקית של <strong>תאים (Cells)</strong>, כל תא מזוהה בכתובת ייחודית: אות העמודה + מספר השורה, למשל <code>A1</code> או <code>C7</code>.</p>
+          <ul>
+            <li><strong>רצועת הכלים (Ribbon)</strong> — בראש המסך, לשוניות: בית (Home), הוספה (Insert), פריסת עמוד (Page Layout), נוסחאות (Formulas), נתונים (Data), סקירה (Review), תצוגה (View).</li>
+            <li><strong>שורת הנוסחאות (Formula Bar)</strong> — מתחת לרצועה, מציגה את התוכן האמיתי/הנוסחה של התא הפעיל (לא רק את מה שמוצג בתא).</li>
+            <li><strong>לשוניות גיליון (Sheet Tabs)</strong> — בתחתית, כל <strong>חוברת עבודה (Workbook)</strong> יכולה להכיל כמה <strong>גיליונות (Sheets)</strong>.</li>
+            <li><strong>תיבת השם (Name Box)</strong> — בפינה השמאלית-עליונה של אזור הגיליון, מציגה/מאפשרת לקפוץ לכתובת תא.</li>
+          </ul>
+        `,
+        tip:`לחצו <kbd>Ctrl</kbd>+<kbd>Home</kbd> כדי לקפוץ מיידית לתא A1 מכל מקום בגיליון.`,
+        quiz:{q:"מה מציגה שורת הנוסחאות עבור תא שמכיל נוסחה?", options:["רק את התוצאה המחושבת","את הנוסחה עצמה כפי שהוזנה","את שם התא בלבד"], correct:1, explain:"בעוד שבתוך התא רואים את התוצאה, שורת הנוסחאות חושפת את הנוסחה האמיתית שמייצרת אותה."}
+      },
+      {
+        id:"m1l2", title:"חוברת עבודה, גיליונות ושמירה",
+        content:`
+          <p><strong>חוברת עבודה (Workbook)</strong> היא קובץ ה-Excel כולו (<code>.xlsx</code>); בתוכה אפשר להוסיף כמה <strong>גיליונות (Sheets)</strong> — למשל גיליון לכל חודש.</p>
+          <ul>
+            <li>הוספת גיליון — לחצו על <strong>+</strong> ליד לשוניות הגיליון, או <kbd>Shift</kbd>+<kbd>F11</kbd>.</li>
+            <li>שינוי שם גיליון — לחיצה כפולה על הלשונית.</li>
+            <li>צביעת לשונית גיליון — לחיצה ימנית → Tab Color, שימושי לניווט מהיר בחוברות גדולות.</li>
+            <li>שמירה: <kbd>Ctrl</kbd>+<kbd>S</kbd>, פורמט <code>.xlsx</code>. לגיליון עם מאקרו — <code>.xlsm</code>.</li>
+          </ul>
+        `,
+        tip:`לחיצה ימנית על לשונית גיליון → Move or Copy מאפשרת להעתיק גיליון שלם עם כל הנוסחאות, כדי לא לבנות מאפס בכל חודש.`,
+        quiz:{q:"מה ההבדל בין 'חוברת עבודה' ל'גיליון'?", options:["אין הבדל","חוברת עבודה היא הקובץ כולו, גיליון הוא עמוד אחד בתוכה","גיליון הוא הקובץ כולו"], correct:1, explain:"חוברת עבודה (Workbook) = הקובץ. גיליון (Sheet) = אחד העמודים/הטאבים בתוכה."}
+      },
+      {
+        id:"m1l3", title:"הזנת נתונים ועיצוב בסיסי",
+        content:`
+          <p>אקסל מזהה אוטומטית את סוג הנתון שמזינים: מספר, טקסט, תאריך, אחוז — ומיישר אותו בהתאם (מספרים לימין בעברית, טקסט לשמאל, ברירת מחדל LTR פנימית).</p>
+          <ul>
+            <li>עיצוב מספרים — לשונית Home → קבוצת Number: מטבע, אחוזים, מספר עשרוני, תאריך.</li>
+            <li><strong>AutoFill</strong> — גררו את הריבוע הקטן בפינת התא (Fill Handle) כדי להעתיק תבנית/רצף (ימים, מספרים עוקבים, נוסחה) לתאים סמוכים.</li>
+            <li>עיצוב תא: גופן, צבע, גבולות ומילוי — קבוצת Font ו-Alignment בלשונית Home.</li>
+            <li>מיזוג תאים (Merge & Center) — שימושי לכותרות, אך מגביל מיון/סינון מאוחר יותר — להשתמש בזהירות.</li>
+          </ul>
+        `,
+        tip:`הקלידו את שני התאים הראשונים של רצף (למשל ינואר, פברואר) ואז סמנו וגררו — אקסל ישלים את הרצף אוטומטית.`,
+        quiz:{q:"מה עושה גרירת ה-Fill Handle (הריבוע הקטן בפינת התא)?", options:["מוחק את התא","מעתיק תבנית/רצף לתאים סמוכים","פותח תפריט עיצוב"], correct:1, explain:"Fill Handle משכפל נתון, נוסחה, או ממשיך רצף לוגי (ימים, מספרים) לפי הגרירה."}
+      },
+      {
+        id:"m1l4", title:"נוסחאות בסיסיות והפניות",
+        content:`
+          <p>כל נוסחה מתחילה בסימן <code>=</code>. הפעולות הבסיסיות: <code>+</code> חיבור, <code>-</code> חיסור, <code>*</code> כפל, <code>/</code> חילוק.</p>
+          <ul>
+            <li><strong>סכימה אוטומטית</strong> — כפתור AutoSum (Σ) בלשונית Home, או <kbd>Alt</kbd>+<kbd>=</kbd>, מזהה טווח סמוך ומסכם אותו.</li>
+            <li><strong>הפניה יחסית</strong> — <code>A1</code>: כשמעתיקים את הנוסחה לתא אחר, ההפניה "זזה" יחסית.</li>
+            <li><strong>הפניה מוחלטת</strong> — <code>$A$1</code>: ננעלת במקום גם כשמעתיקים את הנוסחה (לחצו <kbd>F4</kbd> על הפניה כדי להוסיף/להסיר $).</li>
+            <li>סדר פעולות: כמו במתמטיקה — סוגריים, כפל/חילוק, ואז חיבור/חיסור.</li>
+          </ul>
+        `,
+        tip:`אם נוסחה שמכפילה במחיר קבוע "משתגעת" כשמעתיקים אותה — כנראה שכחתם לנעול את ההפניה למחיר עם $ (F4).`,
+        quiz:{q:"איזה קיצור מקלדת נועל הפניה לתא (מוסיף $)?", options:["F2","F4","F9"], correct:1, explain:"F4 עובר בין הפניה יחסית (A1), מוחלטת ($A$1) וחצי-מוחלטת (A$1 / $A1) על ההפניה שסומנה."}
+      },
+      {
+        id:"m1l5", title:"עיצוב טבלה בסיסי",
+        content:`
+          <p>עיצוב נקי הופך גיליון מבולגן לקריא:</p>
+          <ul>
+            <li>גבולות (Borders) ומילוי צבע רקע (Fill Color) — קבוצת Font בלשונית Home.</li>
+            <li>רוחב עמודה/גובה שורה — גרירת הגבול בין כותרות העמודות/שורות, או לחיצה ימנית → Column Width.</li>
+            <li><strong>Freeze Panes</strong> (<em>View → Freeze Panes</em>) — קיבוע שורת כותרות כך שתישאר גלויה בגלילה בטבלאות ארוכות.</li>
+            <li>עיצוב מותנה בסיסי (Conditional Formatting) — צביעת תאים לפי ערך, לדוגמה כל מכירה מעל 1000 בירוק.</li>
+          </ul>
+        `,
+        tip:`Freeze Panes על השורה הראשונה זה כלל אצבע בכל טבלה שיש בה יותר ממסך אחד של נתונים.`,
+        quiz:{q:"איזו תכונה משאירה את שורת הכותרות גלויה בזמן גלילה למטה?", options:["Merge & Center","Freeze Panes","AutoFill"], correct:1, explain:"Freeze Panes (View → Freeze Panes) מקבע שורות/עמודות נבחרות כך שיישארו במסך גם בגלילה."}
+      },
+      {
+        id:"m1l6", title:"מיון, סינון והדפסה",
+        content:`
+          <p>כלים בסיסיים לניהול נתונים בלשונית <em>Data</em>:</p>
+          <ul>
+            <li><strong>Sort</strong> — מיון עמודה (או כמה עמודות) בסדר עולה/יורד.</li>
+            <li><strong>Filter</strong> (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd>) — מוסיף חצים לכותרות המאפשרים להציג רק שורות שעונות על תנאי.</li>
+            <li>הדפסה — <em>File → Print</em>: הגדרת אזור הדפסה (Print Area), התאמה לעמוד אחד (Scale to Fit), הדפסת כותרות בכל עמוד.</li>
+            <li><strong>Page Break Preview</strong> (<em>View</em>) — מציג בדיוק איפה ייחתך העמוד בהדפסה, וניתן לגרור את קווי החיתוך.</li>
+          </ul>
+        `,
+        tip:`לפני הדפסת טבלה רחבה — Page Layout → Orientation → Landscape, ו-Scale to Fit → 1 page wide.`,
+        quiz:{q:"מה עושה Filter (Ctrl+Shift+L)?", options:["ממיין את הנתונים לצמיתות","מוסיף חצים לכותרות להצגה סלקטיבית של שורות","מוחק כפילויות"], correct:1, explain:"Filter מוסיף בקרות לכותרות שמאפשרות להסתיר זמנית שורות שלא עונות על קריטריון, בלי למחוק נתונים."}
+      }
+    ]
+  },
+  {
+    id:"m2", title:"שלב 2 · בינוני", icon:"🟡",
+    lessons:[
+      {
+        id:"m2l1", title:"פונקציות נפוצות",
+        content:`
+          <p>פונקציה היא נוסחה מוכנה מראש. התחביר הכללי: <code>=שם_פונקציה(ארגומנטים)</code>.</p>
+          <ul>
+            <li><code>=SUM(A1:A10)</code> — סכימת טווח.</li>
+            <li><code>=AVERAGE(A1:A10)</code> — ממוצע.</li>
+            <li><code>=COUNT(A1:A10)</code> — ספירת תאים עם מספרים; <code>COUNTA</code> סופר תאים לא ריקים מכל סוג.</li>
+            <li><code>=IF(תנאי, ערך_אם_אמת, ערך_אם_שקר)</code> — תנאי לוגי בסיסי.</li>
+            <li><code>=COUNTIF(טווח, קריטריון)</code> ו-<code>=SUMIF(טווח, קריטריון, טווח_סכימה)</code> — ספירה/סכימה מותנית.</li>
+          </ul>
+        `,
+        tip:`<kbd>Shift</kbd>+<kbd>F3</kbd> פותח את חלון "הוספת פונקציה" עם חיפוש והסבר לכל פונקציה — שימושי כשלא זוכרים תחביר בעל פה.`,
+        quiz:{q:"איזו פונקציה סופרת רק תאים שעונים על תנאי מסוים?", options:["SUM","COUNTIF","AVERAGE"], correct:1, explain:"COUNTIF(טווח, קריטריון) סופרת אך ורק תאים שעונים לקריטריון שהוגדר, בניגוד ל-COUNT הרגילה."}
+      },
+      {
+        id:"m2l2", title:"VLOOKUP, INDEX/MATCH ו-XLOOKUP",
+        content:`
+          <p>פונקציות חיפוש הן מהכלים החזקים ביותר לחיבור בין טבלאות:</p>
+          <ul>
+            <li><code>=VLOOKUP(ערך_חיפוש, טווח_טבלה, מספר_עמודה, FALSE)</code> — מחפש ערך בעמודה הראשונה של הטווח ומחזיר ערך מעמודה אחרת באותה שורה. המגבלה: מחפש רק ימינה מעמודת החיפוש.</li>
+            <li><code>=INDEX(טווח_החזרה, MATCH(ערך_חיפוש, טווח_חיפוש, 0))</code> — צמד גמיש יותר, עובד לכל כיוון (גם חיפוש "שמאלה").</li>
+            <li><code>=XLOOKUP(ערך_חיפוש, טווח_חיפוש, טווח_החזרה)</code> — הפונקציה המודרנית (Excel 365): מחליפה את שתי הקודמות, פשוטה יותר וגם מחזירה ברירת מחדל אם לא נמצאה התאמה.</li>
+          </ul>
+        `,
+        tip:`תמיד השתמשו בפרמטר ה"התאמה מדויקת" (FALSE ב-VLOOKUP, 0 ב-MATCH) אלא אם באמת רוצים התאמה מקורבת — אחרת מקבלים תוצאות שגויות בשקט.`,
+        quiz:{q:"מהי המגבלה העיקרית של VLOOKUP לעומת INDEX/MATCH?", options:["VLOOKUP לא עובד עם מספרים","VLOOKUP מחפש רק בעמודה שמימין לעמודת החיפוש","VLOOKUP איטי יותר תמיד"], correct:1, explain:"VLOOKUP מחפש בעמודה הראשונה של הטווח ומחזיר תמיד עמודה מימינה — INDEX/MATCH (ו-XLOOKUP) לא מוגבלים לכיוון הזה."}
+      },
+      {
+        id:"m2l3", title:"טבלאות Excel ועיצוב מותנה מתקדם",
+        content:`
+          <p><strong>Insert → Table</strong> (<kbd>Ctrl</kbd>+<kbd>T</kbd>) הופך טווח נתונים ל"טבלה חכמה":</p>
+          <ul>
+            <li>כותרות עם סינון אוטומטי, פסים לסירוגין לקריאות, ושורת סיכום אופציונלית (Total Row).</li>
+            <li>נוסחה שנכתבת בעמודת טבלה "משתכפלת" אוטומטית לכל השורות.</li>
+            <li>טווחים מתרחבים אוטומטית כשמוסיפים שורה חדשה בתחתית.</li>
+            <li><strong>עיצוב מותנה מתקדם</strong> (<em>Home → Conditional Formatting</em>): Data Bars (פסי נתונים), Color Scales (סולמות צבע), Icon Sets, וכללים מותאמים אישית עם נוסחה.</li>
+          </ul>
+        `,
+        tip:`תנו שם לטבלה (Table Design → Table Name) כדי להתייחס אליה בנוסחאות בשם קריא במקום טווח תאים.`,
+        quiz:{q:"מה קורה כשמוסיפים שורה חדשה בתחתית טבלת Excel (Ctrl+T)?", options:["צריך להגדיר טווח מחדש ידנית","הטבלה מתרחבת אוטומטית ומיישמת עיצוב+נוסחאות","השורה לא נכללת בטבלה"], correct:1, explain:"טבלאות Excel 'חכמות' — הן מתרחבות אוטומטית ומעתיקות נוסחאות ועיצוב לשורה החדשה."}
+      },
+      {
+        id:"m2l4", title:"טבלאות ציר (PivotTables)",
+        content:`
+          <p><strong>PivotTable</strong> (<em>Insert → PivotTable</em>) מסכמת אלפי שורות נתונים לטבלה אינטראקטיבית תוך שניות, בלי נוסחאות ידניות:</p>
+          <ul>
+            <li>גוררים שדות לאזורים: <strong>Rows</strong> (קטגוריות), <strong>Columns</strong> (פילוח נוסף), <strong>Values</strong> (סכימה/ממוצע/ספירה), <strong>Filters</strong>.</li>
+            <li>שינוי חישוב (סכום → ממוצע → אחוז מהסך) — לחיצה ימנית על ערך → Summarize/Show Values As.</li>
+            <li><strong>Group</strong> — קיבוץ תאריכים לפי חודש/רבעון/שנה אוטומטית.</li>
+            <li>רענון אחרי שינוי במקור: לחיצה ימנית → Refresh (או <kbd>Alt</kbd>+<kbd>F5</kbd>).</li>
+          </ul>
+        `,
+        tip:`הפכו את מקור הנתונים לטבלת Excel (Ctrl+T) לפני יצירת Pivot — כך היא תתרחב אוטומטית עם נתונים חדשים.`,
+        quiz:{q:"מה עושה PivotTable בעיקרו?", options:["מציירת גרפים בלבד","מסכמת ומפלחת כמויות נתונים גדולות בגרירה, בלי נוסחאות ידניות","מתקנת שגיאות בנתונים"], correct:1, explain:"PivotTable מאפשרת לסכם, לקבץ ולפלח נתונים בגרירת שדות, ללא כתיבת נוסחאות סיכום ידניות."}
+      },
+      {
+        id:"m2l5", title:"גרפים (Charts)",
+        content:`
+          <p><em>Insert → Charts</em> מציע גלריית סוגי גרפים: עמודות, קווים, עוגה, פס, שטח, פיזור (Scatter) ועוד.</p>
+          <ul>
+            <li><strong>Recommended Charts</strong> — Excel מציע אוטומטית סוג גרף מתאים לפי מבנה הנתונים שנבחרו.</li>
+            <li>עיצוב מהיר — Chart Design → Chart Styles/Quick Layout; שינוי צבעים — Chart Styles → Color.</li>
+            <li><strong>Pivot Chart</strong> — גרף המחובר ישירות ל-PivotTable, מתעדכן אוטומטית עם הפילוח.</li>
+            <li>כלל אצבע: עמודות/קווים להשוואה לאורך זמן, עוגה רק עד כ-5 קטגוריות, Scatter לקשר בין שני משתנים מספריים.</li>
+          </ul>
+        `,
+        tip:`הוסיפו כותרת ברורה וציר Y עם יחידות — גרף בלי הקשר הוא "תמונה יפה" בלי משמעות.`,
+        quiz:{q:"איזה סוג גרף עובד היטב עם עד כ-5 קטגוריות בלבד?", options:["גרף עוגה (Pie)","גרף פיזור (Scatter)","גרף קווים (Line)"], correct:0, explain:"גרף עוגה נהיה בלתי קריא עם יותר מדי פרוסות — מומלץ עד כ-5 קטגוריות."}
+      },
+      {
+        id:"m2l6", title:"אימות נתונים (Data Validation)",
+        content:`
+          <p><em>Data → Data Validation</em> קובע חוקים למה שמותר להזין בתא — מונע טעויות הקלדה כבר במקור:</p>
+          <ul>
+            <li><strong>רשימה נפתחת (List)</strong> — מגבילה תא לבחירה מרשימה סגורה (למשל: סטטוסים "פתוח"/"סגור"/"בטיפול").</li>
+            <li><strong>טווח מספרים/תאריכים</strong> — מונע ערכים לא הגיוניים (למשל תאריך עתידי בטופס היסטורי).</li>
+            <li><strong>הודעת שגיאה מותאמת</strong> — לשונית Error Alert, טקסט ברור שמסביר למה הערך נדחה.</li>
+            <li>שילוב עם שמות טווחים (Named Ranges) ליצירת רשימות נפתחות תלויות זו בזו (Dependent Dropdowns).</li>
+          </ul>
+        `,
+        tip:`רשימה נפתחת שמבוססת על טבלת Excel (ולא טווח קבוע) מתעדכנת אוטומטית כשמוסיפים אפשרות חדשה לרשימת המקור.`,
+        quiz:{q:"מה מטרת Data Validation מסוג 'List'?", options:["למיין את העמודה","להגביל הזנה לבחירה מרשימה סגורה מראש","לצבוע תאים אוטומטית"], correct:1, explain:"רשימת Data Validation מונעת הקלדה חופשית ומכריחה בחירה מתוך אפשרויות מוגדרות מראש, ומצמצמת טעויות."}
+      },
+      {
+        id:"m2l7", title:"עבודה עם כמה גיליונות וחוברות",
+        content:`
+          <p>כשנתונים מפוזרים בין גיליונות/קבצים, אפשר להתייחס אליהם בנוסחה אחת:</p>
+          <ul>
+            <li>הפניה לגיליון אחר: <code>=SheetName!A1</code>. הפניה לחוברת אחרת פתוחה: <code>=[Book1.xlsx]Sheet1!A1</code>.</li>
+            <li><strong>נוסחת 3D</strong> — <code>=SUM(Jan:Dec!B2)</code> מסכמת את תא B2 מכל הגיליונות בין ינואר לדצמבר בבת אחת.</li>
+            <li><strong>קיבוץ גיליונות (Group Sheets)</strong> — <kbd>Ctrl</kbd>+קליק על כמה לשוניות מאפשר לערוך/לעצב את כולן יחד בבת אחת.</li>
+            <li><strong>Consolidate</strong> (<em>Data → Consolidate</em>) — איחוד נתונים מכמה טווחים/גיליונות לטבלת סיכום אחת.</li>
+          </ul>
+        `,
+        tip:`אחרי עבודה על גיליונות מקובצים — זכרו "לפרק" את הקבוצה (לחיצה ימנית → Ungroup Sheets), אחרת עריכה נוספת תחול על כולם בטעות.`,
+        quiz:{q:"מה עושה 'Group Sheets' (Ctrl+קליק על כמה לשוניות)?", options:["מוחק את הגיליונות שנבחרו","מאפשר לערוך/לעצב את כל הגיליונות הנבחרים יחד","ממזג את הגיליונות לאחד"], correct:1, explain:"קיבוץ גיליונות מאפשר לבצע אותה עריכה/עיצוב על כמה גיליונות בו-זמנית, בלי לחזור על הפעולה בכל אחד בנפרד."}
+      }
+    ]
+  },
+  {
+    id:"m3", title:"שלב 3 · מקצוענים", icon:"🔴",
+    lessons:[
+      {
+        id:"m3l1", title:"קיצורי מקלדת ותפוקה",
+        content:`
+          <p>קיצורים חיוניים לעבודה מהירה (הרחבה מלאה בדף "קיצורים להדפסה" בתפריט):</p>
+          <ul>
+            <li><kbd>Ctrl</kbd>+<kbd>;</kbd> — הזנת תאריך היום &nbsp;|&nbsp; <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>;</kbd> — הזנת שעה נוכחית</li>
+            <li><kbd>Ctrl</kbd>+<kbd>Arrow</kbd> — קפיצה לקצה הטווח המלא הבא &nbsp;|&nbsp; <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Arrow</kbd> — בחירת טווח עד הקצה</li>
+            <li><kbd>Alt</kbd>+<kbd>=</kbd> — סכימה אוטומטית &nbsp;|&nbsp; <kbd>F4</kbd> — נעילת הפניה ($) / חזרה על פעולה אחרונה</li>
+            <li><kbd>Ctrl</kbd>+<kbd>\`</kbd> — הצגת נוסחאות בכל התאים במקום תוצאות, לביקורת מהירה</li>
+          </ul>
+        `,
+        tip:`למשימות שחוזרות על עצמן כל שבוע — שקלו לבנות תבנית קבועה (.xltx) או מאקרו (שיעור הבא) במקום לבנות מאפס.`,
+        quiz:{q:"מה עושה הקיצור Ctrl+` (גרש)?", options:["מוחק את הגיליון","מציג את הנוסחאות בכל התאים במקום את התוצאות","פותח חלון הדפסה"], correct:1, explain:"Ctrl+` מחליף תצוגה בין תוצאות מחושבות לתצוגת הנוסחאות עצמן בכל התאים — שימושי לביקורת גיליון."}
+      },
+      {
+        id:"m3l2", title:"נוסחאות מערך דינמיות",
+        content:`
+          <p>Excel 365 מציג משפחת פונקציות "מערך דינמי" ש"נשפכות" (Spill) אוטומטית לכמה תאים מתא נוסחה יחיד:</p>
+          <ul>
+            <li><code>=FILTER(טווח, תנאי)</code> — מחזיר את כל השורות שעונות על תנאי, ללא נוסחת מערך ישנה מסובכת.</li>
+            <li><code>=SORT(טווח)</code> ו-<code>=UNIQUE(טווח)</code> — מיון והפקת ערכים ייחודיים כנוסחה חיה שמתעדכנת אוטומטית.</li>
+            <li><code>=SEQUENCE(שורות, עמודות)</code> — יוצר רצף מספרים אוטומטית.</li>
+            <li>שילוב: <code>=SORT(UNIQUE(FILTER(A2:A100, B2:B100="פעיל")))</code> — שרשור פונקציות לתוצאה מסוננת, ייחודית וממוינת בנוסחה אחת.</li>
+          </ul>
+        `,
+        tip:`סימן ה-# אחרי טווח (למשל <code>A2#</code>) מתייחס לכל טווח ה"שפיכה" של נוסחת מערך דינמי, גם אם גודלו משתנה.`,
+        quiz:{q:"מה עושה הפונקציה UNIQUE?", options:["מוחקת כפילויות מהמקור","מחזירה רשימה של ערכים ייחודיים בלבד כנוסחה חיה","ממיינת טקסט בלבד"], correct:1, explain:"UNIQUE מפיקה רשימת ערכים ללא כפילויות כתוצאת נוסחה שמתעדכנת אוטומטית עם שינוי המקור — בלי לגעת בנתונים המקוריים."}
+      },
+      {
+        id:"m3l3", title:"Power Query — ייבוא וניקוי נתונים",
+        content:`
+          <p><strong>Power Query</strong> (<em>Data → Get & Transform Data</em>) הוא כלי ETL מובנה: מייבא נתונים ממקורות שונים (CSV, אתר, מסד נתונים, תיקיית קבצים) ומאפשר לנקות ולעצב אותם לפני שהם נכנסים לגיליון.</p>
+          <ul>
+            <li>כל שלב ניקוי (הסרת עמודות, שינוי סוגי נתונים, מיזוג טבלאות, Pivot/Unpivot) נרשם כ"צעד" ברור ב-<strong>Applied Steps</strong> — ניתן לחזור אחורה ולערוך.</li>
+            <li><strong>Refresh</strong> — הרצה מחדש של כל התהליך כשהמקור מתעדכן, בלי לחזור על העבודה הידנית.</li>
+            <li>שילוב טבלאות: <strong>Merge Queries</strong> (כמו JOIN) ו-<strong>Append Queries</strong> (איחוד שורות מכמה מקורות זהי מבנה).</li>
+          </ul>
+        `,
+        tip:`Power Query הוא הכלי הנכון כשמייבאים את אותו סוג דוח כל חודש — בונים את התהליך פעם אחת ואז רק לוחצים Refresh.`,
+        quiz:{q:"מהו היתרון המרכזי של Power Query על פני עיבוד ידני?", options:["הוא מהיר יותר בהקלדה","התהליך נשמר כשלבים ומתעדכן אוטומטית עם Refresh","הוא היחיד שיכול לייבא CSV"], correct:1, explain:"Power Query מתעד כל שלב עיבוד וניתן להריץ אותו מחדש (Refresh) על נתונים מעודכנים, בלי לחזור על העבודה הידנית."}
+      },
+      {
+        id:"m3l4", title:"Power Pivot ומודל נתונים",
+        content:`
+          <p><strong>Power Pivot</strong> מאפשר לבנות מודל נתונים שמחבר כמה טבלאות בקשרים (Relationships) — כמו מסד נתונים קטן בתוך אקסל, בלי VLOOKUP אינסופי.</p>
+          <ul>
+            <li>הגדרת קשר בין טבלאות (למשל טבלת מכירות לטבלת לקוחות) — <em>Data → Relationships</em>.</li>
+            <li><strong>DAX</strong> (Data Analysis Expressions) — שפת נוסחאות למדדים מחושבים, למשל: <code>Total Sales := SUM(Sales[Amount])</code>.</li>
+            <li>PivotTable שנבנה מעל מודל הנתונים יכול לשלב שדות מכמה טבלאות בבת אחת, בלי לאחד אותן ידנית לטבלה שטוחה אחת.</li>
+          </ul>
+        `,
+        tip:`התחילו DAX עם מדדים פשוטים (SUM, AVERAGE, COUNTROWS) לפני שקופצים לנוסחאות זמן (CALCULATE, Time Intelligence).`,
+        quiz:{q:"מה מאפשר Power Pivot לעומת PivotTable רגיל?", options:["גרפים יפים יותר בלבד","חיבור מודלי בין כמה טבלאות ללא VLOOKUP + מדדי DAX מחושבים","הדפסה מהירה יותר"], correct:1, explain:"Power Pivot מוסיף שכבת מודל נתונים עם קשרים בין טבלאות ושפת DAX, כדי לנתח מספר טבלאות יחד כמקור אחד."}
+      },
+      {
+        id:"m3l5", title:"מאקרו ו-VBA בסיסי",
+        content:`
+          <p>למשימות חוזרות ידניות אפשר להקליט או לכתוב מאקרו:</p>
+          <ul>
+            <li>הפעלת לשונית המפתחים: <em>File → Options → Customize Ribbon</em> → סמנו <strong>Developer</strong>.</li>
+            <li><strong>הקלטת מאקרו</strong> — <em>Developer → Record Macro</em>, בצעו את הפעולות, עצרו — אקסל כותב את קוד ה-VBA אוטומטית.</li>
+            <li><strong>עריכה ידנית</strong> — <em>Developer → Visual Basic</em> (<kbd>Alt</kbd>+<kbd>F11</kbd>).</li>
+            <li>שמירה עם מאקרו דורשת פורמט <code>.xlsm</code>.</li>
+          </ul>
+          <p>דוגמת VBA שמנקה עיצוב בטווח נבחר:</p>
+          <pre style="background:#1F332A;color:#EAF1EC;padding:12px 16px;border-radius:8px;overflow-x:auto;font-size:13px;direction:ltr;text-align:left;">Sub ClearFormatting()
+    Selection.ClearFormats
+End Sub</pre>
+        `,
+        tip:`מאקרו ממקור לא מוכר — אקסל חוסם אותו כברירת מחדל ומזהיר לפני הפעלה. אשרו רק קבצים ממקור מהימן.`,
+        quiz:{q:"מהי סיומת הקובץ הנדרשת לשמירת חוברת עבודה עם מאקרו פעיל?", options:[".xlsx",".xlsm",".xltx"], correct:1, explain:"‎.xlsm (Macro-Enabled Workbook) מאפשרת שמירת קוד VBA בתוך הקובץ; .xlsx הרגיל לא תומך במאקרו."}
+      },
+      {
+        id:"m3l6", title:"דשבורדים אינטראקטיביים",
+        content:`
+          <p>שילוב כמה כלים יוצר לוח מחוונים (Dashboard) חי בגיליון אחד:</p>
+          <ul>
+            <li><strong>Slicers</strong> (<em>Insert → Slicer</em>) — כפתורי סינון חזותיים שמחוברים לכמה PivotTables/Pivot Charts בבת אחת.</li>
+            <li><strong>Timeline</strong> — סליידר לסינון לפי טווח תאריכים, מחובר ל-Pivot.</li>
+            <li>שילוב כמה Pivot Charts + Slicers באותו גיליון יוצר מסך תמונת-מצב שמתעדכן בלחיצה אחת.</li>
+            <li>עיצוב אחיד (צבעים, גופנים) ומינימום טקסט — דשבורד טוב "נקרא" תוך 5 שניות.</li>
+          </ul>
+        `,
+        tip:`חברו Slicer אחד לכמה PivotTables (לחיצה ימנית על ה-Slicer → Report Connections) כדי לסנן את כל הדשבורד בלחיצה אחת.`,
+        quiz:{q:"מה עושה Slicer?", options:["מחשב נוסחאות מורכבות","כפתורי סינון חזותיים המחוברים לטבלת/טבלאות ציר","מדפיס את הגיליון"], correct:1, explain:"Slicer הוא ממשק סינון ויזואלי-אינטראקטיבי שיכול להיות מחובר לכמה PivotTables בו-זמנית לעדכון דשבורד שלם בלחיצה."}
+      },
+      {
+        id:"m3l7", title:"שיתוף פעולה ואבטחה",
+        content:`
+          <p>עבודה משותפת ובקרת גישה לגיליונות רגישים:</p>
+          <ul>
+            <li><strong>Protect Sheet / Protect Workbook</strong> (<em>Review</em>) — נעילת תאים/מבנה מפני עריכה, עם או בלי סיסמה.</li>
+            <li>ברירת מחדל: כל התאים "נעולים" (Locked) אך זה פעיל רק אחרי הפעלת Protect Sheet — לכן משאירים תאי קלט פתוחים ב-Format Cells → Protection לפני ההגנה.</li>
+            <li><strong>Co-authoring</strong> — עריכה משותפת בזמן אמת דרך OneDrive/SharePoint, בדומה ל-PowerPoint.</li>
+            <li><strong>Track Changes / Version History</strong> — מעקב שינויים ושחזור גרסאות קודמות.</li>
+          </ul>
+        `,
+        tip:`לפני שמגינים על גיליון — סמנו מראש אילו תאים צריכים להישאר פתוחים לעריכה (Unlocked), אחרת גם המשתמשים המורשים ייתקעו.`,
+        quiz:{q:"מהי ברירת המחדל של תאים חדשים לגבי הגנה (Locked), לפני הפעלת Protect Sheet?", options:["פתוחים לעריכה תמיד","נעולים, אך זה נכנס לתוקף רק אחרי Protect Sheet","נמחקים אוטומטית"], correct:1, explain:"כל התאים מוגדרים כ-Locked כברירת מחדל, אבל הנעילה בפועל מופעלת רק כשמפעילים Protect Sheet — לכן צריך לשחרר מראש תאי קלט."}
+      },
+      {
+        id:"m3l8", title:"עקרונות למודלים ודוחות מקצועיים",
+        content:`
+          <p>מה שמבדיל גיליון "עובד" מגיליון מקצועי ואמין:</p>
+          <ul>
+            <li><strong>הפרדת קלט/חישוב/פלט</strong> — גיליון נפרד (או אזור צבוע) להנחות יסוד, נפרד מהחישובים, נפרד מהדוח המוצג.</li>
+            <li><strong>Named Ranges</strong> (<em>Formulas → Define Name</em>) — שם קריא במקום כתובת תא, למשל <code>TaxRate</code> במקום <code>$B$2</code>.</li>
+            <li><strong>בדיקת שגיאות</strong> — <em>Formulas → Error Checking</em>, ופונקציית <code>IFERROR()</code> לטיפול מסודר בשגיאות צפויות.</li>
+            <li><strong>עקביות עיצובית</strong> — אותו סגנון כותרות, אותו מספר ספרות עשרוניות, קוד צבע קבוע (למשל כחול = קלט ידני, שחור = נוסחה).</li>
+            <li><strong>תיעוד</strong> — הערות תא (<kbd>Shift</kbd>+<kbd>F2</kbd>) או גיליון "הוראות" קצר בתחילת הקובץ, למי שיפתח את זה אחריכם.</li>
+          </ul>
+        `,
+        tip:`מוסכמה נפוצה בעולם המודלים הפיננסיים: תאי קלט כחולים, תאי נוסחה שחורים, קישורים לגיליון אחר ירוקים — עוזר לכל מי שפותח את הקובץ להבין מיד מה בטוח לשנות.`,
+        quiz:{q:"מה היתרון של Named Range (למשל TaxRate) על פני כתובת תא ($B$2) בנוסחה?", options:["הוא מהיר יותר לחישוב","הוא הופך את הנוסחה לקריאה וברורה יותר, ומקטין טעויות בהעתקה","הוא היחיד שעובד עם IF"], correct:1, explain:"שם טווח הופך נוסחה כמו =Revenue*TaxRate לקריאה בהרבה מ-=C4*$B$2, ומקטין סיכוי לטעות כשמעתיקים נוסחאות."}
+      }
+    ]
+  }
+];
+
+/* ======================= STATE ======================= */
+const STORAGE_KEY = "excel_course_progress_v1";
+const CERT_KEY = "excel_course_cert_name_v1";
+let state = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+const ALL_LESSONS = COURSE.flatMap(m => m.lessons.map(l => ({...l, moduleId:m.id, moduleTitle:m.title})));
+const TOTAL = ALL_LESSONS.length;
+
+/* ======================= RENDER SIDEBAR ======================= */
+const navContainer = document.getElementById("navContainer");
+COURSE.forEach((mod, idx) => {
+  const details = document.createElement("details");
+  details.className = "nav-group";
+  details.open = idx === 0;
+  const doneCount = () => mod.lessons.filter(l => state[l.id]).length;
+  details.innerHTML = `
+    <summary><span class="chev">▸</span> ${mod.icon} ${mod.title} <span class="badge" data-mod="${mod.id}">${doneCount()}/${mod.lessons.length}</span></summary>
+    <ul class="nav-links">
+      ${mod.lessons.map(l => `
+        <li><a href="#${l.id}" data-route="${l.id}"><span class="dot">✓</span>${l.title}</a></li>
+      `).join("")}
+    </ul>
+  `;
+  navContainer.appendChild(details);
+});
+
+function refreshBadges(){
+  COURSE.forEach(mod => {
+    const badge = navContainer.querySelector(`.badge[data-mod="${mod.id}"]`);
+    const doneCount = mod.lessons.filter(l => state[l.id]).length;
+    if(badge) badge.textContent = `${doneCount}/${mod.lessons.length}`;
+  });
+  document.querySelectorAll(".nav-links a").forEach(a => {
+    const id = a.dataset.route;
+    a.classList.toggle("done", !!state[id]);
+  });
+  const doneTotal = ALL_LESSONS.filter(l => state[l.id]).length;
+  const pct = Math.round((doneTotal/TOTAL)*100);
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("progressPct").textContent = pct + "%";
+}
+
+/* ======================= RENDER MAIN SECTIONS ======================= */
+const main = document.getElementById("mainContent");
+
+function lessonSectionHTML(l, i, arr){
+  const prev = arr[i-1];
+  const next = arr[i+1];
+  return `
+  <section class="section" id="sec-${l.id}" data-route="${l.id}">
+    <div class="crumb">${l.moduleTitle}</div>
+    <div class="lesson-title">${l.title}</div>
+    <div class="lesson-meta">
+      <label class="mark-done">
+        <input type="checkbox" data-lesson="${l.id}" ${state[l.id] ? "checked":""}>
+        סמן שיעור זה כהושלם
+      </label>
+    </div>
+    <div class="card content-body">${l.content}</div>
+    ${l.tip ? `<div class="tip-box">💡 <b>טיפ:</b> ${l.tip}</div>` : ""}
+    ${l.quiz ? renderQuiz(l.id, l.quiz) : ""}
+    <div class="lesson-footer">
+      ${prev ? `<a class="btn btn-outline" href="#${prev.id}" data-route="${prev.id}">→ ${prev.title}</a>` : `<span></span>`}
+      ${next ? `<a class="btn btn-primary" href="#${next.id}" data-route="${next.id}">${next.title} ←</a>` : `<a class="btn btn-primary" href="#final-quiz" data-route="final-quiz">למבחן המסכם ←</a>`}
+    </div>
+  </section>`;
+}
+
+function renderQuiz(lessonId, quiz){
+  return `
+  <div class="card quiz" id="quiz-${lessonId}">
+    <h3>🧠 בדקו את עצמכם</h3>
+    <div class="q">${quiz.q}</div>
+    <div class="opts">
+      ${quiz.options.map((opt,i) => `<button class="opt" data-idx="${i}">${opt}</button>`).join("")}
+    </div>
+    <div class="explain"></div>
+  </div>`;
+}
+
+/* Intro section */
+const introHTML = `
+<section class="section" id="sec-intro" data-route="intro">
+  <div class="hero">
+    <h1>📈 קורס Excel מלא</h1>
+    <p>קורס אינטראקטיבי בעברית שמלווה אתכם משלבי הפתיחה הבסיסיים ביותר ועד טכניקות מקצועיות — Power Query, Power Pivot, DAX, מאקרו/VBA ודשבורדים אינטראקטיביים. לומדים בקצב אישי, עם שאלות תרגול והתקדמות נשמרת בדפדפן.</p>
+    <div class="stats">
+      <div class="stat"><b>${COURSE.length}</b><span>שלבי לימוד</span></div>
+      <div class="stat"><b>${TOTAL}</b><span>שיעורים</span></div>
+      <div class="stat"><b>${TOTAL}</b><span>שאלות תרגול</span></div>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:10px;">מה תלמדו?</h3>
+  <div class="grid-3">
+    ${COURSE.map(m => `
+      <div class="mini-card" data-jump="${m.lessons[0].id}">
+        <div class="n">${m.icon} ${m.title}</div>
+        <div class="t">${m.lessons.length} שיעורים</div>
+        <div class="d">${m.lessons.map(l=>l.title).slice(0,3).join(" · ")}${m.lessons.length>3 ? " ...":""}</div>
+      </div>
+    `).join("")}
+  </div>
+
+  <div class="try-box">
+    <b>👉 איך לומדים כאן:</b> עברו שיעור-שיעור מהתפריט בצד, סמנו "הושלם" בסיום כל שיעור כדי לעקוב אחרי ההתקדמות בראש התפריט, וענו על שאלת התרגול. בסיום כל השלבים — גשו למבחן המסכם ולתעודת הסיום.
+  </div>
+
+  <div class="lesson-footer">
+    <span></span>
+    <a class="btn btn-primary" href="#${ALL_LESSONS[0].id}" data-route="${ALL_LESSONS[0].id}">בואו נתחיל ←</a>
+  </div>
+</section>`;
+
+/* Cheatsheet section */
+const shortcuts = [
+  ["הזנת תאריך היום","Ctrl + ;"],
+  ["הזנת שעה נוכחית","Ctrl + Shift + ;"],
+  ["סכימה אוטומטית (AutoSum)","Alt + ="],
+  ["נעילת הפניה ($) / חזרה על פעולה אחרונה","F4"],
+  ["הצגת נוסחאות בכל התאים","Ctrl + `"],
+  ["שמירה","Ctrl + S"],
+  ["יצירת טבלת Excel","Ctrl + T"],
+  ["הפעלת/כיבוי סינון","Ctrl + Shift + L"],
+  ["קפיצה לתא A1","Ctrl + Home"],
+  ["קפיצה לקצה טווח נתונים","Ctrl + מקש חץ"],
+  ["בחירת טווח עד קצה הנתונים","Ctrl + Shift + מקש חץ"],
+  ["הוספת גיליון חדש","Shift + F11"],
+  ["עריכת תא נבחר","F2"],
+  ["הוספת הערה לתא","Shift + F2"],
+  ["פתיחת עורך VBA","Alt + F11"],
+  ["בחירת כל התאים בגיליון","Ctrl + A"],
+  ["מיזוג ומרכוז תאים","Alt, H, M, C (רצף מקשים)"],
+  ["רענון PivotTable","Alt + F5"],
+];
+const cheatsheetHTML = `
+<section class="section" id="sec-cheatsheet" data-route="cheatsheet">
+  <div class="lesson-title">⌨️ דף קיצורי מקלדת — להדפסה</div>
+  <p class="lesson-meta">דף עזר מרוכז. אפשר להדפיס ישירות מהדפדפן (Ctrl+P) — עיצוב ההדפסה מותאם אוטומטית.</p>
+  <div class="card">
+    <table class="cheat">
+      <thead><tr><th>פעולה</th><th>קיצור</th></tr></thead>
+      <tbody>
+        ${shortcuts.map(([a,b]) => `<tr><td>${a}</td><td style="direction:ltr; text-align:left; font-family:Consolas,monospace;">${b}</td></tr>`).join("")}
+      </tbody>
+    </table>
+    <button class="btn btn-outline" onclick="window.print()">🖨️ הדפסת דף זה</button>
+  </div>
+</section>`;
+
+/* Final quiz section (uses all lesson quizzes) */
+function finalQuizHTML(){
+  const items = ALL_LESSONS.filter(l => l.quiz);
+  return `
+  <section class="section" id="sec-final-quiz" data-route="final-quiz">
+    <div class="lesson-title">🎯 מבחן מסכם</div>
+    <p class="lesson-meta">ענו נכון על לפחות 80% מהשאלות כדי "לעבור" את המבחן ולפתוח את תעודת הסיום.</p>
+    <div class="card" id="finalScoreCard" style="display:none;">
+      <h3>התוצאה שלכם</h3>
+      <div id="finalScoreText" style="font-size:18px; font-weight:700;"></div>
+    </div>
+    <div id="finalQuizList">
+      ${items.map((l,i) => `
+        <div class="card quiz" id="fq-${l.id}">
+          <h3>שאלה ${i+1} — ${l.moduleTitle} · ${l.title}</h3>
+          <div class="q">${l.quiz.q}</div>
+          <div class="opts">
+            ${l.quiz.options.map((opt,idx) => `<button class="opt" data-idx="${idx}">${opt}</button>`).join("")}
+          </div>
+          <div class="explain"></div>
+        </div>
+      `).join("")}
+    </div>
+    <div class="card">
+      <button class="btn btn-primary" id="submitFinalQuiz">📝 בדקו את המבחן</button>
+    </div>
+  </section>`;
+}
+
+/* Certificate section */
+const certificateHTML = `
+<section class="section" id="sec-certificate" data-route="certificate">
+  <div class="lesson-title">🎓 תעודת סיום</div>
+  <p class="lesson-meta">השלימו את כל השיעורים כדי לפתוח את התעודה, הזינו שם והדפיסו/שמרו כ-PDF.</p>
+  <div class="card" id="certGate">
+    <p id="certGateText"></p>
+  </div>
+  <div class="cert-box" id="certBox" style="display:none;">
+    <div style="font-size:34px;">🏆</div>
+    <h2>תעודת הצטיינות</h2>
+    <p>מוענקת בזאת ל</p>
+    <input type="text" class="cert-input" id="certNameInput" placeholder="הקלידו את שמכם המלא">
+    <p style="margin-top:18px;">על השלמה מוצלחת של<br><strong>קורס Excel מלא — ממתחילים ועד מקצוענים</strong></p>
+    <p style="color:var(--muted); font-size:13px; margin-top:16px;" id="certDate"></p>
+    <button class="btn btn-primary" style="margin-top:14px;" onclick="window.print()">🖨️ הדפסה / שמירה כ-PDF</button>
+  </div>
+</section>`;
+
+/* Assemble all sections */
+main.innerHTML = introHTML +
+  ALL_LESSONS.map((l,i,arr) => lessonSectionHTML(l,i,arr)).join("") +
+  cheatsheetHTML + finalQuizHTML() + certificateHTML;
+
+/* ======================= INTERACTIONS ======================= */
+
+// Quiz click handling (delegated)
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("button.opt");
+  if(!btn) return;
+  const quizCard = btn.closest(".quiz");
+  if(quizCard.dataset.answered) return;
+  quizCard.dataset.answered = "1";
+  const idx = parseInt(btn.dataset.idx,10);
+  const allOpts = quizCard.querySelectorAll("button.opt");
+  const lessonId = quizCard.id.replace("quiz-","").replace("fq-","");
+  const lessonData = ALL_LESSONS.find(l => l.id === lessonId);
+  const quizData = lessonData ? lessonData.quiz : null;
+  allOpts.forEach((b,i) => {
+    b.disabled = true;
+    if(quizData && i === quizData.correct) b.classList.add("correct");
+    else if(i === idx) b.classList.add("wrong");
+  });
+  const explain = quizCard.querySelector(".explain");
+  if(quizData){
+    explain.textContent = (idx === quizData.correct ? "✅ נכון! " : "❌ לא מדויק. ") + quizData.explain;
+    explain.classList.add("show");
+  }
+  quizCard.dataset.correct = (quizData && idx === quizData.correct) ? "1" : "0";
+
+  // auto-mark lesson done on correct answer (only for per-lesson quiz cards)
+  if(quizCard.id.startsWith("quiz-") && quizData && idx === quizData.correct){
+    markDone(lessonId, true);
+  }
+});
+
+// Mark-done checkboxes
+document.addEventListener("change", (e) => {
+  if(e.target.matches('input[type="checkbox"][data-lesson]')){
+    markDone(e.target.dataset.lesson, e.target.checked);
+  }
+});
+function markDone(id, val){
+  state[id] = val;
+  saveState();
+  refreshBadges();
+  document.querySelectorAll(`input[data-lesson="${id}"]`).forEach(cb => cb.checked = val);
+  updateCertGate();
+}
+
+// Final quiz submit
+document.addEventListener("click", (e) => {
+  if(e.target.id !== "submitFinalQuiz") return;
+  const cards = document.querySelectorAll("#finalQuizList .quiz");
+  let answered = 0, correct = 0;
+  cards.forEach(c => {
+    if(c.dataset.answered){ answered++; if(c.dataset.correct === "1") correct++; }
+  });
+  const total = cards.length;
+  const scoreCard = document.getElementById("finalScoreCard");
+  const scoreText = document.getElementById("finalScoreText");
+  scoreCard.style.display = "block";
+  const pct = total ? Math.round((correct/total)*100) : 0;
+  if(answered < total){
+    scoreText.innerHTML = `ענית על ${answered} מתוך ${total} שאלות. אנא ענו על כל השאלות לפני בדיקת הציון הסופי.`;
+  } else {
+    const pass = pct >= 80;
+    scoreText.innerHTML = `${correct}/${total} תשובות נכונות (${pct}%) — ${pass ? "🎉 עברתם בהצלחה! גשו לתעודת הסיום." : "כדאי לחזור על החומר ולנסות שוב."}`;
+    state["final_quiz_pass"] = pass;
+    saveState();
+    updateCertGate();
+  }
+  scoreCard.scrollIntoView({behavior:"smooth", block:"center"});
+});
+
+function updateCertGate(){
+  const doneTotal = ALL_LESSONS.filter(l => state[l.id]).length;
+  const allDone = doneTotal === TOTAL;
+  const gateText = document.getElementById("certGateText");
+  const certBox = document.getElementById("certBox");
+  const certGate = document.getElementById("certGate");
+  if(!gateText) return;
+  if(allDone){
+    certGate.style.display = "none";
+    certBox.style.display = "block";
+    const savedName = localStorage.getItem(CERT_KEY) || "";
+    const nameInput = document.getElementById("certNameInput");
+    nameInput.value = savedName;
+    document.getElementById("certDate").textContent = new Date().toLocaleDateString("he-IL");
+  } else {
+    certGate.style.display = "block";
+    certBox.style.display = "none";
+    gateText.textContent = `השלמתם ${doneTotal} מתוך ${TOTAL} שיעורים. סיימו את כל השיעורים (סימון "הושלם" בכל שיעור) כדי לפתוח את התעודה.`;
+  }
+}
+document.addEventListener("input", (e) => {
+  if(e.target.id === "certNameInput") localStorage.setItem(CERT_KEY, e.target.value);
+});
+
+/* ======================= ROUTER ======================= */
+function showRoute(route){
+  if(!route) route = "intro";
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  const target = document.getElementById("sec-" + route);
+  if(target) target.classList.add("active");
+  else document.getElementById("sec-intro").classList.add("active");
+
+  document.querySelectorAll("[data-route]").forEach(el => el.classList.remove("active"));
+  document.querySelectorAll(`[data-route="${route}"]`).forEach(el => el.classList.add("active"));
+
+  // auto-open the module containing this lesson
+  const modEntry = ALL_LESSONS.find(l => l.id === route);
+  if(modEntry){
+    const grp = [...document.querySelectorAll(".nav-group")].find(g => g.querySelector(`a[data-route="${route}"]`));
+    if(grp) grp.open = true;
+  }
+  window.scrollTo({top:0, behavior:"instant" in window ? "instant":"auto"});
+  if(route === "certificate" || route === "final-quiz") updateCertGate();
+
+  // close mobile sidebar after navigation
+  document.getElementById("sidebar").classList.remove("open");
+}
+
+document.addEventListener("click", (e) => {
+  const link = e.target.closest("[data-route]");
+  if(link && link.tagName === "A"){
+    e.preventDefault();
+    location.hash = link.dataset.route;
+  }
+  const jump = e.target.closest("[data-jump]");
+  if(jump){
+    location.hash = jump.dataset.jump;
+  }
+});
+window.addEventListener("hashchange", () => showRoute(location.hash.slice(1)));
+
+/* Mobile sidebar toggle */
+document.getElementById("toggleSidebar").addEventListener("click", () => {
+  document.getElementById("sidebar").classList.toggle("open");
+});
+
+/* Search filter */
+document.getElementById("searchBox").addEventListener("input", (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll(".nav-links li").forEach(li => {
+    const text = li.textContent.toLowerCase();
+    li.style.display = text.includes(q) ? "" : "none";
+  });
+  document.querySelectorAll(".nav-group").forEach(g => { if(q) g.open = true; });
+});
+
+/* Init */
+refreshBadges();
+showRoute(location.hash.slice(1) || "intro");
+</script>
+</body>
+</html>
