@@ -14,6 +14,8 @@
   var MAX_SEARCH_DEPTH = 40;
   var TIME_UP = {};
   var DIFFICULTY_TIME_MS = { easy: 1000, medium: 4000, hard: 12000 };
+  var MEMORY_KEY = "chessAiMemoryV1";
+  var MEMORY_MAX_ENTRIES = 3000;
 
   var PST = {
     p: [
@@ -91,6 +93,8 @@
   var playerColorSelect = document.getElementById("playerColor");
   var difficultySelect = document.getElementById("difficulty");
   var searchDepthInfoEl = document.getElementById("searchDepthInfo");
+  var memoryInfoEl = document.getElementById("memoryInfo");
+  var clearMemoryBtn = document.getElementById("clearMemoryBtn");
   var promoOverlay = document.getElementById("promoOverlay");
   var promoOptions = document.getElementById("promoOptions");
 
@@ -344,6 +348,49 @@
     return moves;
   }
 
+  // Position memory: after thinking about a position, the engine remembers the
+  // best move and how deep it searched to find it, keyed by board+turn+castling
+  // +en-passant (ignoring move counters, so the SAME position is recognized
+  // whenever it recurs — in this game or a future one). Next time that exact
+  // position comes up, if the remembered analysis went deeper than this run can
+  // manage in its time budget, the remembered move is trusted instead of
+  // settling for a shallower, weaker move — the engine gets smarter with play
+  // instead of repeating the same mistake every time the pattern recurs.
+  function positionKey(fen) {
+    return fen.split(" ").slice(0, 4).join(" ");
+  }
+
+  function loadMemory() {
+    try {
+      var raw = window.localStorage.getItem(MEMORY_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveMemory(mem) {
+    try {
+      var keys = Object.keys(mem);
+      if (keys.length > MEMORY_MAX_ENTRIES) {
+        keys.sort(function (a, b) { return (mem[a].t || 0) - (mem[b].t || 0); });
+        var toDrop = keys.length - MEMORY_MAX_ENTRIES;
+        for (var i = 0; i < toDrop; i++) delete mem[keys[i]];
+      }
+      window.localStorage.setItem(MEMORY_KEY, JSON.stringify(mem));
+    } catch (e) { /* storage is best-effort */ }
+  }
+
+  function memoryCount() {
+    return Object.keys(loadMemory()).length;
+  }
+
+  function updateMemoryInfo() {
+    if (memoryInfoEl) {
+      memoryInfoEl.textContent = "המחשב זוכר " + memoryCount() + " עמדות שכבר ניתח";
+    }
+  }
+
   var searchStartTime = 0;
   var searchNodeCount = 0;
   var searchTimeBudget = 3000;
@@ -444,6 +491,7 @@
 
     var maximizing = computerColor === "w";
     var bestMove = null;
+    var bestScore = 0;
     var depthReached = 0;
 
     for (var depth = 1; depth <= MAX_SEARCH_DEPTH; depth++) {
@@ -478,12 +526,33 @@
       if (aborted || !localBestMove) break;
 
       bestMove = localBestMove;
+      bestScore = localBestScore;
       depthReached = depth;
 
       if (Math.abs(localBestScore) > MATE_SCORE - 1000) break;
     }
 
-    return { move: bestMove, depth: depthReached };
+    var key = positionKey(game.fen());
+    var memory = loadMemory();
+    var remembered = memory[key];
+    var fromMemory = false;
+
+    if (remembered && remembered.d > depthReached) {
+      var rememberedMove = orderedMoves().filter(function (m) { return m.san === remembered.m; })[0];
+      if (rememberedMove) {
+        bestMove = rememberedMove;
+        bestScore = remembered.s;
+        depthReached = remembered.d;
+        fromMemory = true;
+      }
+    }
+
+    if (!fromMemory && bestMove && (!remembered || depthReached >= remembered.d)) {
+      memory[key] = { m: bestMove.san, d: depthReached, s: bestScore, t: Date.now() };
+      saveMemory(memory);
+    }
+
+    return { move: bestMove, depth: depthReached, fromMemory: fromMemory };
   }
 
   function triggerComputerMove() {
@@ -506,8 +575,11 @@
       }
 
       if (result.depth) {
-        searchDepthInfoEl.textContent = "עומק חיפוש אחרון: " + result.depth + " מהלכים קדימה";
+        searchDepthInfoEl.textContent = result.fromMemory
+          ? "🧠 מהלך מהזיכרון (נותח בעבר לעומק " + result.depth + ")"
+          : "עומק חיפוש אחרון: " + result.depth + " מהלכים קדימה";
       }
+      updateMemoryInfo();
 
       animating = false;
       afterMove();
@@ -562,5 +634,13 @@
     if (vsComputer) resetGame();
   });
 
+  clearMemoryBtn.addEventListener("click", function () {
+    try {
+      window.localStorage.removeItem(MEMORY_KEY);
+    } catch (e) { /* best-effort */ }
+    updateMemoryInfo();
+  });
+
+  updateMemoryInfo();
   renderAll();
 })();
