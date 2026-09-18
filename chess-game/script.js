@@ -87,6 +87,8 @@
   var resetBtn = document.getElementById("resetBtn");
   var flipBtn = document.getElementById("flipBtn");
   var vsComputerCheckbox = document.getElementById("vsComputer");
+  var colorChoiceRow = document.getElementById("colorChoiceRow");
+  var playerColorSelect = document.getElementById("playerColor");
   var difficultySelect = document.getElementById("difficulty");
   var searchDepthInfoEl = document.getElementById("searchDepthInfo");
   var promoOverlay = document.getElementById("promoOverlay");
@@ -533,6 +535,10 @@
     clearSelection();
     lastMove = null;
     renderAll();
+
+    if (vsComputer && !game.game_over() && game.turn() === computerColor) {
+      setTimeout(triggerComputerMove, 300);
+    }
   });
 
   resetBtn.addEventListener("click", resetGame);
@@ -544,8 +550,16 @@
 
   vsComputerCheckbox.addEventListener("change", function () {
     vsComputer = vsComputerCheckbox.checked;
-    computerColor = "b";
+    colorChoiceRow.hidden = !vsComputer;
+    computerColor = playerColorSelect.value === "w" ? "b" : "w";
+    flipped = playerColorSelect.value === "b";
     resetGame();
+  });
+
+  playerColorSelect.addEventListener("change", function () {
+    computerColor = playerColorSelect.value === "w" ? "b" : "w";
+    flipped = playerColorSelect.value === "b";
+    if (vsComputer) resetGame();
   });
 
   renderAll();
