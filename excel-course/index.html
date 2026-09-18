@@ -905,15 +905,23 @@ function showRoute(route){
   document.getElementById("sidebar").classList.remove("open");
 }
 
+function navigate(route){
+  // replaceState (not location.hash=) so in-course navigation never
+  // pushes browser history entries — the back button leaves the course
+  // instead of stepping backward through its lessons.
+  history.replaceState(null, "", "#" + route);
+  showRoute(route);
+}
+
 document.addEventListener("click", (e) => {
   const link = e.target.closest("[data-route]");
   if(link && link.tagName === "A"){
     e.preventDefault();
-    location.hash = link.dataset.route;
+    navigate(link.dataset.route);
   }
   const jump = e.target.closest("[data-jump]");
   if(jump){
-    location.hash = jump.dataset.jump;
+    navigate(jump.dataset.jump);
   }
 });
 window.addEventListener("hashchange", () => showRoute(location.hash.slice(1)));
