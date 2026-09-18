@@ -93,8 +93,6 @@
   var playerColorSelect = document.getElementById("playerColor");
   var difficultySelect = document.getElementById("difficulty");
   var searchDepthInfoEl = document.getElementById("searchDepthInfo");
-  var memoryInfoEl = document.getElementById("memoryInfo");
-  var clearMemoryBtn = document.getElementById("clearMemoryBtn");
   var promoOverlay = document.getElementById("promoOverlay");
   var promoOptions = document.getElementById("promoOptions");
 
@@ -381,16 +379,6 @@
     } catch (e) { /* storage is best-effort */ }
   }
 
-  function memoryCount() {
-    return Object.keys(loadMemory()).length;
-  }
-
-  function updateMemoryInfo() {
-    if (memoryInfoEl) {
-      memoryInfoEl.textContent = "המחשב זוכר " + memoryCount() + " עמדות שכבר ניתח";
-    }
-  }
-
   var searchStartTime = 0;
   var searchNodeCount = 0;
   var searchTimeBudget = 3000;
@@ -575,11 +563,8 @@
       }
 
       if (result.depth) {
-        searchDepthInfoEl.textContent = result.fromMemory
-          ? "🧠 מהלך מהזיכרון (נותח בעבר לעומק " + result.depth + ")"
-          : "עומק חיפוש אחרון: " + result.depth + " מהלכים קדימה";
+        searchDepthInfoEl.textContent = "עומק חיפוש אחרון: " + result.depth + " מהלכים קדימה";
       }
-      updateMemoryInfo();
 
       animating = false;
       afterMove();
@@ -634,13 +619,5 @@
     if (vsComputer) resetGame();
   });
 
-  clearMemoryBtn.addEventListener("click", function () {
-    try {
-      window.localStorage.removeItem(MEMORY_KEY);
-    } catch (e) { /* best-effort */ }
-    updateMemoryInfo();
-  });
-
-  updateMemoryInfo();
   renderAll();
 })();
