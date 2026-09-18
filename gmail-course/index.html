@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>קורס Gmail מלא — ממתחילים ועד מקצוענים</title>
+<style>
+  :root{
+    --brand:#D93025;
+    --brand-dark:#B3261E;
+    --brand-light:#FCE8E6;
+    --blue:#1A73E8;
+    --ink:#232323;
+    --muted:#666;
+    --paper:#FAFAFA;
+    --card:#FFFFFF;
+    --border:#E3E3E3;
+    --green:#1E8E3E;
+    --green-bg:#E6F4EA;
+    --red:#C23B22;
+    --red-bg:#FCEAE6;
+    --radius:14px;
+    --sidebar-w:300px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Segoe UI","Heebo","Arial Hebrew","Arial",sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    line-height:1.65;
+  }
+  a{color:var(--blue);}
+  h1,h2,h3,h4{line-height:1.3; margin:0 0 .5em;}
+  ::selection{background:var(--brand-light);}
+
+  /* Layout */
+  .app{display:flex; min-height:100vh;}
+  .sidebar{
+    width:var(--sidebar-w); flex:0 0 var(--sidebar-w);
+    background:#20242A; color:#EDEFF2;
+    position:sticky; top:0; height:100vh; overflow-y:auto;
+    padding:18px 16px 40px;
+  }
+  .sidebar .brand{
+    display:flex; align-items:center; gap:10px; margin-bottom:16px;
+    padding:4px 2px;
+  }
+  .brand .logo{
+    width:34px;height:34px;border-radius:8px;
+    background:linear-gradient(135deg,var(--brand),#F6AA1C);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;color:#fff;font-size:18px;flex:none;
+  }
+  .brand .name{font-weight:700; font-size:15px;}
+  .brand .sub{font-size:11.5px; color:#A9B0B8;}
+
+  .progress-wrap{margin:10px 2px 18px;}
+  .progress-label{display:flex; justify-content:space-between; font-size:12px; color:#B7BEC5; margin-bottom:5px;}
+  .progress-bar{height:8px; background:#2E333A; border-radius:99px; overflow:hidden;}
+  .progress-fill{height:100%; background:linear-gradient(90deg,var(--brand),#F6AA1C); width:0%; transition:width .4s ease;}
+
+  .search{
+    width:100%; padding:8px 10px; border-radius:9px; border:1px solid #3A404A;
+    background:#282D34; color:#EDEFF2; font-size:13px; margin-bottom:14px;
+  }
+  .search::placeholder{color:#82898F;}
+
+  .nav-group{margin-bottom:6px;}
+  .nav-group > summary{
+    cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px;
+    padding:9px 8px; border-radius:9px; font-weight:700; font-size:13.5px;
+    color:#EDEFF2;
+  }
+  .nav-group > summary::-webkit-details-marker{display:none;}
+  .nav-group > summary:hover{background:#282D34;}
+  .nav-group[open] > summary .chev{transform:rotate(90deg);}
+  .chev{transition:transform .15s; font-size:11px; color:#B7BEC5;}
+  .nav-group .badge{
+    margin-inline-start:auto; font-size:10.5px; color:#B7BEC5;
+    background:#282D34; padding:1px 7px; border-radius:99px;
+  }
+  .nav-links{list-style:none; margin:2px 0 10px; padding-inline-start:6px; border-inline-start:1px dashed #3A404A;}
+  .nav-links li{margin:1px 0;}
+  .nav-links a{
+    display:flex; align-items:center; gap:7px; text-decoration:none;
+    color:#CDD2D8; font-size:13px; padding:6px 10px; border-radius:8px;
+  }
+  .nav-links a:hover{background:#282D34; color:#fff;}
+  .nav-links a.active{background:var(--brand); color:#fff; font-weight:600;}
+  .nav-links .dot{
+    width:15px;height:15px;border-radius:50%;border:1.5px solid #656C73;flex:none;
+    font-size:10px; display:flex; align-items:center; justify-content:center; color:transparent;
+  }
+  .nav-links a.done .dot{background:var(--green); border-color:var(--green); color:#fff;}
+  .extra-links{margin-top:14px; padding-top:14px; border-top:1px solid #3A404A;}
+  .extra-links a{
+    display:flex; align-items:center; gap:8px; text-decoration:none; color:#CDD2D8;
+    font-size:13px; padding:7px 10px; border-radius:8px;
+  }
+  .extra-links a:hover{background:#282D34; color:#fff;}
+  .extra-links a.active{background:var(--brand); color:#fff;}
+
+  /* Main */
+  .main{flex:1; min-width:0; padding:34px 40px 90px; max-width:900px; margin:0 auto;}
+  .section{display:none; animation:fade .25s ease;}
+  .section.active{display:block;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+
+  .crumb{font-size:12.5px; color:var(--muted); margin-bottom:6px;}
+  .lesson-title{font-size:28px; font-weight:800; margin-bottom:4px;}
+  .lesson-meta{font-size:13px; color:var(--muted); margin-bottom:22px; display:flex; gap:14px; align-items:center;}
+
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+    padding:20px 22px; margin-bottom:18px;
+  }
+  .card h3{font-size:16px; color:var(--brand-dark); margin-bottom:8px;}
+  .content-body p{margin:0 0 12px;}
+  .content-body ul{margin:0 0 12px; padding-inline-start:22px;}
+  .content-body li{margin-bottom:6px;}
+  .content-body strong{color:var(--brand-dark);}
+  code, kbd{
+    background:#F1F1F1; border:1px solid var(--border); border-radius:5px;
+    padding:1px 6px; font-size:.92em; font-family:Consolas,"Courier New",monospace;
+  }
+  kbd{box-shadow:0 1.5px 0 var(--border);}
+
+  .tip-box{
+    background:var(--brand-light); border:1px solid #F3C6C0; border-radius:12px;
+    padding:14px 16px; margin:14px 0; font-size:14px;
+  }
+  .tip-box b{color:var(--brand-dark);}
+  .try-box{
+    background:#E8F0FE; border:1px solid #C6D9F7; border-radius:12px;
+    padding:14px 16px; margin:14px 0; font-size:14px;
+  }
+  .try-box b{color:var(--blue);}
+
+  .quiz{background:#FDFBFA; border:1.5px dashed #E7C3BD;}
+  .quiz h3{margin-bottom:12px;}
+  .quiz .q{font-weight:600; margin-bottom:10px;}
+  .quiz .opts{display:flex; flex-direction:column; gap:8px;}
+  .quiz button.opt{
+    text-align:right; padding:10px 14px; border-radius:9px; border:1px solid var(--border);
+    background:#fff; cursor:pointer; font-size:14px; font-family:inherit;
+  }
+  .quiz button.opt:hover{border-color:var(--brand);}
+  .quiz button.opt.correct{background:var(--green-bg); border-color:var(--green); color:var(--green);}
+  .quiz button.opt.wrong{background:var(--red-bg); border-color:var(--red); color:var(--red);}
+  .quiz button.opt:disabled{cursor:default;}
+  .quiz .explain{margin-top:10px; font-size:13.5px; color:var(--muted); display:none;}
+  .quiz .explain.show{display:block;}
+
+  .lesson-footer{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    margin-top:28px; padding-top:18px; border-top:1px solid var(--border);
+  }
+  .btn{
+    display:inline-flex; align-items:center; gap:6px; cursor:pointer; border:none;
+    border-radius:10px; padding:10px 16px; font-size:14px; font-weight:600; font-family:inherit;
+    text-decoration:none;
+  }
+  .btn-primary{background:var(--brand); color:#fff;}
+  .btn-primary:hover{background:var(--brand-dark);}
+  .btn-outline{background:#fff; border:1px solid var(--border); color:var(--ink);}
+  .btn-outline:hover{border-color:var(--brand);}
+  .btn-ghost{background:transparent; color:var(--muted); border:none; font-size:13px;}
+  .mark-done{display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--muted); cursor:pointer; user-select:none;}
+  .mark-done input{width:17px; height:17px; accent-color:var(--green); cursor:pointer;}
+
+  .hero{
+    background:linear-gradient(135deg,var(--brand),#F6AA1C);
+    color:#fff; border-radius:20px; padding:44px 38px; margin-bottom:26px;
+  }
+  .hero h1{font-size:32px; margin-bottom:10px;}
+  .hero p{font-size:15.5px; max-width:640px; opacity:.95;}
+  .hero .stats{display:flex; gap:26px; margin-top:22px; flex-wrap:wrap;}
+  .hero .stat b{display:block; font-size:22px;}
+  .hero .stat span{font-size:12.5px; opacity:.9;}
+
+  .grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:20px 0;}
+  .grid-2{display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin:20px 0;}
+  .mini-card{
+    background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px;
+    cursor:pointer;
+  }
+  .mini-card:hover{border-color:var(--brand);}
+  .mini-card .n{font-size:12px; color:var(--muted);}
+  .mini-card .t{font-weight:700; font-size:14.5px; margin:3px 0;}
+  .mini-card .d{font-size:12.5px; color:var(--muted);}
+
+  table.cheat{width:100%; border-collapse:collapse; font-size:13.5px; margin-bottom:20px;}
+  table.cheat th, table.cheat td{border:1px solid var(--border); padding:8px 12px; text-align:right;}
+  table.cheat th{background:var(--brand-light); color:var(--brand-dark);}
+  table.cheat tr:nth-child(even){background:#FAFAFA;}
+
+  .cert-box{
+    background:var(--card); border:3px double var(--brand); border-radius:16px;
+    padding:40px; text-align:center; margin-top:10px;
+  }
+  .cert-box h2{font-size:26px; color:var(--brand-dark);}
+  .cert-name{font-size:24px; font-weight:800; margin:18px 0; border-bottom:2px solid var(--border); display:inline-block; padding-bottom:6px; min-width:280px;}
+  .cert-input{padding:10px 14px; border:1px solid var(--border); border-radius:9px; font-size:15px; width:280px; text-align:center; font-family:inherit;}
+
+  .topbar-mobile{display:none;}
+  @media (max-width:900px){
+    .app{flex-direction:column;}
+    .sidebar{
+      position:relative; height:auto; width:100%; flex:none;
+      display:none;
+    }
+    .sidebar.open{display:block;}
+    .topbar-mobile{
+      display:flex; align-items:center; justify-content:space-between;
+      background:#20242A; color:#fff; padding:12px 16px; position:sticky; top:0; z-index:10;
+    }
+    .topbar-mobile button{background:var(--brand); color:#fff; border:none; border-radius:8px; padding:8px 12px; font-size:13px;}
+    .main{padding:24px 18px 70px;}
+    .grid-3{grid-template-columns:1fr;}
+    .grid-2{grid-template-columns:1fr;}
+    .hero{padding:28px 22px;}
+  }
+  @media print{
+    .sidebar,.topbar-mobile,.lesson-footer,.quiz{display:none !important;}
+    .section{display:block !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar-mobile">
+  <strong>✉️ קורס Gmail</strong>
+  <button id="toggleSidebar">☰ תפריט</button>
+</div>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="logo">G</div>
+      <div>
+        <div class="name">קורס Gmail מלא</div>
+        <div class="sub">ממתחילים ועד מקצוענים</div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-label"><span>התקדמות</span><span id="progressPct">0%</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <input type="text" class="search" id="searchBox" placeholder="🔍 חיפוש נושא בקורס...">
+
+    <nav id="navContainer"></nav>
+
+    <div class="extra-links">
+      <a href="#intro" data-route="intro">🏠 עמוד הבית</a>
+      <a href="#cheatsheet" data-route="cheatsheet">⌨️ דף קיצורים להדפסה</a>
+      <a href="#final-quiz" data-route="final-quiz">🎯 מבחן מסכם</a>
+      <a href="#certificate" data-route="certificate">🎓 תעודת סיום</a>
+    </div>
+  </aside>
+
+  <main class="main" id="mainContent">
+    <!-- rendered by JS -->
+  </main>
+</div>
+
+<script>
+/* ======================= COURSE DATA ======================= */
+const COURSE = [
+  {
+    id:"m1", title:"שלב 1 · מתחילים", icon:"🟢",
+    lessons:[
+      {
+        id:"m1l1", title:"הכרת הממשק",
+        content:`
+          <p>Gmail הוא שירות הדואר האלקטרוני של Google, נגיש דרך דפדפן בכתובת mail.google.com או דרך אפליקציית הנייד. המסך הראשי בנוי מכמה אזורים קבועים:</p>
+          <ul>
+            <li><strong>כפתור Compose (חיבור)</strong> — למעלה בצד, כתום/אדום, פותח חלון כתיבת מייל חדש.</li>
+            <li><strong>סרגל צד</strong> — רשימת תיקיות/תוויות: Inbox (דואר נכנס), Starred (מסומן בכוכב), Sent (נשלח), Drafts (טיוטות), Trash (אשפה).</li>
+            <li><strong>שורת חיפוש</strong> — למעלה במרכז, מחפשת בכל תיבת הדואר.</li>
+            <li><strong>כרטיסיות תיבת הדואר</strong> — Primary (עיקרי), Social, Promotions — ממיינות מיילים נכנסים אוטומטית לפי סוג.</li>
+            <li><strong>סמלי הגדרות (גלגל שיניים) ואפליקציות Google</strong> — בפינה הימנית-עליונה.</li>
+          </ul>
+        `,
+        tip:`לחצו על סמל השאלה (?) או גלגל השיניים → See all settings כדי לחקור את כל אפשרויות ההתאמה האישית.`,
+        quiz:{q:"מה עושה כפתור ה-Compose?", options:["פותח חלון לכתיבת מייל חדש","מוחק את כל המיילים","פותח את ההגדרות"], correct:0, explain:"Compose הוא הכפתור הבולט שפותח חלון עריכה חדש לכתיבת הודעת דוא\"ל."}
+      },
+      {
+        id:"m1l2", title:"כתיבה ומענה למיילים",
+        content:`
+          <p>בחלון הכתיבה יש כמה שדות חשובים:</p>
+          <ul>
+            <li><strong>To</strong> — נמענים ראשיים. <strong>Cc</strong> — עותק גלוי לנמענים נוספים. <strong>Bcc</strong> — עותק סמוי, הנמענים לא רואים זה את זה.</li>
+            <li><strong>Reply</strong> — תשובה לשולח בלבד. <strong>Reply All</strong> — תשובה לכל מי שהיה בשרשור. <strong>Forward</strong> — העברת המייל לנמען חדש.</li>
+            <li>Gmail שומר <strong>טיוטה (Draft)</strong> אוטומטית תוך כדי כתיבה — אפשר לצאת ולחזור בלי לאבד את הטקסט.</li>
+            <li>מיילים מתקבצים אוטומטית לשיחה (<strong>Conversation View</strong>) — כל התכתובת באותו נושא מוצגת יחד.</li>
+          </ul>
+        `,
+        tip:`לפני שלוחצים Reply All בקבוצה גדולה — עצרו לבדוק שכולם באמת צריכים לקבל את התשובה, כדי לא "להציף" תיבות דואר בטעות.`,
+        quiz:{q:"מה ההבדל בין Cc ל-Bcc?", options:["אין הבדל","ב-Bcc הנמענים לא רואים מי עוד קיבל את המייל","Cc הוא לצירוף קבצים בלבד"], correct:1, explain:"נמעני Cc גלויים לכולם; נמעני Bcc (עותק סמוי) מוסתרים משאר הנמענים."}
+      },
+      {
+        id:"m1l3", title:"צירופים וחתימה",
+        content:`
+          <p>בתחתית חלון הכתיבה יש סרגל אייקונים לצירוף תוכן:</p>
+          <ul>
+            <li><strong>סיכת נייר</strong> — צירוף קובץ מהמחשב.</li>
+            <li><strong>אייקון Drive</strong> — צירוף קובץ ישירות מ-Google Drive, בלי להוריד אותו קודם למחשב.</li>
+            <li><strong>חתימה קבועה</strong> — Settings → See all settings → General → Signature: טקסט (ולעיתים לוגו) שמתווסף אוטומטית לכל מייל חדש.</li>
+            <li>הגבלת גודל צירוף בג'ימייל: עד 25MB; מעל זה Gmail מציע אוטומטית קישור Drive במקום צירוף ישיר.</li>
+          </ul>
+        `,
+        tip:`צרפו קבצים גדולים (וידאו, מצגות כבדות) תמיד דרך Drive ולא כקובץ ישיר — כך גם חוסכים מקום וגם שולטים בהרשאות הצפייה.`,
+        quiz:{q:"מה קורה כשמנסים לצרף קובץ מעל 25MB?", options:["המייל לא נשלח בכלל","Gmail מציע אוטומטית לשתף קישור Drive במקומו","הקובץ נדחס אוטומטית"], correct:1, explain:"Gmail מזהה קבצים כבדים מדי לצירוף ישיר ומציע להעלות אותם ל-Drive ולשתף קישור במקום."}
+      },
+      {
+        id:"m1l4", title:"ניהול בסיסי של תיבת הדואר",
+        content:`
+          <p>כלים בסיסיים לניקוי וארגון תיבת הדואר (מופיעים כאייקונים מעל רשימת המיילים):</p>
+          <ul>
+            <li><strong>Archive (ארכוב)</strong> — מסיר מהתיבה הנכנסת אך שומר את המייל (נגיש דרך חיפוש או "All Mail"). לא מוחק כלום.</li>
+            <li><strong>Delete (מחיקה)</strong> — מעביר לתיקיית Trash, שם המייל נמחק לצמיתות אחרי 30 יום.</li>
+            <li><strong>Mark as read / unread</strong> — סימון מצב קריאה, שימושי כדי "לשריין" מייל לטיפול מאוחר יותר.</li>
+            <li><strong>Star (כוכב)</strong> — סימון מיילים חשובים לגישה מהירה מהתפריט הצדי.</li>
+          </ul>
+        `,
+        tip:`הרגל טוב: Archive למיילים שטופלו וייתכן שתצטרכו לחפש שוב, Delete רק למיילים שבאמת לא רלוונטיים בכלל (ספאם, זבל).`,
+        quiz:{q:"מה ההבדל בין Archive ל-Delete?", options:["Archive מוחק לצמיתות מיד","Archive רק מסיר מהתיבה הנכנסת אך שומר את המייל, Delete מעביר לאשפה למחיקה","אין הבדל בפועל"], correct:1, explain:"Archive רק 'שם בצד' — המייל עדיין קיים וניתן לחיפוש. Delete מעביר לתיקיית Trash, שם הוא נמחק לצמיתות אחרי 30 יום."}
+      },
+      {
+        id:"m1l5", title:"חיפוש בסיסי",
+        content:`
+          <p>שורת החיפוש בראש המסך היא אחד הכלים החזקים ביותר בג'ימייל — מחפשת בכל תיבת הדואר, כולל מיילים שהוארכבו:</p>
+          <ul>
+            <li>חיפוש חופשי — הקלדת מילת מפתח מחפשת בנושא, בגוף המייל ובשם השולח.</li>
+            <li>לחיצה על סמל ההגדרות הקטן (Show search options) בתוך שורת החיפוש פותחת חיפוש מונחה עם שדות: מאת, אל, נושא, תאריך, האם יש צירוף.</li>
+            <li>תוצאות החיפוש ניתנות לסינון נוסף לפי "יש בהן צירוף בלבד" או טווח תאריכים.</li>
+          </ul>
+        `,
+        tip:`אם אתם לא זוכרים בדיוק את מילות המפתח — חפשו לפי שם השולח, זה כמעט תמיד עובד.`,
+        quiz:{q:"האם חיפוש בג'ימייל מוצא גם מיילים שהוארכבו?", options:["לא, רק מיילים בתיבה הנכנסת","כן, החיפוש סורק את כל תיבת הדואר כולל מיילים שהוארכבו","רק אם מסמנים אותם בכוכב קודם"], correct:1, explain:"Archive רק מסיר מהתצוגה הראשית — המייל עדיין נמצא ונגיש דרך חיפוש בכל תיבת הדואר."}
+      },
+      {
+        id:"m1l6", title:"אבטחה בסיסית וזיהוי פישינג",
+        content:`
+          <p>כמה הרגלי אבטחה חיוניים כבר מהיום הראשון:</p>
+          <ul>
+            <li>סיסמה חזקה וייחודית לחשבון Google, ולא לשתף אותה עם אף אחד.</li>
+            <li><strong>זיהוי פישינג</strong> — דגלים אדומים: כתובת שולח שלא תואמת את השם המוצג, דחיפות מלאכותית ("החשבון שלך ייחסם תוך שעה"), בקשה להזין סיסמה בקישור חיצוני.</li>
+            <li>כפתור <strong>Report phishing / Report spam</strong> (בתפריט שלוש הנקודות מעל המייל הפתוח) — מדווח ל-Google ומסייע לסנן מיילים דומים בעתיד לכולם.</li>
+            <li>Gmail מציג אזהרה אוטומטית ("Be careful with this message") כשהוא מזהה סימני פישינג — לא להתעלם ממנה.</li>
+          </ul>
+        `,
+        tip:`כלל אצבע: Google (או כל שירות אמיתי) לעולם לא יבקש מכם סיסמה במייל. אם מבקשים — זה כמעט תמיד פישינג.`,
+        quiz:{q:"מה עושה הכפתור 'Report phishing'?", options:["מוחק את המייל בלבד","מדווח ל-Google ומסייע לשפר את הסינון לכולם","שולח תשובה אוטומטית לשולח"], correct:1, explain:"דיווח פישינג לא רק מטפל במייל הבודד — הוא מזין את מנגנוני הזיהוי האוטומטיים של Google לטובת כלל המשתמשים."}
+      }
+    ]
+  },
+  {
+    id:"m2", title:"שלב 2 · בינוני", icon:"🟡",
+    lessons:[
+      {
+        id:"m2l1", title:"תוויות (Labels) וארגון",
+        content:`
+          <p>בניגוד לתוכנות דואר ישנות, Gmail לא באמת משתמש ב"תיקיות" — הוא משתמש ב<strong>תוויות (Labels)</strong>. ההבדל המהותי: אותו מייל יכול לשאת כמה תוויות בו-זמנית, בלי לשכפל אותו.</p>
+          <ul>
+            <li>יצירת תווית — סרגל צד → Labels → Create new label, או מתוך מייל פתוח → אייקון התווית.</li>
+            <li>תוויות מקוננות (Nested Labels) — יצירת תת-תווית בתוך תווית קיימת, ליצירת היררכיה (למשל: פרויקטים/פרויקט א׳).</li>
+            <li>צביעת תווית — לחיצה על שלוש הנקודות ליד שם התווית בסרגל הצד → Label color.</li>
+            <li>הצגה/הסתרה של תווית מסרגל הצד — שימושי לתוויות שמשמשות בעיקר לסינון אוטומטי ולא לניווט יומיומי.</li>
+          </ul>
+        `,
+        tip:`שקלו מוסכמת שמות עקבית לתוויות (לדוגמה: "לקוחות/שם-לקוח") כדי שהחיפוש וההיררכיה יישארו ברורים גם אחרי מאות תוויות.`,
+        quiz:{q:"מה ההבדל העיקרי בין 'תווית' (Label) ל'תיקייה' מסורתית?", options:["אין הבדל בפועל","למייל אחד יכולות להיות כמה תוויות בו-זמנית, בלי לשכפל אותו","תוויות אפשר להשתמש בהן רק פעם אחת"], correct:1, explain:"תיקייה מסורתית מכילה כל קובץ במקום אחד; תווית היא יותר כמו 'תג' — אפשר להצמיד כמה תוויות לאותו מייל בו-זמנית."}
+      },
+      {
+        id:"m2l2", title:"מסננים אוטומטיים (Filters)",
+        content:`
+          <p>Filter הוא כלל אוטומטי: "כשמגיע מייל שעונה על תנאי X — בצע פעולה Y" בלי מגע יד.</p>
+          <ul>
+            <li>יצירה — לחצו על החץ הקטן בתוך שורת החיפוש כדי להגדיר קריטריון, ואז <strong>Create filter</strong>.</li>
+            <li>פעולות אפשריות: דלג על תיבה נכנסת (Skip Inbox / Archive), החל תווית, סמן כנקרא, מחק, העבר לתמיד, סמן כחשוב או לא-חשוב.</li>
+            <li>שימוש נפוץ: כל הניוזלטרים מגיעים ישירות לתווית "לקריאה מאוחרת" ומדלגים על התיבה הנכנסת, כדי לשמור עליה נקייה.</li>
+            <li>ניהול וכל המסננים הקיימים — Settings → Filters and Blocked Addresses.</li>
+          </ul>
+        `,
+        tip:`התחילו כל מסנן חדש מחיפוש אמיתי בתיבת החיפוש כדי לוודא שהתנאי באמת תופס את המיילים הנכונים, ורק אז הפכו אותו לפילטר קבוע.`,
+        quiz:{q:"מה עושה פעולת 'Skip Inbox' בפילטר?", options:["מוחק את המייל מיד","מונע מהמייל להופיע בתיבה הנכנסת הראשית, בלי למחוק אותו","שולח תגובה אוטומטית"], correct:1, explain:"Skip Inbox (המכונה גם Archive בפילטר) מעביר את המייל ישר הלאה מבלי שיפריע בתיבה הנכנסת, אך הוא עדיין קיים וניתן למצוא אותו."}
+      },
+      {
+        id:"m2l3", title:"אופרטורים מתקדמים בחיפוש",
+        content:`
+          <p>חיפוש מדויק חוסך זמן רב. אופרטורים שימושיים שמקלידים ישירות בשורת החיפוש:</p>
+          <ul>
+            <li><code>from:</code> ו-<code>to:</code> — לפי שולח/נמען, למשל <code>from:danny</code>.</li>
+            <li><code>subject:</code> — חיפוש רק בשורת הנושא.</li>
+            <li><code>has:attachment</code> — רק מיילים עם צירוף. <code>filename:pdf</code> — צירוף מסוג ספציפי.</li>
+            <li><code>before:</code> / <code>after:</code> — טווח תאריכים, פורמט <code>YYYY/MM/DD</code>.</li>
+            <li><code>OR</code> — לפחות אחד מהתנאים. סימן <code>-</code> לפני מילה — החרגה (לא כולל).</li>
+            <li>שילוב: <code>from:danny has:attachment after:2025/01/01</code> — מיילים מדני, עם צירוף, מתחילת 2025.</li>
+          </ul>
+        `,
+        tip:`כל אופרטור חיפוש שכתבתם אפשר להפוך מיד לפילטר קבוע — פשוט לחצו על החץ בשורת החיפוש אחרי שהתוצאות נראות נכון.`,
+        quiz:{q:"מה מחזיר חיפוש עם has:attachment?", options:["רק מיילים לא נקראו","רק מיילים שיש בהם קובץ מצורף","רק מיילים מהיום"], correct:1, explain:"has:attachment מסנן ומציג אך ורק מיילים שכוללים קובץ מצורף כלשהו."}
+      },
+      {
+        id:"m2l4", title:"כרטיסיות תיבת הדואר והתראות",
+        content:`
+          <p>ברירת המחדל בג'ימייל ממיינת מיילים נכנסים לכרטיסיות אוטומטית:</p>
+          <ul>
+            <li><strong>Primary</strong> — התכתבויות אישיות ועסקיות רגילות.</li>
+            <li><strong>Social</strong> — עדכונים מרשתות חברתיות.</li>
+            <li><strong>Promotions</strong> — פרסומות ומבצעים.</li>
+            <li><strong>Updates</strong> ו-<strong>Forums</strong> — אופציונליים, אישורי הזמנות/חשבוניות ורשימות תפוצה בהתאמה.</li>
+            <li>הפעלה/כיבוי כרטיסיות — סמל ההגדרות → Configure inbox. אפשר גם לגרור מייל בין כרטיסיות כדי "ללמד" את Gmail לסווג אותו אחרת בעתיד.</li>
+            <li>הגדרות התראות (דסקטופ/נייד) — Settings → General → Desktop notifications, או באפליקציית הנייד תחת Notifications.</li>
+          </ul>
+        `,
+        tip:`אם כרטיסיית Promotions "בולעת" מיילים חשובים בטעות — גררו מייל אחד ל-Primary ולחצו Yes כשג'ימייל שואל אם לעשות זאת גם לעתיד.`,
+        quiz:{q:"מה עוזרת ההפרדה לכרטיסיות (Primary/Social/Promotions)?", options:["למחוק ספאם אוטומטית","למיין מיילים נכנסים לפי סוג כדי לשמור על ה-Primary נקי", "להצפין את המיילים"], correct:1, explain:"הכרטיסיות ממיינות אוטומטית לפי סוג תוכן, כדי שהתכתובות החשובות ב-Primary לא יטבעו בפרסומות ועדכוני רשתות."}
+      },
+      {
+        id:"m2l5", title:"שילוב עם Calendar, Drive ו-Meet",
+        content:`
+          <p>Gmail משולב עמוקות עם שאר Google Workspace:</p>
+          <ul>
+            <li><strong>הוספה ליומן</strong> — Gmail מזהה אוטומטית הזמנות/תאריכים במייל ומציע כפתור "Add to Calendar".</li>
+            <li><strong>סרגל צד ימני (Side Panel)</strong> — גישה מהירה ל-Calendar, Keep, Tasks ו-Contacts בלי לצאת מהמייל.</li>
+            <li><strong>Google Meet</strong> — אפשר להתחיל שיחת וידאו ישירות מהסרגל הצדי או מהזמנת יומן שנשלחה במייל.</li>
+            <li>צירוף קבצי Drive במקום קבצים כבדים (כפי שנלמד בשיעור 1.3), כולל שליטה בהרשאות הצפייה ישירות מחלון הצירוף.</li>
+          </ul>
+        `,
+        tip:`הסרגל הצדי הימני ניתן לפתוח/לסגור לפי הצורך — שימושי כשעובדים על שני מסכים ורוצים למקסם את שטח הקריאה.`,
+        quiz:{q:"מה מאפשר הסרגל הצדי הימני ב-Gmail?", options:["רק לשנות ערכת נושא","גישה מהירה ל-Calendar, Tasks ו-Keep בלי לצאת מהמייל","למחוק מיילים בכמות"], correct:1, explain:"הסרגל הצדי הימני מרכז כלי Workspace נוספים (יומן, משימות, פתקים) לגישה מהירה מבלי לעזוב את תצוגת הדואר."}
+      },
+      {
+        id:"m2l6", title:"אנשי קשר וקבוצות תפוצה",
+        content:`
+          <p><strong>Google Contacts</strong> (contacts.google.com, נגיש גם מתפריט האפליקציות של Google) מנהל את כל אנשי הקשר שלכם:</p>
+          <ul>
+            <li>יצירת איש קשר חדש, עריכת פרטים, מיזוג כפילויות אוטומטי (Merge duplicates).</li>
+            <li><strong>תוויות אנשי קשר (Labels/Groups)</strong> — קיבוץ אנשי קשר לקטגוריה, למשל "צוות שיווק".</li>
+            <li>שליחת מייל לקבוצה שלמה — בשדה To, הקלידו את שם התווית/הקבוצה ו-Gmail ישלים אוטומטית את כל הכתובות.</li>
+            <li>ייבוא/ייצוא אנשי קשר בפורמט CSV — שימושי למעבר בין שירותים או לגיבוי.</li>
+          </ul>
+        `,
+        tip:`לפני שליחה לקבוצה גדולה, שקלו Bcc במקום To/Cc — כך אנשי הקשר בקבוצה לא רואים את כל הרשימה המלאה של אחרים.`,
+        quiz:{q:"מה קורה כשמקלידים בשדה To שם של קבוצת אנשי קשר (Label)?", options:["Gmail מציג שגיאה","Gmail משלים אוטומטית את כל הכתובות בקבוצה","צריך להקליד כל כתובת בנפרד תמיד"], correct:1, explain:"הקלדת שם קבוצת אנשי קשר בשדה To מרחיבה אוטומטית לכל כתובות המייל שמשויכות לאותה קבוצה/תווית."}
+      },
+      {
+        id:"m2l7", title:"תזמון שליחה, Snooze וביטול שליחה",
+        content:`
+          <p>כלי זמן שימושיים שהופכים את Gmail לחכם יותר:</p>
+          <ul>
+            <li><strong>Schedule Send</strong> — בחלון הכתיבה, החץ הקטן ליד כפתור Send → Schedule send. שולח את המייל אוטומטית במועד עתידי שנבחר.</li>
+            <li><strong>Snooze</strong> — לחיצה ימנית (או אייקון שעון) על מייל בתיבה הנכנסת — "מעלים" אותו זמנית ומחזירים לראש התיבה במועד שנקבע.</li>
+            <li><strong>Undo Send</strong> — חלון קצר (5-30 שניות, ניתן לכוונון ב-Settings → General → Undo Send) לביטול שליחה מיד אחרי הלחיצה על Send.</li>
+          </ul>
+        `,
+        tip:`הגדילו את חלון ה-Undo Send ל-30 שניות (המקסימום) — נותן מרווח נשימה אמיתי לתפוס טעות לפני שהמייל באמת יוצא.`,
+        quiz:{q:"מה עושה תכונת Snooze על מייל?", options:["מוחקת אותו לצמיתות","מסתירה אותו זמנית ומחזירה אותו לראש התיבה במועד עתידי שנבחר","שולחת אותו מחדש"], correct:1, explain:"Snooze 'מעלימה' מייל מהתיבה הנכנסת עד זמן שתבחרו, ואז הוא חוזר לראש הרשימה כתזכורת."}
+      }
+    ]
+  },
+  {
+    id:"m3", title:"שלב 3 · מקצוענים", icon:"🔴",
+    lessons:[
+      {
+        id:"m3l1", title:"קיצורי מקלדת ותפוקה",
+        content:`
+          <p>קיצורי מקלדת דורשים הפעלה מראש: Settings → See all settings → General → Keyboard shortcuts → On. אז:</p>
+          <ul>
+            <li><kbd>C</kbd> — Compose (מייל חדש) &nbsp;|&nbsp; <kbd>E</kbd> — Archive &nbsp;|&nbsp; <kbd>#</kbd> — Delete</li>
+            <li><kbd>R</kbd> — Reply &nbsp;|&nbsp; <kbd>A</kbd> — Reply All &nbsp;|&nbsp; <kbd>F</kbd> — Forward</li>
+            <li><kbd>/</kbd> — קפיצה לשורת החיפוש &nbsp;|&nbsp; <kbd>G</kbd> ואז <kbd>I</kbd> — מעבר ל-Inbox</li>
+            <li><kbd>Shift</kbd>+<kbd>U</kbd> — סימון כלא-נקרא &nbsp;|&nbsp; <kbd>S</kbd> — הוספת/הסרת כוכב</li>
+          </ul>
+        `,
+        tip:`שילוב <kbd>G</kbd> ואז אות נוספת (כמו <kbd>I</kbd> ל-Inbox, <kbd>S</kbd> ל-Starred) הוא דפוס ניווט כללי בג'ימייל — שווה ללמוד אותו בעל פה.`,
+        quiz:{q:"מה צריך לעשות לפני שאפשר להשתמש בקיצורי מקלדת בג'ימייל?", options:["כלום, הם פעילים כברירת מחדל","להפעיל אותם ב-Settings → Keyboard shortcuts","להתקין תוסף חיצוני"], correct:1, explain:"קיצורי מקלדת כבויים כברירת מחדל ב-Gmail — יש להפעיל אותם דרך הגדרות General."}
+      },
+      {
+        id:"m3l2", title:"כתובות משניות ו-Aliases",
+        content:`
+          <p>אפשר לקבל ולשלוח מייל תחת יותר מכתובת אחת בלי לפתוח חשבון נוסף:</p>
+          <ul>
+            <li><strong>ה-Trick של הסימן +</strong> — כתובת כמו <code>yourname+shopping@gmail.com</code> מגיעה לאותה תיבה של <code>yourname@gmail.com</code>, ומאפשרת סינון קל (פילטר לפי "to:") למי שנרשמתם דרכה.</li>
+            <li><strong>Send As</strong> — Settings → Accounts and Import → Send mail as, מוסיף כתובת נוספת שלכם (למשל כתובת עבודה) כדי לשלוח ממנה דרך ממשק Gmail הרגיל.</li>
+            <li>שילוב עם חתימה נפרדת לכל כתובת "Send As", כדי שהמיתוג יתאים לזהות השולח בכל מייל.</li>
+          </ul>
+        `,
+        tip:`השתמשו בטריק ה-+ בכל הרשמה לאתר חדש — אם מתחילים לקבל ספאם לכתובת הספציפית הזו, תדעו בדיוק איזה אתר "דלף".`,
+        quiz:{q:"מה עושה כתובת בסגנון yourname+shopping@gmail.com?", options:["פותחת חשבון Gmail נפרד","מגיעה לאותה תיבה הרגילה, אך מאפשרת לזהות/לסנן לפי מקור ההרשמה","לא תקינה בג'ימייל"], correct:1, explain:"הסימן + עם כל טקסט אחריו לפני ה-@ מתעלם ממנו ב-Gmail לצורך מסירה, אך שומר אותו לצורך זיהוי וסינון."}
+      },
+      {
+        id:"m3l3", title:"אבטחה מתקדמת",
+        content:`
+          <p>שכבות הגנה מעבר לסיסמה בלבד:</p>
+          <ul>
+            <li><strong>אימות דו-שלבי (2-Step Verification)</strong> — myaccount.google.com → Security. מוסיף שלב אימות שני (קוד SMS, אפליקציית Authenticator, או מפתח אבטחה פיזי) בכל כניסה ממכשיר לא מוכר.</li>
+            <li><strong>App Passwords</strong> — סיסמה ייעודית לאפליקציות ישנות שלא תומכות באימות דו-שלבי מלא (למשל תוכנת דואר ישנה).</li>
+            <li><strong>Confidential Mode</strong> — בחלון הכתיבה, אייקון מנעול/שעון: מייל עם תאריך תפוגה, ואפשרות לדרוש קוד SMS לפתיחה, ומניעת העתקה/הדפסה/הורדה.</li>
+            <li><strong>Security Checkup</strong> (myaccount.google.com/security-checkup) — סריקה תקופתית של מכשירים מחוברים, הרשאות אפליקציות צד-שלישי ופעילות חשודה.</li>
+          </ul>
+        `,
+        tip:`מפתח אבטחה פיזי (Security Key) הוא השכבה החזקה ביותר נגד פישינג — הוא כמעט בלתי אפשרי לעקוף מרחוק, בניגוד לקוד SMS שניתן "לגנוב" בהנדסה חברתית.`,
+        quiz:{q:"מה עושה Confidential Mode במייל?", options:["מצפין את כל התיבה לצמיתות","מגביל תוקף/העתקה/הדפסה של מייל ספציפי, ואפשר לדרוש קוד לפתיחה","מוחק את המייל אחרי קריאה ראשונה בלבד תמיד"], correct:1, explain:"Confidential Mode מוסיף הגבלות על מייל בודד: תאריך תפוגה, מניעת העברה/הדפסה/הורדה, ואפשרות לדרוש קוד אימות נוסף."}
+      },
+      {
+        id:"m3l4", title:"תבניות ותשובות מוכנות",
+        content:`
+          <p><strong>Templates</strong> (הופעלה תחילה כ"Canned Responses") חוסכת זמן על מיילים חוזרים:</p>
+          <ul>
+            <li>הפעלה — Settings → See all settings → Advanced → Templates → Enable.</li>
+            <li>יצירה — כתבו מייל, ואז בחלון הכתיבה → שלוש הנקודות → Templates → Save draft as template.</li>
+            <li>שימוש — פתחו מייל חדש → שלוש הנקודות → Templates → Insert template, ובחרו מהרשימה.</li>
+            <li>שימושי לתשובות נפוצות בשירות לקוחות, מיילי מכירות חוזרים, או תזכורות סטנדרטיות.</li>
+          </ul>
+        `,
+        tip:`שמרו תבנית עם מקום ל"מילוי ידני" מסומן בבירור (למשל [שם לקוח]) כדי לא לשכוח להתאים אישית לפני שליחה.`,
+        quiz:{q:"היכן מפעילים לראשונה את תכונת Templates?", options:["Settings → Advanced → Templates","בתוך אנשי הקשר","בהגדרות Google Drive"], correct:0, explain:"תכונת Templates כבויה כברירת מחדל ודורשת הפעלה מפורשת ב-Settings → See all settings → Advanced."}
+      },
+      {
+        id:"m3l5", title:"אוטומציה מתקדמת ואינטגרציה חיצונית",
+        content:`
+          <p>מעבר לפילטרים הבסיסיים (שיעור 2.2), אפשר לבנות תהליכי עבודה מורכבים יותר:</p>
+          <ul>
+            <li><strong>Multiple Inboxes</strong> (Settings → Advanced) — הצגת כמה "תיבות משנה" זו לצד זו במסך אחד, למשל: כל המיילים המסומנים בכוכב לצד כל המיילים מלקוח מסוים.</li>
+            <li><strong>Google Apps Script</strong> — שפת סקריפטים מבוססת JavaScript שרצה בענן ומאפשרת לכתוב אוטומציות מותאמות אישית על תיבת הדואר (למשל: שליחת דוח יומי אוטומטי, סיווג מיילים לפי כללים מורכבים שפילטר רגיל לא תומך בהם).</li>
+            <li>גישה לבניית סקריפט — script.google.com, בחירת פרויקט חדש והתייחסות ל-GmailApp בקוד.</li>
+          </ul>
+        `,
+        tip:`לפני שקופצים ל-Apps Script — ודאו שהצורך באמת לא נפתר בפילטרים ותוויות רגילים. אוטומציה מותאמת שווה את המאמץ רק כשהחוקים הפשוטים לא מספיקים.`,
+        quiz:{q:"מתי הגיוני לעבור מפילטרים רגילים ל-Google Apps Script?", options:["תמיד, מההתחלה","כשצריך לוגיקה מורכבת שפילטרים ותוויות רגילים לא מסוגלים לבטא","אף פעם, זה לא נתמך בג'ימייל"], correct:1, explain:"Apps Script שימושי כשהצורך חורג ממה שפילטר בסיסי (תנאי → פעולה) יכול לבטא — אבל לרוב המשימות היומיומיות, פילטרים ותוויות מספיקים."}
+      },
+      {
+        id:"m3l6", title:"Gmail לעסקים (Google Workspace)",
+        content:`
+          <p>חשבון Gmail אישי (@gmail.com) שונה מחשבון עסקי דרך <strong>Google Workspace</strong>:</p>
+          <ul>
+            <li><strong>כתובת בדומיין מותאם אישית</strong> — למשל name@company.com, במקום @gmail.com, תוך שימוש בממשק Gmail הרגיל.</li>
+            <li><strong>Admin Console</strong> — כלי ניהול מרכזי למנהל ה-IT של הארגון: יצירת משתמשים, הרשאות, מדיניות אבטחה ארגונית, ניהול קבוצות תפוצה משותפות.</li>
+            <li><strong>חתימות וכללים ארגוניים אחידים</strong> — ניתן להגדיר חתימה/פוטר משפטי אחיד שמתווסף אוטומטית לכל עובדי הארגון.</li>
+            <li>שיתוף יומנים, קבוצות Google Groups לתפוצה פנים-ארגונית, ואבטחה ברמת ארגון (למשל DLP — מניעת דליפת מידע).</li>
+          </ul>
+        `,
+        tip:`אם אתם עוברים לניהול תיבת דואר ארגונית — הכירו את Admin Console מוקדם, גם אם אתם לא מנהלי ה-IT, כדי להבין אילו הגבלות חלות עליכם ולמה.`,
+        quiz:{q:"מה מאפשר Google Workspace שחשבון Gmail אישי לא מספק?", options:["גישה לתיבה הנכנסת","כתובת בדומיין מותאם אישית וכלי ניהול ארגוני (Admin Console)","אפשרות לשלוח מיילים"], correct:1, explain:"Workspace מוסיף שכבת ניהול ארגונית מעל Gmail הרגיל: דומיין מותאם, ניהול משתמשים ומדיניות אבטחה ברמת החברה."}
+      },
+      {
+        id:"m3l7", title:"גיבוי, ייצוא ו-IMAP/POP",
+        content:`
+          <p>שליטה מלאה בנתונים ובגישה ממקורות חיצוניים:</p>
+          <ul>
+            <li><strong>Google Takeout</strong> (takeout.google.com) — ייצוא גיבוי מלא של כל תיבת הדואר (ושירותי Google נוספים) לקובץ שניתן להוריד ולשמור מקומית.</li>
+            <li><strong>IMAP</strong> — פרוטוקול שמאפשר לתוכנות דואר חיצוניות (Outlook, Apple Mail, Thunderbird) להתחבר לג'ימייל ולהציג את אותה תיבת דואר מסונכרנת בכל מקום. הפעלה: Settings → See all settings → Forwarding and POP/IMAP.</li>
+            <li><strong>POP</strong> — פרוטוקול ישן יותר שמוריד עותק חד-כיווני של המיילים לתוכנה מקומית, בלי סנכרון דו-כיווני מלא כמו IMAP.</li>
+          </ul>
+        `,
+        tip:`ל-99% מהמקרים היום IMAP עדיף על POP — הוא שומר על סנכרון מלא (כולל תוויות/סטטוס נקרא) בין הדפדפן, הנייד וכל תוכנה חיצונית.`,
+        quiz:{q:"מה ההבדל המרכזי בין IMAP ל-POP?", options:["אין הבדל בפועל","IMAP מסנכרן דו-כיווני בין מכשירים, POP מוריד עותק חד-כיווני בלבד","POP מהיר יותר תמיד"], correct:1, explain:"IMAP שומר את כל המכשירים מסונכרנים (כולל תוויות וסטטוס קריאה); POP בעיקרו מוריד עותק למכשיר אחד ללא סנכרון מלא."}
+      },
+      {
+        id:"m3l8", title:"עקרונות לניהול תיבת דואר מקצועית",
+        content:`
+          <p>מה שמבדיל בין תיבת דואר "כאוטית" לתיבה שעובדת בשבילכם:</p>
+          <ul>
+            <li><strong>Inbox Zero</strong> — גישה שמטרתה לרוקן את התיבה הנכנסת באופן קבוע: כל מייל נענה/מואצל/מתוזמן/מוארכב, ולא נשאר "תלוי" בלי החלטה.</li>
+            <li><strong>מערכת טריאז'</strong> — שימוש בתוויות כמו "לטיפול היום", "ממתין לתשובה", "לקריאה מאוחר יותר" במקום להשאיר הכול ב-Primary.</li>
+            <li>הפחתת עומס התראות — לכבות התראות דחיפה לכל מייל, ולבדוק תיבת דואר בזמנים קבועים במקום כל הזמן.</li>
+            <li><strong>קיצור מול תחרות</strong> — לעומת שירותי webmail אחרים כמו Outlook.com או Yahoo Mail, החוזק המרכזי של Gmail הוא האינטגרציה העמוקה עם שאר Google Workspace (Drive/Calendar/Meet) וכוח החיפוש/הפילטרים; Outlook.com מתחבר טוב יותר לסביבת Microsoft 365, ו-Yahoo Mail מתמקד בממשק פשוט עם נפח אחסון גדול. הבדלי הממשק בין השלושה קטנים יחסית — כולם עוקבים אחרי אותו רעיון כללי של תיבה נכנסת + תוויות/תיקיות + חיפוש.</li>
+          </ul>
+        `,
+        tip:`נסו "יום ניקוי" חודשי קבוע: לעבור על כל הפילטרים והתוויות ולמחוק את מה שכבר לא רלוונטי — מערכת ארגון שלא מתוחזקת נרקבת עם הזמן.`,
+        quiz:{q:"מהו היתרון המרכזי המשווק של Gmail מול Outlook.com/Yahoo Mail?", options:["הוא היחיד שתומך בצירופים","אינטגרציה עמוקה עם Google Drive/Calendar/Meet וכוח חיפוש/פילטרים","הוא היחיד שיש בו תיבה נכנסת"], correct:1, explain:"שלושת השירותים דומים במבנה הבסיסי (Inbox + תוויות/תיקיות + חיפוש); ההבדל המעשי המרכזי הוא סביבת השירותים שכל אחד משתלב איתה."}
+      }
+    ]
+  }
+];
+
+/* ======================= STATE ======================= */
+const STORAGE_KEY = "gmail_course_progress_v1";
+const CERT_KEY = "gmail_course_cert_name_v1";
+let state = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+const ALL_LESSONS = COURSE.flatMap(m => m.lessons.map(l => ({...l, moduleId:m.id, moduleTitle:m.title})));
+const TOTAL = ALL_LESSONS.length;
+
+/* ======================= RENDER SIDEBAR ======================= */
+const navContainer = document.getElementById("navContainer");
+COURSE.forEach((mod, idx) => {
+  const details = document.createElement("details");
+  details.className = "nav-group";
+  details.open = idx === 0;
+  const doneCount = () => mod.lessons.filter(l => state[l.id]).length;
+  details.innerHTML = `
+    <summary><span class="chev">▸</span> ${mod.icon} ${mod.title} <span class="badge" data-mod="${mod.id}">${doneCount()}/${mod.lessons.length}</span></summary>
+    <ul class="nav-links">
+      ${mod.lessons.map(l => `
+        <li><a href="#${l.id}" data-route="${l.id}"><span class="dot">✓</span>${l.title}</a></li>
+      `).join("")}
+    </ul>
+  `;
+  navContainer.appendChild(details);
+});
+
+function refreshBadges(){
+  COURSE.forEach(mod => {
+    const badge = navContainer.querySelector(`.badge[data-mod="${mod.id}"]`);
+    const doneCount = mod.lessons.filter(l => state[l.id]).length;
+    if(badge) badge.textContent = `${doneCount}/${mod.lessons.length}`;
+  });
+  document.querySelectorAll(".nav-links a").forEach(a => {
+    const id = a.dataset.route;
+    a.classList.toggle("done", !!state[id]);
+  });
+  const doneTotal = ALL_LESSONS.filter(l => state[l.id]).length;
+  const pct = Math.round((doneTotal/TOTAL)*100);
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("progressPct").textContent = pct + "%";
+}
+
+/* ======================= RENDER MAIN SECTIONS ======================= */
+const main = document.getElementById("mainContent");
+
+function lessonSectionHTML(l, i, arr){
+  const prev = arr[i-1];
+  const next = arr[i+1];
+  return `
+  <section class="section" id="sec-${l.id}" data-route="${l.id}">
+    <div class="crumb">${l.moduleTitle}</div>
+    <div class="lesson-title">${l.title}</div>
+    <div class="lesson-meta">
+      <label class="mark-done">
+        <input type="checkbox" data-lesson="${l.id}" ${state[l.id] ? "checked":""}>
+        סמן שיעור זה כהושלם
+      </label>
+    </div>
+    <div class="card content-body">${l.content}</div>
+    ${l.tip ? `<div class="tip-box">💡 <b>טיפ:</b> ${l.tip}</div>` : ""}
+    ${l.quiz ? renderQuiz(l.id, l.quiz) : ""}
+    <div class="lesson-footer">
+      ${prev ? `<a class="btn btn-outline" href="#${prev.id}" data-route="${prev.id}">→ ${prev.title}</a>` : `<span></span>`}
+      ${next ? `<a class="btn btn-primary" href="#${next.id}" data-route="${next.id}">${next.title} ←</a>` : `<a class="btn btn-primary" href="#final-quiz" data-route="final-quiz">למבחן המסכם ←</a>`}
+    </div>
+  </section>`;
+}
+
+function renderQuiz(lessonId, quiz){
+  return `
+  <div class="card quiz" id="quiz-${lessonId}">
+    <h3>🧠 בדקו את עצמכם</h3>
+    <div class="q">${quiz.q}</div>
+    <div class="opts">
+      ${quiz.options.map((opt,i) => `<button class="opt" data-idx="${i}">${opt}</button>`).join("")}
+    </div>
+    <div class="explain"></div>
+  </div>`;
+}
+
+/* Intro section */
+const introHTML = `
+<section class="section" id="sec-intro" data-route="intro">
+  <div class="hero">
+    <h1>✉️ קורס Gmail מלא</h1>
+    <p>קורס אינטראקטיבי בעברית שמלווה אתכם משלבי הפתיחה הבסיסיים ביותר ועד טכניקות מקצועיות — אבטחה מתקדמת, אוטומציה, אינטגרציית Workspace וניהול תיבת דואר עסקית. לומדים בקצב אישי, עם שאלות תרגול והתקדמות נשמרת בדפדפן.</p>
+    <div class="stats">
+      <div class="stat"><b>${COURSE.length}</b><span>שלבי לימוד</span></div>
+      <div class="stat"><b>${TOTAL}</b><span>שיעורים</span></div>
+      <div class="stat"><b>${TOTAL}</b><span>שאלות תרגול</span></div>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:10px;">מה תלמדו?</h3>
+  <div class="grid-3">
+    ${COURSE.map(m => `
+      <div class="mini-card" data-jump="${m.lessons[0].id}">
+        <div class="n">${m.icon} ${m.title}</div>
+        <div class="t">${m.lessons.length} שיעורים</div>
+        <div class="d">${m.lessons.map(l=>l.title).slice(0,3).join(" · ")}${m.lessons.length>3 ? " ...":""}</div>
+      </div>
+    `).join("")}
+  </div>
+
+  <div class="try-box">
+    <b>👉 איך לומדים כאן:</b> עברו שיעור-שיעור מהתפריט בצד, סמנו "הושלם" בסיום כל שיעור כדי לעקוב אחרי ההתקדמות בראש התפריט, וענו על שאלת התרגול. בסיום כל השלבים — גשו למבחן המסכם ולתעודת הסיום.
+  </div>
+
+  <div class="lesson-footer">
+    <span></span>
+    <a class="btn btn-primary" href="#${ALL_LESSONS[0].id}" data-route="${ALL_LESSONS[0].id}">בואו נתחיל ←</a>
+  </div>
+</section>`;
+
+/* Cheatsheet section */
+const shortcuts = [
+  ["מייל חדש (Compose)","C"],
+  ["ארכוב (Archive)","E"],
+  ["מחיקה (Delete)","#"],
+  ["תשובה (Reply)","R"],
+  ["תשובה לכולם (Reply All)","A"],
+  ["העברה (Forward)","F"],
+  ["קפיצה לחיפוש","/"],
+  ["מעבר ל-Inbox","G ואז I"],
+  ["מעבר למסומנים בכוכב","G ואז S"],
+  ["סימון כלא-נקרא","Shift + U"],
+  ["הוספת/הסרת כוכב","S"],
+  ["ביטול שליחה (בתוך חלון הזמן שהוגדר)","Z"],
+  ["שליחת מייל","Ctrl + Enter"],
+  ["מעבר בין שיחות ברשימה","J / K"],
+  ["פתיחת שיחה נבחרת","O או Enter"],
+  ["בחירת הכול","* ואז A"],
+];
+const cheatsheetHTML = `
+<section class="section" id="sec-cheatsheet" data-route="cheatsheet">
+  <div class="lesson-title">⌨️ דף קיצורי מקלדת — להדפסה</div>
+  <p class="lesson-meta">קיצורים אלה דורשים הפעלה חד-פעמית: Settings → General → Keyboard shortcuts → On. אפשר להדפיס ישירות מהדפדפן (Ctrl+P).</p>
+  <div class="card">
+    <table class="cheat">
+      <thead><tr><th>פעולה</th><th>קיצור</th></tr></thead>
+      <tbody>
+        ${shortcuts.map(([a,b]) => `<tr><td>${a}</td><td style="direction:ltr; text-align:left; font-family:Consolas,monospace;">${b}</td></tr>`).join("")}
+      </tbody>
+    </table>
+    <button class="btn btn-outline" onclick="window.print()">🖨️ הדפסת דף זה</button>
+  </div>
+</section>`;
+
+/* Final quiz section (uses all lesson quizzes) */
+function finalQuizHTML(){
+  const items = ALL_LESSONS.filter(l => l.quiz);
+  return `
+  <section class="section" id="sec-final-quiz" data-route="final-quiz">
+    <div class="lesson-title">🎯 מבחן מסכם</div>
+    <p class="lesson-meta">ענו נכון על לפחות 80% מהשאלות כדי "לעבור" את המבחן ולפתוח את תעודת הסיום.</p>
+    <div class="card" id="finalScoreCard" style="display:none;">
+      <h3>התוצאה שלכם</h3>
+      <div id="finalScoreText" style="font-size:18px; font-weight:700;"></div>
+    </div>
+    <div id="finalQuizList">
+      ${items.map((l,i) => `
+        <div class="card quiz" id="fq-${l.id}">
+          <h3>שאלה ${i+1} — ${l.moduleTitle} · ${l.title}</h3>
+          <div class="q">${l.quiz.q}</div>
+          <div class="opts">
+            ${l.quiz.options.map((opt,idx) => `<button class="opt" data-idx="${idx}">${opt}</button>`).join("")}
+          </div>
+          <div class="explain"></div>
+        </div>
+      `).join("")}
+    </div>
+    <div class="card">
+      <button class="btn btn-primary" id="submitFinalQuiz">📝 בדקו את המבחן</button>
+    </div>
+  </section>`;
+}
+
+/* Certificate section */
+const certificateHTML = `
+<section class="section" id="sec-certificate" data-route="certificate">
+  <div class="lesson-title">🎓 תעודת סיום</div>
+  <p class="lesson-meta">השלימו את כל השיעורים כדי לפתוח את התעודה, הזינו שם והדפיסו/שמרו כ-PDF.</p>
+  <div class="card" id="certGate">
+    <p id="certGateText"></p>
+  </div>
+  <div class="cert-box" id="certBox" style="display:none;">
+    <div style="font-size:34px;">🏆</div>
+    <h2>תעודת הצטיינות</h2>
+    <p>מוענקת בזאת ל</p>
+    <input type="text" class="cert-input" id="certNameInput" placeholder="הקלידו את שמכם המלא">
+    <p style="margin-top:18px;">על השלמה מוצלחת של<br><strong>קורס Gmail מלא — ממתחילים ועד מקצוענים</strong></p>
+    <p style="color:var(--muted); font-size:13px; margin-top:16px;" id="certDate"></p>
+    <button class="btn btn-primary" style="margin-top:14px;" onclick="window.print()">🖨️ הדפסה / שמירה כ-PDF</button>
+  </div>
+</section>`;
+
+/* Assemble all sections */
+main.innerHTML = introHTML +
+  ALL_LESSONS.map((l,i,arr) => lessonSectionHTML(l,i,arr)).join("") +
+  cheatsheetHTML + finalQuizHTML() + certificateHTML;
+
+/* ======================= INTERACTIONS ======================= */
+
+// Quiz click handling (delegated)
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("button.opt");
+  if(!btn) return;
+  const quizCard = btn.closest(".quiz");
+  if(quizCard.dataset.answered) return;
+  quizCard.dataset.answered = "1";
+  const idx = parseInt(btn.dataset.idx,10);
+  const allOpts = quizCard.querySelectorAll("button.opt");
+  const lessonId = quizCard.id.replace("quiz-","").replace("fq-","");
+  const lessonData = ALL_LESSONS.find(l => l.id === lessonId);
+  const quizData = lessonData ? lessonData.quiz : null;
+  allOpts.forEach((b,i) => {
+    b.disabled = true;
+    if(quizData && i === quizData.correct) b.classList.add("correct");
+    else if(i === idx) b.classList.add("wrong");
+  });
+  const explain = quizCard.querySelector(".explain");
+  if(quizData){
+    explain.textContent = (idx === quizData.correct ? "✅ נכון! " : "❌ לא מדויק. ") + quizData.explain;
+    explain.classList.add("show");
+  }
+  quizCard.dataset.correct = (quizData && idx === quizData.correct) ? "1" : "0";
+
+  // auto-mark lesson done on correct answer (only for per-lesson quiz cards)
+  if(quizCard.id.startsWith("quiz-") && quizData && idx === quizData.correct){
+    markDone(lessonId, true);
+  }
+});
+
+// Mark-done checkboxes
+document.addEventListener("change", (e) => {
+  if(e.target.matches('input[type="checkbox"][data-lesson]')){
+    markDone(e.target.dataset.lesson, e.target.checked);
+  }
+});
+function markDone(id, val){
+  state[id] = val;
+  saveState();
+  refreshBadges();
+  document.querySelectorAll(`input[data-lesson="${id}"]`).forEach(cb => cb.checked = val);
+  updateCertGate();
+}
+
+// Final quiz submit
+document.addEventListener("click", (e) => {
+  if(e.target.id !== "submitFinalQuiz") return;
+  const cards = document.querySelectorAll("#finalQuizList .quiz");
+  let answered = 0, correct = 0;
+  cards.forEach(c => {
+    if(c.dataset.answered){ answered++; if(c.dataset.correct === "1") correct++; }
+  });
+  const total = cards.length;
+  const scoreCard = document.getElementById("finalScoreCard");
+  const scoreText = document.getElementById("finalScoreText");
+  scoreCard.style.display = "block";
+  const pct = total ? Math.round((correct/total)*100) : 0;
+  if(answered < total){
+    scoreText.innerHTML = `ענית על ${answered} מתוך ${total} שאלות. אנא ענו על כל השאלות לפני בדיקת הציון הסופי.`;
+  } else {
+    const pass = pct >= 80;
+    scoreText.innerHTML = `${correct}/${total} תשובות נכונות (${pct}%) — ${pass ? "🎉 עברתם בהצלחה! גשו לתעודת הסיום." : "כדאי לחזור על החומר ולנסות שוב."}`;
+    state["final_quiz_pass"] = pass;
+    saveState();
+    updateCertGate();
+  }
+  scoreCard.scrollIntoView({behavior:"smooth", block:"center"});
+});
+
+function updateCertGate(){
+  const doneTotal = ALL_LESSONS.filter(l => state[l.id]).length;
+  const allDone = doneTotal === TOTAL;
+  const gateText = document.getElementById("certGateText");
+  const certBox = document.getElementById("certBox");
+  const certGate = document.getElementById("certGate");
+  if(!gateText) return;
+  if(allDone){
+    certGate.style.display = "none";
+    certBox.style.display = "block";
+    const savedName = localStorage.getItem(CERT_KEY) || "";
+    const nameInput = document.getElementById("certNameInput");
+    nameInput.value = savedName;
+    document.getElementById("certDate").textContent = new Date().toLocaleDateString("he-IL");
+  } else {
+    certGate.style.display = "block";
+    certBox.style.display = "none";
+    gateText.textContent = `השלמתם ${doneTotal} מתוך ${TOTAL} שיעורים. סיימו את כל השיעורים (סימון "הושלם" בכל שיעור) כדי לפתוח את התעודה.`;
+  }
+}
+document.addEventListener("input", (e) => {
+  if(e.target.id === "certNameInput") localStorage.setItem(CERT_KEY, e.target.value);
+});
+
+/* ======================= ROUTER ======================= */
+function showRoute(route){
+  if(!route) route = "intro";
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  const target = document.getElementById("sec-" + route);
+  if(target) target.classList.add("active");
+  else document.getElementById("sec-intro").classList.add("active");
+
+  document.querySelectorAll("[data-route]").forEach(el => el.classList.remove("active"));
+  document.querySelectorAll(`[data-route="${route}"]`).forEach(el => el.classList.add("active"));
+
+  // auto-open the module containing this lesson
+  const modEntry = ALL_LESSONS.find(l => l.id === route);
+  if(modEntry){
+    const grp = [...document.querySelectorAll(".nav-group")].find(g => g.querySelector(`a[data-route="${route}"]`));
+    if(grp) grp.open = true;
+  }
+  window.scrollTo({top:0, behavior:"instant" in window ? "instant":"auto"});
+  if(route === "certificate" || route === "final-quiz") updateCertGate();
+
+  // close mobile sidebar after navigation
+  document.getElementById("sidebar").classList.remove("open");
+}
+
+document.addEventListener("click", (e) => {
+  const link = e.target.closest("[data-route]");
+  if(link && link.tagName === "A"){
+    e.preventDefault();
+    location.hash = link.dataset.route;
+  }
+  const jump = e.target.closest("[data-jump]");
+  if(jump){
+    location.hash = jump.dataset.jump;
+  }
+});
+window.addEventListener("hashchange", () => showRoute(location.hash.slice(1)));
+
+/* Mobile sidebar toggle */
+document.getElementById("toggleSidebar").addEventListener("click", () => {
+  document.getElementById("sidebar").classList.toggle("open");
+});
+
+/* Search filter */
+document.getElementById("searchBox").addEventListener("input", (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll(".nav-links li").forEach(li => {
+    const text = li.textContent.toLowerCase();
+    li.style.display = text.includes(q) ? "" : "none";
+  });
+  document.querySelectorAll(".nav-group").forEach(g => { if(q) g.open = true; });
+});
+
+/* Init */
+refreshBadges();
+showRoute(location.hash.slice(1) || "intro");
+</script>
+</body>
+</html>
