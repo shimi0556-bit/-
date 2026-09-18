@@ -43,7 +43,7 @@ Installed via the [`skills`](https://www.npmjs.com/package/skills) CLI and track
 `threejs-game-director` (entrypoint/router), `threejs-gameplay-systems`, `threejs-aaa-graphics-builder`, `threejs-game-ui-designer`, `threejs-3d-generator`, `threejs-image-generator`, `threejs-audio-generator`, `threejs-debug-profiler`, `threejs-qa-release`
 
 **Local / this repo** (canonical copies in [`claude-skills/`](claude-skills), installed into `.agents/skills` and symlinked into `.claude/skills`):
-`cinematic-spark` (pairs with `claude-spark-pack/`), `claude-grok-bridge` (pairs with `claude-grok-mcp-bridge/`)
+`cinematic-spark` (pairs with `claude-spark-pack/`), `claude-grok-bridge` (pairs with `claude-grok-mcp-bridge/`), `interactive-course-builder` (the reusable template + rules behind `powerpoint-course/`, `excel-course/` and `gmail-course/` — copy `template.html`, fill in the `COURSE` array, keep the 3-level structure and the `history.replaceState` back-button fix)
 
 To add more skills: `npx skills add <owner>/<repo> -s <skill-name> -y`
 

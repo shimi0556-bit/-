@@ -14,13 +14,13 @@
       "computedHash": "d567568e4545dfb91bce38bfa3ee5c3a2a7c0e0dd6a50d3a0a76ed3eddb8dc47"
     },
     "cinematic-spark": {
-      "source": "claude-skills",
+      "source": "./claude-skills",
       "sourceType": "local",
       "skillPath": "cinematic-spark/SKILL.md",
       "computedHash": "5b1948303f43f58accffaacc73a6b224fe9938e497308c174cd9d1ecc7443186"
     },
     "claude-grok-bridge": {
-      "source": "claude-skills",
+      "source": "./claude-skills",
       "sourceType": "local",
       "skillPath": "claude-grok-bridge/SKILL.md",
       "computedHash": "2f13f698fd28d1bde49adb386117acbef1765947d523d56f0ff21e92572803d4"
@@ -36,6 +36,11 @@
       "sourceType": "github",
       "skillPath": "skills/image-master/SKILL.md",
       "computedHash": "8ec4b7e89851600aa0bff20cca335f31a65d41145155a68f89a48ef207dbd540"
+    },
+    "interactive-course-builder": {
+      "source": "./claude-skills",
+      "sourceType": "local",
+      "computedHash": "8d76512703e542414fae8637da59bce01e236c99b02d3576a8fa6b5ecd9d8b5a"
     },
     "mermaid-diagrams": {
       "source": "hoodini/ai-agents-skills",
