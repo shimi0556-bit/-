@@ -8,7 +8,73 @@
     b: { p: "♟", n: "♞", b: "♝", r: "♜", q: "♛", k: "♚" }
   };
 
-  var PIECE_VALUE = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+  var PIECE_VALUE = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 0 };
+  var MATE_SCORE = 100000;
+  var SEARCH_DEPTH = 3;
+  var QUIESCENCE_DEPTH = 4;
+
+  var PST = {
+    p: [
+      [0, 0, 0, 0, 0, 0, 0, 0],
+      [50, 50, 50, 50, 50, 50, 50, 50],
+      [10, 10, 20, 30, 30, 20, 10, 10],
+      [5, 5, 10, 25, 25, 10, 5, 5],
+      [0, 0, 0, 20, 20, 0, 0, 0],
+      [5, -5, -10, 0, 0, -10, -5, 5],
+      [5, 10, 10, -20, -20, 10, 10, 5],
+      [0, 0, 0, 0, 0, 0, 0, 0]
+    ],
+    n: [
+      [-50, -40, -30, -30, -30, -30, -40, -50],
+      [-40, -20, 0, 0, 0, 0, -20, -40],
+      [-30, 0, 10, 15, 15, 10, 0, -30],
+      [-30, 5, 15, 20, 20, 15, 5, -30],
+      [-30, 0, 15, 20, 20, 15, 0, -30],
+      [-30, 5, 10, 15, 15, 10, 5, -30],
+      [-40, -20, 0, 5, 5, 0, -20, -40],
+      [-50, -40, -30, -30, -30, -30, -40, -50]
+    ],
+    b: [
+      [-20, -10, -10, -10, -10, -10, -10, -20],
+      [-10, 0, 0, 0, 0, 0, 0, -10],
+      [-10, 0, 5, 10, 10, 5, 0, -10],
+      [-10, 5, 5, 10, 10, 5, 5, -10],
+      [-10, 0, 10, 10, 10, 10, 0, -10],
+      [-10, 10, 10, 10, 10, 10, 10, -10],
+      [-10, 5, 0, 0, 0, 0, 5, -10],
+      [-20, -10, -10, -10, -10, -10, -10, -20]
+    ],
+    r: [
+      [0, 0, 0, 0, 0, 0, 0, 0],
+      [5, 10, 10, 10, 10, 10, 10, 5],
+      [-5, 0, 0, 0, 0, 0, 0, -5],
+      [-5, 0, 0, 0, 0, 0, 0, -5],
+      [-5, 0, 0, 0, 0, 0, 0, -5],
+      [-5, 0, 0, 0, 0, 0, 0, -5],
+      [-5, 0, 0, 0, 0, 0, 0, -5],
+      [0, 0, 0, 5, 5, 0, 0, 0]
+    ],
+    q: [
+      [-20, -10, -10, -5, -5, -10, -10, -20],
+      [-10, 0, 0, 0, 0, 0, 0, -10],
+      [-10, 0, 5, 5, 5, 5, 0, -10],
+      [-5, 0, 5, 5, 5, 5, 0, -5],
+      [0, 0, 5, 5, 5, 5, 0, -5],
+      [-10, 5, 5, 5, 5, 5, 0, -10],
+      [-10, 0, 5, 0, 0, 0, 0, -10],
+      [-20, -10, -10, -5, -5, -10, -10, -20]
+    ],
+    k: [
+      [-30, -40, -40, -50, -50, -40, -40, -30],
+      [-30, -40, -40, -50, -50, -40, -40, -30],
+      [-30, -40, -40, -50, -50, -40, -40, -30],
+      [-30, -40, -40, -50, -50, -40, -40, -30],
+      [-20, -30, -30, -40, -40, -30, -30, -20],
+      [-10, -20, -20, -20, -20, -20, -20, -10],
+      [20, 20, 0, 0, 0, 0, 20, 20],
+      [20, 30, 10, 0, 0, 10, 30, 20]
+    ]
+  };
 
   var boardEl = document.getElementById("board");
   var statusEl = document.getElementById("status");
@@ -252,22 +318,75 @@
       for (var c = 0; c < 8; c++) {
         var sq = board[r][c];
         if (!sq) continue;
-        var val = PIECE_VALUE[sq.type];
-        score += sq.color === "w" ? val : -val;
+        var pstRow = sq.color === "w" ? r : 7 - r;
+        var value = PIECE_VALUE[sq.type] + PST[sq.type][pstRow][c];
+        score += sq.color === "w" ? value : -value;
       }
     }
     return score;
   }
 
-  function minimax(depth, alpha, beta, maximizing) {
-    if (depth === 0 || game.game_over()) {
-      return evaluateBoard();
+  function moveScore(m) {
+    var score = 0;
+    if (m.captured) score += 10 * PIECE_VALUE[m.captured] - PIECE_VALUE[m.piece];
+    if (m.promotion) score += PIECE_VALUE[m.promotion];
+    return score;
+  }
+
+  function orderedMoves() {
+    var moves = game.moves({ verbose: true });
+    moves.sort(function (a, b) { return moveScore(b) - moveScore(a); });
+    return moves;
+  }
+
+  function quiescence(alpha, beta, maximizing, qDepth) {
+    var standPat = evaluateBoard();
+    if (qDepth <= 0) return standPat;
+
+    if (maximizing) {
+      if (standPat >= beta) return beta;
+      if (standPat > alpha) alpha = standPat;
+    } else {
+      if (standPat <= alpha) return alpha;
+      if (standPat < beta) beta = standPat;
     }
-    var moves = game.moves();
+
+    var captures = game.moves({ verbose: true }).filter(function (m) { return m.captured; });
+    captures.sort(function (a, b) { return moveScore(b) - moveScore(a); });
+
+    for (var i = 0; i < captures.length; i++) {
+      game.move(captures[i].san);
+      var score = quiescence(alpha, beta, !maximizing, qDepth - 1);
+      game.undo();
+
+      if (maximizing) {
+        if (score > alpha) alpha = score;
+        if (alpha >= beta) return beta;
+      } else {
+        if (score < beta) beta = score;
+        if (beta <= alpha) return alpha;
+      }
+    }
+
+    return maximizing ? alpha : beta;
+  }
+
+  function minimax(depth, alpha, beta, maximizing) {
+    if (game.in_checkmate()) {
+      return game.turn() === "w" ? -MATE_SCORE - depth : MATE_SCORE + depth;
+    }
+    if (game.in_stalemate() || game.in_draw() || game.in_threefold_repetition()) {
+      return 0;
+    }
+    if (depth === 0) {
+      return quiescence(alpha, beta, maximizing, QUIESCENCE_DEPTH);
+    }
+
+    var moves = orderedMoves();
     if (maximizing) {
       var best = -Infinity;
       for (var i = 0; i < moves.length; i++) {
-        game.move(moves[i]);
+        game.move(moves[i].san);
         best = Math.max(best, minimax(depth - 1, alpha, beta, false));
         game.undo();
         alpha = Math.max(alpha, best);
@@ -277,7 +396,7 @@
     } else {
       var worst = Infinity;
       for (var j = 0; j < moves.length; j++) {
-        game.move(moves[j]);
+        game.move(moves[j].san);
         worst = Math.min(worst, minimax(depth - 1, alpha, beta, true));
         game.undo();
         beta = Math.min(beta, worst);
@@ -288,7 +407,7 @@
   }
 
   function computerMove() {
-    var moves = game.moves();
+    var moves = orderedMoves();
     if (moves.length === 0) return;
 
     var maximizing = computerColor === "w";
@@ -296,8 +415,8 @@
     var bestMoves = [];
 
     for (var i = 0; i < moves.length; i++) {
-      game.move(moves[i]);
-      var score = minimax(2, -Infinity, Infinity, !maximizing);
+      game.move(moves[i].san);
+      var score = minimax(SEARCH_DEPTH - 1, -Infinity, Infinity, !maximizing);
       game.undo();
 
       if (maximizing ? score > bestScore : score < bestScore) {
@@ -309,15 +428,8 @@
     }
 
     var chosen = bestMoves[Math.floor(Math.random() * bestMoves.length)];
-    var verboseMoves = game.moves({ verbose: true });
-    var chosenVerbose = verboseMoves.filter(function (m) {
-      return (m.san === chosen);
-    })[0];
-
-    game.move(chosen);
-    if (chosenVerbose) {
-      lastMove = { from: chosenVerbose.from, to: chosenVerbose.to };
-    }
+    game.move(chosen.san);
+    lastMove = { from: chosen.from, to: chosen.to };
     afterMove();
   }
 
