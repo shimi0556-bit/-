@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>קורס PowerPoint מלא — ממתחילים ועד מקצוענים</title>
+<style>
+  :root{
+    --orange:#D24726;
+    --orange-dark:#A83A1F;
+    --orange-light:#FDEEE8;
+    --ink:#232323;
+    --muted:#666;
+    --paper:#FAF8F6;
+    --card:#FFFFFF;
+    --border:#E7E1DC;
+    --green:#1E7B45;
+    --green-bg:#E8F5EC;
+    --red:#C23B22;
+    --red-bg:#FCEAE6;
+    --radius:14px;
+    --sidebar-w:300px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Segoe UI","Heebo","Arial Hebrew","Arial",sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    line-height:1.65;
+  }
+  a{color:var(--orange-dark);}
+  h1,h2,h3,h4{line-height:1.3; margin:0 0 .5em;}
+  ::selection{background:var(--orange-light);}
+
+  /* Layout */
+  .app{display:flex; min-height:100vh;}
+  .sidebar{
+    width:var(--sidebar-w); flex:0 0 var(--sidebar-w);
+    background:#1E1B19; color:#F1EBE6;
+    position:sticky; top:0; height:100vh; overflow-y:auto;
+    padding:18px 16px 40px;
+  }
+  .sidebar .brand{
+    display:flex; align-items:center; gap:10px; margin-bottom:16px;
+    padding:4px 2px;
+  }
+  .brand .logo{
+    width:34px;height:34px;border-radius:8px;
+    background:linear-gradient(135deg,var(--orange),#F08A5D);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;color:#fff;font-size:18px;flex:none;
+  }
+  .brand .name{font-weight:700; font-size:15px;}
+  .brand .sub{font-size:11.5px; color:#B7ADA5;}
+
+  .progress-wrap{margin:10px 2px 18px;}
+  .progress-label{display:flex; justify-content:space-between; font-size:12px; color:#C9BFB8; margin-bottom:5px;}
+  .progress-bar{height:8px; background:#3A342F; border-radius:99px; overflow:hidden;}
+  .progress-fill{height:100%; background:linear-gradient(90deg,var(--orange),#F0A56A); width:0%; transition:width .4s ease;}
+
+  .search{
+    width:100%; padding:8px 10px; border-radius:9px; border:1px solid #423B35;
+    background:#2A2521; color:#F1EBE6; font-size:13px; margin-bottom:14px;
+  }
+  .search::placeholder{color:#8B8078;}
+
+  .nav-group{margin-bottom:6px;}
+  .nav-group > summary{
+    cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px;
+    padding:9px 8px; border-radius:9px; font-weight:700; font-size:13.5px;
+    color:#F1EBE6;
+  }
+  .nav-group > summary::-webkit-details-marker{display:none;}
+  .nav-group > summary:hover{background:#2A2521;}
+  .nav-group[open] > summary .chev{transform:rotate(90deg);}
+  .chev{transition:transform .15s; font-size:11px; color:#B7ADA5;}
+  .nav-group .badge{
+    margin-inline-start:auto; font-size:10.5px; color:#B7ADA5;
+    background:#2A2521; padding:1px 7px; border-radius:99px;
+  }
+  .nav-links{list-style:none; margin:2px 0 10px; padding-inline-start:6px; border-inline-start:1px dashed #3A342F;}
+  .nav-links li{margin:1px 0;}
+  .nav-links a{
+    display:flex; align-items:center; gap:7px; text-decoration:none;
+    color:#D8CFC8; font-size:13px; padding:6px 10px; border-radius:8px;
+  }
+  .nav-links a:hover{background:#2A2521; color:#fff;}
+  .nav-links a.active{background:var(--orange); color:#fff; font-weight:600;}
+  .nav-links .dot{
+    width:15px;height:15px;border-radius:50%;border:1.5px solid #6B6259;flex:none;
+    font-size:10px; display:flex; align-items:center; justify-content:center; color:transparent;
+  }
+  .nav-links a.done .dot{background:var(--green); border-color:var(--green); color:#fff;}
+  .extra-links{margin-top:14px; padding-top:14px; border-top:1px solid #3A342F;}
+  .extra-links a{
+    display:flex; align-items:center; gap:8px; text-decoration:none; color:#D8CFC8;
+    font-size:13px; padding:7px 10px; border-radius:8px;
+  }
+  .extra-links a:hover{background:#2A2521; color:#fff;}
+  .extra-links a.active{background:var(--orange); color:#fff;}
+
+  /* Main */
+  .main{flex:1; min-width:0; padding:34px 40px 90px; max-width:900px; margin:0 auto;}
+  .section{display:none; animation:fade .25s ease;}
+  .section.active{display:block;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+
+  .crumb{font-size:12.5px; color:var(--muted); margin-bottom:6px;}
+  .lesson-title{font-size:28px; font-weight:800; margin-bottom:4px;}
+  .lesson-meta{font-size:13px; color:var(--muted); margin-bottom:22px; display:flex; gap:14px; align-items:center;}
+
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+    padding:20px 22px; margin-bottom:18px;
+  }
+  .card h3{font-size:16px; color:var(--orange-dark); margin-bottom:8px;}
+  .content-body p{margin:0 0 12px;}
+  .content-body ul{margin:0 0 12px; padding-inline-start:22px;}
+  .content-body li{margin-bottom:6px;}
+  .content-body strong{color:var(--orange-dark);}
+  code, kbd{
+    background:#F1ECE7; border:1px solid var(--border); border-radius:5px;
+    padding:1px 6px; font-size:.92em; font-family:Consolas,"Courier New",monospace;
+  }
+  kbd{box-shadow:0 1.5px 0 var(--border);}
+
+  .tip-box{
+    background:var(--orange-light); border:1px solid #F0D2C4; border-radius:12px;
+    padding:14px 16px; margin:14px 0; font-size:14px;
+  }
+  .tip-box b{color:var(--orange-dark);}
+  .try-box{
+    background:#EFF4F1; border:1px solid #CFE3D6; border-radius:12px;
+    padding:14px 16px; margin:14px 0; font-size:14px;
+  }
+  .try-box b{color:var(--green);}
+
+  .quiz{background:#FFFDF9; border:1.5px dashed #E4C9AC;}
+  .quiz h3{margin-bottom:12px;}
+  .quiz .q{font-weight:600; margin-bottom:10px;}
+  .quiz .opts{display:flex; flex-direction:column; gap:8px;}
+  .quiz button.opt{
+    text-align:right; padding:10px 14px; border-radius:9px; border:1px solid var(--border);
+    background:#fff; cursor:pointer; font-size:14px; font-family:inherit;
+  }
+  .quiz button.opt:hover{border-color:var(--orange);}
+  .quiz button.opt.correct{background:var(--green-bg); border-color:var(--green); color:var(--green);}
+  .quiz button.opt.wrong{background:var(--red-bg); border-color:var(--red); color:var(--red);}
+  .quiz button.opt:disabled{cursor:default;}
+  .quiz .explain{margin-top:10px; font-size:13.5px; color:var(--muted); display:none;}
+  .quiz .explain.show{display:block;}
+
+  .lesson-footer{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    margin-top:28px; padding-top:18px; border-top:1px solid var(--border);
+  }
+  .btn{
+    display:inline-flex; align-items:center; gap:6px; cursor:pointer; border:none;
+    border-radius:10px; padding:10px 16px; font-size:14px; font-weight:600; font-family:inherit;
+    text-decoration:none;
+  }
+  .btn-primary{background:var(--orange); color:#fff;}
+  .btn-primary:hover{background:var(--orange-dark);}
+  .btn-outline{background:#fff; border:1px solid var(--border); color:var(--ink);}
+  .btn-outline:hover{border-color:var(--orange);}
+  .btn-ghost{background:transparent; color:var(--muted); border:none; font-size:13px;}
+  .mark-done{display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--muted); cursor:pointer; user-select:none;}
+  .mark-done input{width:17px; height:17px; accent-color:var(--green); cursor:pointer;}
+
+  .hero{
+    background:linear-gradient(135deg,var(--orange),#F0A56A);
+    color:#fff; border-radius:20px; padding:44px 38px; margin-bottom:26px;
+  }
+  .hero h1{font-size:32px; margin-bottom:10px;}
+  .hero p{font-size:15.5px; max-width:640px; opacity:.95;}
+  .hero .stats{display:flex; gap:26px; margin-top:22px; flex-wrap:wrap;}
+  .hero .stat b{display:block; font-size:22px;}
+  .hero .stat span{font-size:12.5px; opacity:.9;}
+
+  .grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:20px 0;}
+  .grid-2{display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin:20px 0;}
+  .mini-card{
+    background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px;
+    cursor:pointer;
+  }
+  .mini-card:hover{border-color:var(--orange);}
+  .mini-card .n{font-size:12px; color:var(--muted);}
+  .mini-card .t{font-weight:700; font-size:14.5px; margin:3px 0;}
+  .mini-card .d{font-size:12.5px; color:var(--muted);}
+
+  table.cheat{width:100%; border-collapse:collapse; font-size:13.5px; margin-bottom:20px;}
+  table.cheat th, table.cheat td{border:1px solid var(--border); padding:8px 12px; text-align:right;}
+  table.cheat th{background:var(--orange-light); color:var(--orange-dark);}
+  table.cheat tr:nth-child(even){background:#FAFAFA;}
+
+  .cert-box{
+    background:var(--card); border:3px double var(--orange); border-radius:16px;
+    padding:40px; text-align:center; margin-top:10px;
+  }
+  .cert-box h2{font-size:26px; color:var(--orange-dark);}
+  .cert-name{font-size:24px; font-weight:800; margin:18px 0; border-bottom:2px solid var(--border); display:inline-block; padding-bottom:6px; min-width:280px;}
+  .cert-input{padding:10px 14px; border:1px solid var(--border); border-radius:9px; font-size:15px; width:280px; text-align:center; font-family:inherit;}
+
+  .topbar-mobile{display:none;}
+  @media (max-width:900px){
+    .app{flex-direction:column;}
+    .sidebar{
+      position:relative; height:auto; width:100%; flex:none;
+      display:none;
+    }
+    .sidebar.open{display:block;}
+    .topbar-mobile{
+      display:flex; align-items:center; justify-content:space-between;
+      background:#1E1B19; color:#fff; padding:12px 16px; position:sticky; top:0; z-index:10;
+    }
+    .topbar-mobile button{background:var(--orange); color:#fff; border:none; border-radius:8px; padding:8px 12px; font-size:13px;}
+    .main{padding:24px 18px 70px;}
+    .grid-3{grid-template-columns:1fr;}
+    .grid-2{grid-template-columns:1fr;}
+    .hero{padding:28px 22px;}
+  }
+  @media print{
+    .sidebar,.topbar-mobile,.lesson-footer,.quiz{display:none !important;}
+    .section{display:block !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar-mobile">
+  <strong>📊 קורס PowerPoint</strong>
+  <button id="toggleSidebar">☰ תפריט</button>
+</div>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="logo">P</div>
+      <div>
+        <div class="name">קורס PowerPoint מלא</div>
+        <div class="sub">ממתחילים ועד מקצוענים</div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-label"><span>התקדמות</span><span id="progressPct">0%</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <input type="text" class="search" id="searchBox" placeholder="🔍 חיפוש נושא בקורס...">
+
+    <nav id="navContainer"></nav>
+
+    <div class="extra-links">
+      <a href="#intro" data-route="intro">🏠 עמוד הבית</a>
+      <a href="#cheatsheet" data-route="cheatsheet">⌨️ דף קיצורים להדפסה</a>
+      <a href="#final-quiz" data-route="final-quiz">🎯 מבחן מסכם</a>
+      <a href="#certificate" data-route="certificate">🎓 תעודת סיום</a>
+    </div>
+  </aside>
+
+  <main class="main" id="mainContent">
+    <!-- rendered by JS -->
+  </main>
+</div>
+
+<script>
+/* ======================= COURSE DATA ======================= */
+const COURSE = [
+  {
+    id:"m1", title:"שלב 1 · מתחילים", icon:"🟠",
+    lessons:[
+      {
+        id:"m1l1", title:"הכרת הממשק",
+        content:`
+          <p>PowerPoint בנוי מכמה אזורים קבועים שכדאי להכיר לפני הכול:</p>
+          <ul>
+            <li><strong>רצועת הכלים (Ribbon)</strong> — בראש המסך, מחולקת ללשוניות: בית (Home), הוספה (Insert), עיצוב (Design), מעברים (Transitions), אנימציות (Animations), הצגת שקופיות (Slide Show), סקירה (Review), תצוגה (View).</li>
+            <li><strong>חלונית השקופיות</strong> — הרצועה הדקה בצד, מציגה תמונות ממוזערות של כל השקופיות ומאפשרת לסדר, למחוק ולשכפל.</li>
+            <li><strong>אזור העריכה המרכזי</strong> — השקופית הפעילה, כאן עורכים בפועל.</li>
+            <li><strong>חלונית הערות המרצה (Notes)</strong> — מתחת לשקופית, למה שרוצים להגיד אך לא להציג.</li>
+            <li><strong>שורת המצב</strong> — למטה: מספר שקופית, שפה, ותפריט תצוגה/זום.</li>
+          </ul>
+          <p>ארבע תצוגות עיקריות דרך לשונית <em>View</em>: <strong>Normal</strong> (עריכה רגילה), <strong>Slide Sorter</strong> (סידור שקופיות כמו רשת), <strong>Reading View</strong>, ו-<strong>Slide Show</strong> (הצגה מלאה).</p>
+        `,
+        tip:`אם רצועת הכלים נעלמה בטעות — לחצו <kbd>Ctrl</kbd>+<kbd>F1</kbd> כדי להחזיר אותה.`,
+        quiz:{q:"היכן משנים בין תצוגת עריכה לתצוגת סידור שקופיות (Slide Sorter)?", options:["לשונית View (תצוגה)","לשונית Insert (הוספה)","לחיצה ימנית על הרקע"], correct:0, explain:"לשונית View מרכזת את כל אפשרויות התצוגה: Normal, Slide Sorter, Notes Page ו-Reading View."}
+      },
+      {
+        id:"m1l2", title:"יצירת מצגת ובחירת תבנית",
+        content:`
+          <p>כשפותחים PowerPoint מוצג מסך התחלה עם <strong>Blank Presentation</strong> (מצגת ריקה) וגלריית תבניות (Themes) מוכנות מראש.</p>
+          <ul>
+            <li>מצגת ריקה נותנת שליטה מלאה אך דורשת יותר עבודת עיצוב.</li>
+            <li>תבנית מוכנה (Theme) נותנת פלטת צבעים, גופנים ופריסות אחידות מההתחלה — הכי מומלץ למתחילים.</li>
+            <li>אפשר לשנות תבנית בכל שלב דרך <em>Design → Themes</em> מבלי לאבד את התוכן.</li>
+            <li>גודל שקופית סטנדרטי כיום: <strong>16:9</strong> (Widescreen). לשינוי: <em>Design → Slide Size</em>.</li>
+          </ul>
+        `,
+        tip:`חפשו תבניות רשמיות נוספות דרך <em>File → New</em> וחיפוש לפי נושא (עסקי, אקדמי, יצירתי).`,
+        quiz:{q:"מה היחס הסטנדרטי המומלץ למסכים מודרניים?", options:["4:3","16:9","1:1"], correct:1, explain:"16:9 (Widescreen) הוא הפורמט הסטנדרטי כיום, מותאם לרוב המסכים והמקרנים."}
+      },
+      {
+        id:"m1l3", title:"עבודה עם שקופיות",
+        content:`
+          <p>ניהול שקופיות נעשה בעיקר מחלונית השקופיות בצד, בלחיצה ימנית:</p>
+          <ul>
+            <li><strong>New Slide</strong> — הוספת שקופית חדשה (או <kbd>Ctrl</kbd>+<kbd>M</kbd>).</li>
+            <li><strong>Duplicate Slide</strong> — שכפול שקופית קיימת עם כל התוכן והעיצוב.</li>
+            <li><strong>Delete Slide</strong> — מחיקה.</li>
+            <li><strong>Layout</strong> — בחירת פריסה: כותרת בלבד, כותרת+תוכן, שתי עמודות, ריק וכו׳.</li>
+            <li>גרירה של שקופית בחלונית משנה את סדר ההופעה.</li>
+            <li><strong>Section</strong> — ניתן לקבץ שקופיות לפרקים (לחיצה ימנית → Add Section), שימושי במצגות ארוכות.</li>
+          </ul>
+        `,
+        tip:`לבחירת כמה שקופיות יחד: החזיקו <kbd>Ctrl</kbd> ולחצו על כל אחת, או <kbd>Shift</kbd> לטווח רציף.`,
+        quiz:{q:"מהו קיצור המקלדת להוספת שקופית חדשה?", options:["Ctrl+N","Ctrl+M","Ctrl+S"], correct:1, explain:"Ctrl+M מוסיף שקופית חדשה מיד אחרי הנוכחית. Ctrl+N פותח קובץ חדש, Ctrl+S שומר."}
+      },
+      {
+        id:"m1l4", title:"טקסט וגופנים",
+        content:`
+          <p>כל טקסט במצגת יושב בתוך <strong>תיבת טקסט (Text Placeholder)</strong> — או כזו שמגיעה עם הפריסה, או כזו שמוסיפים ידנית דרך <em>Insert → Text Box</em>.</p>
+          <ul>
+            <li>עיצוב גופן, גודל, צבע ועיצוב (מודגש/נטוי/קו תחתון) — בלשונית <em>Home</em>.</li>
+            <li>רשימות תבליטים ומספור — כפתורי Bullets / Numbering באותה לשונית.</li>
+            <li><strong>כלל 6x6</strong> לעיצוב טוב: עד 6 שורות בשקופית, עד 6 מילים בשורה — שומר על שקופית קריאה ולא עמוסה.</li>
+            <li>ליישור טקסט מדויק ביחס לאלמנטים אחרים — השתמשו בקווי היישור האוטומטיים (Smart Guides) שמופיעים בזמן גרירה.</li>
+          </ul>
+        `,
+        tip:`השתמשו ב"Format Painter" (מברשת עיצוב, לשונית Home) כדי להעתיק עיצוב טקסט מתיבה אחת לאחרת במהירות.`,
+        quiz:{q:"לפי 'כלל 6x6', כמה מילים מומלץ בשורה אחת בשקופית?", options:["עד 6","עד 12","עד 20"], correct:0, explain:"הכלל ממליץ על עד 6 שורות ועד 6 מילים בשורה, כדי לשמור על שקופיות נקיות וקריאות מרחוק."}
+      },
+      {
+        id:"m1l5", title:"תמונות ומדיה בסיסית",
+        content:`
+          <p>הוספת תמונה: <em>Insert → Pictures</em> — מהמחשב, מתמונות מלאי מקוונות (Stock Images) או מ-Bing. לאחר ההוספה:</p>
+          <ul>
+            <li>שינוי גודל — גררו את הפינות (לא הצדדים, כדי לשמור על יחס הממדים).</li>
+            <li>חיתוך — <em>Picture Format → Crop</em>, כולל חיתוך לצורה (Crop to Shape).</li>
+            <li>הסרת רקע — <em>Picture Format → Remove Background</em>, כלי חכם שמזהה את הנושא אוטומטית וניתן לכוונון ידני.</li>
+            <li>סגנונות תמונה מהירים (מסגרת, צל, פינות עגולות) — גלריית Picture Styles.</li>
+          </ul>
+        `,
+        tip:`לחצו והחזיקו <kbd>Shift</kbd> בזמן גרירת פינה כדי לשנות גודל תוך שמירה על יחס הממדים המקורי.`,
+        quiz:{q:"איזה כלי מסיר רקע מתמונה ישירות בתוך PowerPoint, בלי תוכנה חיצונית?", options:["Crop to Shape","Remove Background","Picture Border"], correct:1, explain:"Remove Background (בלשונית Picture Format) מזהה אוטומטית את הנושא ומאפשר עידון ידני של האזור שנשמר."}
+      },
+      {
+        id:"m1l6", title:"שמירה וייצוא בסיסי",
+        content:`
+          <p>שמירה רגילה: <kbd>Ctrl</kbd>+<kbd>S</kbd>, פורמט <code>.pptx</code>. אפשרויות שמירה/ייצוא נוספות דרך <em>File</em>:</p>
+          <ul>
+            <li><strong>Save As</strong> — שמירה בשם/מיקום/פורמט אחר, כולל תאימות לגרסאות ישנות (<code>.ppt</code>).</li>
+            <li><strong>Export → Create PDF/XPS</strong> — ייצוא לקובץ PDF להפצה שאינה ניתנת לעריכה.</li>
+            <li><strong>Export → Create a Video</strong> — הפיכת המצגת לקובץ וידאו (MP4) עם המעברים והתזמונים.</li>
+            <li><strong>AutoRecover</strong> — שמירה אוטומטית כל כמה דקות; מומלץ לוודא שהיא פעילה ב-<em>File → Options → Save</em>.</li>
+          </ul>
+        `,
+        tip:`אם עובדים ב-OneDrive/SharePoint, PowerPoint שומר אוטומטית ("AutoSave") ברקע — כדאי להשאיר את זה דלוק.`,
+        quiz:{q:"איזו תכונה הופכת מצגת שלמה לקובץ MP4 עם המעברים?", options:["Export → Create a Video","Save As → PDF","Print"], correct:0, explain:"Export → Create a Video ממיר את כל המצגת, כולל תזמונים ומעברים, לקובץ וידאו."}
+      }
+    ]
+  },
+  {
+    id:"m2", title:"שלב 2 · בינוני", icon:"🟡",
+    lessons:[
+      {
+        id:"m2l1", title:"שקופית אב ועיצוב עקבי",
+        content:`
+          <p><strong>Slide Master</strong> (<em>View → Slide Master</em>) הוא "מבוא-על" שקובע איך כל השקופיות ייראו — לוגו, מיקום כותרת, צבעי רקע, גופנים ברירת מחדל.</p>
+          <ul>
+            <li>שינוי בשקופית האב הראשית (העליונה) משפיע על כל הפריסות מתחתיה.</li>
+            <li>אפשר לערוך כל פריסה (Layout) בנפרד — למשל רק "כותרת ותוכן".</li>
+            <li>שימושי מאוד כשצריך להוסיף לוגו קבוע או שינוי גופן לכל המצגת בבת אחת, במקום שקופית-שקופית.</li>
+            <li>יציאה מהעריכה: <em>Slide Master → Close Master View</em>.</li>
+          </ul>
+        `,
+        tip:`שינוי גופן דרך Slide Master ולא ידנית בכל שקופית חוסך המון זמן וטעויות עקביות.`,
+        quiz:{q:"מה משנים ב-Slide Master?", options:["רק את השקופית הראשונה","את התבנית הכללית שמשפיעה על כל השקופיות","רק את סדר השקופיות"], correct:1, explain:"Slide Master שולט בעיצוב הבסיס של כל השקופיות והפריסות במצגת."}
+      },
+      {
+        id:"m2l2", title:"ערכות נושא, צבעים וגופנים",
+        content:`
+          <p>דרך <em>Design</em>: החלפת <strong>Themes</strong> משנה מראש כללי. לצדו — <strong>Variants</strong> (וריאציות צבע לאותה תבנית).</p>
+          <ul>
+            <li><em>Design → Variants → Colors</em> — עריכת פלטת הצבעים המדויקת (Customize Colors) — 12 צבעים שמשמשים בכל אלמנט.</li>
+            <li><em>Design → Variants → Fonts</em> — הגדרת זוג גופנים (כותרת + גוף) שיחול על כל המצגת.</li>
+            <li>לעיצוב מהיר של שקופית בודדת — <em>Design → Design Ideas</em> (זמין עם חשבון מחובר), מציע פריסות עיצוביות אוטומטיות.</li>
+          </ul>
+        `,
+        tip:`שמרו על 2 גופנים לכל היותר במצגת שלמה — אחד לכותרות ואחד לגוף הטקסט.`,
+        quiz:{q:"היכן קובעים את זוג הגופנים (כותרת+גוף) לכל המצגת?", options:["Design → Variants → Fonts","Insert → Text Box","Home → Font"], correct:0, explain:"Design → Variants → Fonts מגדיר את זוג הגופנים התיאורטי שחל בעקביות על כל המצגת."}
+      },
+      {
+        id:"m2l3", title:"אנימציות",
+        content:`
+          <p>אנימציות (<em>Animations</em>) מוסיפות תנועה לאלמנטים בתוך שקופית בודדת. ארבעה סוגים:</p>
+          <ul>
+            <li><strong>Entrance</strong> (כניסה, ירוק) — איך אלמנט מופיע.</li>
+            <li><strong>Emphasis</strong> (הדגשה, צהוב) — הדגשה בזמן שהאלמנט כבר על המסך.</li>
+            <li><strong>Exit</strong> (יציאה, אדום) — איך אלמנט נעלם.</li>
+            <li><strong>Motion Paths</strong> (נתיב תנועה) — הזזת אלמנט לאורך מסלול מותאם.</li>
+          </ul>
+          <p>סדר האנימציות וסוג ההפעלה (בלחיצה / יחד עם הקודם / אחרי הקודם) מנוהלים דרך <em>Animation Pane</em> — חלון צד שמראה רשימה מסודרת עם אפשרות גרירה לשינוי סדר.</p>
+        `,
+        tip:`שימוש מתון באנימציות משפר מיקוד; יותר מדי אנימציות מסיח ומרגיש לא מקצועי. פחות זה יותר.`,
+        quiz:{q:"איזה סוג אנימציה גורם לאלמנט להיעלם מהשקופית?", options:["Entrance","Emphasis","Exit"], correct:2, explain:"Exit (בצבע אדום בגלריה) מגדיר כיצד אלמנט נעלם מהמסך."}
+      },
+      {
+        id:"m2l4", title:"מעברים בין שקופיות (Transitions)",
+        content:`
+          <p>בניגוד לאנימציה (בתוך שקופית), <strong>Transition</strong> קובע איך עוברים <em>משקופית לשקופית</em>. נמצא בלשונית <em>Transitions</em>.</p>
+          <ul>
+            <li>אפשר להגדיר משך זמן, כיוון, וכן אם המעבר קורה בלחיצת עכבר או אוטומטית אחרי X שניות (<em>Advance Slide</em>).</li>
+            <li><strong>Apply to All</strong> — מיישם את אותו מעבר על כל המצגת לעקביות.</li>
+            <li>מעבר <strong>Morph</strong> — אחד המתקדמים: יוצר תנועה חלקה בין שני מצבים של אותו אובייקט בשתי שקופיות עוקבות (כמו זום או הזזה).</li>
+          </ul>
+        `,
+        tip:`למצגות עסקיות/מקצועיות עדיף מעבר עדין אחד ועקבי (Fade / Push) על פני מעברים "רועשים" כמו Vortex.`,
+        quiz:{q:"מה ההבדל בין Animation ל-Transition?", options:["אין הבדל, זה אותו דבר","Animation בתוך שקופית, Transition בין שקופיות","Transition רק לטקסט"], correct:1, explain:"Animation מפעיל תנועה על אלמנטים בתוך שקופית בודדת; Transition קובע את המעבר בין שתי שקופיות."}
+      },
+      {
+        id:"m2l5", title:"SmartArt ותרשימים",
+        content:`
+          <p><strong>SmartArt</strong> (<em>Insert → SmartArt</em>) הופך רשימת טקסט לתרשים ויזואלי — תהליכים, היררכיה, מעגלים, רשימות. עריכה דרך חלונית טקסט צדדית שמתעדכנת אוטומטית בגרפיקה.</p>
+          <ul>
+            <li>ניתן להמיר רשימת תבליטים רגילה ל-SmartArt בלחיצה ימנית → Convert to SmartArt.</li>
+            <li>שינוי צבעים וסגנון תלת-ממד — לשונית SmartArt Design.</li>
+            <li>לתרשים היררכי (ארגון) — קטגוריית "Hierarchy".</li>
+            <li>לתהליך שלבים — קטגוריית "Process".</li>
+          </ul>
+        `,
+        tip:`SmartArt מצוין להמרת שקופית טקסט "משעממת" לוויזואל מהיר, בלי צורך בכלי עיצוב חיצוני.`,
+        quiz:{q:"איך הופכים רשימת תבליטים קיימת ל-SmartArt?", options:["מוחקים ומתחילים מחדש","לחיצה ימנית על הרשימה → Convert to SmartArt","אי אפשר להמיר, רק ליצור מחדש"], correct:1, explain:"קליק ימני על רשימת טקסט מציע ישירות אפשרות המרה ל-SmartArt."}
+      },
+      {
+        id:"m2l6", title:"טבלאות וגרפים",
+        content:`
+          <p><strong>טבלאות</strong> — <em>Insert → Table</em>, עם עיצוב עקבי דרך Table Design (סגנונות, שורות מוצללות, כותרת).</p>
+          <p><strong>גרפים (Charts)</strong> — <em>Insert → Chart</em> פותח חלון בחירת סוג גרף (עמודות, קווים, עוגה, ועוד) יחד עם גיליון נתונים דמוי-Excel לעריכה.</p>
+          <ul>
+            <li>ניתן להדביק גרף קיים מ-Excel ולבחור <strong>Keep Source Formatting & Link Data</strong> כדי שיתעדכן אוטומטית בשינוי במקור.</li>
+            <li>לעיצוב מהיר: Chart Design → Chart Styles, ולתוויות/מקרא — Add Chart Element.</li>
+          </ul>
+        `,
+        tip:`בבחירת סוג גרף — עמודות/קווים להשוואת ערכים לאורך זמן, עוגה רק כשיש עד כ-5 קטגוריות.`,
+        quiz:{q:"איזו אפשרות הדבקה שומרת קשר חי בין גרף שהודבק ממקור ה-Excel המקורי?", options:["Keep Source Formatting & Link Data","Picture","Embed Workbook בלבד"], correct:0, explain:"אפשרות זו שומרת קישור למקור כך שעדכון בקובץ ה-Excel המקורי יתעדכן גם במצגת."}
+      },
+      {
+        id:"m2l7", title:"וידאו, אודיו והקלטת מסך",
+        content:`
+          <p><em>Insert → Video</em> — הכנסת סרטון מהמחשב או מ-Online Video (קישור). <em>Insert → Audio</em> — קובץ שמע או הקלטה ישירה.</p>
+          <ul>
+            <li>לשונית <strong>Playback</strong> קובעת: התחלה אוטומטית/בלחיצה, לולאה (Loop), עריכת חיתוך (Trim Video/Audio).</li>
+            <li><strong>Screen Recording</strong> (<em>Insert → Screen Recording</em>) מקליט את המסך ישירות לתוך שקופית — שימושי להדגמות תוכנה.</li>
+            <li>מומלץ להטמיע (Embed) מדיה במקום לקשר לקובץ חיצוני, כדי שהמצגת תעבוד גם ממחשב אחר.</li>
+          </ul>
+        `,
+        tip:`לפני מצגת חשובה — בדקו ש"Play in Background" כבוי אלא אם באמת רוצים מוזיקת רקע לכל המצגת.`,
+        quiz:{q:"איזה כלי מאפשר להקליט את מסך המחשב ישירות לתוך שקופית?", options:["Insert → Screen Recording","Insert → Video","Design → Design Ideas"], correct:0, explain:"Screen Recording מקליט את המסך (עם או בלי אודיו/עכבר) ומכניס את התוצאה ישירות כווידאו בשקופית."}
+      },
+      {
+        id:"m2l8", title:"יישור, פריסה ורשת (Align, Grid, Guides)",
+        content:`
+          <p>עיצוב מקצועי תלוי ביישור מדויק. כלים חשובים ב-<em>Home → Arrange</em> או <em>Shape/Picture Format → Align</em>:</p>
+          <ul>
+            <li><strong>Align Left/Center/Right/Top/Middle/Bottom</strong> — יישור אחיד של כמה אובייקטים שנבחרו יחד.</li>
+            <li><strong>Distribute Horizontally/Vertically</strong> — פיזור אחיד של מרחקים בין 3 אובייקטים ומעלה.</li>
+            <li><strong>Guides ו-Gridlines</strong> (<em>View → Guides / Gridlines</em>) — קווי עזר להצמדה חזותית; ניתן להוסיף קווי עזר מותאמים בגרירה מהשוליים.</li>
+            <li><strong>Snap to Grid</strong> — הצמדה אוטומטית בזמן גרירה.</li>
+          </ul>
+        `,
+        tip:`בחרו כמה אובייקטים עם <kbd>Ctrl</kbd>+קליק, ואז Align Center + Distribute Horizontally ליישור "מהיר ומושלם" בשורה.`,
+        quiz:{q:"איזו פעולה מיישרת מרחקים שווים בין 3 צורות ומעלה?", options:["Group","Distribute Horizontally","Rotate"], correct:1, explain:"Distribute Horizontally/Vertically דואגת שהרווחים בין האובייקטים הנבחרים יהיו שווים."}
+      }
+    ]
+  },
+  {
+    id:"m3", title:"שלב 3 · מקצוענים", icon:"🔴",
+    lessons:[
+      {
+        id:"m3l1", title:"קיצורי מקלדת ותפוקה",
+        content:`
+          <p>עבודה מהירה נשענת על קיצורים. רשימה חיונית (הרחבה מלאה בדף "קיצורים להדפסה" בתפריט):</p>
+          <ul>
+            <li><kbd>Ctrl</kbd>+<kbd>M</kbd> — שקופית חדשה &nbsp;|&nbsp; <kbd>Ctrl</kbd>+<kbd>D</kbd> — שכפול אובייקט/שקופית</li>
+            <li><kbd>Ctrl</kbd>+<kbd>G</kbd> — קיבוץ אובייקטים &nbsp;|&nbsp; <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd> — פירוק קבוצה</li>
+            <li><kbd>F5</kbd> — הפעלת מצגת מההתחלה &nbsp;|&nbsp; <kbd>Shift</kbd>+<kbd>F5</kbd> — מהשקופית הנוכחית</li>
+            <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> / <kbd>V</kbd> — העתקת/הדבקת עיצוב (Format Painter דרך מקלדת)</li>
+          </ul>
+        `,
+        tip:`למצגות שחוזרות (למשל דוחות שבועיים) — שמרו תבנית אישית (.potx) כדי לא להתחיל מאפס בכל פעם (ראו שיעור הבא).`,
+        quiz:{q:"מה עושה הקיצור Ctrl+G על אובייקטים נבחרים?", options:["מקבץ אותם (Group)","מוחק אותם","מסובב אותם"], correct:0, explain:"Ctrl+G מקבץ מספר אובייקטים לישות אחת שניתן להזיז/לשנות גודל יחד."}
+      },
+      {
+        id:"m3l2", title:"בניית תבנית מותאמת אישית (.potx)",
+        content:`
+          <p>ארגונים מקצועיים בונים תבנית עם מיתוג קבוע כדי שכל עובד יתחיל מאותה נקודה:</p>
+          <ul>
+            <li>ערכו את ה-Slide Master במלואו: לוגו, צבעי מותג (Theme Colors מותאמים), גופני מותג, פוטר עם מספרי עמוד.</li>
+            <li>הגדירו את כל הפריסות (Layouts) הנפוצות שהארגון צריך: שקופית פתיחה, נושא+תוכן, ציטוט, סיכום.</li>
+            <li>שמרו: <em>File → Save As</em> → סוג קובץ <strong>PowerPoint Template (.potx)</strong>.</li>
+            <li>הפצה: שמירת הקובץ בתיקיית התבניות המשותפת של הארגון, כך שיופיע אוטומטית ב-New מכל מחשב.</li>
+          </ul>
+        `,
+        tip:`שמרו תבנית "נקייה" בלי דוגמאות תוכן — כך משתמשים לא מוחקים בטעות אלמנטים חשובים כמו הלוגו.`,
+        quiz:{q:"מהו סיומת הקובץ הנכונה לשמירת תבנית PowerPoint לשימוש חוזר?", options:[".pptx",".potx",".pdf"], correct:1, explain:".potx היא סיומת קובץ התבנית הייעודית של PowerPoint (בדומה ל-.dotx בוורד)."}
+      },
+      {
+        id:"m3l3", title:"מאקרו ו-VBA בסיסי",
+        content:`
+          <p>למשימות חוזרות (למשל: יישום עיצוב זהה על עשרות שקופיות) ניתן להשתמש במאקרו:</p>
+          <ul>
+            <li>הפעלת לשונית המפתחים: <em>File → Options → Customize Ribbon</em> → סמנו <strong>Developer</strong>.</li>
+            <li><strong>הקלטת מאקרו</strong> — <em>Developer → Record Macro</em>, בצעו את הפעולות הרצויות, עצרו הקלטה. PowerPoint כותב את קוד ה-VBA אוטומטית.</li>
+            <li><strong>עריכה ידנית</strong> — <em>Developer → Visual Basic</em> פותח את עורך ה-VBA לכתיבה/עריכה של קוד מותאם.</li>
+            <li>שמירה עם מאקרו דורשת פורמט <code>.pptm</code> (Macro-Enabled Presentation).</li>
+          </ul>
+          <p>דוגמת קוד VBA פשוטה שמדפיסה הודעה בהרצה:</p>
+          <pre style="background:#2A2521;color:#F1EBE6;padding:12px 16px;border-radius:8px;overflow-x:auto;font-size:13px;direction:ltr;text-align:left;">Sub HelloWorld()
+    MsgBox "שלום! המאקרו הזה פעיל."
+End Sub</pre>
+        `,
+        tip:`מאקרו ממקור לא מוכר עלול להיות מסוכן — PowerPoint חוסם אותם כברירת מחדל ומזהיר לפני הפעלה. אשרו רק קבצים ממקור מהימן.`,
+        quiz:{q:"מהי סיומת הקובץ הנדרשת לשמירת מצגת עם מאקרו פעיל?", options:[".pptx",".pptm",".ppsx"], correct:1, explain:"‎.pptm (Macro-Enabled Presentation) מאפשרת שמירה של קוד VBA בתוך הקובץ."}
+      },
+      {
+        id:"m3l4", title:"שיתוף פעולה ועבודת צוות",
+        content:`
+          <p>PowerPoint תומך בעבודה משותפת בזמן אמת דרך OneDrive/SharePoint:</p>
+          <ul>
+            <li><strong>Share</strong> (כפתור עליון) — הזמנת אנשים לפי מייל עם הרשאות עריכה/צפייה.</li>
+            <li><strong>Co-authoring</strong> — כמה אנשים עורכים באותה מצגת בו-זמנית, עם סמנים צבעוניים לכל משתמש.</li>
+            <li><strong>Comments</strong> (<em>Insert → Comment</em> או <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>M</kbd>) — הערות ממוקדות על אלמנט או שקופית ספציפיים, עם אפשרות תגובה ו-Resolve.</li>
+            <li><strong>Version History</strong> (<em>File → Info → Version History</em>) — צפייה ושחזור של גרסאות קודמות.</li>
+            <li><strong>Compare</strong> (<em>Review → Compare</em>) — השוואת שתי גרסאות מצגת והצגת ההבדלים כמו "עקוב אחר שינויים".</li>
+          </ul>
+        `,
+        tip:`לפני שליחת מצגת סופית לגורם חיצוני — עברו על ה-Comments ווודאו שכולן סומנו כ-Resolved.`,
+        quiz:{q:"איזו תכונה מאפשרת לשחזר גרסה קודמת של המצגת?", options:["Version History","Slide Master","Animation Pane"], correct:0, explain:"File → Info → Version History מציג את כל השמירות הקודמות עם אפשרות פתיחה/שחזור."}
+      },
+      {
+        id:"m3l5", title:"מצב מציג, תזמון ו-Morph",
+        content:`
+          <p>כלים למצגת חיה מקצועית (<em>Slide Show</em>):</p>
+          <ul>
+            <li><strong>Presenter View</strong> — במסך המרצה רואים הערות, שעון, שקופית הבאה; לקהל מוצגת רק השקופית הנוכחית.</li>
+            <li><strong>Rehearse Timings</strong> — תרגול המצגת עם מדידת זמן אוטומטית לכל שקופית, שמאפשר הצגה עצמאית מתוזמנת (Kiosk).</li>
+            <li><strong>Custom Show</strong> — הגדרת תת-קבוצה של שקופיות להצגה לקהל ספציפי מבלי לשכפל את הקובץ.</li>
+            <li><strong>Zoom for PowerPoint</strong> (<em>Insert → Zoom</em>) — יצירת ניווט לא-ליניארי בין פרקי המצגת (Summary Zoom / Section Zoom).</li>
+            <li><strong>Morph transition</strong> — שכפלו שקופית, הזיזו/שנו אובייקט, והוסיפו Morph כמעבר — PowerPoint יוצר אנימציה חלקה בין שני המצבים.</li>
+          </ul>
+        `,
+        tip:`תרגלו תמיד עם Presenter View מחובר למקרן שני (או הדמיה ב-Display Settings) לפני יום ההצגה עצמו.`,
+        quiz:{q:"מה עושה Presenter View?", options:["מציג לקהל את ההערות","מציג למרצה הערות ותזמון, ולקהל רק את השקופית","מקליט את המצגת"], correct:1, explain:"Presenter View מפריד בין מסך הקהל (שקופית בלבד) למסך המרצה (הערות, שעון, תצוגה מקדימה)."}
+      },
+      {
+        id:"m3l6", title:"ייצוא מתקדם והפצה",
+        content:`
+          <p>מעבר ל-PDF/וידאו הבסיסיים (שיעור 1.6), אפשרויות מתקדמות ב-<em>File → Export</em>:</p>
+          <ul>
+            <li><strong>Package for CD</strong> / <strong>Present Online</strong> — הפצת המצגת עם כל הקבצים המשויכים (גופנים, מדיה) יחד, כדי שתעבוד בכל מחשב.</li>
+            <li><strong>Create Handouts</strong> — ייצוא ל-Word עם שקופיות + מקום לרשימות, לחלוקה לקהל.</li>
+            <li><strong>Embed Fonts</strong> (<em>File → Options → Save</em>) — הטמעת גופנים לא סטנדרטיים בקובץ, כדי שלא "יתפרקו" במחשב אחר.</li>
+            <li><strong>Save as Picture (PNG/JPG) לכל שקופית</strong> — שימושי לשיתוף ברשתות חברתיות.</li>
+          </ul>
+        `,
+        tip:`השתמשו תמיד ב-Embed Fonts כשהמצגת נשלחת למחשב אחר ומשתמשת בגופן מיוחד שהורדתם — אחרת הפריסה עלולה להתעוות.`,
+        quiz:{q:"מה עושה 'Embed Fonts' לפני שליחת קובץ למחשב אחר?", options:["מכווץ את הקובץ","שומר את הגופנים בתוך הקובץ עצמו","מוחק גופנים לא בשימוש"], correct:1, explain:"הטמעת גופנים מבטיחה שהמצגת תיראה זהה גם על מחשב שאין בו את הגופן המקורי מותקן."}
+      },
+      {
+        id:"m3l7", title:"נגישות (Accessibility)",
+        content:`
+          <p>מצגת מקצועית נגישה לכולם, כולל משתמשי קוראי מסך:</p>
+          <ul>
+            <li><strong>Accessibility Checker</strong> (<em>Review → Check Accessibility</em>) — סורק את המצגת ומדגיש בעיות: תמונות ללא טקסט חלופי, קונטרסט נמוך, סדר קריאה לא הגיוני.</li>
+            <li><strong>Alt Text</strong> — לחיצה ימנית על תמונה/גרף → Edit Alt Text, מתאר את התוכן למי שלא רואה אותו.</li>
+            <li><strong>Reading Order Pane</strong> — קובע באיזה סדר קורא מסך "יקריא" את האלמנטים בשקופית.</li>
+            <li>קונטרסט צבעים גבוה בין טקסט לרקע, וגופן קריא בגודל סביר (לפחות 24pt לטקסט גוף במצגות מוצגות).</li>
+          </ul>
+        `,
+        tip:`הריצו Accessibility Checker כשלב אחרון קבוע לפני שליחת כל מצגת חשובה — כמו בדיקת איות.`,
+        quiz:{q:"לאיזו מטרה משמש 'Alt Text' על תמונה?", options:["שינוי צבע התמונה","תיאור טקסטואלי לתוכן עבור קוראי מסך","דחיסת גודל הקובץ"], correct:1, explain:"Alt Text נותן תיאור מילולי שקורא מסך יכול להקריא למי שלא יכול לראות את התמונה."}
+      },
+      {
+        id:"m3l8", title:"עקרונות עיצוב מקצועי",
+        content:`
+          <p>סיכום עקרונות שמבדילים מצגת חובבנית ממצגת מקצועית:</p>
+          <ul>
+            <li><strong>עקביות</strong> — אותם גופנים, צבעים ומרווחים בכל המצגת (Slide Master עוזר כאן).</li>
+            <li><strong>ניגודיות (Contrast)</strong> — טקסט כהה על רקע בהיר או להפך, לעולם לא צבעים קרובים מדי.</li>
+            <li><strong>שטח ריק (White Space)</strong> — לא למלא כל פיקסל; מרווח מגביר קריאות ותחושת מקצועיות.</li>
+            <li><strong>היררכיה חזותית</strong> — הדבר החשוב ביותר צריך להיות הכי בולט (גודל/צבע/מיקום).</li>
+            <li><strong>תמונות איכותיות בלבד</strong> — לא מפוקסלות, לא נמתחות; עדיף תמונת סטוק איכותית על תמונה גוגלית מטושטשת.</li>
+            <li><strong>סיפור, לא רק נתונים</strong> — כל שקופית צריכה "נקודה אחת" ברורה, לא עומס מידע.</li>
+          </ul>
+        `,
+        tip:`שאלו על כל שקופית: "אם למישהו יש 3 שניות להסתכל, מה הוא יבין?" אם התשובה לא ברורה — פשטו.`,
+        quiz:{q:"מהו 'White Space' בעיצוב מצגות?", options:["רקע לבן חובה","שטח ריק/פנוי שמשאירים בכוונה","טקסט בצבע לבן"], correct:1, explain:"White Space הוא מרווח מכוון בין אלמנטים, שמונע עומס חזותי ומשפר קריאות — לא קשור לצבע לבן דווקא."}
+      }
+    ]
+  }
+];
+
+/* ======================= STATE ======================= */
+const STORAGE_KEY = "ppt_course_progress_v1";
+const CERT_KEY = "ppt_course_cert_name_v1";
+let state = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+const ALL_LESSONS = COURSE.flatMap(m => m.lessons.map(l => ({...l, moduleId:m.id, moduleTitle:m.title})));
+const TOTAL = ALL_LESSONS.length;
+
+/* ======================= RENDER SIDEBAR ======================= */
+const navContainer = document.getElementById("navContainer");
+COURSE.forEach((mod, idx) => {
+  const details = document.createElement("details");
+  details.className = "nav-group";
+  details.open = idx === 0;
+  const doneCount = () => mod.lessons.filter(l => state[l.id]).length;
+  details.innerHTML = `
+    <summary><span class="chev">▸</span> ${mod.icon} ${mod.title} <span class="badge" data-mod="${mod.id}">${doneCount()}/${mod.lessons.length}</span></summary>
+    <ul class="nav-links">
+      ${mod.lessons.map(l => `
+        <li><a href="#${l.id}" data-route="${l.id}"><span class="dot">✓</span>${l.title}</a></li>
+      `).join("")}
+    </ul>
+  `;
+  navContainer.appendChild(details);
+});
+
+function refreshBadges(){
+  COURSE.forEach(mod => {
+    const badge = navContainer.querySelector(`.badge[data-mod="${mod.id}"]`);
+    const doneCount = mod.lessons.filter(l => state[l.id]).length;
+    if(badge) badge.textContent = `${doneCount}/${mod.lessons.length}`;
+  });
+  document.querySelectorAll(".nav-links a").forEach(a => {
+    const id = a.dataset.route;
+    a.classList.toggle("done", !!state[id]);
+  });
+  const doneTotal = ALL_LESSONS.filter(l => state[l.id]).length;
+  const pct = Math.round((doneTotal/TOTAL)*100);
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("progressPct").textContent = pct + "%";
+}
+
+/* ======================= RENDER MAIN SECTIONS ======================= */
+const main = document.getElementById("mainContent");
+
+function lessonSectionHTML(l, i, arr){
+  const prev = arr[i-1];
+  const next = arr[i+1];
+  return `
+  <section class="section" id="sec-${l.id}" data-route="${l.id}">
+    <div class="crumb">${l.moduleTitle}</div>
+    <div class="lesson-title">${l.title}</div>
+    <div class="lesson-meta">
+      <label class="mark-done">
+        <input type="checkbox" data-lesson="${l.id}" ${state[l.id] ? "checked":""}>
+        סמן שיעור זה כהושלם
+      </label>
+    </div>
+    <div class="card content-body">${l.content}</div>
+    ${l.tip ? `<div class="tip-box">💡 <b>טיפ:</b> ${l.tip}</div>` : ""}
+    ${l.quiz ? renderQuiz(l.id, l.quiz) : ""}
+    <div class="lesson-footer">
+      ${prev ? `<a class="btn btn-outline" href="#${prev.id}" data-route="${prev.id}">→ ${prev.title}</a>` : `<span></span>`}
+      ${next ? `<a class="btn btn-primary" href="#${next.id}" data-route="${next.id}">${next.title} ←</a>` : `<a class="btn btn-primary" href="#final-quiz" data-route="final-quiz">למבחן המסכם ←</a>`}
+    </div>
+  </section>`;
+}
+
+function renderQuiz(lessonId, quiz){
+  return `
+  <div class="card quiz" id="quiz-${lessonId}">
+    <h3>🧠 בדקו את עצמכם</h3>
+    <div class="q">${quiz.q}</div>
+    <div class="opts">
+      ${quiz.options.map((opt,i) => `<button class="opt" data-idx="${i}">${opt}</button>`).join("")}
+    </div>
+    <div class="explain"></div>
+  </div>`;
+}
+
+/* Intro section */
+const introHTML = `
+<section class="section" id="sec-intro" data-route="intro">
+  <div class="hero">
+    <h1>📊 קורס PowerPoint מלא</h1>
+    <p>קורס אינטראקטיבי בעברית שמלווה אתכם משלבי הפתיחה הבסיסיים ביותר ועד לטכניקות מקצועיות — מאקרו, תבניות ארגוניות, נגישות ועיצוב ברמת סטודיו. לומדים בקצב אישי, עם שאלות תרגול והתקדמות נשמרת בדפדפן.</p>
+    <div class="stats">
+      <div class="stat"><b>${COURSE.length}</b><span>שלבי לימוד</span></div>
+      <div class="stat"><b>${TOTAL}</b><span>שיעורים</span></div>
+      <div class="stat"><b>${TOTAL}</b><span>שאלות תרגול</span></div>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:10px;">מה תלמדו?</h3>
+  <div class="grid-3">
+    ${COURSE.map(m => `
+      <div class="mini-card" data-jump="${m.lessons[0].id}">
+        <div class="n">${m.icon} ${m.title}</div>
+        <div class="t">${m.lessons.length} שיעורים</div>
+        <div class="d">${m.lessons.map(l=>l.title).slice(0,3).join(" · ")}${m.lessons.length>3 ? " ...":""}</div>
+      </div>
+    `).join("")}
+  </div>
+
+  <div class="try-box">
+    <b>👉 איך לומדים כאן:</b> עברו שיעור-שיעור מהתפריט בצד, סמנו "הושלם" בסיום כל שיעור כדי לעקוב אחרי ההתקדמות בראש התפריט, וענו על שאלת התרגול. בסיום כל השלבים — גשו למבחן המסכם ולתעודת הסיום.
+  </div>
+
+  <div class="lesson-footer">
+    <span></span>
+    <a class="btn btn-primary" href="#${ALL_LESSONS[0].id}" data-route="${ALL_LESSONS[0].id}">בואו נתחיל ←</a>
+  </div>
+</section>`;
+
+/* Cheatsheet section */
+const shortcuts = [
+  ["שקופית חדשה","Ctrl + M"],
+  ["שכפול (שקופית/אובייקט)","Ctrl + D"],
+  ["שמירה","Ctrl + S"],
+  ["הפעלת מצגה מההתחלה","F5"],
+  ["הפעלת מצגה מהשקופית הנוכחית","Shift + F5"],
+  ["יציאה ממצגת חיה","Esc"],
+  ["קיבוץ אובייקטים","Ctrl + G"],
+  ["פירוק קבוצה","Ctrl + Shift + G"],
+  ["העתקת עיצוב (Format Painter)","Ctrl + Shift + C ואז Ctrl + Shift + V"],
+  ["הדבקה עם שמירת עיצוב מקור","Ctrl + Alt + V"],
+  ["הזזת אובייקט בקפיצות קטנות","Ctrl + מקשי חצים"],
+  ["הצגת/הסתרת קווי רשת","Shift + F9"],
+  ["הצגת/הסתרת קווי עזר (Guides)","Alt + F9"],
+  ["מסך שחור בזמן מצגה","B (במהלך הצגה)"],
+  ["מסך לבן בזמן מצגה","W (במהלך הצגה)"],
+  ["חזרה להצגת רצועת הכלים אם נעלמה","Ctrl + F1"],
+  ["הוספת הערה","Ctrl + Alt + M"],
+  ["בחירת כל האובייקטים בשקופית","Ctrl + A"],
+];
+const cheatsheetHTML = `
+<section class="section" id="sec-cheatsheet" data-route="cheatsheet">
+  <div class="lesson-title">⌨️ דף קיצורי מקלדת — להדפסה</div>
+  <p class="lesson-meta">דף עזר מרוכז. אפשר להדפיס ישירות מהדפדפן (Ctrl+P) — עיצוב ההדפסה מותאם אוטומטית.</p>
+  <div class="card">
+    <table class="cheat">
+      <thead><tr><th>פעולה</th><th>קיצור</th></tr></thead>
+      <tbody>
+        ${shortcuts.map(([a,b]) => `<tr><td>${a}</td><td style="direction:ltr; text-align:left; font-family:Consolas,monospace;">${b}</td></tr>`).join("")}
+      </tbody>
+    </table>
+    <button class="btn btn-outline" onclick="window.print()">🖨️ הדפסת דף זה</button>
+  </div>
+</section>`;
+
+/* Final quiz section (uses all lesson quizzes) */
+function finalQuizHTML(){
+  const items = ALL_LESSONS.filter(l => l.quiz);
+  return `
+  <section class="section" id="sec-final-quiz" data-route="final-quiz">
+    <div class="lesson-title">🎯 מבחן מסכם</div>
+    <p class="lesson-meta">ענו נכון על לפחות 80% מהשאלות כדי "לעבור" את המבחן ולפתוח את תעודת הסיום.</p>
+    <div class="card" id="finalScoreCard" style="display:none;">
+      <h3>התוצאה שלכם</h3>
+      <div id="finalScoreText" style="font-size:18px; font-weight:700;"></div>
+    </div>
+    <div id="finalQuizList">
+      ${items.map((l,i) => `
+        <div class="card quiz" id="fq-${l.id}">
+          <h3>שאלה ${i+1} — ${l.moduleTitle} · ${l.title}</h3>
+          <div class="q">${l.quiz.q}</div>
+          <div class="opts">
+            ${l.quiz.options.map((opt,idx) => `<button class="opt" data-idx="${idx}">${opt}</button>`).join("")}
+          </div>
+          <div class="explain"></div>
+        </div>
+      `).join("")}
+    </div>
+    <div class="card">
+      <button class="btn btn-primary" id="submitFinalQuiz">📝 בדקו את המבחן</button>
+    </div>
+  </section>`;
+}
+
+/* Certificate section */
+const certificateHTML = `
+<section class="section" id="sec-certificate" data-route="certificate">
+  <div class="lesson-title">🎓 תעודת סיום</div>
+  <p class="lesson-meta">השלימו את כל השיעורים כדי לפתוח את התעודה, הזינו שם והדפיסו/שמרו כ-PDF.</p>
+  <div class="card" id="certGate">
+    <p id="certGateText"></p>
+  </div>
+  <div class="cert-box" id="certBox" style="display:none;">
+    <div style="font-size:34px;">🏆</div>
+    <h2>תעודת הצטיינות</h2>
+    <p>מוענקת בזאת ל</p>
+    <input type="text" class="cert-input" id="certNameInput" placeholder="הקלידו את שמכם המלא">
+    <p style="margin-top:18px;">על השלמה מוצלחת של<br><strong>קורס PowerPoint מלא — ממתחילים ועד מקצוענים</strong></p>
+    <p style="color:var(--muted); font-size:13px; margin-top:16px;" id="certDate"></p>
+    <button class="btn btn-primary" style="margin-top:14px;" onclick="window.print()">🖨️ הדפסה / שמירה כ-PDF</button>
+  </div>
+</section>`;
+
+/* Assemble all sections */
+main.innerHTML = introHTML +
+  ALL_LESSONS.map((l,i,arr) => lessonSectionHTML(l,i,arr)).join("") +
+  cheatsheetHTML + finalQuizHTML() + certificateHTML;
+
+/* ======================= INTERACTIONS ======================= */
+
+// Quiz click handling (delegated)
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("button.opt");
+  if(!btn) return;
+  const quizCard = btn.closest(".quiz");
+  if(quizCard.dataset.answered) return;
+  quizCard.dataset.answered = "1";
+  const idx = parseInt(btn.dataset.idx,10);
+  const allOpts = quizCard.querySelectorAll("button.opt");
+  const lessonId = quizCard.id.replace("quiz-","").replace("fq-","");
+  const lessonData = ALL_LESSONS.find(l => l.id === lessonId);
+  const quizData = lessonData ? lessonData.quiz : null;
+  let correctIdx = quizData ? quizData.correct : null;
+  // for final quiz cards, find via mapping order (id already matches lesson.quiz)
+  allOpts.forEach((b,i) => {
+    b.disabled = true;
+    if(quizData && i === quizData.correct) b.classList.add("correct");
+    else if(i === idx) b.classList.add("wrong");
+  });
+  const explain = quizCard.querySelector(".explain");
+  if(quizData){
+    explain.textContent = (idx === quizData.correct ? "✅ נכון! " : "❌ לא מדויק. ") + quizData.explain;
+    explain.classList.add("show");
+  }
+  quizCard.dataset.correct = (quizData && idx === quizData.correct) ? "1" : "0";
+
+  // auto-mark lesson done on correct answer (only for per-lesson quiz cards)
+  if(quizCard.id.startsWith("quiz-") && quizData && idx === quizData.correct){
+    markDone(lessonId, true);
+  }
+});
+
+// Mark-done checkboxes
+document.addEventListener("change", (e) => {
+  if(e.target.matches('input[type="checkbox"][data-lesson]')){
+    markDone(e.target.dataset.lesson, e.target.checked);
+  }
+});
+function markDone(id, val){
+  state[id] = val;
+  saveState();
+  refreshBadges();
+  document.querySelectorAll(`input[data-lesson="${id}"]`).forEach(cb => cb.checked = val);
+  updateCertGate();
+}
+
+// Final quiz submit
+document.addEventListener("click", (e) => {
+  if(e.target.id !== "submitFinalQuiz") return;
+  const cards = document.querySelectorAll("#finalQuizList .quiz");
+  let answered = 0, correct = 0;
+  cards.forEach(c => {
+    if(c.dataset.answered){ answered++; if(c.dataset.correct === "1") correct++; }
+  });
+  const total = cards.length;
+  const scoreCard = document.getElementById("finalScoreCard");
+  const scoreText = document.getElementById("finalScoreText");
+  scoreCard.style.display = "block";
+  const pct = total ? Math.round((correct/total)*100) : 0;
+  if(answered < total){
+    scoreText.innerHTML = `ענית על ${answered} מתוך ${total} שאלות. אנא ענו על כל השאלות לפני בדיקת הציון הסופי.`;
+  } else {
+    const pass = pct >= 80;
+    scoreText.innerHTML = `${correct}/${total} תשובות נכונות (${pct}%) — ${pass ? "🎉 עברתם בהצלחה! גשו לתעודת הסיום." : "כדאי לחזור על החומר ולנסות שוב."}`;
+    state["final_quiz_pass"] = pass;
+    saveState();
+    updateCertGate();
+  }
+  scoreCard.scrollIntoView({behavior:"smooth", block:"center"});
+});
+
+function updateCertGate(){
+  const doneTotal = ALL_LESSONS.filter(l => state[l.id]).length;
+  const allDone = doneTotal === TOTAL;
+  const gateText = document.getElementById("certGateText");
+  const certBox = document.getElementById("certBox");
+  const certGate = document.getElementById("certGate");
+  if(!gateText) return;
+  if(allDone){
+    certGate.style.display = "none";
+    certBox.style.display = "block";
+    const savedName = localStorage.getItem(CERT_KEY) || "";
+    const nameInput = document.getElementById("certNameInput");
+    nameInput.value = savedName;
+    document.getElementById("certDate").textContent = new Date().toLocaleDateString("he-IL");
+  } else {
+    certGate.style.display = "block";
+    certBox.style.display = "none";
+    gateText.textContent = `השלמתם ${doneTotal} מתוך ${TOTAL} שיעורים. סיימו את כל השיעורים (סימון "הושלם" בכל שיעור) כדי לפתוח את התעודה.`;
+  }
+}
+document.addEventListener("input", (e) => {
+  if(e.target.id === "certNameInput") localStorage.setItem(CERT_KEY, e.target.value);
+});
+
+/* ======================= ROUTER ======================= */
+function showRoute(route){
+  if(!route) route = "intro";
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  const target = document.getElementById("sec-" + route);
+  if(target) target.classList.add("active");
+  else document.getElementById("sec-intro").classList.add("active");
+
+  document.querySelectorAll("[data-route]").forEach(el => el.classList.remove("active"));
+  document.querySelectorAll(`[data-route="${route}"]`).forEach(el => el.classList.add("active"));
+
+  // auto-open the module containing this lesson
+  const modEntry = ALL_LESSONS.find(l => l.id === route);
+  if(modEntry){
+    const grp = [...document.querySelectorAll(".nav-group")].find(g => g.querySelector(`a[data-route="${route}"]`));
+    if(grp) grp.open = true;
+  }
+  window.scrollTo({top:0, behavior:"instant" in window ? "instant":"auto"});
+  if(route === "certificate" || route === "final-quiz") updateCertGate();
+
+  // close mobile sidebar after navigation
+  document.getElementById("sidebar").classList.remove("open");
+}
+
+document.addEventListener("click", (e) => {
+  const link = e.target.closest("[data-route]");
+  if(link && link.tagName === "A"){
+    e.preventDefault();
+    location.hash = link.dataset.route;
+  }
+  const jump = e.target.closest("[data-jump]");
+  if(jump){
+    location.hash = jump.dataset.jump;
+  }
+});
+window.addEventListener("hashchange", () => showRoute(location.hash.slice(1)));
+
+/* Mobile sidebar toggle */
+document.getElementById("toggleSidebar").addEventListener("click", () => {
+  document.getElementById("sidebar").classList.toggle("open");
+});
+
+/* Search filter */
+document.getElementById("searchBox").addEventListener("input", (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll(".nav-links li").forEach(li => {
+    const text = li.textContent.toLowerCase();
+    li.style.display = text.includes(q) ? "" : "none";
+  });
+  document.querySelectorAll(".nav-group").forEach(g => { if(q) g.open = true; });
+});
+
+/* Init */
+refreshBadges();
+showRoute(location.hash.slice(1) || "intro");
+</script>
+</body>
+</html>
