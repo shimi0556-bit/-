@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>שחמט</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <h1>♟️ שחמט</h1>
+      <div class="status" id="status">תור הלבן</div>
+    </header>
+
+    <div class="layout">
+      <div class="board-wrap">
+        <div class="board" id="board" aria-label="לוח שחמט"></div>
+      </div>
+
+      <aside class="panel">
+        <div class="controls">
+          <label class="mode-toggle">
+            <input type="checkbox" id="vsComputer">
+            שחק נגד המחשב
+          </label>
+          <div class="btn-row">
+            <button id="undoBtn">↩️ בטל מהלך</button>
+            <button id="resetBtn">🔄 משחק חדש</button>
+            <button id="flipBtn">🔃 סובב לוח</button>
+          </div>
+        </div>
+
+        <div class="captured">
+          <div class="captured-row">
+            <span class="cap-label">לבן אכל:</span>
+            <span id="capByWhite" class="cap-pieces"></span>
+          </div>
+          <div class="captured-row">
+            <span class="cap-label">שחור אכל:</span>
+            <span id="capByBlack" class="cap-pieces"></span>
+          </div>
+        </div>
+
+        <div class="history">
+          <h2>מהלכים</h2>
+          <ol id="moveList"></ol>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="promoOverlay">
+    <div class="modal">
+      <h3>בחר חייל להכתרה</h3>
+      <div class="promo-options" id="promoOptions"></div>
+    </div>
+  </div>
+
+  <script src="chess.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
