@@ -173,6 +173,31 @@ body {
   cursor: pointer;
 }
 
+.difficulty-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+
+.difficulty-row select {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid #4a3f35;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+
+.search-depth-info {
+  font-size: 0.78rem;
+  color: var(--muted);
+  min-height: 1.2em;
+}
+
 .btn-row {
   display: flex;
   gap: 8px;

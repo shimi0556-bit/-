@@ -10,8 +10,10 @@
 
   var PIECE_VALUE = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 0 };
   var MATE_SCORE = 100000;
-  var SEARCH_DEPTH = 3;
-  var QUIESCENCE_DEPTH = 4;
+  var QUIESCENCE_DEPTH = 6;
+  var MAX_SEARCH_DEPTH = 40;
+  var TIME_UP = {};
+  var DIFFICULTY_TIME_MS = { easy: 1000, medium: 4000, hard: 12000 };
 
   var PST = {
     p: [
@@ -85,6 +87,8 @@
   var resetBtn = document.getElementById("resetBtn");
   var flipBtn = document.getElementById("flipBtn");
   var vsComputerCheckbox = document.getElementById("vsComputer");
+  var difficultySelect = document.getElementById("difficulty");
+  var searchDepthInfoEl = document.getElementById("searchDepthInfo");
   var promoOverlay = document.getElementById("promoOverlay");
   var promoOptions = document.getElementById("promoOptions");
 
@@ -95,6 +99,7 @@
   var vsComputer = false;
   var computerColor = "b";
   var animating = false;
+  var baseStatusText = "";
 
   var FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
   var RANKS = ["8", "7", "6", "5", "4", "3", "2", "1"];
@@ -228,10 +233,7 @@
     if (vsComputer && !game.game_over() && game.turn() === computerColor) {
       animating = true;
       renderAll();
-      setTimeout(function () {
-        computerMove();
-        animating = false;
-      }, 350);
+      setTimeout(triggerComputerMove, 350);
     }
   }
 
@@ -279,6 +281,7 @@
       text = "תור ה" + turnLabel;
       if (game.in_check()) text += " - שח!";
     }
+    baseStatusText = text;
     statusEl.textContent = text;
   }
 
@@ -339,7 +342,19 @@
     return moves;
   }
 
+  var searchStartTime = 0;
+  var searchNodeCount = 0;
+  var searchTimeBudget = 3000;
+
+  function checkTime() {
+    searchNodeCount++;
+    if ((searchNodeCount & 1023) === 0 && Date.now() - searchStartTime > searchTimeBudget) {
+      throw TIME_UP;
+    }
+  }
+
   function quiescence(alpha, beta, maximizing, qDepth) {
+    checkTime();
     var standPat = evaluateBoard();
     if (qDepth <= 0) return standPat;
 
@@ -356,15 +371,17 @@
 
     for (var i = 0; i < captures.length; i++) {
       game.move(captures[i].san);
-      var score = quiescence(alpha, beta, !maximizing, qDepth - 1);
-      game.undo();
-
-      if (maximizing) {
-        if (score > alpha) alpha = score;
-        if (alpha >= beta) return beta;
-      } else {
-        if (score < beta) beta = score;
-        if (beta <= alpha) return alpha;
+      try {
+        var score = quiescence(alpha, beta, !maximizing, qDepth - 1);
+        if (maximizing) {
+          if (score > alpha) alpha = score;
+          if (alpha >= beta) return beta;
+        } else {
+          if (score < beta) beta = score;
+          if (beta <= alpha) return alpha;
+        }
+      } finally {
+        game.undo();
       }
     }
 
@@ -372,6 +389,7 @@
   }
 
   function minimax(depth, alpha, beta, maximizing) {
+    checkTime();
     if (game.in_checkmate()) {
       return game.turn() === "w" ? -MATE_SCORE - depth : MATE_SCORE + depth;
     }
@@ -387,9 +405,12 @@
       var best = -Infinity;
       for (var i = 0; i < moves.length; i++) {
         game.move(moves[i].san);
-        best = Math.max(best, minimax(depth - 1, alpha, beta, false));
-        game.undo();
-        alpha = Math.max(alpha, best);
+        try {
+          best = Math.max(best, minimax(depth - 1, alpha, beta, false));
+          alpha = Math.max(alpha, best);
+        } finally {
+          game.undo();
+        }
         if (beta <= alpha) break;
       }
       return best;
@@ -397,40 +418,98 @@
       var worst = Infinity;
       for (var j = 0; j < moves.length; j++) {
         game.move(moves[j].san);
-        worst = Math.min(worst, minimax(depth - 1, alpha, beta, true));
-        game.undo();
-        beta = Math.min(beta, worst);
+        try {
+          worst = Math.min(worst, minimax(depth - 1, alpha, beta, true));
+          beta = Math.min(beta, worst);
+        } finally {
+          game.undo();
+        }
         if (beta <= alpha) break;
       }
       return worst;
     }
   }
 
-  function computerMove() {
-    var moves = orderedMoves();
-    if (moves.length === 0) return;
+  // Iterative deepening: searches depth 1, then 2, then 3... within a wall-clock
+  // time budget, always keeping the best move from the last depth that finished
+  // completely. This is how every real chess engine (Stockfish included) paces
+  // itself — none of them search a fixed number of plies, let alone a uniform
+  // "100 moves ahead", since the search tree grows exponentially with depth.
+  function iterativeSearch(timeBudgetMs) {
+    searchStartTime = Date.now();
+    searchNodeCount = 0;
+    searchTimeBudget = timeBudgetMs;
 
     var maximizing = computerColor === "w";
-    var bestScore = maximizing ? -Infinity : Infinity;
-    var bestMoves = [];
+    var bestMove = null;
+    var depthReached = 0;
 
-    for (var i = 0; i < moves.length; i++) {
-      game.move(moves[i].san);
-      var score = minimax(SEARCH_DEPTH - 1, -Infinity, Infinity, !maximizing);
-      game.undo();
+    for (var depth = 1; depth <= MAX_SEARCH_DEPTH; depth++) {
+      var localBestMove = null;
+      var localBestScore = maximizing ? -Infinity : Infinity;
+      var aborted = false;
 
-      if (maximizing ? score > bestScore : score < bestScore) {
-        bestScore = score;
-        bestMoves = [moves[i]];
-      } else if (score === bestScore) {
-        bestMoves.push(moves[i]);
+      try {
+        var moves = orderedMoves();
+        if (moves.length === 0) break;
+
+        for (var i = 0; i < moves.length; i++) {
+          game.move(moves[i].san);
+          try {
+            var score = minimax(depth - 1, -Infinity, Infinity, !maximizing);
+            if (maximizing ? score > localBestScore : score < localBestScore) {
+              localBestScore = score;
+              localBestMove = moves[i];
+            }
+          } finally {
+            game.undo();
+          }
+        }
+      } catch (err) {
+        if (err === TIME_UP) {
+          aborted = true;
+        } else {
+          throw err;
+        }
       }
+
+      if (aborted || !localBestMove) break;
+
+      bestMove = localBestMove;
+      depthReached = depth;
+
+      if (Math.abs(localBestScore) > MATE_SCORE - 1000) break;
     }
 
-    var chosen = bestMoves[Math.floor(Math.random() * bestMoves.length)];
-    game.move(chosen.san);
-    lastMove = { from: chosen.from, to: chosen.to };
-    afterMove();
+    return { move: bestMove, depth: depthReached };
+  }
+
+  function triggerComputerMove() {
+    animating = true;
+    statusEl.textContent = baseStatusText + " · המחשב חושב…";
+
+    setTimeout(function () {
+      var timeBudget = DIFFICULTY_TIME_MS[difficultySelect.value] || DIFFICULTY_TIME_MS.medium;
+      var result = iterativeSearch(timeBudget);
+      var chosen = result.move;
+
+      if (!chosen) {
+        var fallback = orderedMoves();
+        chosen = fallback[0];
+      }
+
+      if (chosen) {
+        game.move(chosen.san);
+        lastMove = { from: chosen.from, to: chosen.to };
+      }
+
+      if (result.depth) {
+        searchDepthInfoEl.textContent = "עומק חיפוש אחרון: " + result.depth + " מהלכים קדימה";
+      }
+
+      animating = false;
+      afterMove();
+    }, 30);
   }
 
   function resetGame() {
@@ -439,14 +518,11 @@
     legalTargets = [];
     lastMove = null;
     animating = false;
+    searchDepthInfoEl.textContent = "";
     renderAll();
 
     if (vsComputer && game.turn() === computerColor) {
-      animating = true;
-      setTimeout(function () {
-        computerMove();
-        animating = false;
-      }, 300);
+      setTimeout(triggerComputerMove, 300);
     }
   }
 

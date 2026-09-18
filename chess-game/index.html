@@ -24,6 +24,15 @@
             <input type="checkbox" id="vsComputer">
             שחק נגד המחשב
           </label>
+          <label class="difficulty-row">
+            רמת קושי (זמן חשיבה):
+            <select id="difficulty">
+              <option value="easy">קלה (~1 שנ')</option>
+              <option value="medium" selected>בינונית (~4 שנ')</option>
+              <option value="hard">חזקה (~12 שנ')</option>
+            </select>
+          </label>
+          <div class="search-depth-info" id="searchDepthInfo"></div>
           <div class="btn-row">
             <button id="undoBtn">↩️ בטל מהלך</button>
             <button id="resetBtn">🔄 משחק חדש</button>
