@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>קורס VS Code מלא — ממתחילים ועד מקצוענים</title>
+<style>
+  :root{
+    --brand:#007ACC;
+    --brand-dark:#005A9E;
+    --brand-light:#E6F3FB;
+    --blue:#1A73E8;
+    --ink:#232323;
+    --muted:#666;
+    --paper:#FAFAFA;
+    --card:#FFFFFF;
+    --border:#E3E3E3;
+    --green:#1E8E3E;
+    --green-bg:#E6F4EA;
+    --red:#C23B22;
+    --red-bg:#FCEAE6;
+    --radius:14px;
+    --sidebar-w:300px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Segoe UI","Heebo","Arial Hebrew","Arial",sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    line-height:1.65;
+  }
+  a{color:var(--blue);}
+  h1,h2,h3,h4{line-height:1.3; margin:0 0 .5em;}
+  ::selection{background:var(--brand-light);}
+
+  /* Layout */
+  .app{display:flex; min-height:100vh;}
+  .sidebar{
+    width:var(--sidebar-w); flex:0 0 var(--sidebar-w);
+    background:#20242A; color:#EDEFF2;
+    position:sticky; top:0; height:100vh; overflow-y:auto;
+    padding:18px 16px 40px;
+  }
+  .sidebar .brand{
+    display:flex; align-items:center; gap:10px; margin-bottom:16px;
+    padding:4px 2px;
+  }
+  .brand .logo{
+    width:34px;height:34px;border-radius:8px;
+    background:linear-gradient(135deg,var(--brand),#F6AA1C);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;color:#fff;font-size:18px;flex:none;
+  }
+  .brand .name{font-weight:700; font-size:15px;}
+  .brand .sub{font-size:11.5px; color:#A9B0B8;}
+
+  .progress-wrap{margin:10px 2px 18px;}
+  .progress-label{display:flex; justify-content:space-between; font-size:12px; color:#B7BEC5; margin-bottom:5px;}
+  .progress-bar{height:8px; background:#2E333A; border-radius:99px; overflow:hidden;}
+  .progress-fill{height:100%; background:linear-gradient(90deg,var(--brand),#F6AA1C); width:0%; transition:width .4s ease;}
+
+  .search{
+    width:100%; padding:8px 10px; border-radius:9px; border:1px solid #3A404A;
+    background:#282D34; color:#EDEFF2; font-size:13px; margin-bottom:14px;
+  }
+  .search::placeholder{color:#82898F;}
+
+  .nav-group{margin-bottom:6px;}
+  .nav-group > summary{
+    cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px;
+    padding:9px 8px; border-radius:9px; font-weight:700; font-size:13.5px;
+    color:#EDEFF2;
+  }
+  .nav-group > summary::-webkit-details-marker{display:none;}
+  .nav-group > summary:hover{background:#282D34;}
+  .nav-group[open] > summary .chev{transform:rotate(90deg);}
+  .chev{transition:transform .15s; font-size:11px; color:#B7BEC5;}
+  .nav-group .badge{
+    margin-inline-start:auto; font-size:10.5px; color:#B7BEC5;
+    background:#282D34; padding:1px 7px; border-radius:99px;
+  }
+  .nav-links{list-style:none; margin:2px 0 10px; padding-inline-start:6px; border-inline-start:1px dashed #3A404A;}
+  .nav-links li{margin:1px 0;}
+  .nav-links a{
+    display:flex; align-items:center; gap:7px; text-decoration:none;
+    color:#CDD2D8; font-size:13px; padding:6px 10px; border-radius:8px;
+  }
+  .nav-links a:hover{background:#282D34; color:#fff;}
+  .nav-links a.active{background:var(--brand); color:#fff; font-weight:600;}
+  .nav-links .dot{
+    width:15px;height:15px;border-radius:50%;border:1.5px solid #656C73;flex:none;
+    font-size:10px; display:flex; align-items:center; justify-content:center; color:transparent;
+  }
+  .nav-links a.done .dot{background:var(--green); border-color:var(--green); color:#fff;}
+  .extra-links{margin-top:14px; padding-top:14px; border-top:1px solid #3A404A;}
+  .extra-links a{
+    display:flex; align-items:center; gap:8px; text-decoration:none; color:#CDD2D8;
+    font-size:13px; padding:7px 10px; border-radius:8px;
+  }
+  .extra-links a:hover{background:#282D34; color:#fff;}
+  .extra-links a.active{background:var(--brand); color:#fff;}
+
+  /* Main */
+  .main{flex:1; min-width:0; padding:34px 40px 90px; max-width:900px; margin:0 auto;}
+  .section{display:none; animation:fade .25s ease;}
+  .section.active{display:block;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+
+  .crumb{font-size:12.5px; color:var(--muted); margin-bottom:6px;}
+  .lesson-title{font-size:28px; font-weight:800; margin-bottom:4px;}
+  .lesson-meta{font-size:13px; color:var(--muted); margin-bottom:22px; display:flex; gap:14px; align-items:center;}
+
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+    padding:20px 22px; margin-bottom:18px;
+  }
+  .card h3{font-size:16px; color:var(--brand-dark); margin-bottom:8px;}
+  .content-body p{margin:0 0 12px;}
+  .content-body ul{margin:0 0 12px; padding-inline-start:22px;}
+  .content-body li{margin-bottom:6px;}
+  .content-body strong{color:var(--brand-dark);}
+  code, kbd{
+    background:#F1F1F1; border:1px solid var(--border); border-radius:5px;
+    padding:1px 6px; font-size:.92em; font-family:Consolas,"Courier New",monospace;
+  }
+  kbd{box-shadow:0 1.5px 0 var(--border);}
+
+  .tip-box{
+    background:var(--brand-light); border:1px solid #F3C6C0; border-radius:12px;
+    padding:14px 16px; margin:14px 0; font-size:14px;
+  }
+  .tip-box b{color:var(--brand-dark);}
+  .try-box{
+    background:#E8F0FE; border:1px solid #C6D9F7; border-radius:12px;
+    padding:14px 16px; margin:14px 0; font-size:14px;
+  }
+  .try-box b{color:var(--blue);}
+
+  .quiz{background:#FDFBFA; border:1.5px dashed #E7C3BD;}
+  .quiz h3{margin-bottom:12px;}
+  .quiz .q{font-weight:600; margin-bottom:10px;}
+  .quiz .opts{display:flex; flex-direction:column; gap:8px;}
+  .quiz button.opt{
+    text-align:right; padding:10px 14px; border-radius:9px; border:1px solid var(--border);
+    background:#fff; cursor:pointer; font-size:14px; font-family:inherit;
+  }
+  .quiz button.opt:hover{border-color:var(--brand);}
+  .quiz button.opt.correct{background:var(--green-bg); border-color:var(--green); color:var(--green);}
+  .quiz button.opt.wrong{background:var(--red-bg); border-color:var(--red); color:var(--red);}
+  .quiz button.opt:disabled{cursor:default;}
+  .quiz .explain{margin-top:10px; font-size:13.5px; color:var(--muted); display:none;}
+  .quiz .explain.show{display:block;}
+
+  .lesson-footer{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    margin-top:28px; padding-top:18px; border-top:1px solid var(--border);
+  }
+  .btn{
+    display:inline-flex; align-items:center; gap:6px; cursor:pointer; border:none;
+    border-radius:10px; padding:10px 16px; font-size:14px; font-weight:600; font-family:inherit;
+    text-decoration:none;
+  }
+  .btn-primary{background:var(--brand); color:#fff;}
+  .btn-primary:hover{background:var(--brand-dark);}
+  .btn-outline{background:#fff; border:1px solid var(--border); color:var(--ink);}
+  .btn-outline:hover{border-color:var(--brand);}
+  .btn-ghost{background:transparent; color:var(--muted); border:none; font-size:13px;}
+  .mark-done{display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--muted); cursor:pointer; user-select:none;}
+  .mark-done input{width:17px; height:17px; accent-color:var(--green); cursor:pointer;}
+
+  .hero{
+    background:linear-gradient(135deg,var(--brand),#F6AA1C);
+    color:#fff; border-radius:20px; padding:44px 38px; margin-bottom:26px;
+  }
+  .hero h1{font-size:32px; margin-bottom:10px;}
+  .hero p{font-size:15.5px; max-width:640px; opacity:.95;}
+  .hero .stats{display:flex; gap:26px; margin-top:22px; flex-wrap:wrap;}
+  .hero .stat b{display:block; font-size:22px;}
+  .hero .stat span{font-size:12.5px; opacity:.9;}
+
+  .grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:20px 0;}
+  .grid-2{display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin:20px 0;}
+  .mini-card{
+    background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px;
+    cursor:pointer;
+  }
+  .mini-card:hover{border-color:var(--brand);}
+  .mini-card .n{font-size:12px; color:var(--muted);}
+  .mini-card .t{font-weight:700; font-size:14.5px; margin:3px 0;}
+  .mini-card .d{font-size:12.5px; color:var(--muted);}
+
+  table.cheat{width:100%; border-collapse:collapse; font-size:13.5px; margin-bottom:20px;}
+  table.cheat th, table.cheat td{border:1px solid var(--border); padding:8px 12px; text-align:right;}
+  table.cheat th{background:var(--brand-light); color:var(--brand-dark);}
+  table.cheat tr:nth-child(even){background:#FAFAFA;}
+
+  .cert-box{
+    background:var(--card); border:3px double var(--brand); border-radius:16px;
+    padding:40px; text-align:center; margin-top:10px;
+  }
+  .cert-box h2{font-size:26px; color:var(--brand-dark);}
+  .cert-name{font-size:24px; font-weight:800; margin:18px 0; border-bottom:2px solid var(--border); display:inline-block; padding-bottom:6px; min-width:280px;}
+  .cert-input{padding:10px 14px; border:1px solid var(--border); border-radius:9px; font-size:15px; width:280px; text-align:center; font-family:inherit;}
+
+  .topbar-mobile{display:none;}
+  @media (max-width:900px){
+    .app{flex-direction:column;}
+    .sidebar{
+      position:relative; height:auto; width:100%; flex:none;
+      display:none;
+    }
+    .sidebar.open{display:block;}
+    .topbar-mobile{
+      display:flex; align-items:center; justify-content:space-between;
+      background:#20242A; color:#fff; padding:12px 16px; position:sticky; top:0; z-index:10;
+    }
+    .topbar-mobile button{background:var(--brand); color:#fff; border:none; border-radius:8px; padding:8px 12px; font-size:13px;}
+    .main{padding:24px 18px 70px;}
+    .grid-3{grid-template-columns:1fr;}
+    .grid-2{grid-template-columns:1fr;}
+    .hero{padding:28px 22px;}
+  }
+  @media print{
+    .sidebar,.topbar-mobile,.lesson-footer,.quiz{display:none !important;}
+    .section{display:block !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar-mobile">
+  <strong>💻 קורס VS Code</strong>
+  <button id="toggleSidebar">☰ תפריט</button>
+</div>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="logo">V</div>
+      <div>
+        <div class="name">קורס VS Code מלא</div>
+        <div class="sub">ממתחילים ועד מקצוענים</div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-label"><span>התקדמות</span><span id="progressPct">0%</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <input type="text" class="search" id="searchBox" placeholder="🔍 חיפוש נושא בקורס...">
+
+    <nav id="navContainer"></nav>
+
+    <div class="extra-links">
+      <a href="#intro" data-route="intro">🏠 עמוד הבית</a>
+      <a href="#cheatsheet" data-route="cheatsheet">⌨️ דף קיצורים להדפסה</a>
+      <a href="#final-quiz" data-route="final-quiz">🎯 מבחן מסכם</a>
+      <a href="#certificate" data-route="certificate">🎓 תעודת סיום</a>
+    </div>
+  </aside>
+
+  <main class="main" id="mainContent">
+    <!-- rendered by JS -->
+  </main>
+</div>
+
+<script>
+const COURSE = [
+  {
+    id:"m1", title:"שלב 1 · מתחילים", icon:"🟢",
+    lessons:[
+      {
+        id:"m1l1", title:"מה זה VS Code ולמה להשתמש בו",
+        content:`
+          <p>Visual Studio Code (בקיצור VS Code) הוא עורך קוד חינמי שפיתחה מיקרוסופט, פועל על Windows,‏ macOS ולינוקס.</p>
+          <ul>
+            <li><strong>עורך קוד, לא IDE כבד</strong> — הוא קליל ונפתח מהר, ומקבל את רוב היכולות המתקדמות (תמיכה בשפה, דיבאגר) דרך תוספים שמתקינים רק לפי הצורך.</li>
+            <li><strong>חינמי ופתוח בחלקו</strong> — הליבה שלו פתוחת קוד, בפרויקט בשם <code>vscode</code> ב-GitHub.</li>
+            <li><strong>לא כותב קוד בשבילכם</strong> — הוא מנוע עבודה שסביבו מתחברים שפת התכנות, ההרצה ובקרת הגרסאות.</li>
+          </ul>
+        `,
+        tip:`אם אתם רק מתלבטים אם להתקין — אין סיכון: ההתקנה חינמית לחלוטין ואפשר להסיר בכל רגע בלי להשפיע על שום דבר אחר במחשב.`,
+        quiz:{q:"מה נכון לגבי VS Code?", options:["הוא שפת תכנות בפני עצמה","הוא עורך קוד חינמי שדורש תוספים כדי לתמוך בשפות ספציפיות","הוא זמין רק ב-Windows"], correct:1, explain:"VS Code הוא עורך קוד כללי; התמיכה בשפות ספציפיות (Python,‏ JavaScript וכו') מגיעה מתוספים שמתקינים בנפרד, לא מובנית מראש."}
+      },
+      {
+        id:"m1l2", title:"התקנה והפעלה ראשונה",
+        content:`
+          <p>מורידים את VS Code מהאתר הרשמי ומתקינים כמו כל תוכנה אחרת — בלי הרשמה ובלי כרטיס אשראי.</p>
+          <ul>
+            <li><strong>code.visualstudio.com</strong> — האתר הרשמי היחיד להורדה; בוחרים גרסה למערכת ההפעלה שלכם.</li>
+            <li><strong>מסך הפתיחה (Welcome)</strong> — נפתח אוטומטית בהפעלה ראשונה, ומציע קיצורי דרך ל"פתיחת תיקייה" ולערכות נושא.</li>
+            <li><strong>ערכת נושא (Theme)</strong> — אפשר לבחור מיד בין מצב כהה לבהיר; ניתן לשנות בכל רגע דרך לוח הפקודות.</li>
+          </ul>
+        `,
+        tip:`בפעם הראשונה שפותחים את VS Code, כדאי לבחור ערכת נושא כהה (Dark+) — היא ברירת המחדל הנפוצה ביותר בקרב מתכנתים, ומפחיתה עומס על העיניים בישיבות ארוכות.`,
+        quiz:{q:"איך מתקינים את VS Code?", options:["רק דרך חנות אפליקציות סגורה","מורידים חינם מ-code.visualstudio.com ומתקינים כמו כל תוכנה","צריך לקנות רישיון מראש"], correct:1, explain:"ההתקנה חינמית ופשוטה — מורידים את הקובץ המתאים למערכת ההפעלה מהאתר הרשמי ומריצים אותו."}
+      },
+      {
+        id:"m1l3", title:"תיקיית עבודה (Workspace) וסייר הקבצים",
+        content:`
+          <p>בניגוד לעורך טקסט שפותח קובץ בודד, VS Code בנוי סביב תיקייה שלמה שמייצגת פרויקט.</p>
+          <ul>
+            <li><strong>Open Folder</strong> — פותחים תיקייה דרך התפריט <code>File ▸ Open Folder</code>, ומאותו רגע היא הופכת ל"תיקיית העבודה" הפעילה.</li>
+            <li><strong>Explorer</strong> — עץ הקבצים הצדי שמציג את כל הקבצים והתיקיות בתוך תיקיית העבודה, ומתעדכן אוטומטית עם כל שינוי.</li>
+            <li><strong>קבצים ותיקיות חדשים</strong> — נוצרים ישירות מתוך ה-Explorer בלחיצה על סמלי "קובץ חדש" ו"תיקייה חדשה" שמופיעים בריחוף עם העכבר.</li>
+          </ul>
+        `,
+        tip:`התחילו כל פרויקט חדש בתיקייה ריקה משלו, לא כקובץ בודד על שולחן העבודה — זה מה שנותן ל-VS Code לעבוד בשבילכם (חיפוש, Git, הרצה) ביחס לפרויקט שלם.`,
+        quiz:{q:"מה עושה הפעולה File ▸ Open Folder?", options:["פותחת קובץ בודד לעריכה","הופכת תיקייה שלמה במחשב ל'תיקיית עבודה' פעילה עם עץ קבצים","מוחקת את התיקייה הנוכחית"], correct:1, explain:"פתיחת תיקייה היא הדרך שבה VS Code יודע על אילו קבצים לעקוב, לחפש בהם ולהריץ ביחס אליהם."}
+      },
+      {
+        id:"m1l4", title:"יצירה ועריכה של קובץ ראשון",
+        content:`
+          <p>עכשיו אפשר ליצור קובץ אמיתי בתוך תיקיית העבודה ולראות את מעגל העבודה הבסיסי: כתיבה, שמירה ולשוניות.</p>
+          <ul>
+            <li><strong>קובץ חדש</strong> — לוחצים על סמל "קובץ חדש" ב-Explorer ונותנים לו שם עם סיומת (למשל <code>notes.txt</code> או <code>hello.py</code>) — הסיומת היא זו שאומרת ל-VS Code איזו שפה זו.</li>
+            <li><strong>לשוניות (Tabs)</strong> — כל קובץ פתוח מקבל לשונית משלו בראש אזור העריכה; נקודה קטנה על הלשונית מסמנת שינוי שלא נשמר.</li>
+            <li><strong>שמירה</strong> — <kbd dir="ltr">Ctrl+S</kbd> (ב-Mac: <kbd dir="ltr">Cmd+S</kbd>) שומרת את הקובץ הפעיל; הנקודה על הלשונית נעלמת מיד עם השמירה.</li>
+          </ul>
+        `,
+        tip:`אם סגרתם קובץ בטעות בלי לשמור, אפשר לשחזר אותו דרך לוח הפקודות עם הפקודה Reopen Closed Editor.`,
+        quiz:{q:"מה מסמנת נקודה קטנה שמופיעה על לשונית קובץ?", options:["שהקובץ נעול לעריכה","שיש שינוי בקובץ שעדיין לא נשמר","שהקובץ ריק"], correct:1, explain:"הנקודה היא אינדיקציה חזותית לשינויים שלא נשמרו; היא נעלמת ברגע שנשמרים עם Ctrl+S."}
+      },
+      {
+        id:"m1l5", title:"לוח הפקודות (Command Palette)",
+        content:`
+          <p>לוח הפקודות הוא שדה חיפוש שנפתח מעל הכל ומריץ כל פעולה ב-VS Code בהקלדה — הכלי החשוב ביותר ללמוד ראשון.</p>
+          <ul>
+            <li><strong>פתיחה</strong> — <kbd dir="ltr">Ctrl+Shift+P</kbd> (Mac: <kbd dir="ltr">Cmd+Shift+P</kbd>) פותחת שדה שמקבל הקלדה חופשית של שם הפעולה הרצויה.</li>
+            <li><strong>חיפוש חכם</strong> — לא צריך לדעת את השם המדויק; הקלדה חלקית כמו "format" מציגה את כל הפעולות הרלוונטיות.</li>
+            <li><strong>תחליף לתפריטים</strong> — כל פעולה שנמצאת בתפריטים העליונים זמינה גם דרך לוח הפקודות, בדרך כלל מהר יותר.</li>
+          </ul>
+        `,
+        tip:`כשאתם לא זוכרים איפה פעולה נמצאת בתפריטים — פתחו את לוח הפקודות והקלידו מילה שמתארת מה שאתם רוצים לעשות, במקום לחפש ידנית.`,
+        quiz:{q:"מה עושה לוח הפקודות (Command Palette)?", options:["מציג רק את היסטוריית הקבצים שנפתחו","מאפשר להריץ כל פעולה ב-VS Code על ידי הקלדת שמה","פותח דפדפן אינטרנט בתוך העורך"], correct:1, explain:"לוח הפקודות הוא ממשק חיפוש-והרצה אוניברסלי לכל פעולה זמינה בתוכנה, ולכן הוא הדרך המהירה ביותר לגלות ולהפעיל יכולות."}
+      },
+      {
+        id:"m1l6", title:"הטרמינל המשולב",
+        content:`
+          <p>טרמינל אמיתי שנפתח בתוך VS Code ומצביע כברירת מחדל על תיקיית הפרויקט הפתוחה.</p>
+          <ul>
+            <li><strong>פתיחה</strong> — <kbd dir="ltr">Ctrl+\`</kbd> (הגרש הפוך, מתחת למקש Esc) פותחת וסוגרת את הטרמינל התחתון.</li>
+            <li><strong>הרצת קוד</strong> — אפשר להריץ פקודות כמו <code>python hello.py</code> או <code>node app.js</code> ולראות את הפלט מיד מתחת לקוד, בלי לצאת לתוכנה אחרת.</li>
+            <li><strong>כמה טרמינלים במקביל</strong> — ניתן לפתוח כמה חלונות טרמינל זה לצד זה, למשל אחד להרצה ואחד לפקודות Git.</li>
+          </ul>
+        `,
+        tip:`אם הטרמינל נפתח בתיקייה הלא נכונה, בדקו שפתחתם את VS Code על תיקיית הפרויקט (Open Folder) ולא רק קובץ בודד — הטרמינל תמיד עוקב אחרי תיקיית העבודה הפעילה.`,
+        quiz:{q:"מה ברירת המחדל של המיקום שבו נפתח הטרמינל המשולב?", options:["תיקיית המשתמש הראשית תמיד","תיקיית הפרויקט (תיקיית העבודה) הפתוחה ב-VS Code","תיקייה זמנית שנמחקת בסגירה"], correct:1, explain:"הטרמינל המשולב נפתח יחסית לתיקיית העבודה הנוכחית, כדי שפקודות כמו הרצת קובץ יעבדו מיד בלי לנווט תיקיות."}
+      },
+      {
+        id:"m1l7", title:"תוספים (Extensions)",
+        content:`
+          <p>תוספים הם תוכנות עזר קטנות שמתקינים כדי להוסיף ל-VS Code יכולת שאינה קיימת בו כברירת מחדל — כמו תמיכה בשפת תכנות.</p>
+          <ul>
+            <li><strong>שוק התוספים</strong> — נפתח עם <kbd dir="ltr">Ctrl+Shift+X</kbd>, ומאפשר חיפוש והתקנה בלחיצה אחת.</li>
+            <li><strong>תוספי שפה רשמיים</strong> — לדוגמה התוסף <code>Python</code> של Microsoft מוסיף השלמה, בדיקת שגיאות והרצה לקבצי פייתון.</li>
+            <li><strong>זהירות מתונה</strong> — כדאי להתקין תוספים מפרסמים מוכרים בלבד, לרוב מסומנים ב-✔, כדי להימנע מתוספים לא אמינים.</li>
+          </ul>
+        `,
+        tip:`לפני שמתקינים תוסף חדש, בדקו את מספר ההתקנות ואת הדירוג בעמוד התוסף בשוק — תוסף עם מיליוני התקנות ודירוג גבוה הוא כמעט תמיד בחירה בטוחה.`,
+        quiz:{q:"מה תפקידו של תוסף (Extension) ב-VS Code?", options:["להחליף את מערכת ההפעלה","להוסיף יכולת שלא קיימת מובנית, כמו תמיכה בשפת תכנות","למחוק קבצים אוטומטית"], correct:1, explain:"תוספים מרחיבים את הפונקציונליות הבסיסית — הם הדרך שבה VS Code הקליל תומך בכל כך הרבה שפות וכלים בלי לכלול הכול מראש."}
+      }
+    ]
+  },
+  {
+    id:"m2", title:"שלב 2 · בינוני", icon:"🟡",
+    lessons:[
+      {
+        id:"m2l1", title:"IntelliSense והשלמה חכמה",
+        content:`
+          <p>בזמן שכותבים קוד, VS Code מציע השלמות למשתנים, פונקציות ומאפיינים — לא ניחוש: המערכת קוראת בפועל את הקוד והספריות שבשימוש.</p>
+          <ul>
+            <li><strong>הצעות חיות</strong> — תפריט השלמה קופץ תוך כדי הקלדה; <kbd dir="ltr">Tab</kbd> או <kbd dir="ltr">Enter</kbd> מקבלים את ההצעה המודגשת.</li>
+            <li><strong>תיעוד מוצג בו-זמנית</strong> — ריחוף מעל פונקציה מציג את התיאור שלה ואת סוגי הפרמטרים שהיא מקבלת, בלי לצאת לתיעוד חיצוני.</li>
+            <li><strong>תלוי בתוסף השפה</strong> — רמת ה-IntelliSense תלויה בתוסף השפה המותקן; שפות עם תוסך רשמי (Python,‏ TypeScript) מקבלות את התמיכה העמוקה ביותר.</li>
+          </ul>
+        `,
+        tip:`אם IntelliSense לא מציע השלמות בכלל, ודאו שהתוסף הרשמי של השפה מותקן ושפתחתם תיקיית עבודה (לא קובץ בודד) — חלק מהניתוח דורש הקשר של פרויקט שלם.`,
+        quiz:{q:"על מה מבוססות הצעות ה-IntelliSense?", options:["ניחוש אקראי של מילים נפוצות","ניתוח בפועל של הקוד והספריות בפרויקט","רשימת מילים קבועה שלא משתנה"], correct:1, explain:"IntelliSense מנתח את מבנה הקוד בזמן אמת — כולל טיפוסים, פונקציות וספריות מיובאות — ולכן ההצעות שלו מדויקות להקשר הספציפי שלכם."}
+      },
+      {
+        id:"m2l2", title:"ניווט מהיר בקוד",
+        content:`
+          <p>ככל שפרויקט גדל, מציאת קטע קוד ידנית הופכת לאיטית — VS Code מציע כמה דרכי ניווט מיידיות.</p>
+          <ul>
+            <li><strong>פתיחה מהירה</strong> — <kbd dir="ltr">Ctrl+P</kbd> פותחת חיפוש קבצים לפי שם, בלי לגלול בעץ הקבצים.</li>
+            <li><strong>מעבר להגדרה (Go to Definition)</strong> — <kbd dir="ltr">F12</kbd> על שם פונקציה או משתנה קופץ ישירות למקום שבו הוא הוגדר, גם אם הוא בקובץ אחר.</li>
+            <li><strong>הצצה (Peek Definition)</strong> — <kbd dir="ltr">Alt+F12</kbd> מציגה את ההגדרה בחלון צף בתוך אותו קובץ, בלי לעזוב את מקום הקריאה.</li>
+          </ul>
+        `,
+        tip:`לפני שאתם מחפשים ידנית איפה פונקציה מוגדרת — לחצו עליה עם קליק ימני ובחרו Go to Definition, או השתמשו ב-F12 ישירות.`,
+        quiz:{q:"מה עושה הפעולה Go to Definition (F12)?", options:["מוחקת את הפונקציה שנבחרה","קופצת למקום שבו המשתנה או הפונקציה שנבחרו הוגדרו בפועל","פותחת את התיעוד הרשמי של השפה באינטרנט"], correct:1, explain:"הפעולה מנתחת את הקוד ומנווטת ישירות למקור ההגדרה, גם כשהיא נמצאת בקובץ אחר בפרויקט — חוסך חיפוש ידני."}
+      },
+      {
+        id:"m2l3", title:"עריכה מתקדמת: סמן מרובה וחיפוש-והחלפה גלובלי",
+        content:`
+          <p>שתי טכניקות שחוסכות המון עבודה חוזרת בעריכת קוד.</p>
+          <ul>
+            <li><strong>סמן מרובה (Multi-cursor)</strong> — <kbd dir="ltr">Ctrl+D</kbd> שוב ושוב בוחרת את המופע הבא של מילה מסומנת, ועריכה אחת מוחלת על כולם בו-זמנית.</li>
+            <li><strong>Alt+Click</strong> — מוסיף סמן עריכה נוסף בכל מקום שלוחצים עליו עם Alt, לעריכה חופשית בכמה שורות במקביל.</li>
+            <li><strong>חיפוש-והחלפה בכל הפרויקט</strong> — <kbd dir="ltr">Ctrl+Shift+F</kbd> פותחת חיפוש שמקיף את כל קבצי הפרויקט, עם אפשרות החלפה גורפת בלחיצה אחת.</li>
+          </ul>
+        `,
+        tip:`לפני החלפה גורפת בכל הפרויקט, לחצו על סמל "תצוגה מקדימה" בפאנל החיפוש כדי לראות אילו שורות ישתנו — זה מונע טעויות בלתי הפיכות.`,
+        quiz:{q:"מה עושה קיצור Ctrl+D כשמילה מסומנת?", options:["מוחק את המילה מיד","בוחר את המופע הבא של אותה מילה, כדי לערוך את שניהם יחד","פותח את התוסף Extensions"], correct:1, explain:"Ctrl+D מוסיף בהדרגה עוד ועוד מופעים של אותה מילה לבחירה, ומאפשר לערוך את כל המופעים בבת אחת — שימושי במיוחד לשינוי שם משתנה."}
+      },
+      {
+        id:"m2l4", title:"Snippets — קטעי קוד מוכנים",
+        content:`
+          <p>Snippet הוא תבנית קוד קצרה שמוקלדת בקיצור ומתרחבת אוטומטית למבנה שלם.</p>
+          <ul>
+            <li><strong>הפעלה</strong> — מקלידים קיצור (למשל <code>for</code> בקובץ JavaScript) ובוחרים מתפריט ההשלמה כדי לקבל לולאה מלאה עם שדות שמחכים למילוי.</li>
+            <li><strong>מובנה לפי שפה</strong> — כל תוסף שפה מגיע עם ספריית snippets משלו, המותאמת לתחביר הספציפי של אותה שפה.</li>
+            <li><strong>Snippets אישיים</strong> — אפשר להגדיר קטעים משלכם דרך <code>Configure User Snippets</code> בלוח הפקודות, לקוד שאתם כותבים שוב ושוב.</li>
+          </ul>
+        `,
+        tip:`אחרי שבוחרים snippet, מקש Tab מנווט בין השדות הריקים בתבנית (למשל שם המשתנה בלולאה) — לא צריך לקלוד עם העכבר.`,
+        quiz:{q:"מהו Snippet?", options:["קובץ גיבוי אוטומטי","תבנית קוד קצרה שמתרחבת ממקש קיצור למבנה שלם","שם אחר לתוסף (Extension)"], correct:1, explain:"Snippet הוא קיצור טקסטואלי שהעורך מרחיב לתבנית קוד מלאה — חוסך הקלדה חוזרת של מבנים נפוצים כמו לולאות או פונקציות."}
+      },
+      {
+        id:"m2l5", title:"הגדרות אישיות (Settings)",
+        content:`
+          <p>VS Code ניתן להתאמה כמעט מלאה דרך מסך ההגדרות — החל מגודל גופן ועד התנהגות שמירה אוטומטית.</p>
+          <ul>
+            <li><strong>User Settings</strong> — הגדרות שחלות על כל הפרויקטים במחשב, למשל ערכת נושא או גודל גופן.</li>
+            <li><strong>Workspace Settings</strong> — הגדרות שנשמרות רק לפרויקט הנוכחי (למשל רוחב הזחה של שפה מסוימת), ונשמרות בקובץ <code>.vscode/settings.json</code> בתוך הפרויקט.</li>
+            <li><strong>עריכה ויזואלית מול JSON</strong> — אפשר לשנות הגדרות דרך מסך גרפי נוח, או ישירות בקובץ <code>settings.json</code> לעריכה מדויקת ומהירה.</li>
+          </ul>
+        `,
+        tip:`הפעילו Auto Save (בתפריט File ▸ Auto Save) בשלב מוקדם — זה חוסך את הצורך לזכור Ctrl+S כל הזמן, ובמיוחד מונע אובדן שינויים בזמן דיבוג.`,
+        quiz:{q:"מה ההבדל בין User Settings ל-Workspace Settings?", options:["אין הבדל, זה אותו דבר","User Settings חלות על כל הפרויקטים, Workspace Settings רק על הפרויקט הנוכחי","Workspace Settings שמורות רק בענן ולא במחשב"], correct:1, explain:"User Settings הן ברירת המחדל הגלובלית שלכם, בעוד Workspace Settings מאפשרות להתאים הגדרות ספציפיות לפרויקט מסוים בלי להשפיע על פרויקטים אחרים."}
+      },
+      {
+        id:"m2l6", title:"בקרת גרסאות בסיסית עם Git",
+        content:`
+          <p>אם מותקן Git במחשב, VS Code מציג ממשק גרפי מובנה לניהול היסטוריית שינויים — בלי צורך בשורת פקודה.</p>
+          <ul>
+            <li><strong>לשונית Source Control</strong> — נפתחת עם <kbd dir="ltr">Ctrl+Shift+G</kbd>, ומציגה אילו קבצים השתנו מאז ה-commit האחרון.</li>
+            <li><strong>Stage ו-Commit</strong> — בוחרים אילו שינויים "לשמור בהיסטוריה" (Stage), כותבים הודעה קצרה, ולוחצים על כפתור ה-Commit.</li>
+            <li><strong>השוואת שינויים (Diff)</strong> — לחיצה על קובץ ברשימת השינויים פותחת תצוגת "לפני/אחרי" צבעונית שמראה בדיוק מה השתנה.</li>
+          </ul>
+        `,
+        tip:`כתבו הודעות commit קצרות וברורות ("הוסף בדיקת קלט" ולא "הוספתי דברים") — קל יותר לסרוק היסטוריה ארוכה כשההודעות עקביות.`,
+        quiz:{q:"מה עושה Commit ב-Git?", options:["מוחק את הקובץ לצמיתות","שומר 'תמונת מצב' של השינויים שנבחרו, יחד עם הודעה מסבירה","שולח את הקוד ישירות לאינטרנט"], correct:1, explain:"Commit יוצר נקודת שחזור בהיסטוריית הפרויקט; שליחה לשרת מרוחק (כמו GitHub) היא פעולה נפרדת שנקראת Push."}
+      },
+      {
+        id:"m2l7", title:"איתור שגיאות ראשוני: Linting ופאנל הבעיות",
+        content:`
+          <p>עוד לפני שמריצים קוד, VS Code יכול לסמן בעיות פוטנציאליות — תודות לתוספי בדיקה (Linters).</p>
+          <ul>
+            <li><strong>קווים גליים</strong> — קו אדום גלי מתחת לקוד מסמן שגיאה שעלולה למנוע הרצה; קו צהוב מסמן אזהרת סגנון בלבד.</li>
+            <li><strong>פאנל Problems</strong> — נפתח דרך לוח הפקודות, ומרכז את כל השגיאות והאזהרות בכל הפרויקט ברשימה אחת לחיצה-וקפיצה.</li>
+            <li><strong>תלוי בתוסף שפה</strong> — איכות הבדיקה תלויה בתוסף המותקן; בפייתון למשל תוספי Pylint או Ruff מוסיפים בדיקות מעבר לבסיס.</li>
+          </ul>
+        `,
+        tip:`לפני שאתם מריצים קוד ומחפשים למה הוא נכשל, סרקו קודם את פאנל Problems — שגיאות בסיסיות (הקלדה, ייבוא חסר) מופיעות שם מיד, בלי צורך בהרצה.`,
+        quiz:{q:"מה מסמן קו אדום גלי מתחת לקוד?", options:["עיצוב טקסט מיוחד","שגיאה שעלולה למנוע הרצה תקינה של הקוד","שהקוד הועתק מהאינטרנט"], correct:1, explain:"קו גלי אדום הוא סימון ויזואלי של הלינטר לבעיה חמורה בקוד; קו צהוב מסמן אזהרת סגנון בלבד שלא בהכרח תמנע הרצה."}
+      }
+    ]
+  },
+  {
+    id:"m3", title:"שלב 3 · מקצוענים", icon:"🔴",
+    lessons:[
+      {
+        id:"m3l1", title:"דיבאגר מלא: breakpoints,‏ Watch ו-Call Stack",
+        content:`
+          <p>הרצה "בפיקוח" עוצרת את הקוד באמצע ומאפשרת לבדוק בדיוק מה קורה בכל רגע נתון.</p>
+          <ul>
+            <li><strong>Breakpoint</strong> — לחיצה ליד מספר שורה מוסיפה נקודת עצירה; הרצה עם <kbd dir="ltr">F5</kbd> עוצרת בדיוק שם.</li>
+            <li><strong>Watch ו-Variables</strong> — פאנל צדדי שמציג את כל המשתנים בהקשר הנוכחי, ומאפשר להוסיף ביטויים מותאמים אישית למעקב.</li>
+            <li><strong>launch.json</strong> — קובץ תצורה בתיקיית <code>.vscode</code> שמגדיר איך בדיוק להריץ ולדבג את הפרויקט, למשל עם אילו פרמטרים.</li>
+          </ul>
+        `,
+        tip:`אפשר להוסיף תנאי לנקודת עצירה (Conditional Breakpoint) בלחיצה ימנית עליה — למשל לעצור רק כשמשתנה מגיע לערך מסוים, במקום לעצור בכל מעבר בלולאה.`,
+        quiz:{q:"מה תפקידו של קובץ launch.json?", options:["הוא רשימת התוספים המותקנים","הוא מגדיר כיצד להריץ ולדבג את הפרויקט הספציפי","הוא קובץ הגדרות ערכת הנושא"], correct:1, explain:"launch.json הוא קובץ תצורה שקובע את פרטי הרצת הדיבאגר — איזה קובץ להריץ, עם אילו פרמטרים ובאיזו סביבה."}
+      },
+      {
+        id:"m3l2", title:"משימות אוטומטיות עם Tasks",
+        content:`
+          <p>Tasks הן פקודות מוגדרות-מראש שמריצים בלחיצה, במקום להקליד אותן ידנית בטרמינל בכל פעם.</p>
+          <ul>
+            <li><strong>tasks.json</strong> — קובץ תצורה שמגדיר פקודות כמו הרצת בנייה (build), בדיקות (test) או ניקוי קבצים זמניים.</li>
+            <li><strong>הרצה</strong> — נגיש דרך לוח הפקודות עם <code>Run Task</code>, או בקיצור <kbd dir="ltr">Ctrl+Shift+B</kbd> למשימת ברירת המחדל.</li>
+            <li><strong>שרשור משימות</strong> — אפשר להגדיר תלות בין משימות, כך שמשימה אחת מפעילה אוטומטית משימות קודמות שהיא תלויה בהן.</li>
+          </ul>
+        `,
+        tip:`אם אתם מריצים באופן קבוע את אותה סדרת פקודות (למשל build ואז test), הגדירו אותן כ-Task אחת — זה חוסך טעויות הקלדה וזמן בכל הרצה.`,
+        quiz:{q:"מה מטרתן של Tasks ב-VS Code?", options:["לתזמן גיבויים אוטומטיים בלבד","להריץ פקודות חוזרות (כמו build) בלחיצה, בלי להקליד אותן ידנית","להחליף את הדיבאגר לגמרי"], correct:1, explain:"Tasks מייעלות עבודה חוזרת — מגדירים פעם אחת פקודה מורכבת, ואז מריצים אותה בלחיצה או קיצור מקלדת בכל פעם שצריך."}
+      },
+      {
+        id:"m3l3", title:"עבודה מרחוק: SSH,‏ Containers ו-WSL",
+        content:`
+          <p>הרחבות Remote Development מאפשרות לפתוח את VS Code המקומי, אך לערוך ולהריץ קוד שנמצא בפועל במקום אחר.</p>
+          <ul>
+            <li><strong>Remote - SSH</strong> — מתחברים לשרת מרוחק ועורכים קבצים עליו ישירות, כאילו הם מקומיים, כולל טרמינל ודיבאגר על אותו שרת.</li>
+            <li><strong>Dev Containers</strong> — מריצים את הפרויקט בתוך קונטיינר Docker מוגדר מראש, כדי שכל חברי הצוות יעבדו בסביבה זהה בדיוק.</li>
+            <li><strong>WSL (ב-Windows)</strong> — מאפשר לערוך קבצים בתוך סביבת לינוקס שרצה על אותו מחשב Windows, בלי לצאת מהעורך.</li>
+          </ul>
+        `,
+        tip:`אם צוות שלם מתלונן על "אצלי זה עובד" בפרויקט מסוים, Dev Containers הוא הפתרון הנפוץ — כולם רצים על אותה סביבה, מוגדרת בקובץ אחד שנשמר עם הפרויקט.`,
+        quiz:{q:"מה מאפשרת התכונה Dev Containers?", options:["להריץ את VS Code בלי אינטרנט בכלל","להריץ את הפרויקט בתוך סביבת Docker אחידה, זהה לכל חברי הצוות","לשמור גיבוי אוטומטי בענן"], correct:1, explain:"Dev Containers מגדירים סביבת עבודה עקבית (מערכת הפעלה, גרסאות תוכנה) בתוך קונטיינר, כדי שכל מי שפותח את הפרויקט יעבוד בתנאים זהים בדיוק."}
+      },
+      {
+        id:"m3l4", title:"התאמה אישית עמוקה: קיצורי מקלדת וערכות נושא",
+        content:`
+          <p>מעבר להגדרות הבסיסיות, VS Code מאפשר לשנות כמעט כל היבט של חוויית העבודה.</p>
+          <ul>
+            <li><strong>keybindings.json</strong> — קובץ שמאפשר לשנות או להוסיף קיצורי מקלדת אישיים לכל פעולה, נגיש דרך <code>Preferences: Open Keyboard Shortcuts (JSON)</code>.</li>
+            <li><strong>ערכות נושא וסמלים</strong> — אלפי ערכות עיצוב וחבילות אייקונים זמינות דרך שוק התוספים, לשינוי המראה המלא של העורך.</li>
+            <li><strong>Profiles</strong> — מאפשרים לשמור כמה "תצורות" נפרדות (תוספים, הגדרות, קיצורים) ולהחליף ביניהן, למשל תצורה אחת לפיתוח Python ואחרת ל-JavaScript.</li>
+          </ul>
+        `,
+        tip:`לפני שמשנים קיצור מקלדת קיים, בדקו במסך Keyboard Shortcuts אם הוא כבר משמש פעולה אחרת — שינוי בלי לבדוק עלול ליצור התנגשות מבלבלת.`,
+        quiz:{q:"מה מאפשרת התכונה Profiles ב-VS Code?", options:["לשמור כמה תצורות נפרדות (תוספים, הגדרות) ולהחליף ביניהן","ליצור כמה משתמשי מערכת הפעלה","להריץ שני עורכים בו-זמנית על אותו קובץ"], correct:0, explain:"Profile הוא ערכת תצורה שלמה — תוספים, הגדרות וקיצורים — שאפשר לשמור בנפרד ולעבור ביניהן לפי סוג הפרויקט שעליו עובדים."}
+      },
+      {
+        id:"m3l5", title:"שיתוף פעולה בזמן אמת עם Live Share",
+        content:`
+          <p>תוסף Live Share מאפשר לכמה מתכנתים לערוך ולדבג באותו קוד בו-זמנית, כל אחד מהמחשב שלו.</p>
+          <ul>
+            <li><strong>הזמנה בקישור</strong> — מארח הפעלה שולח קישור לשותפים, שמתחברים לסשן העריכה בלי להתקין את הפרויקט אצלם.</li>
+            <li><strong>עריכה משותפת חיה</strong> — כל המשתתפים רואים את סמני העריכה של האחרים בזמן אמת, ממש כמו במסמך שיתופי.</li>
+            <li><strong>שיתוף טרמינל ודיבאגר</strong> — אפשר לשתף גם גישה לטרמינל או לסשן דיבוג, כך שאפשר לפתור תקלות יחד מרחוק.</li>
+          </ul>
+        `,
+        tip:`Live Share שימושי במיוחד לביקורת קוד חיה (Code Review) — במקום להסביר בטקסט איפה הבעיה, מזמינים את הבודק לראות ולערוך יחד באותו רגע.`,
+        quiz:{q:"מה מאפשר תוסף Live Share?", options:["גיבוי אוטומטי לענן בלבד","עריכה ודיבוג משותפים בזמן אמת עם מתכנתים אחרים, כל אחד מהמחשב שלו","תרגום קוד בין שפות תכנות"], correct:1, explain:"Live Share יוצר סשן עריכה משותף חי — משתתפים מתחברים לקישור ורואים ועורכים את אותו קוד בזמן אמת, בלי להתקין את הפרויקט מקומית."}
+      },
+      {
+        id:"m3l6", title:"פרודוקטיביות: Zen Mode ו-Multi-root Workspaces",
+        content:`
+          <p>שתי תכונות שמייעלות עבודה על פרויקטים גדולים או מורכבים.</p>
+          <ul>
+            <li><strong>Zen Mode</strong> — מסתיר את כל הפאנלים והתפריטים ומשאיר רק את הקוד במרכז המסך, לריכוז מקסימלי; יוצאים ממנו עם <kbd dir="ltr">Esc</kbd> פעמיים.</li>
+            <li><strong>Multi-root Workspaces</strong> — מאפשר לפתוח כמה תיקיות פרויקט נפרדות בחלון אחד (למשל שרת ולקוח בפרויקט אחד), עם עץ קבצים משותף.</li>
+            <li><strong>קובץ workspace.code-workspace</strong> — שומר את הגדרת התיקיות המרובות, כדי לפתוח את אותו הרכב פרויקטים בלחיצה אחת בפעם הבאה.</li>
+          </ul>
+        `,
+        tip:`אם אתם עובדים על פרויקט עם תיקיית frontend ותיקיית backend נפרדות, שקלו Multi-root Workspace במקום לפתוח שני חלונות VS Code נפרדים — חיפוש והחלפה יעבדו על שניהם יחד.`,
+        quiz:{q:"למה משמש Multi-root Workspace?", options:["להריץ VS Code על כמה מחשבים בו-זמנית","לפתוח כמה תיקיות פרויקט נפרדות בחלון אחד עם עץ קבצים משותף","ליצור גיבוי של התיקייה"], correct:1, explain:"Multi-root Workspace מאחד כמה תיקיות פרויקט תחת חלון עבודה אחד, נוח לפרויקטים המורכבים מכמה חלקים נפרדים (כמו שרת ולקוח)."}
+      },
+      {
+        id:"m3l7", title:"מבט מקדים: כתיבת תוסף משלכם",
+        content:`
+          <p>VS Code עצמו בנוי כך שכל התוספים — כולל הרשמיים — משתמשים באותו API הפתוח שגם אתם יכולים להשתמש בו.</p>
+          <ul>
+            <li><strong>Yeoman Generator</strong> — מיקרוסופט מספקת כלי רשמי (<code>yo code</code>) שיוצר שלד פרויקט תוסף מוכן תוך דקה.</li>
+            <li><strong>שפת הפיתוח</strong> — תוספים נכתבים ב-TypeScript או JavaScript, ורצים בתוך תהליך נפרד (Extension Host) כדי לא להאט את העורך הראשי.</li>
+            <li><strong>בדיקה מקומית</strong> — VS Code מאפשר להריץ ולבדוק תוסף בפיתוח בחלון נפרד (Extension Development Host) לפני פרסום.</li>
+          </ul>
+        `,
+        tip:`לפני שמתחילים לכתוב תוסף מאפס, שווה לעיין בקוד הפתוח של תוספים פשוטים קיימים ב-GitHub — זו הדרך המהירה ביותר להבין את מבנה ה-API בפועל.`,
+        quiz:{q:"באילו שפות בדרך כלל נכתבים תוספי VS Code?", options:["Python או Java בלבד","TypeScript או JavaScript","רק שפת C++"], correct:1, explain:"ה-API הרשמי לתוספי VS Code מבוסס על Node.js, ולכן תוספים נכתבים ב-TypeScript או JavaScript — אותה שפה שבה כתוב חלק ניכר מהעורך עצמו."}
+      },
+      {
+        id:"m3l8", title:"VS Code מול הכלים הקרובים אליו",
+        content:`
+          <p>כמה כלים "נראים" קרובים ל-VS Code או מבוססים עליו ישירות — שווה להבין מה משותף ומה שונה בפועל.</p>
+          <ul>
+            <li><strong>Cursor</strong> — פיצול (fork) ישיר של קוד VS Code עצמו, עם עוזר AI מובנה עמוק יותר בליבת העריכה; רוב הקיצורים והתוספים של VS Code עובדים בו כמעט ללא שינוי, אך הוא מוצר נפרד עם עדכונים משלו.</li>
+            <li><strong>JetBrains (למשל PyCharm,‏ WebStorm)</strong> — IDE כבד ומעמיק בהרבה, מתמחה בשפה אחת עם כלי ניתוח קוד מתקדמים מובנים מראש, לעומת VS Code שמתמחה בקלילות ובהרחבה חופשית דרך תוספים.</li>
+            <li><strong>Neovim</strong> — עורך מבוסס מקלדת בלבד, ללא תלות בעכבר, עם עקומת למידה תלולה משמעותית אך מהירות תפעול גבוהה מאוד לאחר הלמידה.</li>
+          </ul>
+        `,
+        tip:`אם אתם שוקלים לעבור מ-VS Code לכלי אחר, נסו קודם לייצא את הגדרות התוספים והקיצורים שלכם — רבים מהכלים הדומים תומכים בייבוא הגדרות VS Code, כדי לא להתחיל את ההתאמה האישית מאפס.`,
+        quiz:{q:"מה ההבדל המרכזי בין Cursor ל-VS Code?", options:["הם בדיוק אותה תוכנה בשם אחר","Cursor הוא פיצול (fork) של VS Code עם דגש חזק יותר על עוזר AI מובנה","Cursor לא תומך בתוספים בכלל"], correct:1, explain:"Cursor נבנה מקוד המקור הפתוח של VS Code, כך שהוא שומר על תאימות רחבה (תוספים, קיצורים), אך מוסיף שכבת AI עמוקה יותר כמוצר עצמאי משלו."}
+      }
+    ]
+  }
+];
+
+/* ======================= STATE ======================= */
+const STORAGE_KEY = "vscode_course_progress_v1";
+const CERT_KEY = "vscode_course_cert_name_v1";
+let state = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+const ALL_LESSONS = COURSE.flatMap(m => m.lessons.map(l => ({...l, moduleId:m.id, moduleTitle:m.title})));
+const TOTAL = ALL_LESSONS.length;
+
+/* ======================= RENDER SIDEBAR ======================= */
+const navContainer = document.getElementById("navContainer");
+COURSE.forEach((mod, idx) => {
+  const details = document.createElement("details");
+  details.className = "nav-group";
+  details.open = idx === 0;
+  const doneCount = () => mod.lessons.filter(l => state[l.id]).length;
+  details.innerHTML = `
+    <summary><span class="chev">▸</span> ${mod.icon} ${mod.title} <span class="badge" data-mod="${mod.id}">${doneCount()}/${mod.lessons.length}</span></summary>
+    <ul class="nav-links">
+      ${mod.lessons.map(l => `
+        <li><a href="#${l.id}" data-route="${l.id}"><span class="dot">✓</span>${l.title}</a></li>
+      `).join("")}
+    </ul>
+  `;
+  navContainer.appendChild(details);
+});
+
+function refreshBadges(){
+  COURSE.forEach(mod => {
+    const badge = navContainer.querySelector(`.badge[data-mod="${mod.id}"]`);
+    const doneCount = mod.lessons.filter(l => state[l.id]).length;
+    if(badge) badge.textContent = `${doneCount}/${mod.lessons.length}`;
+  });
+  document.querySelectorAll(".nav-links a").forEach(a => {
+    const id = a.dataset.route;
+    a.classList.toggle("done", !!state[id]);
+  });
+  const doneTotal = ALL_LESSONS.filter(l => state[l.id]).length;
+  const pct = Math.round((doneTotal/TOTAL)*100);
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("progressPct").textContent = pct + "%";
+}
+
+/* ======================= RENDER MAIN SECTIONS ======================= */
+const main = document.getElementById("mainContent");
+
+function lessonSectionHTML(l, i, arr){
+  const prev = arr[i-1];
+  const next = arr[i+1];
+  return `
+  <section class="section" id="sec-${l.id}" data-route="${l.id}">
+    <div class="crumb">${l.moduleTitle}</div>
+    <div class="lesson-title">${l.title}</div>
+    <div class="lesson-meta">
+      <label class="mark-done">
+        <input type="checkbox" data-lesson="${l.id}" ${state[l.id] ? "checked":""}>
+        סמן שיעור זה כהושלם
+      </label>
+    </div>
+    <div class="card content-body">${l.content}</div>
+    ${l.tip ? `<div class="tip-box">💡 <b>טיפ:</b> ${l.tip}</div>` : ""}
+    ${l.quiz ? renderQuiz(l.id, l.quiz) : ""}
+    <div class="lesson-footer">
+      ${prev ? `<a class="btn btn-outline" href="#${prev.id}" data-route="${prev.id}">→ ${prev.title}</a>` : `<span></span>`}
+      ${next ? `<a class="btn btn-primary" href="#${next.id}" data-route="${next.id}">${next.title} ←</a>` : `<a class="btn btn-primary" href="#final-quiz" data-route="final-quiz">למבחן המסכם ←</a>`}
+    </div>
+  </section>`;
+}
+
+function renderQuiz(lessonId, quiz){
+  return `
+  <div class="card quiz" id="quiz-${lessonId}">
+    <h3>🧠 בדקו את עצמכם</h3>
+    <div class="q">${quiz.q}</div>
+    <div class="opts">
+      ${quiz.options.map((opt,i) => `<button class="opt" data-idx="${i}">${opt}</button>`).join("")}
+    </div>
+    <div class="explain"></div>
+  </div>`;
+}
+
+/* Intro section */
+const introHTML = `
+<section class="section" id="sec-intro" data-route="intro">
+  <div class="hero">
+    <h1>💻 קורס VS Code מלא</h1>
+    <p>קורס אינטראקטיבי בעברית שמלווה אתכם משלבי הפתיחה הבסיסיים ביותר ועד טכניקות מקצועיות. לומדים בקצב אישי, עם שאלות תרגול והתקדמות נשמרת בדפדפן.</p>
+    <div class="stats">
+      <div class="stat"><b>${COURSE.length}</b><span>שלבי לימוד</span></div>
+      <div class="stat"><b>${TOTAL}</b><span>שיעורים</span></div>
+      <div class="stat"><b>${TOTAL}</b><span>שאלות תרגול</span></div>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:10px;">מה תלמדו?</h3>
+  <div class="grid-3">
+    ${COURSE.map(m => `
+      <div class="mini-card" data-jump="${m.lessons[0].id}">
+        <div class="n">${m.icon} ${m.title}</div>
+        <div class="t">${m.lessons.length} שיעורים</div>
+        <div class="d">${m.lessons.map(l=>l.title).slice(0,3).join(" · ")}${m.lessons.length>3 ? " ...":""}</div>
+      </div>
+    `).join("")}
+  </div>
+
+  <div class="try-box">
+    <b>👉 איך לומדים כאן:</b> עברו שיעור-שיעור מהתפריט בצד, סמנו "הושלם" בסיום כל שיעור כדי לעקוב אחרי ההתקדמות בראש התפריט, וענו על שאלת התרגול. בסיום כל השלבים — גשו למבחן המסכם ולתעודת הסיום.
+  </div>
+
+  <div class="lesson-footer">
+    <span></span>
+    <a class="btn btn-primary" href="#${ALL_LESSONS[0].id}" data-route="${ALL_LESSONS[0].id}">בואו נתחיל ←</a>
+  </div>
+</section>`;
+
+/* Cheatsheet section */
+const shortcuts = [
+  ["לוח פקודות","Ctrl+Shift+P (Mac: Cmd+Shift+P)"],
+  ["פתיחה מהירה של קובץ","Ctrl+P (Mac: Cmd+P)"],
+  ["שמירה","Ctrl+S (Mac: Cmd+S)"],
+  ["הצג/הסתר טרמינל","Ctrl+\` (Mac: Cmd+\`)"],
+  ["הצג/הסתר סרגל צד","Ctrl+B (Mac: Cmd+B)"],
+  ["תוספים","Ctrl+Shift+X (Mac: Cmd+Shift+X)"],
+  ["בקרת מקור (Git)","Ctrl+Shift+G (Mac: Cmd+Shift+G)"],
+  ["הרצה / דיבוג","F5"],
+  ["חיפוש בכל הפרויקט","Ctrl+Shift+F (Mac: Cmd+Shift+F)"],
+  ["בחירת מופע הבא (multi-cursor)","Ctrl+D (Mac: Cmd+D)"],
+  ["הערה / ביטול הערה לשורה","Ctrl+/ (Mac: Cmd+/)"],
+  ["מעבר להגדרה","F12"],
+  ["הצצה להגדרה","Alt+F12"],
+  ["עיצוב קובץ","Shift+Alt+F (Mac: Shift+Option+F)"],
+  ["פיצול עורך","Ctrl+\\ (Mac: Cmd+\\)"],
+  ["הרצת משימת ברירת מחדל","Ctrl+Shift+B (Mac: Cmd+Shift+B)"]
+];
+const cheatsheetHTML = `
+<section class="section" id="sec-cheatsheet" data-route="cheatsheet">
+  <div class="lesson-title">⌨️ דף קיצורי מקלדת — להדפסה</div>
+  <p class="lesson-meta">דף עזר מרוכז. אפשר להדפיס ישירות מהדפדפן (Ctrl+P) — עיצוב ההדפסה מותאם אוטומטית.</p>
+  <div class="card">
+    <table class="cheat">
+      <thead><tr><th>פעולה</th><th>קיצור</th></tr></thead>
+      <tbody>
+        ${shortcuts.map(([a,b]) => `<tr><td>${a}</td><td style="direction:ltr; text-align:left; font-family:Consolas,monospace;">${b}</td></tr>`).join("")}
+      </tbody>
+    </table>
+    <button class="btn btn-outline" onclick="window.print()">🖨️ הדפסת דף זה</button>
+  </div>
+</section>`;
+
+/* Final quiz section */
+function finalQuizHTML(){
+  const items = ALL_LESSONS.filter(l => l.quiz);
+  return `
+  <section class="section" id="sec-final-quiz" data-route="final-quiz">
+    <div class="lesson-title">🎯 מבחן מסכם</div>
+    <p class="lesson-meta">ענו נכון על לפחות 80% מהשאלות כדי "לעבור" את המבחן ולפתוח את תעודת הסיום.</p>
+    <div class="card" id="finalScoreCard" style="display:none;">
+      <h3>התוצאה שלכם</h3>
+      <div id="finalScoreText" style="font-size:18px; font-weight:700;"></div>
+    </div>
+    <div id="finalQuizList">
+      ${items.map((l,i) => `
+        <div class="card quiz" id="fq-${l.id}">
+          <h3>שאלה ${i+1} — ${l.moduleTitle} · ${l.title}</h3>
+          <div class="q">${l.quiz.q}</div>
+          <div class="opts">
+            ${l.quiz.options.map((opt,idx) => `<button class="opt" data-idx="${idx}">${opt}</button>`).join("")}
+          </div>
+          <div class="explain"></div>
+        </div>
+      `).join("")}
+    </div>
+    <div class="card">
+      <button class="btn btn-primary" id="submitFinalQuiz">📝 בדקו את המבחן</button>
+    </div>
+  </section>`;
+}
+
+/* Certificate section */
+const certificateHTML = `
+<section class="section" id="sec-certificate" data-route="certificate">
+  <div class="lesson-title">🎓 תעודת סיום</div>
+  <p class="lesson-meta">השלימו את כל השיעורים כדי לפתוח את התעודה, הזינו שם והדפיסו/שמרו כ-PDF.</p>
+  <div class="card" id="certGate">
+    <p id="certGateText"></p>
+  </div>
+  <div class="cert-box" id="certBox" style="display:none;">
+    <div style="font-size:34px;">🏆</div>
+    <h2>תעודת הצטיינות</h2>
+    <p>מוענקת בזאת ל</p>
+    <input type="text" class="cert-input" id="certNameInput" placeholder="הקלידו את שמכם המלא">
+    <p style="margin-top:18px;">על השלמה מוצלחת של<br><strong>קורס VS Code מלא — ממתחילים ועד מקצוענים</strong></p>
+    <p style="color:var(--muted); font-size:13px; margin-top:16px;" id="certDate"></p>
+    <button class="btn btn-primary" style="margin-top:14px;" onclick="window.print()">🖨️ הדפסה / שמירה כ-PDF</button>
+  </div>
+</section>`;
+
+/* Assemble all sections */
+main.innerHTML = introHTML +
+  ALL_LESSONS.map((l,i,arr) => lessonSectionHTML(l,i,arr)).join("") +
+  cheatsheetHTML + finalQuizHTML() + certificateHTML;
+
+/* ======================= INTERACTIONS ======================= */
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("button.opt");
+  if(!btn) return;
+  const quizCard = btn.closest(".quiz");
+  if(quizCard.dataset.answered) return;
+  quizCard.dataset.answered = "1";
+  const idx = parseInt(btn.dataset.idx,10);
+  const allOpts = quizCard.querySelectorAll("button.opt");
+  const lessonId = quizCard.id.replace("quiz-","").replace("fq-","");
+  const lessonData = ALL_LESSONS.find(l => l.id === lessonId);
+  const quizData = lessonData ? lessonData.quiz : null;
+  allOpts.forEach((b,i) => {
+    b.disabled = true;
+    if(quizData && i === quizData.correct) b.classList.add("correct");
+    else if(i === idx) b.classList.add("wrong");
+  });
+  const explain = quizCard.querySelector(".explain");
+  if(quizData){
+    explain.textContent = (idx === quizData.correct ? "✅ נכון! " : "❌ לא מדויק. ") + quizData.explain;
+    explain.classList.add("show");
+  }
+  quizCard.dataset.correct = (quizData && idx === quizData.correct) ? "1" : "0";
+
+  if(quizCard.id.startsWith("quiz-") && quizData && idx === quizData.correct){
+    markDone(lessonId, true);
+  }
+});
+
+document.addEventListener("change", (e) => {
+  if(e.target.matches('input[type="checkbox"][data-lesson]')){
+    markDone(e.target.dataset.lesson, e.target.checked);
+  }
+});
+function markDone(id, val){
+  state[id] = val;
+  saveState();
+  refreshBadges();
+  document.querySelectorAll(`input[data-lesson="${id}"]`).forEach(cb => cb.checked = val);
+  updateCertGate();
+}
+
+document.addEventListener("click", (e) => {
+  if(e.target.id !== "submitFinalQuiz") return;
+  const cards = document.querySelectorAll("#finalQuizList .quiz");
+  let answered = 0, correct = 0;
+  cards.forEach(c => {
+    if(c.dataset.answered){ answered++; if(c.dataset.correct === "1") correct++; }
+  });
+  const total = cards.length;
+  const scoreCard = document.getElementById("finalScoreCard");
+  const scoreText = document.getElementById("finalScoreText");
+  scoreCard.style.display = "block";
+  const pct = total ? Math.round((correct/total)*100) : 0;
+  if(answered < total){
+    scoreText.innerHTML = `ענית על ${answered} מתוך ${total} שאלות. אנא ענו על כל השאלות לפני בדיקת הציון הסופי.`;
+  } else {
+    const pass = pct >= 80;
+    scoreText.innerHTML = `${correct}/${total} תשובות נכונות (${pct}%) — ${pass ? "🎉 עברתם בהצלחה! גשו לתעודת הסיום." : "כדאי לחזור על החומר ולנסות שוב."}`;
+    state["final_quiz_pass"] = pass;
+    saveState();
+    updateCertGate();
+  }
+  scoreCard.scrollIntoView({behavior:"smooth", block:"center"});
+});
+
+function updateCertGate(){
+  const doneTotal = ALL_LESSONS.filter(l => state[l.id]).length;
+  const allDone = doneTotal === TOTAL;
+  const gateText = document.getElementById("certGateText");
+  const certBox = document.getElementById("certBox");
+  const certGate = document.getElementById("certGate");
+  if(!gateText) return;
+  if(allDone){
+    certGate.style.display = "none";
+    certBox.style.display = "block";
+    const savedName = localStorage.getItem(CERT_KEY) || "";
+    const nameInput = document.getElementById("certNameInput");
+    nameInput.value = savedName;
+    document.getElementById("certDate").textContent = new Date().toLocaleDateString("he-IL");
+  } else {
+    certGate.style.display = "block";
+    certBox.style.display = "none";
+    gateText.textContent = `השלמתם ${doneTotal} מתוך ${TOTAL} שיעורים. סיימו את כל השיעורים (סימון "הושלם" בכל שיעור) כדי לפתוח את התעודה.`;
+  }
+}
+document.addEventListener("input", (e) => {
+  if(e.target.id === "certNameInput") localStorage.setItem(CERT_KEY, e.target.value);
+});
+
+/* ======================= ROUTER ======================= */
+function showRoute(route){
+  if(!route) route = "intro";
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  const target = document.getElementById("sec-" + route);
+  if(target) target.classList.add("active");
+  else document.getElementById("sec-intro").classList.add("active");
+
+  document.querySelectorAll("[data-route]").forEach(el => el.classList.remove("active"));
+  document.querySelectorAll(`[data-route="${route}"]`).forEach(el => el.classList.add("active"));
+
+  const modEntry = ALL_LESSONS.find(l => l.id === route);
+  if(modEntry){
+    const grp = [...document.querySelectorAll(".nav-group")].find(g => g.querySelector(`a[data-route="${route}"]`));
+    if(grp) grp.open = true;
+  }
+  window.scrollTo({top:0, behavior:"instant" in window ? "instant":"auto"});
+  if(route === "certificate" || route === "final-quiz") updateCertGate();
+
+  document.getElementById("sidebar").classList.remove("open");
+}
+
+function navigate(route){
+  history.replaceState(null, "", "#" + route);
+  showRoute(route);
+}
+
+document.addEventListener("click", (e) => {
+  const link = e.target.closest("[data-route]");
+  if(link && link.tagName === "A"){
+    e.preventDefault();
+    navigate(link.dataset.route);
+  }
+  const jump = e.target.closest("[data-jump]");
+  if(jump){
+    navigate(jump.dataset.jump);
+  }
+});
+window.addEventListener("hashchange", () => showRoute(location.hash.slice(1)));
+
+document.getElementById("toggleSidebar").addEventListener("click", () => {
+  document.getElementById("sidebar").classList.toggle("open");
+});
+
+document.getElementById("searchBox").addEventListener("input", (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll(".nav-links li").forEach(li => {
+    const text = li.textContent.toLowerCase();
+    li.style.display = text.includes(q) ? "" : "none";
+  });
+  document.querySelectorAll(".nav-group").forEach(g => { if(q) g.open = true; });
+});
+
+refreshBadges();
+showRoute(location.hash.slice(1) || "intro");
+</script>
+</body>
+</html>
