@@ -40,7 +40,7 @@
     "interactive-course-builder": {
       "source": "./claude-skills",
       "sourceType": "local",
-      "computedHash": "8d76512703e542414fae8637da59bce01e236c99b02d3576a8fa6b5ecd9d8b5a"
+      "computedHash": "03689514436615c054f6bc1cdb552fc597403af12b3a65082f2dd8b9de598de4"
     },
     "mermaid-diagrams": {
       "source": "hoodini/ai-agents-skills",
