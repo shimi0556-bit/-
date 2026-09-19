@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>קורס Obsidian מלא — ממתחילים ועד מקצוענים</title>
+<style>
+  :root{
+    --brand:#7C3AED;
+    --brand-dark:#5B21B6;
+    --brand-light:#EDE6FB;
+    --blue:#1A73E8;
+    --ink:#232323;
+    --muted:#666;
+    --paper:#FAFAFA;
+    --card:#FFFFFF;
+    --border:#E3E3E3;
+    --green:#1E8E3E;
+    --green-bg:#E6F4EA;
+    --red:#C23B22;
+    --red-bg:#FCEAE6;
+    --radius:14px;
+    --sidebar-w:300px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Segoe UI","Heebo","Arial Hebrew","Arial",sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    line-height:1.65;
+  }
+  a{color:var(--blue);}
+  h1,h2,h3,h4{line-height:1.3; margin:0 0 .5em;}
+  ::selection{background:var(--brand-light);}
+
+  .app{display:flex; min-height:100vh;}
+  .sidebar{
+    width:var(--sidebar-w); flex:0 0 var(--sidebar-w);
+    background:#20242A; color:#EDEFF2;
+    position:sticky; top:0; height:100vh; overflow-y:auto;
+    padding:18px 16px 40px;
+  }
+  .sidebar .brand{
+    display:flex; align-items:center; gap:10px; margin-bottom:16px;
+    padding:4px 2px;
+  }
+  .brand .logo{
+    width:34px;height:34px;border-radius:8px;
+    background:linear-gradient(135deg,var(--brand),#F6AA1C);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;color:#fff;font-size:18px;flex:none;
+  }
+  .brand .name{font-weight:700; font-size:15px;}
+  .brand .sub{font-size:11.5px; color:#A9B0B8;}
+
+  .progress-wrap{margin:10px 2px 18px;}
+  .progress-label{display:flex; justify-content:space-between; font-size:12px; color:#B7BEC5; margin-bottom:5px;}
+  .progress-bar{height:8px; background:#2E333A; border-radius:99px; overflow:hidden;}
+  .progress-fill{height:100%; background:linear-gradient(90deg,var(--brand),#F6AA1C); width:0%; transition:width .4s ease;}
+
+  .search{
+    width:100%; padding:8px 10px; border-radius:9px; border:1px solid #3A404A;
+    background:#282D34; color:#EDEFF2; font-size:13px; margin-bottom:14px;
+  }
+  .search::placeholder{color:#82898F;}
+
+  .nav-group{margin-bottom:6px;}
+  .nav-group > summary{
+    cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px;
+    padding:9px 8px; border-radius:9px; font-weight:700; font-size:13.5px;
+    color:#EDEFF2;
+  }
+  .nav-group > summary::-webkit-details-marker{display:none;}
+  .nav-group > summary:hover{background:#282D34;}
+  .nav-group[open] > summary .chev{transform:rotate(90deg);}
+  .chev{transition:transform .15s; font-size:11px; color:#B7BEC5;}
+  .nav-group .badge{
+    margin-inline-start:auto; font-size:10.5px; color:#B7BEC5;
+    background:#282D34; padding:1px 7px; border-radius:99px;
+  }
+  .nav-links{list-style:none; margin:2px 0 10px; padding-inline-start:6px; border-inline-start:1px dashed #3A404A;}
+  .nav-links li{margin:1px 0;}
+  .nav-links a{
+    display:flex; align-items:center; gap:7px; text-decoration:none;
+    color:#CDD2D8; font-size:13px; padding:6px 10px; border-radius:8px;
+  }
+  .nav-links a:hover{background:#282D34; color:#fff;}
+  .nav-links a.active{background:var(--brand); color:#fff; font-weight:600;}
+  .nav-links .dot{
+    width:15px;height:15px;border-radius:50%;border:1.5px solid #656C73;flex:none;
+    font-size:10px; display:flex; align-items:center; justify-content:center; color:transparent;
+  }
+  .nav-links a.done .dot{background:var(--green); border-color:var(--green); color:#fff;}
+  .extra-links{margin-top:14px; padding-top:14px; border-top:1px solid #3A404A;}
+  .extra-links a{
+    display:flex; align-items:center; gap:8px; text-decoration:none; color:#CDD2D8;
+    font-size:13px; padding:7px 10px; border-radius:8px;
+  }
+  .extra-links a:hover{background:#282D34; color:#fff;}
+  .extra-links a.active{background:var(--brand); color:#fff;}
+
+  .main{flex:1; min-width:0; padding:34px 40px 90px; max-width:900px; margin:0 auto;}
+  .section{display:none; animation:fade .25s ease;}
+  .section.active{display:block;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+
+  .crumb{font-size:12.5px; color:var(--muted); margin-bottom:6px;}
+  .lesson-title{font-size:28px; font-weight:800; margin-bottom:4px;}
+  .lesson-meta{font-size:13px; color:var(--muted); margin-bottom:22px; display:flex; gap:14px; align-items:center;}
+
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+    padding:20px 22px; margin-bottom:18px;
+  }
+  .card h3{font-size:16px; color:var(--brand-dark); margin-bottom:8px;}
+  .content-body p{margin:0 0 12px;}
+  .content-body ul{margin:0 0 12px; padding-inline-start:22px;}
+  .content-body li{margin-bottom:6px;}
+  .content-body strong{color:var(--brand-dark);}
+  code, kbd{
+    background:#F1F1F1; border:1px solid var(--border); border-radius:5px;
+    padding:1px 6px; font-size:.92em; font-family:Consolas,"Courier New",monospace;
+  }
+  kbd{box-shadow:0 1.5px 0 var(--border);}
+
+  .tip-box{
+    background:var(--brand-light); border:1px solid #CBB8F0; border-radius:12px;
+    padding:14px 16px; margin:14px 0; font-size:14px;
+  }
+  .tip-box b{color:var(--brand-dark);}
+  .try-box{
+    background:#E8F0FE; border:1px solid #C6D9F7; border-radius:12px;
+    padding:14px 16px; margin:14px 0; font-size:14px;
+  }
+  .try-box b{color:var(--blue);}
+
+  .quiz{background:#FBF9FD; border:1.5px dashed #D2BCF2;}
+  .quiz h3{margin-bottom:12px;}
+  .quiz .q{font-weight:600; margin-bottom:10px;}
+  .quiz .opts{display:flex; flex-direction:column; gap:8px;}
+  .quiz button.opt{
+    text-align:right; padding:10px 14px; border-radius:9px; border:1px solid var(--border);
+    background:#fff; cursor:pointer; font-size:14px; font-family:inherit;
+  }
+  .quiz button.opt:hover{border-color:var(--brand);}
+  .quiz button.opt.correct{background:var(--green-bg); border-color:var(--green); color:var(--green);}
+  .quiz button.opt.wrong{background:var(--red-bg); border-color:var(--red); color:var(--red);}
+  .quiz button.opt:disabled{cursor:default;}
+  .quiz .explain{margin-top:10px; font-size:13.5px; color:var(--muted); display:none;}
+  .quiz .explain.show{display:block;}
+
+  .lesson-footer{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    margin-top:28px; padding-top:18px; border-top:1px solid var(--border);
+  }
+  .btn{
+    display:inline-flex; align-items:center; gap:6px; cursor:pointer; border:none;
+    border-radius:10px; padding:10px 16px; font-size:14px; font-weight:600; font-family:inherit;
+    text-decoration:none;
+  }
+  .btn-primary{background:var(--brand); color:#fff;}
+  .btn-primary:hover{background:var(--brand-dark);}
+  .btn-outline{background:#fff; border:1px solid var(--border); color:var(--ink);}
+  .btn-outline:hover{border-color:var(--brand);}
+  .btn-ghost{background:transparent; color:var(--muted); border:none; font-size:13px;}
+  .mark-done{display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--muted); cursor:pointer; user-select:none;}
+  .mark-done input{width:17px; height:17px; accent-color:var(--green); cursor:pointer;}
+
+  .hero{
+    background:linear-gradient(135deg,var(--brand),#F6AA1C);
+    color:#fff; border-radius:20px; padding:44px 38px; margin-bottom:26px;
+  }
+  .hero h1{font-size:32px; margin-bottom:10px;}
+  .hero p{font-size:15.5px; max-width:640px; opacity:.95;}
+  .hero .stats{display:flex; gap:26px; margin-top:22px; flex-wrap:wrap;}
+  .hero .stat b{display:block; font-size:22px;}
+  .hero .stat span{font-size:12.5px; opacity:.9;}
+
+  .grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:20px 0;}
+  .grid-2{display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin:20px 0;}
+  .mini-card{
+    background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px;
+    cursor:pointer;
+  }
+  .mini-card:hover{border-color:var(--brand);}
+  .mini-card .n{font-size:12px; color:var(--muted);}
+  .mini-card .t{font-weight:700; font-size:14.5px; margin:3px 0;}
+  .mini-card .d{font-size:12.5px; color:var(--muted);}
+
+  table.cheat{width:100%; border-collapse:collapse; font-size:13.5px; margin-bottom:20px;}
+  table.cheat th, table.cheat td{border:1px solid var(--border); padding:8px 12px; text-align:right;}
+  table.cheat th{background:var(--brand-light); color:var(--brand-dark);}
+  table.cheat tr:nth-child(even){background:#FAFAFA;}
+
+  .cert-box{
+    background:var(--card); border:3px double var(--brand); border-radius:16px;
+    padding:40px; text-align:center; margin-top:10px;
+  }
+  .cert-box h2{font-size:26px; color:var(--brand-dark);}
+  .cert-name{font-size:24px; font-weight:800; margin:18px 0; border-bottom:2px solid var(--border); display:inline-block; padding-bottom:6px; min-width:280px;}
+  .cert-input{padding:10px 14px; border:1px solid var(--border); border-radius:9px; font-size:15px; width:280px; text-align:center; font-family:inherit;}
+
+  .topbar-mobile{display:none;}
+  @media (max-width:900px){
+    .app{flex-direction:column;}
+    .sidebar{
+      position:relative; height:auto; width:100%; flex:none;
+      display:none;
+    }
+    .sidebar.open{display:block;}
+    .topbar-mobile{
+      display:flex; align-items:center; justify-content:space-between;
+      background:#20242A; color:#fff; padding:12px 16px; position:sticky; top:0; z-index:10;
+    }
+    .topbar-mobile button{background:var(--brand); color:#fff; border:none; border-radius:8px; padding:8px 12px; font-size:13px;}
+    .main{padding:24px 18px 70px;}
+    .grid-3{grid-template-columns:1fr;}
+    .grid-2{grid-template-columns:1fr;}
+    .hero{padding:28px 22px;}
+  }
+  @media print{
+    .sidebar,.topbar-mobile,.lesson-footer,.quiz{display:none !important;}
+    .section{display:block !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar-mobile">
+  <strong>💎 קורס Obsidian</strong>
+  <button id="toggleSidebar">☰ תפריט</button>
+</div>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="logo">O</div>
+      <div>
+        <div class="name">קורס Obsidian מלא</div>
+        <div class="sub">ממתחילים ועד מקצוענים</div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-label"><span>התקדמות</span><span id="progressPct">0%</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <input type="text" class="search" id="searchBox" placeholder="🔍 חיפוש נושא בקורס...">
+
+    <nav id="navContainer"></nav>
+
+    <div class="extra-links">
+      <a href="#intro" data-route="intro">🏠 עמוד הבית</a>
+      <a href="#cheatsheet" data-route="cheatsheet">⌨️ דף קיצורים להדפסה</a>
+      <a href="#final-quiz" data-route="final-quiz">🎯 מבחן מסכם</a>
+      <a href="#certificate" data-route="certificate">🎓 תעודת סיום</a>
+    </div>
+  </aside>
+
+  <main class="main" id="mainContent">
+    <!-- rendered by JS -->
+  </main>
+</div>
+
+<script>
+const COURSE = [
+  {
+    id:"m1", title:"שלב 1 · מתחילים", icon:"🟢",
+    lessons:[
+      {
+        id:"m1l1", title:"מה זה Obsidian ולמה זה שונה מתיקיית טקסט",
+        content:`
+          <p>Obsidian הוא אפליקציית שולחן-עבודה לכתיבה וניהול הערות מקושרות. הוא לא מחליף את קבצי הטקסט שלך — הוא קורא אותם ומוסיף שכבת ניווט מעליהם.</p>
+          <ul>
+            <li><strong>Local-first</strong> — כל הקבצים נשארים על הדיסק שלך כקבצי <code>.md</code> רגילים, בלי שרת חובה ובלי חשבון.</li>
+            <li><strong>קישורים דו-כיווניים</strong> — אם הערה A מקשרת להערה B, אז ב-B אפשר לראות אוטומטית "מי מצביע אליי" בלי לחפש ידנית.</li>
+            <li><strong>Graph View</strong> — כל הרשת של ההערות והקישורים ביניהן מוצגת כגרף חזותי, לא רק כרשימת קבצים.</li>
+          </ul>
+        `,
+        tip:`אם כבר יש לך תיקייה עם קבצי .md מקושרים (למשל תיקיית תיעוד בריפו קוד), אתה לא מתחיל מאפס — Obsidian פשוט יקרא אותה כמו שהיא.`,
+        quiz:{q:"מה קורה לקבצי ה-.md שלך אם תמחק את Obsidian מהמחשב?", options:["הם נמחקים יחד איתו","הם נשארים בדיוק כמו שהיו, כי הם קבצי טקסט רגילים","הם ננעלים ולא ניתנים לפתיחה"], correct:1, explain:"Obsidian הוא עדשת קריאה/ניווט על קבצי markdown רגילים — הוא לא פורמט קנייני ולא מסד נתונים, אז הסרתו לא פוגעת בקבצים עצמם."}
+      },
+      {
+        id:"m1l2", title:"Vault — מה זה ואיך פותחים אחד",
+        content:`
+          <p>Vault הוא פשוט תיקייה על הדיסק שסימנת ל-Obsidian כמרחב עבודה. אין הגבלה על מה יש בתיקייה — הוא פשוט יתעלם מכל קובץ שהוא לא <code>.md</code>.</p>
+          <ul>
+            <li><strong>Create new vault</strong> — יוצר תיקייה חדשה וריקה.</li>
+            <li><strong>Open folder as vault</strong> — פותח תיקייה קיימת עם קבצים כבר בפנים, בלי לשנות בה כלום.</li>
+            <li>Obsidian יוצר תיקיית הגדרות נסתרת בשם <code>.obsidian/</code> בתוך ה-vault — אם התיקייה נמצאת בתוך ריפו git, כדאי להוסיף אותה ל-<code>.gitignore</code>.</li>
+          </ul>
+        `,
+        tip:`כדי לפתוח תיקיית קוד קיימת כ-vault, תמיד תבחר "Open folder as vault" ולא "Create new vault" — האחרון מצפה לתיקייה ריקה.`,
+        quiz:{q:"אם יש לך תיקייה עם 17 קבצי .md שכבר כתובים, איזו אפשרות בוחרים במסך הפתיחה?", options:["Create new vault","Open folder as vault","אי אפשר לפתוח תיקייה קיימת"], correct:1, explain:"Open folder as vault מיועד בדיוק למקרה הזה — פתיחת תיקייה שכבר קיימת עם תוכן, בלי למחוק או לשנות בה כלום."}
+      },
+      {
+        id:"m1l3", title:"הערה ראשונה ו-Markdown בסיסי",
+        content:`
+          <p>כל הערה ב-Obsidian היא קובץ <code>.md</code> בודד. כתיבה בסיסית משתמשת בתחביר markdown רגיל, בלי צורך ללמוד שום דבר ייחודי ל-Obsidian.</p>
+          <ul>
+            <li><strong>Ctrl+N</strong> — יוצר הערה חדשה מיד בתיקייה הנוכחית.</li>
+            <li><strong># כותרת</strong> — כותרת ראשית, <strong>##</strong> תת-כותרת, וכן הלאה.</li>
+            <li><strong>**מודגש**</strong> ו-<strong>*נטוי*</strong> — עיצוב טקסט סטנדרטי, בדיוק כמו בכל עורך markdown.</li>
+          </ul>
+        `,
+        tip:`שם הקובץ הוא שם ההערה כפי שהוא יופיע בקישורים — כדאי לתת שם ברור מההתחלה כדי לא להתבלבל אחר כך בין הערות.`,
+        quiz:{q:"מה מייצר קובץ .md חדש ב-Obsidian?", options:["Ctrl+N","Ctrl+S","F5"], correct:0, explain:"Ctrl+N הוא קיצור ברירת המחדל ליצירת הערה חדשה — כמו ב'קובץ חדש' ברוב עורכי הטקסט."}
+      },
+      {
+        id:"m1l4", title:"Live Preview מול Reading View",
+        content:`
+          <p>Obsidian לא מפריד בין "עריכת קוד" ל"תצוגה מעוצבת" — ברירת המחדל (Live Preview) מציגה עיצוב מיד תוך כדי כתיבה, בלי מסך נפרד.</p>
+          <ul>
+            <li><strong>Live Preview</strong> — מצב ברירת המחדל: רואים מודגש/כותרות מעוצבים תוך כדי הקלדה.</li>
+            <li><strong>Reading View</strong> — תצוגה סופית "נקייה", בלי סימני markdown גולמיים בכלל, לקריאה בלבד.</li>
+            <li>מעבר בין המצבים דרך אייקון העיפרון/העין בפינה העליונה של כל הערה, או קיצור <strong>Ctrl+E</strong>.</li>
+          </ul>
+        `,
+        tip:`אם משהו נראה "שבור" בעיצוב (כוכביות שלא נעלמות וכו'), נסה לעבור ל-Reading View לרגע כדי לוודא שזו לא רק תצוגת העריכה שמפריעה.`,
+        quiz:{q:"מה ההבדל בין Live Preview ל-Reading View?", options:["אין שום הבדל, זה אותו הדבר", "Live Preview מראה עיצוב תוך כדי כתיבה; Reading View היא תצוגה סופית לקריאה בלבד", "Reading View מאפשרת עריכה ו-Live Preview לא"], correct:1, explain:"Live Preview הוא מצב העריכה הרגיל שכבר מציג עיצוב חי, בעוד ש-Reading View היא תצוגה נקייה ללא אפשרות עריכה ישירה — לקריאה בלבד."}
+      },
+      {
+        id:"m1l5", title:"קישורים פנימיים — Wikilinks",
+        content:`
+          <p>התחביר המרכזי שהופך אוסף קבצים לרשת: <code>[[שם הערה]]</code>.</p>
+          <ul>
+            <li>מקלידים <code>[[</code> ומתחיל להיפתח תפריט השלמה אוטומטי של כל ההערות הקיימות ב-vault.</li>
+            <li>אם ההערה שרוצים לקשר עדיין לא קיימת — אפשר ליצור אותה באותו רגע, ישירות מתוך התפריט.</li>
+            <li>בניגוד לקישור markdown רגיל (<code>[טקסט](נתיב.md)</code>) שנשבר אם מעבירים קובץ, wikilink מתעדכן אוטומטית בשינוי שם או מיקום.</li>
+          </ul>
+        `,
+        tip:`אפשר להוסיף טקסט תצוגה שונה משם הקובץ עם [[שם-קובץ|טקסט להצגה]] — שימושי כשרוצים לקשר בלי לחשוף את שם הקובץ הטכני.`,
+        quiz:{q:"מה היתרון של [[wikilink]] על פני קישור markdown רגיל [טקסט](נתיב.md)?", options:["הוא נראה אחרת ויזואלית בלבד","הוא מתעדכן אוטומטית אם מעבירים/משנים שם לקובץ המקושר","הוא היחיד שעובד בתוך Obsidian בכלל"], correct:1, explain:"נתיב קבוע נשבר ברגע שמעבירים קובץ; wikilink מתייחס לשם ההערה ומתעדכן אוטומטית כשהיא זזה או משנה שם, כל עוד השם עצמו לא השתנה."}
+      },
+      {
+        id:"m1l6", title:"Backlinks — מי מקשר אליי",
+        content:`
+          <p>לכל הערה פתוחה יש פאנל שמראה אוטומטית את כל ההערות האחרות שמצביעות עליה — בלי לחפש ידנית בכל התיקייה.</p>
+          <ul>
+            <li>נמצא בסרגל הצד, או בתחתית כל הערה תחת הכותרת <strong>Linked mentions</strong>.</li>
+            <li>מתעדכן בזמן אמת — ברגע שמוסיפים wikilink בהערה כלשהי, הוא מופיע מיד בפאנל ה-Backlinks של ההערה שאליה קישרו.</li>
+            <li>יש גם <strong>Unlinked mentions</strong> — מקומות שמזכירים את שם ההערה כטקסט חופשי, בלי קישור בפועל, כהצעה להוסיף קישור.</li>
+          </ul>
+        `,
+        tip:`לפני שמוחקים או משנים שם להערה חשובה, תמיד כדאי להציץ בפאנל ה-Backlinks שלה — כדי לדעת כמה מקומות אחרים תלויים בה.`,
+        quiz:{q:"מה מראה פאנל ה-Backlinks?", options:["את כל הקבצים שנוצרו באותו יום","את כל ההערות האחרות שמקשרות להערה הפתוחה כרגע","רשימת שגיאות איות בהערה"], correct:1, explain:"זהו פאנל שמראה קישוריות הפוכה — לא לאן ההערה הנוכחית מצביעה, אלא מי מצביע אליה, אוטומטית ובזמן אמת."}
+      },
+      {
+        id:"m1l7", title:"תגיות (#tags)",
+        content:`
+          <p>תיוג חופשי בכל מקום בטקסט עם <code>#תגית</code>. בניגוד לקישור, תגית לא מצביעה על קובץ ספציפי — היא מקבצת הערות לפי נושא חוצה-קבצים.</p>
+          <ul>
+            <li>אפשר להוסיף תגית בתוך הטקסט החופשי, או בבלוק ה-<strong>Properties</strong> בראש הקובץ.</li>
+            <li>תגיות תומכות במדרג: <code>#status/פתוח</code> נחשבת גם ל-<code>#status</code> כללית.</li>
+            <li>לחיצה על תגית פותחת רשימה של כל ההערות עם אותה תגית, בדומה לחיפוש קבוע.</li>
+          </ul>
+        `,
+        tip:`תגיות מתאימות לסיווג רוחבי שלא תלוי במבנה תיקיות — למשל לסמן אילו הערות "עדיין לא גמורות" בלי קשר לאיפה הן נמצאות.`,
+        quiz:{q:"מה ההבדל העיקרי בין תגית (#tag) לקישור ([[wikilink]])?", options:["אין הבדל מעשי","תגית מקבצת הערות לפי נושא ולא מצביעה על קובץ ספציפי אחד; קישור מצביע בדיוק על הערה אחת","תגיות עובדות רק במצב Reading View"], correct:1, explain:"קישור הוא הפניה ממוקדת מהערה אחת לאחרת; תגית היא תיוג רוחבי שמקבץ כמה הערות תחת אותו נושא, בלי קשר ישיר בין שתי הערות ספציפיות."}
+      }
+    ]
+  },
+  {
+    id:"m2", title:"שלב 2 · בינוני", icon:"🟡",
+    lessons:[
+      {
+        id:"m2l1", title:"Graph View — מקומי וגלובלי",
+        content:`
+          <p>תצוגה חזותית של ה-vault: כל הערה היא נקודה, כל קישור הוא קו ביניהן.</p>
+          <ul>
+            <li><strong>Local Graph</strong> — מציג רק את ההערה הנוכחית ואת שכנותיה הישירות.</li>
+            <li><strong>Global Graph</strong> (הכפתור ברשימה הצדדית) — מציג את כל ה-vault בבת אחת.</li>
+            <li>הערות בלי אף קישור מופיעות כנקודות מבודדות — דרך טובה לגלות תוכן "יתום" שאף אחד לא מצביע עליו.</li>
+          </ul>
+        `,
+        tip:`אם הגרף נראה כמו "כוכב" עם הכל יוצא מהערת אינדקס אחת — זה סימן שכדאי להוסיף קישורים גם בין ההערות עצמן, לא רק מהאינדקס אליהן.`,
+        quiz:{q:"מה מיוחד בהערה שמופיעה כנקודה מבודדת בגרף, בלי אף קו מחובר?", options:["היא נמחקה", "אין אף הערה אחרת שמקשרת אליה ואין קישור ממנה החוצה", "היא מסומנת כ-Private"], correct:1, explain:"נקודה בלי קווים אומרת שההערה מבודדת מבחינת קישורים — לא מוזכרת בשום מקום אחר ולא מקשרת בעצמה לשום דבר."}
+      },
+      {
+        id:"m2l2", title:"ניווט מהיר — Quick Switcher ו-Command Palette",
+        content:`
+          <p>ברגע שיש יותר מכמה עשרות הערות, גלילה בעץ הקבצים הופכת לאיטית — יש שתי דרכי קיצור.</p>
+          <ul>
+            <li><strong>Ctrl+O</strong> — Quick Switcher: מקלידים חלק משם ההערה וקופצים אליה ישירות.</li>
+            <li><strong>Ctrl+P</strong> — Command Palette: כל פעולה באפליקציה (יצירת הערה, פתיחת גרף, החלפת ערכת נושא) נגישה משם בלי עכבר.</li>
+            <li>שני הכלים תומכים בחיפוש "מטושטש" (fuzzy) — לא צריך להקליד את השם המדויק.</li>
+          </ul>
+        `,
+        tip:`Command Palette (Ctrl+P) הוא הדרך הכי מהירה לגלות פקודות שלא ידעת שקיימות — פשוט תתחיל להקליד מילת מפתח כמו "graph" או "template".`,
+        quiz:{q:"מה ההבדל בין Ctrl+O ל-Ctrl+P ב-Obsidian?", options:["Ctrl+O קופץ להערה לפי שם; Ctrl+P פותח את רשימת כל הפקודות באפליקציה","שניהם עושים בדיוק אותו דבר","Ctrl+O סוגר את התוכנה"], correct:0, explain:"Ctrl+O ממוקד במעבר בין הערות קיימות, בעוד Ctrl+P הוא שער לכל פעולה אפשרית באפליקציה — כולל פעולות שלא קשורות לניווט בין קבצים."}
+      },
+      {
+        id:"m2l3", title:"חיפוש גלובלי מתקדם",
+        content:`
+          <p>חיפוש טקסט חופשי בכל ה-vault, עם תמיכה באופרטורים לסינון מדויק.</p>
+          <ul>
+            <li><strong>Ctrl+Shift+F</strong> — פותח את החיפוש הגלובלי (בניגוד ל-Ctrl+F שמחפש רק בהערה הפתוחה).</li>
+            <li><code>tag:#status</code> — מסנן רק הערות עם תגית מסוימת.</li>
+            <li><code>path:wiki/</code> — מסנן רק הערות בתוך תיקייה מסוימת.</li>
+          </ul>
+        `,
+        tip:`אפשר לשלב כמה אופרטורים באותו חיפוש, למשל "path:wiki/ tag:#status" — כדי למצוא רק הערות עם תגית מסוימת בתוך תיקייה ספציפית.`,
+        quiz:{q:"מה עושה החיפוש path:wiki/ בתיבת החיפוש הגלובלית?", options:["מוחק את תיקיית wiki/", "מסנן תוצאות רק להערות שנמצאות בתוך תיקיית wiki/", "פותח את התיקייה בסייר הקבצים של המערכת"], correct:1, explain:"אופרטור path מגביל את תוצאות החיפוש לתיקייה מסוימת בלבד, שימושי כשה-vault מכיל כמה פרויקטים נפרדים בו-זמנית."}
+      },
+      {
+        id:"m2l4", title:"Templates — תבניות הערה",
+        content:`
+          <p>תבנית היא הערה רגילה שמשמשת כשלד להערות חדשות מאותו סוג.</p>
+          <ul>
+            <li>מפעילים ב-<strong>Settings → Core plugins → Templates</strong>, ומגדירים תיקיית תבניות.</li>
+            <li>לאחר ההפעלה, Command Palette מקבל פקודה חדשה: <strong>Insert template</strong>, שמכניסה את תוכן התבנית להערה הנוכחית.</li>
+            <li>שימושי לפורמט חוזר — למשל תבנית אחידה לכל "עמוד פרויקט" עם אותם כותרות משנה בכל פעם.</li>
+          </ul>
+        `,
+        tip:`אם יש לך פורמט קבוע שחוזר על עצמו בהרבה הערות (כמו מבנה עמוד ה-wiki שלך), כדאי להפוך אותו לתבנית פעם אחת ולחסוך העתק-הדבק.`,
+        quiz:{q:"מהי תבנית (Template) ב-Obsidian?", options:["פלאגין חיצוני שצריך להוריד מהאינטרנט","הערה רגילה שמשמשת כשלד קבוע להערות חדשות מאותו סוג","עיצוב חזותי כללי לכל ה-vault"], correct:1, explain:"Templates הוא Core plugin מובנה שמכניס תוכן קבוע מהערת-תבנית לתוך הערה חדשה — אין צורך בקובץ מיוחד, זה סתם קובץ .md נוסף שמוגדר כמקור לתבניות."}
+      },
+      {
+        id:"m2l5", title:"Frontmatter — מטא-דאטה בראש הקובץ",
+        content:`
+          <p>בלוק מיוחד בראש הקובץ, בתחביר YAML בין שתי שורות <code>---</code>, שמחזיק מידע מובנה על ההערה.</p>
+          <ul>
+            <li>נערך דרך ממשק ייעודי בשם <strong>Properties</strong> בראש כל הערה — לא צריך לכתוב YAML ידנית.</li>
+            <li>אפשר לשמור שם שדות כמו <code>status</code>, <code>tags</code>, או <code>created</code> — נתונים מובנים ולא רק טקסט חופשי.</li>
+            <li>שדות אלו הם הבסיס שעליו נשען פלאגין Dataview (מודול 3) כדי לבנות טבלאות חיות.</li>
+          </ul>
+        `,
+        tip:`שדה "tags" בתוך ה-Properties עובד בדיוק כמו #תגית בטקסט — זו רק דרך מסודרת יותר לרשום כמה תגיות בבת אחת בראש הקובץ.`,
+        quiz:{q:"מה מחזיק בלוק ה-Frontmatter בראש קובץ .md?", options:["את הגרסה הקודמת של הקובץ", "מידע מובנה (מטא-דאטה) על ההערה, כמו סטטוס או תאריך", "רשימת כל הפלאגינים המותקנים"], correct:1, explain:"Frontmatter הוא בלוק YAML שמאפשר לצרף להערה שדות מובנים ולא רק טקסט חופשי — בסיס חשוב לשאילתות ולסינון מתקדם יותר."}
+      },
+      {
+        id:"m2l6", title:"Canvas — לוח חזותי",
+        content:`
+          <p>לוח לבן אינסופי (קובץ מסוג <code>.canvas</code>) שאפשר לגרור אליו הערות שלמות, קטעי טקסט, ותמונות, ולחבר ביניהם בחצים חופשיים.</p>
+          <ul>
+            <li>בניגוד לגרף (שמראה קישורים קיימים בלבד), Canvas הוא מרחב תכנון פתוח — אתה מחליט איפה כל פריט יושב.</li>
+            <li>אפשר לגרור לתוכו הערה קיימת מהעץ ישירות, והיא תופיע כ"כרטיס" חי שמשקף את התוכן האמיתי שלה.</li>
+            <li>מתאים לתכנון פרויקט, מיפוי רעיונות, או השוואה חזותית בין כמה הערות זו לצד זו.</li>
+          </ul>
+        `,
+        tip:`Canvas לא מיועד לכתיבה שוטפת — משתמשים בו כשצריך לראות כמה דברים זה לצד זה במרחב פתוח, לא ברצף עמוד אחד אחרי השני.`,
+        quiz:{q:"מה ההבדל העיקרי בין Graph View ל-Canvas?", options:["אין שום הבדל", "Graph View מציג קישורים קיימים אוטומטית; Canvas הוא לוח תכנון חופשי שאתה מסדר בעצמך", "Canvas זמין רק בגרסת תשלום"], correct:1, explain:"הגרף הוא ייצוג אוטומטי ופסיבי של קישורים שכבר כתובים; Canvas הוא כלי תכנון אקטיבי — אתה בוחר בעצמך מה יושב איפה ואילו חצים מחברים בין הפריטים."}
+      },
+      {
+        id:"m2l7", title:"Core Plugins — הפעלה וניהול",
+        content:`
+          <p>Obsidian מגיע עם קבוצת פלאגינים רשמיים, כבויים כברירת מחדל, שמפעילים לפי צורך ב-<strong>Settings → Core plugins</strong>.</p>
+          <ul>
+            <li>לדוגמה: <strong>Templates</strong>, <strong>Daily notes</strong> (הערה אוטומטית לכל יום), <strong>Canvas</strong>, <strong>Graph view</strong>.</li>
+            <li>בניגוד ל-Community plugins (מודול 3), אלו נכתבו ונבדקו ישירות על ידי צוות Obsidian — בטוחים להפעלה חופשית.</li>
+            <li>אפשר להפעיל רק את מה שבאמת צריך — כל פלאגין כבוי לא צורך משאבים ולא מבלבל בתפריטים.</li>
+          </ul>
+        `,
+        tip:`אם משהו שאתה בטוח שקיים (כמו Templates) לא מופיע בתפריטים — כנראה שהוא פשוט עדיין כבוי ב-Settings → Core plugins.`,
+        quiz:{q:"מה ההבדל בין Core plugin ל-Community plugin?", options:["אין הבדל, זה אותו מונח", "Core plugins נכתבים ונבדקים ישירות על ידי Obsidian ובטוחים כברירת מחדל; Community plugins הם קוד צד-שלישי", "Community plugins עולים כסף וCore plugins חינמיים"], correct:1, explain:"Core plugins הם חלק רשמי מהתוכנה עצמה, רק כבויים כברירת מחדל. Community plugins הם תוספים שכתבו מפתחים חיצוניים ודורשים בדיקה לפני התקנה — ראו מודול 3."}
+      }
+    ]
+  },
+  {
+    id:"m3", title:"שלב 3 · מקצוענים", icon:"🔴",
+    lessons:[
+      {
+        id:"m3l1", title:"Community Plugins — התקנה בטוחה",
+        content:`
+          <p>מעבר לפלאגיני הליבה, יש חנות מובנית עם מאות תוספים שכתבה הקהילה — עוצמה גדולה, אבל דורשת זהירות.</p>
+          <ul>
+            <li>נגישים ב-<strong>Settings → Community plugins → Browse</strong>.</li>
+            <li>בניגוד ל-Core plugins, אלו קוד צד-שלישי שרץ על המחשב שלך — כדאי לבדוק שהתוסף פופולרי, מתוחזק (עדכון אחרון לא ישן מדי), ובעל תיאור ברור לפני התקנה.</li>
+            <li>כל תוסף אפשר לכבות בנפרד בכל רגע, בלי להסיר אותו לגמרי — שימושי לבדיקה זמנית.</li>
+          </ul>
+        `,
+        tip:`לפני שמתקינים תוסף קהילתי, שווה לבדוק כמה "Downloads" יש לו ומתי עודכן לאחרונה — תוסף פופולרי ומתוחזק בטוח משמעותית יותר מתוסף נטוש.`,
+        quiz:{q:"למה כדאי לבדוק תוסף קהילתי לפני התקנה, בניגוד ל-Core plugin?", options:["כי הוא תמיד בתשלום", "כי הוא קוד צד-שלישי שרץ על המחשב שלך, בלי הבדיקה הרשמית שעוברים Core plugins", "אין שום הבדל בבטיחות"], correct:1, explain:"Community plugins נכתבים על ידי מפתחים חיצוניים ולא עוברים את אותה בדיקה כמו Core plugins — פופולריות ותחזוקה שוטפת הם אינדיקציה טובה לאמינות."}
+      },
+      {
+        id:"m3l2", title:"Dataview — שאילתות חיות מתוך ההערות",
+        content:`
+          <p>התוסף הקהילתי הכי מוכר: מייצר טבלה חיה שמתעדכנת אוטומטית מתוך כותרות, תגיות, ושדות Frontmatter בקבצים.</p>
+          <ul>
+            <li>שאילתה נכתבת בתוך בלוק קוד מיוחד בתוך הערה רגילה, ומוצגת כטבלה מעוצבת.</li>
+            <li>לדוגמה: טבלה שמרכזת את כל עמודי wiki/ עם שדה "status" מסוים, בלי לפתוח כל קובץ בנפרד.</li>
+            <li>דורש שדות Frontmatter מסודרים (מודול 2) כדי לעבוד היטב — ככל שיש יותר מטא-דאטה, השאילתות עוצמתיות יותר.</li>
+          </ul>
+        `,
+        tip:`כדאי להתחיל עם שאילתת TABLE פשוטה על תיקייה אחת (כמו FROM "wiki") לפני שמנסים סינון מורכב — קל יותר לדבג שגיאות בהדרגה.`,
+        quiz:{q:"מה עושה שאילתת Dataview בפועל?", options:["מוחקת הערות ישנות אוטומטית", "מייצרת טבלה חיה מתוך נתונים קיימים בקבצים (תגיות, Frontmatter), בלי לפתוח כל קובץ בנפרד", "מסנכרנת את ה-vault לענן"], correct:1, explain:"Dataview לא יוצר תוכן חדש — הוא שואב ומציג נתונים שכבר קיימים בקבצים כטבלה מרוכזת, ומתעדכן אוטומטית כשהנתונים המקוריים משתנים."}
+      },
+      {
+        id:"m3l3", title:"סנכרון בין מכשירים",
+        content:`
+          <p>מכיוון ש-vault הוא סתם תיקייה, אפשר לבחור איך לסנכרן אותה בין מחשבים/טלפון — אין דרך "יחידה" מחייבת.</p>
+          <ul>
+            <li><strong>Obsidian Sync</strong> — שירות רשמי בתשלום, מוצפן, פשוט להפעלה, כולל היסטוריית גרסאות.</li>
+            <li><strong>שירותי ענן חינמיים</strong> (iCloud, Dropbox, Google Drive) — שמים את התיקייה בתוך תיקיית הסנכרון הרגילה, בחינם אך בלי בקרת קונפליקטים ייעודית.</li>
+            <li><strong>Git</strong> — מתאים במיוחד כשה-vault כבר נמצא בתוך ריפו קוד (בדיוק כמו <code>wiki/</code> שלך) — מקבלים היסטוריית שינויים מלאה בחינם.</li>
+          </ul>
+        `,
+        tip:`אם ה-vault שלך כבר יושב בתוך ריפו git (כמו wiki/), אתה כבר מקבל סנכרון+היסטוריה בחינם — אין צורך ב-Obsidian Sync בתשלום למקרה הזה.`,
+        quiz:{q:"מה היתרון של Git כפתרון סנכרון ל-vault שכבר נמצא בתוך ריפו קוד?", options:["הוא היחיד שעובד בכלל", "מקבלים היסטוריית שינויים מלאה בחינם, בלי שירות סנכרון נוסף", "הוא מהיר יותר מכל האחרים תמיד"], correct:1, explain:"כשה-vault כבר חלק מריפו git, כל commit רגיל כבר מספק גיבוי, היסטוריה, ואפשרות שחזור — בדיוק מה ש-Obsidian Sync נותן בתשלום, רק בלי עלות נוספת."}
+      },
+      {
+        id:"m3l4", title:"התרחיש שלך: פתיחת wiki/ מהריפו כ-vault",
+        content:`
+          <p>חיבור כל מה שנלמד לתרחיש הקונקרטי: תיקיית <code>wiki/</code> בריפו <code>shimi0556-bit/-</code> — 17 עמודי פרויקטים + README מרכזי שמקשר אליהם.</p>
+          <ul>
+            <li><strong>שלב 1:</strong> Obsidian → Open folder as vault → בוחרים את תיקיית <code>wiki/</code> בלבד (לא הריפו כולו, כדי שהגרף יישאר נקי מקבצי קוד).</li>
+            <li><strong>שלב 2:</strong> פותחים את <code>README.md</code> — כל שורה בטבלה כמו <code>[gods-eye-view.md](gods-eye-view.md)</code> מוצגת כקישור לחיץ, בדיוק כפי שכבר כתוב.</li>
+            <li><strong>שלב 3:</strong> פותחים Graph View — יופיע "כוכב": README במרכז עם 17 קווים יוצאים, כי כרגע רק הוא מקשר לעמודים (עדיין אין קישורים בין עמודי הפרויקטים עצמם).</li>
+          </ul>
+        `,
+        tip:`כדי להעשיר את הגרף מ"כוכב" ל"רשת" אמיתית, הוסף [[קישור]] אחד בין שני עמודי פרויקט קשורים — למשל בין claude-grok-mcp-bridge.md ל-claude-skills.md — ותראה קו חדש נוצר מיידית.`,
+        quiz:{q:"למה בגרף הראשוני של wiki/ כל הקווים יוצאים דווקא מ-README.md?", options:["כי README.md הוא הקובץ הכי חדש", "כי כרגע רק README.md מקשר לעמודי הפרויקטים; אף עמוד לא מקשר לעמוד אחר", "זו הגדרה קבועה שאי אפשר לשנות"], correct:1, explain:"זו צורת 'כוכב' (star topology) — טבעית כשיש עמוד אינדקס מרכזי אחד שמקשר לכל השאר, אבל אין עדיין קישורים רוחביים בין העמודים עצמם."}
+      },
+      {
+        id:"m3l5", title:"אבטחה ופרטיות",
+        content:`
+          <p>שני היבטים שחשוב להכיר לפני שמערבבים vault עם ריפו קוד או עם תוספים חיצוניים.</p>
+          <ul>
+            <li><strong>.obsidian/</strong> — תיקיית ההגדרות הנסתרת שנוצרת בתוך כל vault. מכילה הגדרות אישיות (ערכת נושא, פלאגינים מותקנים) — לא סוד, אבל גם לא תמיד רוצים אותה ב-git, לכן מומלץ ב-<code>.gitignore</code>.</li>
+            <li><strong>Community plugins הם קוד שרץ מקומית</strong> — יש להם גישה לקבצים ב-vault. לכן הבדיקה שנלמדה במודול הקודם (פופולריות, תחזוקה) היא לא המלצה סתמית אלא שכבת הגנה אמיתית.</li>
+            <li>ה-vault עצמו לא נשלח לשום מקום מבלי שהפעלת בפירוש סנכרון — אין "שיחה עם שרת" ברירת מחדל.</li>
+          </ul>
+        `,
+        tip:`אם אתה מריץ vault בתוך ריפו ציבורי, זכור שכל קובץ .md בתוכו הוא ציבורי לכל דבר — בדיוק כמו כל קובץ אחר בריפו.`,
+        quiz:{q:"האם קבצי ה-vault נשלחים אוטומטית לאיזשהו שרת חיצוני?", options:["כן, תמיד, ברקע", "לא, אלא אם הפעלת בפירוש שירות סנכרון כמו Obsidian Sync", "רק אם מתקינים יותר מ-5 פלאגינים"], correct:1, explain:"Obsidian הוא local-first כברירת מחדל — הקבצים נשארים על הדיסק עד שמפעילים באופן מפורש שירות סנכרון חיצוני."}
+      },
+      {
+        id:"m3l6", title:"Obsidian מול כלים דומים",
+        content:`
+          <p>יש כמה כלים אחרים שפותרים בעיה דומה (הערות מקושרות) בדרכים שונות מהותית — כדאי להכיר את ההבדל האמיתי, לא רק החזותי.</p>
+          <ul>
+            <li><strong>Notion</strong> — ענן-ראשון, מבנה של דפים/בלוקים ומסדי נתונים, לא קבצי markdown גולמיים על הדיסק. שיתוף פעולה חי מובנה, ש-Obsidian לא נותן כברירת מחדל.</li>
+            <li><strong>Logseq</strong> — מבוסס בלוקים בעץ (outliner): כל שורה היא יחידה שאפשר לקשר אליה בנפרד, לא עמודים חופשיים כמו ב-Obsidian.</li>
+            <li><strong>Roam Research</strong> — החלוץ של הז'אנר, אבל ענן בלבד ובתשלום מההתחלה — אין אפשרות מקומית כמו ב-Obsidian.</li>
+          </ul>
+        `,
+        tip:`אם השאלה היא "האם לעבור מ-Notion ל-Obsidian" — השיקול המרכזי הוא לא התכונות אלא איפה הקבצים חיים: קבצים מקומיים שלך (Obsidian) מול נתונים בתוך מערכת ענן קניינית (Notion).`,
+        quiz:{q:"מה ההבדל המהותי ביותר בין Obsidian ל-Notion?", options:["Notion חינמי ו-Obsidian בתשלום תמיד", "Obsidian שומר קבצי markdown מקומיים על הדיסק; Notion הוא מערכת ענן-ראשונה עם מבנה נתונים קנייני", "אין הבדל של ממש, רק צבע הממשק"], correct:1, explain:"זה ההבדל שקובע הכל בפועל: ב-Obsidian אתה תמיד יכול לפתוח את הקבצים בכל עורך טקסט; ב-Notion התוכן חי במבנה פנימי של השירות ותלוי בו."}
+      },
+      {
+        id:"m3l7", title:"טיפים מקצועיים לניהול vault גדול",
+        content:`
+          <p>כשה-vault גדל מעבר לכמה עשרות הערות, כמה הרגלים עושים הבדל משמעותי.</p>
+          <ul>
+            <li><strong>מבנה תיקיות מינימלי</strong> — כדאי לתת ל-Graph ולקישורים לעשות את העבודה של "ארגון", ולא להסתמך רק על עומק תיקיות.</li>
+            <li><strong>עמוד אינדקס לכל תת-נושא</strong> — בדיוק כמו <code>wiki/README.md</code>, עמוד מרכזי אחד שמקשר לכל השאר עוזר גם לך וגם לגרף להישאר קריאים.</li>
+            <li><strong>בדיקת "יתומים" תקופתית</strong> — הצצה מדי פעם ב-Global Graph מגלה הערות מבודדות שנשכחו בלי קישור לשום מקום.</li>
+          </ul>
+        `,
+        tip:`במקום לנסות "לתקן" את כל ה-vault בבת אחת, תוסיף קישור אחד אמיתי כל פעם שאתה עובד על הערה — הרשת נבנית בהדרגה, לא ביום אחד.`,
+        quiz:{q:"מה עוזר לגלות הערות \"יתומות\" (בלי קישורים) ב-vault גדול?", options:["חיפוש טקסט חופשי בלבד", "הצצה תקופתית ב-Global Graph View — נקודות מבודדות בולטות שם", "אין דרך לגלות את זה בכלל"], correct:1, explain:"נקודות בלי קווים מחוברים ב-Global Graph הן בדיוק הערות שאין להן קישורים נכנסים או יוצאים — הדרך הכי מהירה לאתר אותן ויזואלית."}
+      }
+    ]
+  }
+];
+
+const STORAGE_KEY = "obsidian_course_progress_v1";
+const CERT_KEY = "obsidian_course_cert_name_v1";
+let state = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+const ALL_LESSONS = COURSE.flatMap(m => m.lessons.map(l => ({...l, moduleId:m.id, moduleTitle:m.title})));
+const TOTAL = ALL_LESSONS.length;
+
+const navContainer = document.getElementById("navContainer");
+COURSE.forEach((mod, idx) => {
+  const details = document.createElement("details");
+  details.className = "nav-group";
+  details.open = idx === 0;
+  const doneCount = () => mod.lessons.filter(l => state[l.id]).length;
+  details.innerHTML = `
+    <summary><span class="chev">▸</span> ${mod.icon} ${mod.title} <span class="badge" data-mod="${mod.id}">${doneCount()}/${mod.lessons.length}</span></summary>
+    <ul class="nav-links">
+      ${mod.lessons.map(l => `
+        <li><a href="#${l.id}" data-route="${l.id}"><span class="dot">✓</span>${l.title}</a></li>
+      `).join("")}
+    </ul>
+  `;
+  navContainer.appendChild(details);
+});
+
+function refreshBadges(){
+  COURSE.forEach(mod => {
+    const badge = navContainer.querySelector(`.badge[data-mod="${mod.id}"]`);
+    const doneCount = mod.lessons.filter(l => state[l.id]).length;
+    if(badge) badge.textContent = `${doneCount}/${mod.lessons.length}`;
+  });
+  document.querySelectorAll(".nav-links a").forEach(a => {
+    const id = a.dataset.route;
+    a.classList.toggle("done", !!state[id]);
+  });
+  const doneTotal = ALL_LESSONS.filter(l => state[l.id]).length;
+  const pct = Math.round((doneTotal/TOTAL)*100);
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("progressPct").textContent = pct + "%";
+}
+
+const main = document.getElementById("mainContent");
+
+function lessonSectionHTML(l, i, arr){
+  const prev = arr[i-1];
+  const next = arr[i+1];
+  return `
+  <section class="section" id="sec-${l.id}" data-route="${l.id}">
+    <div class="crumb">${l.moduleTitle}</div>
+    <div class="lesson-title">${l.title}</div>
+    <div class="lesson-meta">
+      <label class="mark-done">
+        <input type="checkbox" data-lesson="${l.id}" ${state[l.id] ? "checked":""}>
+        סמן שיעור זה כהושלם
+      </label>
+    </div>
+    <div class="card content-body">${l.content}</div>
+    ${l.tip ? `<div class="tip-box">💡 <b>טיפ:</b> ${l.tip}</div>` : ""}
+    ${l.quiz ? renderQuiz(l.id, l.quiz) : ""}
+    <div class="lesson-footer">
+      ${prev ? `<a class="btn btn-outline" href="#${prev.id}" data-route="${prev.id}">→ ${prev.title}</a>` : `<span></span>`}
+      ${next ? `<a class="btn btn-primary" href="#${next.id}" data-route="${next.id}">${next.title} ←</a>` : `<a class="btn btn-primary" href="#final-quiz" data-route="final-quiz">למבחן המסכם ←</a>`}
+    </div>
+  </section>`;
+}
+
+function renderQuiz(lessonId, quiz){
+  return `
+  <div class="card quiz" id="quiz-${lessonId}">
+    <h3>🧠 בדקו את עצמכם</h3>
+    <div class="q">${quiz.q}</div>
+    <div class="opts">
+      ${quiz.options.map((opt,i) => `<button class="opt" data-idx="${i}">${opt}</button>`).join("")}
+    </div>
+    <div class="explain"></div>
+  </div>`;
+}
+
+const introHTML = `
+<section class="section" id="sec-intro" data-route="intro">
+  <div class="hero">
+    <h1>💎 קורס Obsidian מלא</h1>
+    <p>קורס אינטראקטיבי בעברית שמלווה אתכם מהיסודות הבסיסיים ביותר ועד ניהול vault מקצועי עם פלאגינים ושאילתות חיות. לומדים בקצב אישי, עם שאלות תרגול והתקדמות שנשמרת בדפדפן.</p>
+    <div class="stats">
+      <div class="stat"><b>${COURSE.length}</b><span>שלבי לימוד</span></div>
+      <div class="stat"><b>${TOTAL}</b><span>שיעורים</span></div>
+      <div class="stat"><b>${TOTAL}</b><span>שאלות תרגול</span></div>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:10px;">מה תלמדו?</h3>
+  <div class="grid-3">
+    ${COURSE.map(m => `
+      <div class="mini-card" data-jump="${m.lessons[0].id}">
+        <div class="n">${m.icon} ${m.title}</div>
+        <div class="t">${m.lessons.length} שיעורים</div>
+        <div class="d">${m.lessons.map(l=>l.title).slice(0,3).join(" · ")}${m.lessons.length>3 ? " ...":""}</div>
+      </div>
+    `).join("")}
+  </div>
+
+  <div class="try-box">
+    <b>👉 איך לומדים כאן:</b> עברו שיעור-שיעור מהתפריט בצד, סמנו "הושלם" בסיום כל שיעור כדי לעקוב אחרי ההתקדמות בראש התפריט, וענו על שאלת התרגול. בסיום כל השלבים — גשו למבחן המסכם ולתעודת הסיום.
+  </div>
+
+  <div class="lesson-footer">
+    <span></span>
+    <a class="btn btn-primary" href="#${ALL_LESSONS[0].id}" data-route="${ALL_LESSONS[0].id}">בואו נתחיל ←</a>
+  </div>
+</section>`;
+
+const shortcuts = [
+  ["הערה חדשה", "Ctrl + N"],
+  ["Quick Switcher (קפיצה מהירה להערה לפי שם)", "Ctrl + O"],
+  ["Command Palette (כל הפקודות)", "Ctrl + P"],
+  ["חיפוש בכל ה-vault", "Ctrl + Shift + F"],
+  ["חיפוש בתוך ההערה הנוכחית", "Ctrl + F"],
+  ["מעבר בין עריכה ל-Reading View", "Ctrl + E"],
+  ["ניווט אחורה בהיסטוריה", "Ctrl + ["],
+  ["ניווט קדימה בהיסטוריה", "Ctrl + ]"],
+  ["הוספת/עריכת קישור בטקסט מסומן", "Ctrl + K"],
+  ["פתיחת הגדרות (Settings)", "Ctrl + ,"],
+  ["התחלת קישור פנימי", "[["],
+];
+const cheatsheetHTML = `
+<section class="section" id="sec-cheatsheet" data-route="cheatsheet">
+  <div class="lesson-title">⌨️ דף קיצורי מקלדת — להדפסה</div>
+  <p class="lesson-meta">קיצורים אלו הם ברירת המחדל ב-Windows/Linux; במק מחליפים Ctrl ב-Cmd. אפשר להדפיס ישירות מהדפדפן (Ctrl+P).</p>
+  <div class="card">
+    <table class="cheat">
+      <thead><tr><th>פעולה</th><th>קיצור</th></tr></thead>
+      <tbody>
+        ${shortcuts.map(([a,b]) => `<tr><td>${a}</td><td style="direction:ltr; text-align:left; font-family:Consolas,monospace;">${b}</td></tr>`).join("")}
+      </tbody>
+    </table>
+    <button class="btn btn-outline" onclick="window.print()">🖨️ הדפסת דף זה</button>
+  </div>
+</section>`;
+
+function finalQuizHTML(){
+  const items = ALL_LESSONS.filter(l => l.quiz);
+  return `
+  <section class="section" id="sec-final-quiz" data-route="final-quiz">
+    <div class="lesson-title">🎯 מבחן מסכם</div>
+    <p class="lesson-meta">ענו נכון על לפחות 80% מהשאלות כדי "לעבור" את המבחן ולפתוח את תעודת הסיום.</p>
+    <div class="card" id="finalScoreCard" style="display:none;">
+      <h3>התוצאה שלכם</h3>
+      <div id="finalScoreText" style="font-size:18px; font-weight:700;"></div>
+    </div>
+    <div id="finalQuizList">
+      ${items.map((l,i) => `
+        <div class="card quiz" id="fq-${l.id}">
+          <h3>שאלה ${i+1} — ${l.moduleTitle} · ${l.title}</h3>
+          <div class="q">${l.quiz.q}</div>
+          <div class="opts">
+            ${l.quiz.options.map((opt,idx) => `<button class="opt" data-idx="${idx}">${opt}</button>`).join("")}
+          </div>
+          <div class="explain"></div>
+        </div>
+      `).join("")}
+    </div>
+    <div class="card">
+      <button class="btn btn-primary" id="submitFinalQuiz">📝 בדקו את המבחן</button>
+    </div>
+  </section>`;
+}
+
+const certificateHTML = `
+<section class="section" id="sec-certificate" data-route="certificate">
+  <div class="lesson-title">🎓 תעודת סיום</div>
+  <p class="lesson-meta">השלימו את כל השיעורים כדי לפתוח את התעודה, הזינו שם והדפיסו/שמרו כ-PDF.</p>
+  <div class="card" id="certGate">
+    <p id="certGateText"></p>
+  </div>
+  <div class="cert-box" id="certBox" style="display:none;">
+    <div style="font-size:34px;">🏆</div>
+    <h2>תעודת הצטיינות</h2>
+    <p>מוענקת בזאת ל</p>
+    <input type="text" class="cert-input" id="certNameInput" placeholder="הקלידו את שמכם המלא">
+    <p style="margin-top:18px;">על השלמה מוצלחת של<br><strong>קורס Obsidian מלא — ממתחילים ועד מקצוענים</strong></p>
+    <p style="color:var(--muted); font-size:13px; margin-top:16px;" id="certDate"></p>
+    <button class="btn btn-primary" style="margin-top:14px;" onclick="window.print()">🖨️ הדפסה / שמירה כ-PDF</button>
+  </div>
+</section>`;
+
+main.innerHTML = introHTML +
+  ALL_LESSONS.map((l,i,arr) => lessonSectionHTML(l,i,arr)).join("") +
+  cheatsheetHTML + finalQuizHTML() + certificateHTML;
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("button.opt");
+  if(!btn) return;
+  const quizCard = btn.closest(".quiz");
+  if(quizCard.dataset.answered) return;
+  quizCard.dataset.answered = "1";
+  const idx = parseInt(btn.dataset.idx,10);
+  const allOpts = quizCard.querySelectorAll("button.opt");
+  const lessonId = quizCard.id.replace("quiz-","").replace("fq-","");
+  const lessonData = ALL_LESSONS.find(l => l.id === lessonId);
+  const quizData = lessonData ? lessonData.quiz : null;
+  allOpts.forEach((b,i) => {
+    b.disabled = true;
+    if(quizData && i === quizData.correct) b.classList.add("correct");
+    else if(i === idx) b.classList.add("wrong");
+  });
+  const explain = quizCard.querySelector(".explain");
+  if(quizData){
+    explain.textContent = (idx === quizData.correct ? "✅ נכון! " : "❌ לא מדויק. ") + quizData.explain;
+    explain.classList.add("show");
+  }
+  quizCard.dataset.correct = (quizData && idx === quizData.correct) ? "1" : "0";
+
+  if(quizCard.id.startsWith("quiz-") && quizData && idx === quizData.correct){
+    markDone(lessonId, true);
+  }
+});
+
+document.addEventListener("change", (e) => {
+  if(e.target.matches('input[type="checkbox"][data-lesson]')){
+    markDone(e.target.dataset.lesson, e.target.checked);
+  }
+});
+function markDone(id, val){
+  state[id] = val;
+  saveState();
+  refreshBadges();
+  document.querySelectorAll(`input[data-lesson="${id}"]`).forEach(cb => cb.checked = val);
+  updateCertGate();
+}
+
+document.addEventListener("click", (e) => {
+  if(e.target.id !== "submitFinalQuiz") return;
+  const cards = document.querySelectorAll("#finalQuizList .quiz");
+  let answered = 0, correct = 0;
+  cards.forEach(c => {
+    if(c.dataset.answered){ answered++; if(c.dataset.correct === "1") correct++; }
+  });
+  const total = cards.length;
+  const scoreCard = document.getElementById("finalScoreCard");
+  const scoreText = document.getElementById("finalScoreText");
+  scoreCard.style.display = "block";
+  const pct = total ? Math.round((correct/total)*100) : 0;
+  if(answered < total){
+    scoreText.innerHTML = `ענית על ${answered} מתוך ${total} שאלות. אנא ענו על כל השאלות לפני בדיקת הציון הסופי.`;
+  } else {
+    const pass = pct >= 80;
+    scoreText.innerHTML = `${correct}/${total} תשובות נכונות (${pct}%) — ${pass ? "🎉 עברתם בהצלחה! גשו לתעודת הסיום." : "כדאי לחזור על החומר ולנסות שוב."}`;
+    state["final_quiz_pass"] = pass;
+    saveState();
+    updateCertGate();
+  }
+  scoreCard.scrollIntoView({behavior:"smooth", block:"center"});
+});
+
+function updateCertGate(){
+  const doneTotal = ALL_LESSONS.filter(l => state[l.id]).length;
+  const allDone = doneTotal === TOTAL;
+  const gateText = document.getElementById("certGateText");
+  const certBox = document.getElementById("certBox");
+  const certGate = document.getElementById("certGate");
+  if(!gateText) return;
+  if(allDone){
+    certGate.style.display = "none";
+    certBox.style.display = "block";
+    const savedName = localStorage.getItem(CERT_KEY) || "";
+    const nameInput = document.getElementById("certNameInput");
+    nameInput.value = savedName;
+    document.getElementById("certDate").textContent = new Date().toLocaleDateString("he-IL");
+  } else {
+    certGate.style.display = "block";
+    certBox.style.display = "none";
+    gateText.textContent = `השלמתם ${doneTotal} מתוך ${TOTAL} שיעורים. סיימו את כל השיעורים (סימון "הושלם" בכל שיעור) כדי לפתוח את התעודה.`;
+  }
+}
+document.addEventListener("input", (e) => {
+  if(e.target.id === "certNameInput") localStorage.setItem(CERT_KEY, e.target.value);
+});
+
+function showRoute(route){
+  if(!route) route = "intro";
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  const target = document.getElementById("sec-" + route);
+  if(target) target.classList.add("active");
+  else document.getElementById("sec-intro").classList.add("active");
+
+  document.querySelectorAll("[data-route]").forEach(el => el.classList.remove("active"));
+  document.querySelectorAll(`[data-route="${route}"]`).forEach(el => el.classList.add("active"));
+
+  const modEntry = ALL_LESSONS.find(l => l.id === route);
+  if(modEntry){
+    const grp = [...document.querySelectorAll(".nav-group")].find(g => g.querySelector(`a[data-route="${route}"]`));
+    if(grp) grp.open = true;
+  }
+  window.scrollTo({top:0, behavior:"instant" in window ? "instant":"auto"});
+  if(route === "certificate" || route === "final-quiz") updateCertGate();
+
+  document.getElementById("sidebar").classList.remove("open");
+}
+
+function navigate(route){
+  history.replaceState(null, "", "#" + route);
+  showRoute(route);
+}
+
+document.addEventListener("click", (e) => {
+  const link = e.target.closest("[data-route]");
+  if(link && link.tagName === "A"){
+    e.preventDefault();
+    navigate(link.dataset.route);
+  }
+  const jump = e.target.closest("[data-jump]");
+  if(jump){
+    navigate(jump.dataset.jump);
+  }
+});
+window.addEventListener("hashchange", () => showRoute(location.hash.slice(1)));
+
+document.getElementById("toggleSidebar").addEventListener("click", () => {
+  document.getElementById("sidebar").classList.toggle("open");
+});
+
+document.getElementById("searchBox").addEventListener("input", (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll(".nav-links li").forEach(li => {
+    const text = li.textContent.toLowerCase();
+    li.style.display = text.includes(q) ? "" : "none";
+  });
+  document.querySelectorAll(".nav-group").forEach(g => { if(q) g.open = true; });
+});
+
+refreshBadges();
+showRoute(location.hash.slice(1) || "intro");
+</script>
+</body>
+</html>

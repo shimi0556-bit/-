@@ -30,6 +30,7 @@ A persistent, Claude-maintained knowledge base for this repo, following the patt
 | [`gods-eye-view.md`](gods-eye-view.md) | [`gods-eye-view/`](../gods-eye-view) |
 | [`logan-cli.md`](logan-cli.md) | [`logan-cli/`](../logan-cli) |
 | [`nano-banana-ui.md`](nano-banana-ui.md) | [`nano-banana-ui/`](../nano-banana-ui) |
+| [`obsidian-course.md`](obsidian-course.md) | [`obsidian-course/`](../obsidian-course) |
 | [`roboshaul-hebrew-tts.md`](roboshaul-hebrew-tts.md) | [`roboshaul-hebrew-tts/`](../roboshaul-hebrew-tts) |
 | [`skyhawk-flight-simulator.md`](skyhawk-flight-simulator.md) | [`skyhawk-flight-simulator/`](../skyhawk-flight-simulator) |
 | [`tokana.md`](tokana.md) | [`tokana/`](../tokana) |
