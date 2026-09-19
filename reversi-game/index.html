@@ -301,6 +301,8 @@
   "use strict";
 
   const SIZE = 8;
+  const AI_REACTION_DELAY = 1100; // pause after your move so you can see the result before the AI replies
+  const AI_THINK_DELAY = 650;     // minimum time the "thinking" badge stays up before the AI's move lands
   const BLACK = 1;
   const WHITE = -1;
   const EMPTY = 0;
@@ -602,7 +604,7 @@
       render();
       updateStatusForTurn();
       if (current === computerColor) {
-        setTimeout(computerTurn, 350);
+        setTimeout(computerTurn, AI_REACTION_DELAY);
       }
       return;
     }
@@ -610,7 +612,7 @@
     render();
     updateStatusForTurn();
     if (current === computerColor) {
-      setTimeout(computerTurn, 350);
+      setTimeout(computerTurn, AI_REACTION_DELAY);
     }
   }
 
@@ -650,7 +652,7 @@
         current = -current;
         advanceTurn();
       }
-    }, 30);
+    }, AI_THINK_DELAY);
   }
 
   function undo() {
