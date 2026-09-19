@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Strike Lane — 3D Bowling</title>
+<style>
+  :root{
+    --accent:#ffb347;
+    --accent2:#4fd0ff;
+    --panel:rgba(10,14,24,0.72);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{width:100%;height:100%;overflow:hidden;background:#04060c;font-family:'Segoe UI',system-ui,sans-serif;}
+  canvas{display:block;touch-action:none;}
+
+  /* ---------- Loading ---------- */
+  #loading{
+    position:fixed;inset:0;z-index:1000;
+    background:radial-gradient(ellipse at 50% 40%,#141d33 0%,#04060c 75%);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    transition:opacity .8s ease;
+  }
+  #loading.hidden{opacity:0;pointer-events:none;}
+  #loading h1{
+    font-size:54px;letter-spacing:10px;color:var(--accent);
+    text-shadow:0 0 25px rgba(255,179,71,.65);font-weight:800;
+  }
+  #loading p{color:#7f8bab;letter-spacing:4px;margin-top:10px;font-size:13px;}
+  .bar-track{width:320px;height:5px;border-radius:3px;background:rgba(255,255,255,.08);margin-top:36px;overflow:hidden;}
+  .bar-fill{height:100%;width:0%;border-radius:3px;background:linear-gradient(90deg,var(--accent2),var(--accent));transition:width .25s;}
+
+  /* ---------- HUD ---------- */
+  #hud{position:fixed;inset:0;pointer-events:none;z-index:10;font-variant-numeric:tabular-nums;}
+
+  #scoreboard{
+    position:fixed;top:16px;left:50%;transform:translateX(-50%);
+    display:flex;background:var(--panel);border:1px solid rgba(255,255,255,.08);
+    border-radius:10px;overflow:hidden;backdrop-filter:blur(6px);box-shadow:0 8px 24px rgba(0,0,0,.4);
+  }
+  .frame-cell{
+    width:52px;padding:6px 0;text-align:center;color:#cfd8f0;border-right:1px solid rgba(255,255,255,.08);
+    font-size:11px;position:relative;
+  }
+  .frame-cell:last-child{border-right:none;width:64px;}
+  .frame-cell .fnum{color:#697093;font-size:9px;letter-spacing:1px;}
+  .frame-cell .rolls{display:flex;justify-content:center;gap:3px;height:14px;margin-top:2px;font-weight:700;color:#fff;}
+  .frame-cell .rolls span{min-width:10px;}
+  .frame-cell .total{display:block;margin-top:2px;font-weight:800;font-size:13px;color:var(--accent);}
+  .frame-cell.active{background:rgba(255,179,71,.14);}
+
+  #topInfo{
+    position:fixed;top:16px;left:16px;color:#e8ecf8;background:var(--panel);
+    border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 16px;
+    backdrop-filter:blur(6px);font-size:13px;line-height:1.5;min-width:140px;
+  }
+  #topInfo b{color:var(--accent);font-size:20px;display:block;}
+  #pinsLeft{color:var(--accent2);font-weight:700;}
+
+  #message{
+    position:fixed;top:38%;left:50%;transform:translate(-50%,-50%);
+    color:#fff;font-size:46px;font-weight:900;letter-spacing:6px;white-space:pre-line;
+    text-shadow:0 0 30px rgba(255,179,71,.8),0 4px 10px rgba(0,0,0,.6);
+    opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;text-align:center;
+  }
+  #message.show{opacity:1;}
+
+  #controlsPanel{
+    position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+    display:flex;flex-direction:column;align-items:center;gap:10px;width:min(560px,92vw);
+  }
+  #instructions{
+    color:#aab3d6;background:var(--panel);border:1px solid rgba(255,255,255,.08);
+    border-radius:10px;padding:8px 18px;font-size:12.5px;text-align:center;backdrop-filter:blur(6px);
+  }
+  #instructions b{color:var(--accent2);}
+
+  #powerWrap{
+    width:100%;height:26px;border-radius:13px;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.12);overflow:hidden;position:relative;display:none;
+  }
+  #powerWrap.show{display:block;}
+  #powerFill{position:absolute;left:0;top:0;bottom:0;width:0%;
+    background:linear-gradient(90deg,#3ddc84,#ffd23d,#ff5c5c);}
+  #powerMarker{position:absolute;top:-4px;bottom:-4px;width:3px;background:#fff;box-shadow:0 0 8px #fff;left:0%;}
+  #powerLabel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;color:#fff;letter-spacing:2px;text-shadow:0 1px 3px rgba(0,0,0,.6);}
+
+  #aimBarWrap{width:100%;height:8px;border-radius:4px;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.1);position:relative;overflow:visible;}
+  #aimMarker{position:absolute;top:-3px;width:14px;height:14px;border-radius:50%;
+    background:var(--accent2);left:50%;transform:translateX(-50%);box-shadow:0 0 10px var(--accent2);}
+
+  #newGameBtn{
+    pointer-events:auto;position:fixed;top:16px;right:16px;background:var(--panel);
+    color:#e8ecf8;border:1px solid rgba(255,255,255,.15);border-radius:10px;
+    padding:10px 16px;font-size:13px;cursor:pointer;backdrop-filter:blur(6px);
+  }
+  #newGameBtn:hover{background:rgba(255,179,71,.18);}
+
+  #startScreen{
+    position:fixed;inset:0;z-index:900;background:radial-gradient(ellipse at 50% 30%,#141d33 0%,#04060c 80%);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;
+    transition:opacity .6s ease;
+  }
+  #startScreen.hidden{opacity:0;pointer-events:none;}
+  #startScreen h1{font-size:64px;letter-spacing:12px;color:var(--accent);text-shadow:0 0 30px rgba(255,179,71,.7);font-weight:900;}
+  #startScreen .sub{color:#8b95ba;letter-spacing:4px;margin:10px 0 36px;font-size:14px;}
+  .howto{display:grid;grid-template-columns:1fr 1fr;gap:10px 40px;margin-bottom:34px;font-size:13.5px;color:#c7cfec;}
+  .howto div{display:flex;align-items:center;gap:10px;}
+  .key{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:6px;
+    padding:3px 9px;font-weight:700;font-size:12px;color:var(--accent2);}
+  #playBtn{
+    pointer-events:auto;background:linear-gradient(135deg,var(--accent2),var(--accent));
+    border:none;color:#0a0f1c;font-weight:800;letter-spacing:3px;font-size:16px;
+    padding:14px 42px;border-radius:30px;cursor:pointer;box-shadow:0 10px 30px rgba(255,179,71,.35);
+  }
+  #playBtn:hover{transform:translateY(-2px);}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <h1>STRIKE LANE</h1>
+  <p>LOADING 3D BOWLING ALLEY</p>
+  <div class="bar-track"><div class="bar-fill" id="loadBar"></div></div>
+</div>
+
+<div id="startScreen" class="hidden">
+  <h1>STRIKE LANE</h1>
+  <div class="sub">A 3D BOWLING GAME</div>
+  <div class="howto">
+    <div><span class="key">A / D</span> or drag <span class="key">Mouse</span> — aim direction</div>
+    <div><span class="key">← / →</span> — move start position</div>
+    <div><span class="key">Hold SPACE</span> — charge power</div>
+    <div><span class="key">Release SPACE</span> — bowl!</div>
+    <div><span class="key">← / →</span> while rolling — curve the ball</div>
+    <div><span class="key">R</span> — reset game</div>
+  </div>
+  <button id="playBtn">START GAME</button>
+</div>
+
+<div id="hud">
+  <div id="scoreboard"></div>
+  <div id="topInfo">
+    <b id="scoreTotal">0</b>
+    Frame <span id="frameNum">1</span>/10<br>
+    Pins standing: <span id="pinsLeft">10</span>
+  </div>
+  <button id="newGameBtn">New Game</button>
+  <div id="message"></div>
+
+  <div id="controlsPanel">
+    <div id="aimBarWrap"><div id="aimMarker"></div></div>
+    <div id="powerWrap"><div id="powerFill"></div><div id="powerMarker"></div><div id="powerLabel">POWER</div></div>
+    <div id="instructions">
+      <b>A/D or Mouse-drag</b> aim &nbsp;·&nbsp; <b>←/→</b> stand position &nbsp;·&nbsp;
+      <b>Hold / Release SPACE</b> to bowl &nbsp;·&nbsp; <b>←/→</b> mid-roll to curve
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/three.module.js",
+    "three/addons/": "./vendor/three/addons/"
+  }
+}
+</script>
+<script type="module" src="game.js"></script>
+</body>
+</html>
