@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>רברסי — משחק נגד המחשב</title>
+<style>
+  :root {
+    --board-green: #1a7a3c;
+    --board-green-dark: #146030;
+    --board-border: #0d3d1f;
+    --bg-dark: #0f1a14;
+    --panel-bg: #16261c;
+    --panel-border: #234433;
+    --accent: #ffcc4d;
+    --text-light: #eef5ef;
+    --text-dim: #9db8a8;
+    --black-disc-1: #2b2b2b;
+    --black-disc-2: #050505;
+    --white-disc-1: #ffffff;
+    --white-disc-2: #d9d9d9;
+    --hint: rgba(255, 204, 77, 0.55);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    background: radial-gradient(circle at 50% 0%, #1c2e22 0%, var(--bg-dark) 60%);
+    color: var(--text-light);
+    font-family: "Segoe UI", "Heebo", Arial, sans-serif;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 18px 12px 40px;
+    gap: 16px;
+  }
+  h1 {
+    margin: 6px 0 0;
+    font-size: clamp(22px, 5vw, 32px);
+    letter-spacing: 1px;
+    text-align: center;
+  }
+  h1 span {
+    color: var(--accent);
+  }
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 14px;
+    margin-top: -8px;
+    text-align: center;
+  }
+
+  .layout {
+    display: flex;
+    flex-wrap: wrap-reverse;
+    gap: 20px;
+    justify-content: center;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 920px;
+  }
+
+  .panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    width: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+  }
+
+  .score-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .score-card {
+    flex: 1;
+    background: #0d1a12;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    padding: 10px 8px;
+    text-align: center;
+    transition: border-color .2s, transform .2s;
+  }
+  .score-card.active {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+  .score-card .disc-mini {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    margin: 0 auto 6px;
+  }
+  .score-card .label {
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .score-card .count {
+    font-size: 26px;
+    font-weight: 700;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .field label {
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  select, button {
+    font-family: inherit;
+    font-size: 15px;
+    border-radius: 8px;
+    border: 1px solid var(--panel-border);
+    padding: 9px 10px;
+    background: #0d1a12;
+    color: var(--text-light);
+    cursor: pointer;
+  }
+  select:focus, button:focus { outline: 2px solid var(--accent); }
+
+  button.primary {
+    background: linear-gradient(180deg, #2a9153, #1c7a41);
+    border-color: #1c7a41;
+    font-weight: 700;
+  }
+  button.primary:hover { filter: brightness(1.08); }
+  button:hover { filter: brightness(1.1); }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: default; }
+
+  .status-box {
+    background: #0d1a12;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .status-box.win { color: var(--accent); font-weight: 700; }
+
+  .board-wrap {
+    background: linear-gradient(160deg, #2a4a34, #123a1f);
+    padding: 12px;
+    border-radius: 16px;
+    border: 3px solid var(--board-border);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.45), inset 0 0 0 2px rgba(255,255,255,0.03);
+  }
+  .board {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(34px, 56px));
+    grid-template-rows: repeat(8, minmax(34px, 56px));
+    gap: 3px;
+    background: var(--board-border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .cell {
+    background: var(--board-green);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1 / 1;
+  }
+  .cell::before, .cell::after {
+    content: "";
+    position: absolute;
+    background: rgba(0,0,0,0.12);
+  }
+  .cell.legal {
+    cursor: pointer;
+  }
+  .cell.legal:hover { background: var(--board-green-dark); }
+  .cell.legal .hint-dot {
+    width: 26%;
+    height: 26%;
+    border-radius: 50%;
+    background: var(--hint);
+    box-shadow: 0 0 6px var(--hint);
+  }
+  .cell.last-move {
+    box-shadow: inset 0 0 0 3px var(--accent);
+  }
+
+  .disc {
+    width: 84%;
+    height: 84%;
+    border-radius: 50%;
+    box-shadow: 0 3px 5px rgba(0,0,0,0.5), inset 0 -3px 4px rgba(0,0,0,0.3), inset 0 2px 3px rgba(255,255,255,0.25);
+    animation: pop .22s ease-out;
+  }
+  .disc.black { background: radial-gradient(circle at 35% 30%, var(--black-disc-1), var(--black-disc-2)); }
+  .disc.white { background: radial-gradient(circle at 35% 30%, var(--white-disc-1), var(--white-disc-2)); }
+
+  @keyframes pop {
+    from { transform: scale(0.3); opacity: 0.4; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .flip {
+    animation: flipDisc .35s ease-in-out;
+  }
+  @keyframes flipDisc {
+    0% { transform: scale(1) rotateY(0deg); }
+    50% { transform: scale(0.85) rotateY(90deg); }
+    100% { transform: scale(1) rotateY(0deg); }
+  }
+
+  .thinking-badge {
+    font-size: 12px;
+    color: var(--accent);
+    text-align: center;
+    min-height: 16px;
+  }
+
+  footer {
+    color: var(--text-dim);
+    font-size: 12px;
+    text-align: center;
+    max-width: 500px;
+  }
+
+  @media (max-width: 480px) {
+    .board { grid-template-columns: repeat(8, minmax(30px, 1fr)); grid-template-rows: repeat(8, minmax(30px, 1fr)); }
+    .panel { width: 100%; max-width: 380px; }
+  }
+</style>
+</head>
+<body>
+
+  <h1>רברסי <span>אתגר נגד המחשב</span></h1>
+  <div class="subtitle">Reversi / Othello — שחקו שחור מול לבן, כבשו כמה שיותר משבצות</div>
+
+  <div class="layout">
+
+    <div class="panel">
+      <div class="score-row">
+        <div class="score-card" id="cardBlack">
+          <div class="disc-mini disc black"></div>
+          <div class="label">שחור (את/ה)</div>
+          <div class="count" id="scoreBlack">2</div>
+        </div>
+        <div class="score-card" id="cardWhite">
+          <div class="disc-mini disc white"></div>
+          <div class="label">לבן (מחשב)</div>
+          <div class="count" id="scoreWhite">2</div>
+        </div>
+      </div>
+
+      <div class="status-box" id="statusBox">תורך — שחקים שחור</div>
+      <div class="thinking-badge" id="thinkingBadge"></div>
+
+      <div class="field">
+        <label for="difficulty">רמת קושי</label>
+        <select id="difficulty">
+          <option value="1">קלה מאוד</option>
+          <option value="2">קלה</option>
+          <option value="3" selected>בינונית</option>
+          <option value="4">קשה</option>
+          <option value="5">מומחה</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="playerColor">הצבע שלך</label>
+        <select id="playerColor">
+          <option value="black" selected>שחור (פותח)</option>
+          <option value="white">לבן</option>
+        </select>
+      </div>
+
+      <button class="primary" id="newGameBtn">משחק חדש</button>
+      <button id="undoBtn">בטל מהלך</button>
+    </div>
+
+    <div class="board-wrap">
+      <div class="board" id="board"></div>
+    </div>
+
+  </div>
+
+  <footer>לחצו על משבצת מסומנת כדי להניח חייל. אם אין לכם מהלך חוקי, התור עובר אוטומטית למחשב. המשחק נגמר כשאף אחד מהצדדים לא יכול לזוז.</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  const SIZE = 8;
+  const BLACK = 1;
+  const WHITE = -1;
+  const EMPTY = 0;
+  const DIRS = [
+    [-1,-1],[-1,0],[-1,1],
+    [0,-1],       [0,1],
+    [1,-1], [1,0], [1,1]
+  ];
+
+  // Positional weight table (corners very valuable, cells next to corners risky)
+  const WEIGHTS = [
+    [120, -20, 20,  5,  5, 20, -20, 120],
+    [-20, -40, -5, -5, -5, -5, -40, -20],
+    [ 20,  -5, 15,  3,  3, 15,  -5,  20],
+    [  5,  -5,  3,  3,  3,  3,  -5,   5],
+    [  5,  -5,  3,  3,  3,  3,  -5,   5],
+    [ 20,  -5, 15,  3,  3, 15,  -5,  20],
+    [-20, -40, -5, -5, -5, -5, -40, -20],
+    [120, -20, 20,  5,  5, 20, -20, 120]
+  ];
+
+  const boardEl = document.getElementById("board");
+  const scoreBlackEl = document.getElementById("scoreBlack");
+  const scoreWhiteEl = document.getElementById("scoreWhite");
+  const cardBlackEl = document.getElementById("cardBlack");
+  const cardWhiteEl = document.getElementById("cardWhite");
+  const statusBox = document.getElementById("statusBox");
+  const thinkingBadge = document.getElementById("thinkingBadge");
+  const difficultySel = document.getElementById("difficulty");
+  const playerColorSel = document.getElementById("playerColor");
+  const newGameBtn = document.getElementById("newGameBtn");
+  const undoBtn = document.getElementById("undoBtn");
+
+  let board, current, humanColor, computerColor, gameOver, history, lastMove, aiThinking;
+
+  function freshBoard() {
+    const b = [];
+    for (let r = 0; r < SIZE; r++) b.push(new Array(SIZE).fill(EMPTY));
+    b[3][3] = WHITE; b[3][4] = BLACK;
+    b[4][3] = BLACK; b[4][4] = WHITE;
+    return b;
+  }
+
+  function inBounds(r, c) { return r >= 0 && r < SIZE && c >= 0 && c < SIZE; }
+
+  function flipsFor(b, r, c, color) {
+    if (b[r][c] !== EMPTY) return [];
+    const allFlips = [];
+    for (const [dr, dc] of DIRS) {
+      let rr = r + dr, cc = c + dc;
+      const line = [];
+      while (inBounds(rr, cc) && b[rr][cc] === -color) {
+        line.push([rr, cc]);
+        rr += dr; cc += dc;
+      }
+      if (line.length && inBounds(rr, cc) && b[rr][cc] === color) {
+        allFlips.push(...line);
+      }
+    }
+    return allFlips;
+  }
+
+  function legalMoves(b, color) {
+    const moves = [];
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        if (b[r][c] === EMPTY) {
+          const f = flipsFor(b, r, c, color);
+          if (f.length) moves.push({ r, c, flips: f });
+        }
+      }
+    }
+    return moves;
+  }
+
+  function applyMove(b, move, color) {
+    b[move.r][move.c] = color;
+    for (const [fr, fc] of move.flips) b[fr][fc] = color;
+  }
+
+  function cloneBoard(b) { return b.map(row => row.slice()); }
+
+  function countDiscs(b) {
+    let black = 0, white = 0;
+    for (const row of b) for (const v of row) {
+      if (v === BLACK) black++; else if (v === WHITE) white++;
+    }
+    return { black, white };
+  }
+
+  function colorLabel(color) { return color === BLACK ? "שחור" : "לבן"; }
+
+  // ---------- AI (minimax with alpha-beta) ----------
+
+  function evaluate(b, color) {
+    const opp = -color;
+    let posScore = 0;
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        if (b[r][c] === color) posScore += WEIGHTS[r][c];
+        else if (b[r][c] === opp) posScore -= WEIGHTS[r][c];
+      }
+    }
+    const myMoves = legalMoves(b, color).length;
+    const oppMoves = legalMoves(b, opp).length;
+    let mobility = 0;
+    if (myMoves + oppMoves !== 0) {
+      mobility = 100 * (myMoves - oppMoves) / (myMoves + oppMoves);
+    }
+    const { black, white } = countDiscs(b);
+    const myDiscs = color === BLACK ? black : white;
+    const oppDiscs = color === BLACK ? white : black;
+    let discDiff = 0;
+    if (myDiscs + oppDiscs !== 0) {
+      discDiff = 100 * (myDiscs - oppDiscs) / (myDiscs + oppDiscs);
+    }
+    const totalDiscs = black + white;
+    const stage = totalDiscs / (SIZE * SIZE); // 0 -> start, 1 -> end
+    // Early/mid game: prioritize position & mobility. Late game: prioritize disc count.
+    return posScore * (1 - stage * 0.6) + mobility * 3 + discDiff * stage * 2;
+  }
+
+  function minimax(b, depth, color, aiColor, alpha, beta) {
+    const moves = legalMoves(b, color);
+    if (depth === 0) {
+      return { score: evaluate(b, aiColor) };
+    }
+    if (moves.length === 0) {
+      const oppMoves = legalMoves(b, -color);
+      if (oppMoves.length === 0) {
+        const { black, white } = countDiscs(b);
+        const diff = (aiColor === BLACK ? black - white : white - black);
+        return { score: diff * 1000 };
+      }
+      const result = minimax(b, depth - 1, -color, aiColor, alpha, beta);
+      return { score: result.score };
+    }
+
+    let best = null;
+    if (color === aiColor) {
+      let bestScore = -Infinity;
+      for (const move of moves) {
+        const nb = cloneBoard(b);
+        applyMove(nb, move, color);
+        const { score } = minimax(nb, depth - 1, -color, aiColor, alpha, beta);
+        if (score > bestScore) { bestScore = score; best = move; }
+        alpha = Math.max(alpha, bestScore);
+        if (alpha >= beta) break;
+      }
+      return { score: bestScore, move: best };
+    } else {
+      let bestScore = Infinity;
+      for (const move of moves) {
+        const nb = cloneBoard(b);
+        applyMove(nb, move, color);
+        const { score } = minimax(nb, depth - 1, -color, aiColor, alpha, beta);
+        if (score < bestScore) { bestScore = score; best = move; }
+        beta = Math.min(beta, bestScore);
+        if (alpha >= beta) break;
+      }
+      return { score: bestScore, move: best };
+    }
+  }
+
+  function depthForDifficulty(level) {
+    // Keep it responsive: modest depths, weighted heuristics do the heavy lifting.
+    switch (Number(level)) {
+      case 1: return 1;
+      case 2: return 2;
+      case 3: return 3;
+      case 4: return 4;
+      case 5: return 5;
+      default: return 3;
+    }
+  }
+
+  function pickAiMove(b, aiColor, level) {
+    const moves = legalMoves(b, aiColor);
+    if (!moves.length) return null;
+
+    if (Number(level) === 1) {
+      // Very easy: mostly random, slight corner preference.
+      const corners = moves.filter(m => (m.r === 0 || m.r === 7) && (m.c === 0 || m.c === 7));
+      const pool = corners.length && Math.random() < 0.6 ? corners : moves;
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    const depth = depthForDifficulty(level);
+    const { move } = minimax(b, depth, aiColor, aiColor, -Infinity, Infinity);
+    return move || moves[0];
+  }
+
+  // ---------- Rendering ----------
+
+  function buildBoardDom() {
+    boardEl.innerHTML = "";
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        cell.dataset.r = r;
+        cell.dataset.c = c;
+        cell.addEventListener("click", onCellClick);
+        boardEl.appendChild(cell);
+      }
+    }
+  }
+
+  function render() {
+    const cells = boardEl.children;
+    const moves = (!gameOver && current === humanColor) ? legalMoves(board, current) : [];
+    const legalSet = new Set(moves.map(m => m.r + "," + m.c));
+
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        const idx = r * SIZE + c;
+        const cell = cells[idx];
+        cell.innerHTML = "";
+        cell.classList.remove("legal", "last-move");
+
+        const val = board[r][c];
+        if (val !== EMPTY) {
+          const disc = document.createElement("div");
+          disc.className = "disc " + (val === BLACK ? "black" : "white");
+          cell.appendChild(disc);
+        } else if (legalSet.has(r + "," + c)) {
+          cell.classList.add("legal");
+          const dot = document.createElement("div");
+          dot.className = "hint-dot";
+          cell.appendChild(dot);
+        }
+
+        if (lastMove && lastMove.r === r && lastMove.c === c) {
+          cell.classList.add("last-move");
+        }
+      }
+    }
+
+    const { black, white } = countDiscs(board);
+    scoreBlackEl.textContent = black;
+    scoreWhiteEl.textContent = white;
+    cardBlackEl.classList.toggle("active", current === BLACK && !gameOver);
+    cardWhiteEl.classList.toggle("active", current === WHITE && !gameOver);
+
+    undoBtn.disabled = history.length === 0 || aiThinking;
+  }
+
+  function setStatus(text, isWin) {
+    statusBox.textContent = text;
+    statusBox.classList.toggle("win", !!isWin);
+  }
+
+  function updateStatusForTurn() {
+    if (gameOver) return;
+    if (current === humanColor) {
+      setStatus("תורך — שחקים " + colorLabel(humanColor));
+    } else {
+      setStatus("המחשב חושב...");
+    }
+  }
+
+  // ---------- Game flow ----------
+
+  function saveHistory() {
+    history.push({
+      board: cloneBoard(board),
+      current,
+      lastMove: lastMove ? { ...lastMove } : null
+    });
+  }
+
+  function checkGameEnd() {
+    const humanMoves = legalMoves(board, humanColor);
+    const compMoves = legalMoves(board, computerColor);
+    if (humanMoves.length === 0 && compMoves.length === 0) {
+      const { black, white } = countDiscs(board);
+      const humanScore = humanColor === BLACK ? black : white;
+      const compScore = humanColor === BLACK ? white : black;
+      gameOver = true;
+      if (humanScore > compScore) {
+        setStatus(`המשחק נגמר! ניצחת ${humanScore} - ${compScore} 🎉`, true);
+      } else if (compScore > humanScore) {
+        setStatus(`המשחק נגמר! המחשב ניצח ${compScore} - ${humanScore}`, true);
+      } else {
+        setStatus(`המשחק נגמר בתיקו! ${humanScore} - ${compScore}`, true);
+      }
+      return true;
+    }
+    return false;
+  }
+
+  function advanceTurn() {
+    if (checkGameEnd()) { render(); return; }
+
+    const movesForCurrent = legalMoves(board, current);
+    if (movesForCurrent.length === 0) {
+      // current player has no move -> pass
+      current = -current;
+      render();
+      updateStatusForTurn();
+      if (current === computerColor) {
+        setTimeout(computerTurn, 350);
+      }
+      return;
+    }
+
+    render();
+    updateStatusForTurn();
+    if (current === computerColor) {
+      setTimeout(computerTurn, 350);
+    }
+  }
+
+  function playMove(move) {
+    saveHistory();
+    applyMove(board, move, current);
+    lastMove = { r: move.r, c: move.c };
+    current = -current;
+    advanceTurn();
+  }
+
+  function onCellClick(e) {
+    if (gameOver || aiThinking || current !== humanColor) return;
+    const r = Number(e.currentTarget.dataset.r);
+    const c = Number(e.currentTarget.dataset.c);
+    const moves = legalMoves(board, humanColor);
+    const move = moves.find(m => m.r === r && m.c === c);
+    if (!move) return;
+    playMove(move);
+  }
+
+  function computerTurn() {
+    if (gameOver) return;
+    aiThinking = true;
+    thinkingBadge.textContent = "המחשב מחשב את המהלך...";
+    render();
+
+    setTimeout(() => {
+      const level = difficultySel.value;
+      const move = pickAiMove(board, computerColor, level);
+      aiThinking = false;
+      thinkingBadge.textContent = "";
+      if (move) {
+        playMove(move);
+      } else {
+        // shouldn't happen because advanceTurn checks first, but guard anyway
+        current = -current;
+        advanceTurn();
+      }
+    }, 30);
+  }
+
+  function undo() {
+    if (aiThinking || history.length === 0) return;
+    // Undo back to the human's last decision point (pop until it's human's turn again
+    // and it was a move the human made, i.e. skip the computer's reply too).
+    let state = history.pop();
+    // If the popped state's "current" (whose turn it was before that move) is the computer,
+    // pop one more so we land back before the human's move.
+    if (state && history.length > 0 && state.current === computerColor) {
+      state = history.pop();
+    }
+    if (state) {
+      board = state.board;
+      current = state.current;
+      lastMove = state.lastMove;
+      gameOver = false;
+    }
+    render();
+    updateStatusForTurn();
+  }
+
+  function startGame() {
+    board = freshBoard();
+    current = BLACK; // Black always starts, per Othello rules
+    humanColor = playerColorSel.value === "black" ? BLACK : WHITE;
+    computerColor = -humanColor;
+    gameOver = false;
+    history = [];
+    lastMove = null;
+    aiThinking = false;
+    thinkingBadge.textContent = "";
+    render();
+    updateStatusForTurn();
+    if (current === computerColor) {
+      setTimeout(computerTurn, 400);
+    }
+  }
+
+  newGameBtn.addEventListener("click", startGame);
+  undoBtn.addEventListener("click", undo);
+  playerColorSel.addEventListener("change", startGame);
+
+  buildBoardDom();
+  startGame();
+})();
+</script>
+
+</body>
+</html>
