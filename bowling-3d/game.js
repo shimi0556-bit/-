@@ -1,5 +1,56 @@
-import * as THREE from 'three';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+function buildRoomEnvironment() {
+  const scene = new THREE.Scene();
+  const geometry = new THREE.BoxGeometry();
+  geometry.deleteAttribute('uv');
+  const roomMaterial = new THREE.MeshStandardMaterial({ side: THREE.BackSide });
+  const boxMaterial = new THREE.MeshStandardMaterial();
+  const areaLightMat = (intensity) => {
+    const m = new THREE.MeshBasicMaterial();
+    m.color.setScalar(intensity);
+    return m;
+  };
+
+  const mainLight = new THREE.PointLight(0xffffff, 900, 28, 2);
+  mainLight.position.set(0.418, 16.199, 0.3);
+  scene.add(mainLight);
+
+  const room = new THREE.Mesh(geometry, roomMaterial);
+  room.position.set(-0.757, 13.219, 0.717);
+  room.scale.set(31.713, 28.305, 28.591);
+  scene.add(room);
+
+  const boxes = [
+    [[-10.906, 2.009, 1.846], [0, -0.195, 0], [2.328, 7.905, 4.651]],
+    [[-5.607, -0.754, -0.758], [0, 0.994, 0], [1.97, 1.534, 3.955]],
+    [[6.167, 0.857, 7.803], [0, 0.561, 0], [3.927, 6.285, 3.687]],
+    [[-2.017, 0.018, 6.124], [0, 0.333, 0], [2.002, 4.566, 2.064]],
+    [[2.291, -0.756, -2.621], [0, -0.286, 0], [1.546, 1.552, 1.496]],
+    [[-2.193, -0.369, -5.547], [0, 0.516, 0], [3.875, 3.487, 2.986]],
+  ];
+  for (const [pos, rot, scale] of boxes) {
+    const box = new THREE.Mesh(geometry, boxMaterial);
+    box.position.set(...pos);
+    box.rotation.set(...rot);
+    box.scale.set(...scale);
+    scene.add(box);
+  }
+
+  const lights = [
+    [[-16.116, 14.37, 8.208], [0.1, 2.428, 2.739], 50],
+    [[-16.109, 18.021, -8.207], [0.1, 2.425, 2.751], 50],
+    [[14.904, 12.198, -1.832], [0.15, 4.265, 6.331], 17],
+    [[-0.462, 8.89, 14.52], [4.38, 5.441, 0.088], 43],
+    [[3.235, 11.486, -12.541], [2.5, 2.0, 0.1], 20],
+    [[0.0, 20.0, 0.0], [1.0, 0.1, 1.0], 100],
+  ];
+  for (const [pos, scale, intensity] of lights) {
+    const light = new THREE.Mesh(geometry, areaLightMat(intensity));
+    light.position.set(...pos);
+    light.scale.set(...scale);
+    scene.add(light);
+  }
+  return scene;
+}
 
 /* ---------------------------------------------------------------------- */
 /* Constants                                                               */
@@ -52,7 +103,7 @@ scene.fog = new THREE.Fog(0x05060c, 14, 34);
 const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.05, 100);
 
 const pmrem = new THREE.PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environment = pmrem.fromScene(buildRoomEnvironment(), 0.04).texture;
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
