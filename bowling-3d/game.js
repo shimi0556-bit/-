@@ -250,6 +250,136 @@ pinDeck.receiveShadow = true;
 laneGroup.add(pinDeck);
 
 /* ---------------------------------------------------------------------- */
+/* Bowling hall (decor)                                                    */
+/* ---------------------------------------------------------------------- */
+
+function makeCarpetTexture() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 512;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#1a1030';
+  ctx.fillRect(0, 0, 512, 512);
+  const colors = ['#ff3d7f', '#20d3d3', '#ffb347', '#7d5bff'];
+  for (let i = 0; i < 30; i++) {
+    ctx.strokeStyle = colors[i % colors.length];
+    ctx.globalAlpha = 0.5;
+    ctx.lineWidth = 8 + Math.random() * 14;
+    ctx.lineCap = 'round';
+    const x = Math.random() * 512;
+    const y = Math.random() * 512;
+    const ang = Math.random() * Math.PI * 2;
+    const len = 60 + Math.random() * 110;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.quadraticCurveTo(
+      x + Math.cos(ang) * len * 0.5 - Math.sin(ang) * 45,
+      y + Math.sin(ang) * len * 0.5 + Math.cos(ang) * 45,
+      x + Math.cos(ang) * len, y + Math.sin(ang) * len,
+    );
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = 8;
+  return tex;
+}
+
+function makeNeonSignTexture(text) {
+  const c = document.createElement('canvas');
+  c.width = 1024; c.height = 256;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '900 120px "Arial Black", sans-serif';
+  ctx.shadowColor = '#ff5fb0';
+  ctx.shadowBlur = 40;
+  ctx.fillStyle = '#ffe3f3';
+  for (let i = 0; i < 3; i++) ctx.fillText(text, c.width / 2, c.height / 2);
+  ctx.shadowBlur = 18;
+  ctx.shadowColor = '#4fe0ff';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(text, c.width / 2, c.height / 2);
+  const tex = new THREE.CanvasTexture(c);
+  return tex;
+}
+
+const roomHalfWidth = 2.9;
+const carpetTex = makeCarpetTexture();
+carpetTex.repeat.set(roomHalfWidth * 0.9, (laneLen + 4) * 0.45);
+const carpetFloor = new THREE.Mesh(
+  new THREE.PlaneGeometry(roomHalfWidth * 2, laneLen + 4),
+  new THREE.MeshStandardMaterial({ map: carpetTex, roughness: 0.95 }),
+);
+carpetFloor.rotation.x = -Math.PI / 2;
+carpetFloor.position.set(0, -0.03, laneCenterZ);
+carpetFloor.receiveShadow = true;
+scene.add(carpetFloor);
+
+const LANE_PITCH = 1.8;
+function buildDecorLane(offsetX) {
+  const g = new THREE.Group();
+  const deco = new THREE.Mesh(laneGeo, laneMat.clone());
+  deco.rotation.x = -Math.PI / 2;
+  deco.position.set(offsetX, 0, laneCenterZ);
+  deco.receiveShadow = true;
+  g.add(deco);
+  for (const side of [-1, 1]) {
+    const rail = new THREE.Mesh(new THREE.CapsuleGeometry(0.045, laneLen - 0.3, 4, 12), railMat);
+    rail.rotation.x = Math.PI / 2;
+    rail.position.set(offsetX + side * (LANE_HALF_WIDTH + GUTTER_WIDTH + 0.05), 0.03, laneCenterZ);
+    g.add(rail);
+  }
+  scene.add(g);
+}
+buildDecorLane(-LANE_PITCH);
+buildDecorLane(LANE_PITCH);
+
+const wallMat = new THREE.MeshStandardMaterial({ color: 0x181422, roughness: 0.85 });
+const backWallPanel = new THREE.Mesh(new THREE.PlaneGeometry(roomHalfWidth * 2, 2.8), wallMat);
+backWallPanel.position.set(0, 1.4, BACK_WALL_Z - 0.35);
+scene.add(backWallPanel);
+
+const signTex = makeNeonSignTexture('STRIKE LANE');
+const signMat = new THREE.MeshBasicMaterial({ map: signTex, transparent: true });
+const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 0.85), signMat);
+signMesh.position.set(0, 2.15, BACK_WALL_Z - 0.33);
+scene.add(signMesh);
+
+for (const side of [-1, 1]) {
+  const sideWall = new THREE.Mesh(new THREE.PlaneGeometry(laneLen + 4, 3.2), wallMat);
+  sideWall.rotation.y = side > 0 ? -Math.PI / 2 : Math.PI / 2;
+  sideWall.position.set(side * (roomHalfWidth + 0.02), 1.6, laneCenterZ);
+  scene.add(sideWall);
+}
+
+const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(roomHalfWidth * 2, laneLen + 4), new THREE.MeshStandardMaterial({ color: 0x0c0d16, roughness: 0.95 }));
+ceiling.rotation.x = Math.PI / 2;
+ceiling.position.set(0, 3.1, laneCenterZ);
+scene.add(ceiling);
+
+const pendantMat = new THREE.MeshBasicMaterial({ color: 0xfff2d0 });
+for (let z = APPROACH_LENGTH - 1; z > BACK_WALL_Z + 0.5; z -= 1.7) {
+  for (const x of [-LANE_PITCH, 0, LANE_PITCH]) {
+    const pendant = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 12), pendantMat);
+    pendant.position.set(x, 2.85, z);
+    scene.add(pendant);
+    const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.3, 6), wallMat);
+    cord.position.set(x, 2.98, z);
+    scene.add(cord);
+  }
+}
+
+const accentLightL = new THREE.PointLight(0xff5fb0, 6, 5, 2);
+accentLightL.position.set(-roomHalfWidth + 0.3, 1.2, HEADPIN_Z + 1.5);
+scene.add(accentLightL);
+const accentLightR = new THREE.PointLight(0x4fe0ff, 6, 5, 2);
+accentLightR.position.set(roomHalfWidth - 0.3, 1.2, HEADPIN_Z + 1.5);
+scene.add(accentLightR);
+
+/* ---------------------------------------------------------------------- */
 /* Physics world                                                          */
 /* ---------------------------------------------------------------------- */
 
