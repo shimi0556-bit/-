@@ -1210,13 +1210,7 @@ for (let i = 0; i < 25; i++) {
     });
     row.append(copy);
     const dl = el(`<button type="button" class="btn">${icon('download')}הורדת קובץ</button>`);
-    dl.addEventListener('click', () => {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
-      a.download = 'shimotron-scene.json';
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    });
+    dl.addEventListener('click', () => this.saveFile('shimotron-scene.json', json));
     row.append(dl);
     this.openModal('ייצוא סצנה', body);
   }
@@ -1243,6 +1237,36 @@ for (let i = 0; i < 25; i++) {
     this.openModal('ייבוא סצנה', body);
   }
 
+  /**
+   * Offers a file to the viewer: through the host's download capability
+   * when embedded (the viewer confirms), or a plain browser download.
+   */
+  async saveFile(filename, data) {
+    let downloads = null;
+    try {
+      downloads = window.claude && window.claude.use ? await window.claude.use('downloads') : null;
+    } catch {
+      downloads = null;
+    }
+    if (downloads) {
+      try {
+        await downloads.save({ filename, data });
+        this.toast('הקובץ נשמר', 'download');
+      } catch (err) {
+        if (err && err.code === 'declined') return;
+        if (err && err.code === 'rate_limited') this.toast('חלון שמירה כבר פתוח — נסו שוב בעוד רגע', 'download');
+        else this.toast('השמירה אינה זמינה כאן', 'download');
+      }
+      return;
+    }
+    const blob = data instanceof Blob ? data : new Blob([data], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+
   runScript(src) {
     const eng = this.engine;
     const spawn = (kind, params) => {
@@ -1266,10 +1290,10 @@ for (let i = 0; i < 25; i++) {
     const body = el(`<div><img alt="צילום מסך של הסצנה" src="${url}"><p class="hint">לחיצה ימנית על התמונה ← “שמירת תמונה בשם”, או הורדה:</p><div class="btn-row"></div></div>`);
     const dl = el(`<button type="button" class="btn accent">${icon('download')}הורדת PNG</button>`);
     dl.addEventListener('click', () => {
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `shimotron-${Date.now()}.png`;
-      a.click();
+      const bin = atob(url.split(',')[1]);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      this.saveFile(`shimotron-${Date.now()}.png`, new Blob([bytes], { type: 'image/png' }));
     });
     body.querySelector('.btn-row').append(dl);
     this.openModal('צילום מסך', body);
