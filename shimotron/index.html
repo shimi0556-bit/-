@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>שימוטרון</title>
+    <meta name="description" content="שימוטרון — מנוע תלת־ממד לדפדפן עם עורך מלא, תאורה מבוססת פיזיקה, שמיים חיים, ים, צמחייה, חלקיקים ופיזיקה." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Karantina:wght@400;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <canvas id="viewport" tabindex="0" aria-label="תצוגת הסצנה התלת־ממדית"></canvas>
+    <div id="ui"></div>
+    <div id="loader" class="loader" role="status" aria-live="polite">
+      <div class="loader-card">
+        <svg class="loader-mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
+          <path d="M16 2.5 27.5 9v14L16 29.5 4.5 23V9z" />
+          <path d="M16 9.5 21.8 13v6.6L16 23l-5.8-3.4V13z" fill="currentColor" fill-opacity=".22" />
+          <path d="M16 2.5v7M27.5 9l-5.7 4M27.5 23l-5.7-3.4M16 29.5V23M4.5 23l5.7-3.4M4.5 9l5.7 4" />
+        </svg>
+        <h1>שימוטרון</h1>
+        <p class="tag">מנוע תלת־ממד לדפדפן · אי שלם שנבנה בזמן אמת, בלי קובץ תמונה אחד</p>
+        <div class="bar"><i></i></div>
+        <div class="step">טוען…</div>
+        <button class="enter" type="button" hidden>כניסה לעולם</button>
+        <p class="err" hidden></p>
+        <div class="feat" aria-label="יכולות">
+          <span>PBR + IBL חי</span><span>שמיים ועננים</span><span>יום ולילה</span><span>GTAO</span><span>קרני אור</span><span>ים גרסטנר</span><span>פיזיקה</span><span>קול מסונתז</span><span>עורך מלא</span>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
