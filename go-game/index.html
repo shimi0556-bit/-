@@ -674,7 +674,7 @@
 
   // ---------- Simple heuristic AI ----------
   function maybeTriggerAI(){
-    if(!vsAI || gameOver || scoringMode) return;
+    if(!vsAI || gameOver || scoringMode || aiThinking) return;
     if(turn !== WHITE) return;
     aiThinking = true;
     setTimeout(aiMove, 420);
@@ -756,6 +756,11 @@
   resignBtn.addEventListener('click', doResign);
   finalizeScoreBtn.addEventListener('click', finalizeScore);
   resumeBtn.addEventListener('click', exitScoringModeResume);
+  vsModeSel.addEventListener('change', ()=>{
+    vsAI = vsModeSel.value === 'ai';
+    updateUI();
+    maybeTriggerAI();
+  });
 
   newGame();
 })();
