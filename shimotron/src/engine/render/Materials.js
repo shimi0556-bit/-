@@ -73,6 +73,14 @@ export class Materials {
     t('leaves', { size: 512, alpha: true, seed: 3, wrap: THREE.ClampToEdgeWrapping });
     t('needles', { size: 512, alpha: true, seed: 5, wrap: THREE.ClampToEdgeWrapping });
     t('softDot', { size: 64, kind: 'data', alpha: true });
+    // Race kit (baked lazily by games that ask for it).
+    this.bakeRaceKit = () => {
+      t('asphalt', { size: 1024 });
+      t('asphaltNormal', { size: 512, kind: 'normal', strength: 1.4 });
+      t('curb', { size: 256 });
+      t('frond', { size: 512, alpha: true, seed: 9, wrap: THREE.ClampToEdgeWrapping });
+      return this.textures;
+    };
     t('smoke', { size: 128, kind: 'data', alpha: true });
     t('flame', { size: 128, kind: 'data', alpha: true });
     t('spark', { size: 64, kind: 'data', alpha: true });

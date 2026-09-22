@@ -15,10 +15,28 @@ export class Terrain {
     this.size = options.size || 1100;
     this.segments = options.segments || 300;
     this.seed = options.seed || 7;
-    this.plaza = { x: 0, z: 0, radius: 30, height: 3.2 };
+    // Options let a game reshape the island: `plaza: null` removes the
+    // showcase plateau, `paths` replaces the dirt paths, and the hooks below
+    // carve roads, repaint the splat map and keep vegetation clear.
+    this.plaza = options.plaza === undefined ? { x: 0, z: 0, radius: 30, height: 3.2 } : options.plaza;
+    this.heightModifier = options.heightModifier || null; // (x, z, h) => h
+    this.splatModifier = options.splatModifier || null; // (x, z, weights, h) => weights
+    this.clearance = options.clearance || null; // (x, z) => metres of free space to keep
+    // Parametric island (games): when set, height() uses _islandHeight().
+    this.island = options.island || null;
+    // Biome look: layer tints, snow line, grass roughness.
+    this.biome = {
+      grassTint: [1, 1, 1],
+      sandTint: [1, 1, 1],
+      dirtTint: [1, 1, 1],
+      rockTint: [1, 1, 1],
+      snowLine: 9999,
+      snowAmount: 0,
+      ...(options.biome || {}),
+    };
     const rng = new Random(this.seed);
     this.noise = new SimplexNoise(rng);
-    this.paths = [
+    this.paths = options.paths || [
       [
         [0, 30],
         [14, 70],
@@ -91,8 +109,61 @@ export class Terrain {
     return best;
   }
 
+  /**
+   * Parametric island used by games. `island` fields (all optional):
+   * radius, stretch [sx, sz], base, hills, ranges [{angle, from, to, weight}],
+   * mountainHeight, ridgeFreq, coastRough, volcano {x, z, radius, height,
+   * craterRadius, craterDepth}, dunes {angle, height, wavelength},
+   * lagoon {inner, outer, depth}.
+   */
+  _islandHeight(x, z) {
+    const I = this.island;
+    const R = I.radius || 800;
+    const [sx, sz] = I.stretch || [1, 1];
+    const warp = this.noise.noise(x * (0.75 / R) + 5.2, z * (0.75 / R) - 3.1);
+    const coastN = this.noise.noise(x * (2.6 / R) - 7.7, z * (2.6 / R) + 1.3) * 0.5 + this.noise.noise(x * (6.5 / R), z * (6.5 / R) + 4.4) * 0.22;
+    const dist = Math.hypot(x / sx, z / sz) / R + warp * 0.16 + coastN * (I.coastRough ?? 0.12);
+    const island = smoothstep(1.02, 0.62, dist);
+    const hills = this._fbm(x * 0.0055, z * 0.0055, 5) * (I.hills ?? 9) + this._fbm(x * 0.021, z * 0.021, 3) * 1.4;
+    const rf = I.ridgeFreq ?? 0.0035;
+    const rid = this._ridged(x * rf, z * rf, 6);
+    let mask = 0;
+    for (const m of I.ranges || []) {
+      const d = (x * Math.cos(m.angle) + z * Math.sin(m.angle)) / R + warp * 0.18;
+      mask = Math.max(mask, smoothstep(m.from, m.to, d) * (m.weight ?? 1));
+    }
+    let h = (I.base ?? 6) + hills + mask * Math.pow(rid, 1.6) * (I.mountainHeight ?? 110) * smoothstep(0.25, 0.7, 1 - dist * 0.85);
+    if (I.dunes) {
+      const D = I.dunes;
+      const a = D.angle || 0;
+      const u = x * Math.cos(a) + z * Math.sin(a);
+      const n = this._fbm(x * 0.004, z * 0.004, 3);
+      const wave = Math.pow(Math.abs(Math.sin((u / (D.wavelength || 90)) * Math.PI + n * 3.0)), 1.6);
+      h += wave * (D.height || 8) * (0.6 + 0.4 * this.noise.noise(x * 0.002, z * 0.002));
+    }
+    if (I.volcano) {
+      const V = I.volcano;
+      const dv = Math.hypot(x - V.x, z - V.z) / V.radius;
+      const ribs = this._ridged(x * 0.012, z * 0.012, 3);
+      const cone = Math.pow(Math.max(0, 1 - dv), 1.7) * V.height * (0.88 + ribs * 0.2);
+      const crater = smoothstep(V.craterRadius, V.craterRadius * 0.55, dv) * V.craterDepth;
+      h += cone - crater;
+    }
+    const coast = smoothstep(0.62, 0.86, dist);
+    h = lerp(h, 1.2 + hills * 0.12, coast * 0.85);
+    h = lerp(-26 + hills * 0.5, h, island);
+    if (I.lagoon) {
+      const L = I.lagoon;
+      const l = smoothstep(L.outer, L.inner, dist);
+      h = lerp(h, -(L.depth || 4) + hills * 0.08, l);
+    }
+    if (this.heightModifier) h = this.heightModifier(x, z, h);
+    return h;
+  }
+
   /** Analytic height in metres (sea level = 0). */
   height(x, z) {
+    if (this.island) return this._islandHeight(x, z);
     const warp = this.noise.noise(x * 0.0017 + 5.2, z * 0.0017 - 3.1);
     const dist = Math.hypot(x * 0.95, z * 1.08) / 430 + warp * 0.2;
     const island = smoothstep(1.02, 0.6, dist);
@@ -107,12 +178,18 @@ export class Terrain {
     h = lerp(h, 1.2 + hills * 0.12, coast * 0.85);
     h = lerp(-26 + hills * 0.5, h, island);
     // Plaza plateau.
-    const pd = Math.hypot(x - this.plaza.x, z - this.plaza.z);
-    const pt = smoothstep(this.plaza.radius + 2, this.plaza.radius + 46, pd);
-    h = lerp(this.plaza.height - 0.05, h, pt);
+    let pt = 1;
+    if (this.plaza) {
+      const pd = Math.hypot(x - this.plaza.x, z - this.plaza.z);
+      pt = smoothstep(this.plaza.radius + 2, this.plaza.radius + 46, pd);
+      h = lerp(this.plaza.height - 0.05, h, pt);
+    }
     // Paths sink slightly into the ground.
-    const dp = this.distanceToPath(x, z);
-    h -= smoothstep(3.5, 0.5, dp) * 0.18 * pt;
+    if (this.paths.length) {
+      const dp = this.distanceToPath(x, z);
+      h -= smoothstep(3.5, 0.5, dp) * 0.18 * pt;
+    }
+    if (this.heightModifier) h = this.heightModifier(x, z, h);
     return h;
   }
 
@@ -257,11 +334,12 @@ export class Terrain {
         let sand = smoothstep(2.6 + nz * 1.2, 0.9, h);
         let rock = smoothstep(0.16 + nz2 * 0.05, 0.32, slope) + smoothstep(46, 70, h + nz * 12) * 0.8;
         rock = Math.min(1, rock);
-        const pd = Math.hypot(x - this.plaza.x, z - this.plaza.z);
-        const path = smoothstep(3.2 + nz2 * 0.8, 1.2, this.distanceToPath(x, z)) * smoothstep(this.plaza.radius - 1, this.plaza.radius + 2, pd);
+        const pd = this.plaza ? Math.hypot(x - this.plaza.x, z - this.plaza.z) : 1e9;
+        const path = this.paths.length ? smoothstep(3.2 + nz2 * 0.8, 1.2, this.distanceToPath(x, z)) * (this.plaza ? smoothstep(this.plaza.radius - 1, this.plaza.radius + 2, pd) : 1) : 0;
         const patches = smoothstep(0.45, 0.75, this.noise.noise(x * 0.012 - 4, z * 0.012 + 9)) * 0.55;
         let dirt = Math.max(path, patches * (1 - sand)) * (1 - rock);
         sand *= 1 - rock;
+        if (this.splatModifier) ({ sand, dirt, rock } = this.splatModifier(x, z, { sand, dirt, rock }, h));
         const sum = sand + dirt + rock;
         if (sum > 1) {
           sand /= sum;
@@ -302,6 +380,11 @@ export class Terrain {
       uSize: { value: this.size },
       uTime: { value: 0 },
       uCaustic: { value: new THREE.Color(1, 1, 1) },
+      uTintGrass: { value: new THREE.Vector3(...this.biome.grassTint) },
+      uTintSand: { value: new THREE.Vector3(...this.biome.sandTint) },
+      uTintDirt: { value: new THREE.Vector3(...this.biome.dirtTint) },
+      uTintRock: { value: new THREE.Vector3(...this.biome.rockTint) },
+      uSnow: { value: new THREE.Vector2(this.biome.snowLine, this.biome.snowAmount) },
     };
     this.uniforms = uniforms;
     mat.onBeforeCompile = (shader) => {
@@ -321,6 +404,8 @@ export class Terrain {
           varying vec3 vTPos; varying vec3 vTNrm;
           uniform sampler2D tSplat, tGrass, tGrassN, tRock, tRockN, tSand, tSandN, tDirt;
           uniform float uSize; uniform float uTime; uniform vec3 uCaustic;
+          uniform vec3 uTintGrass; uniform vec3 uTintSand; uniform vec3 uTintDirt; uniform vec3 uTintRock; uniform vec2 uSnow;
+          float tSnow;
           // Animated caustic web (iterated domain warp), sharpened into bright filaments.
           float caustics(vec2 p, float t) {
             vec2 i = p; float c = 1.0; float inten = 0.005;
@@ -350,6 +435,7 @@ export class Terrain {
             vec3 dirt = texture2D(tDirt, wuv * 0.1).rgb;
             tTriW = pow(abs(n), vec3(4.0)); tTriW /= dot(tTriW, vec3(1.0));
             vec3 rock = texture2D(tRock, vTPos.zy * 0.045).rgb * tTriW.x + texture2D(tRock, vTPos.xz * 0.045).rgb * tTriW.y + texture2D(tRock, vTPos.xy * 0.045).rgb * tTriW.z;
+            grass *= uTintGrass; sand *= uTintSand; dirt *= uTintDirt; rock *= uTintRock;
             // Height-aware blending keeps transitions crisp instead of muddy.
             float hg = dot(grass, vec3(0.33)) + 0.2;
             float hs = dot(sand, vec3(0.33));
@@ -365,6 +451,10 @@ export class Terrain {
             // Wet sand band at the waterline.
             tWet = smoothstep(1.1, 0.15, vTPos.y) * w.x;
             col *= mix(1.0, 0.62, tWet);
+            // Snow cover: altitude line broken up by noise, sliding off steep faces.
+            float sn = texture2D(tGrass, wuv * 0.021).g * 3.0 + texture2D(tRock, wuv * 0.07).r;
+            tSnow = uSnow.y * smoothstep(uSnow.x - 5.0, uSnow.x + 5.0, vTPos.y + (sn - 1.0) * 9.0) * smoothstep(0.55, 0.82, n.y) * (1.0 - tWet);
+            col = mix(col, vec3(0.86, 0.9, 0.96) * (0.92 + 0.08 * sn), tSnow);
             // Under water: darken, tint, and dance with caustics.
             float under = smoothstep(0.05, -0.6, vTPos.y);
             col *= mix(vec3(1.0), vec3(0.55, 0.72, 0.75), smoothstep(0.0, -3.0, vTPos.y));
@@ -397,12 +487,12 @@ export class Terrain {
             vec3 grassN = normalize(vec3(gN.x * 0.6 + wn.x, wn.y, gN.y * 0.6 + wn.z));
             vec3 sandN = normalize(vec3(sN.x * 0.5 + wn.x, wn.y, sN.y * 0.5 + wn.z));
             vec3 wN = normalize(sandN * tW.x + grassN * (tW.y + tW.w) + rockN * tW.z * 1.2);
-            wN = normalize(mix(wN, wn, tWet * 0.6));
+            wN = normalize(mix(wN, wn, max(tWet * 0.6, tSnow * 0.8)));
             normal = normalize((viewMatrix * vec4(wN, 0.0)).xyz);
           }`,
         );
     };
-    mat.customProgramCacheKey = () => 'shimotron-terrain';
+    mat.customProgramCacheKey = () => 'shimotron-terrain-v2';
     return mat;
   }
 

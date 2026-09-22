@@ -113,8 +113,14 @@ function cardGeometry(out) {
  * species, wind-animated grass clumps, flowers and boulders.
  */
 export class Vegetation {
-  constructor(engine, terrain, materials) {
+  /**
+   * options.grassSampler(rng) → {x, z} | null picks grass/flower spots (default:
+   * a disk around the plaza); options.colliderFilter(c) → bool decides which
+   * trees and rocks get static physics (default: the island's heart).
+   */
+  constructor(engine, terrain, materials, options = {}) {
     this.engine = engine;
+    this.options = options;
     this.terrain = terrain;
     this.materials = materials;
     this.group = new THREE.Group();
@@ -132,8 +138,9 @@ export class Vegetation {
     if (h < minH || h > maxH) return null;
     t.normalAt(x, z, _n);
     if (1 - _n.y > maxSlope) return null;
-    if (Math.hypot(x - t.plaza.x, z - t.plaza.z) < clearPlaza) return null;
-    if (clearPath > 0 && t.distanceToPath(x, z) < clearPath) return null;
+    if (t.plaza && Math.hypot(x - t.plaza.x, z - t.plaza.z) < clearPlaza) return null;
+    if (clearPath > 0 && t.paths.length && t.distanceToPath(x, z) < clearPath) return null;
+    if (t.clearance && t.clearance(x, z) < clearPath * 2 + 4) return null;
     return h;
   }
 
@@ -482,13 +489,23 @@ export class Vegetation {
     const target = Math.round(17000 * density);
     const radius = 95;
     const items = [];
+    const sampler =
+      this.options.grassSampler ||
+      ((rng) => {
+        if (!t.plaza) return null;
+        const a = rng.random() * Math.PI * 2;
+        const r = Math.sqrt(rng.random()) * radius;
+        const x = t.plaza.x + Math.cos(a) * r;
+        const z = t.plaza.z + Math.sin(a) * r;
+        if (Math.hypot(x - t.plaza.x, z - t.plaza.z) < t.plaza.radius + 1.5) return null;
+        return { x, z };
+      });
     let guard = 0;
     while (items.length < target && guard++ < target * 6) {
-      const a = this.rng.random() * Math.PI * 2;
-      const r = Math.sqrt(this.rng.random()) * radius;
-      const x = t.plaza.x + Math.cos(a) * r;
-      const z = t.plaza.z + Math.sin(a) * r;
-      if (Math.hypot(x - t.plaza.x, z - t.plaza.z) < t.plaza.radius + 1.5) continue;
+      const p = sampler(this.rng);
+      if (!p) continue;
+      const { x, z } = p;
+      if (t.clearance && t.clearance(x, z) < 1.5) continue;
       const w = t.weightsAt(x, z);
       if (this.rng.random() > w.grass * 1.15 - 0.1) continue;
       const h = t.heightAt(x, z);
@@ -504,7 +521,8 @@ export class Vegetation {
     while (added < extra && guard++ < extra * 8) {
       const x = this.rng.range(-half, half);
       const z = this.rng.range(-half, half);
-      if (Math.hypot(x, z) < radius) continue;
+      if (t.plaza && Math.hypot(x, z) < radius) continue;
+      if (t.clearance && t.clearance(x, z) < 2) continue;
       const w = t.weightsAt(x, z);
       if (w.grass < 0.7) continue;
       const h = t.heightAt(x, z);
@@ -543,11 +561,21 @@ export class Vegetation {
     let i = 0;
     let guard = 0;
     while (i < count && guard++ < count * 10) {
-      const a = this.rng.random() * Math.PI * 2;
-      const r = Math.sqrt(this.rng.random()) * 90;
-      const x = Math.cos(a) * r;
-      const z = Math.sin(a) * r;
-      if (Math.hypot(x, z) < t.plaza.radius + 3) continue;
+      let x;
+      let z;
+      if (this.options.grassSampler) {
+        const p = this.options.grassSampler(this.rng);
+        if (!p) continue;
+        ({ x, z } = p);
+        if (t.clearance && t.clearance(x, z) < 2) continue;
+      } else {
+        if (!t.plaza) break;
+        const a = this.rng.random() * Math.PI * 2;
+        const r = Math.sqrt(this.rng.random()) * 90;
+        x = Math.cos(a) * r;
+        z = Math.sin(a) * r;
+        if (Math.hypot(x, z) < t.plaza.radius + 3) continue;
+      }
       const cluster = this.noise.noise(x * 0.04 + 9, z * 0.04) > 0.35;
       if (!cluster) continue;
       const w = t.weightsAt(x, z);
@@ -570,7 +598,8 @@ export class Vegetation {
 
   addPhysics(physics) {
     for (const c of this.colliders) {
-      if (Math.hypot(c.x, c.z) > 240) continue; // far scenery stays visual-only
+      const keep = this.options.colliderFilter ? this.options.colliderFilter(c) : Math.hypot(c.x, c.z) <= 240;
+      if (!keep) continue; // far scenery stays visual-only
       if (c.type === 'sphere') physics.addStaticSphere(c, c.r);
       else physics.addStaticCylinder(c, c.r, c.h, 'wood');
     }

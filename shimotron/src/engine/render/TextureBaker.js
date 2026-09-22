@@ -307,6 +307,65 @@ export const RECIPES = {
       vec3 w = worley(uv, 10.0);
       return h - w.x * 0.25;
     }`,
+  // Race asphalt: aggregate, tar seams and wear. Tileable.
+  asphalt: /* glsl */ `
+    vec4 bake(vec2 uv) {
+      float n = fbm(uv, 6.0, 6);
+      float g = hash12(floor(uv * 1024.0));
+      vec3 w = worley(uv, 48.0);
+      float stone = smoothstep(0.26, 0.12, w.x) * (0.4 + w.z * 0.6);
+      vec3 c = vec3(0.075, 0.075, 0.08) * (0.85 + n * 0.3);
+      c += vec3(0.07) * stone * g;
+      float patchy = smoothstep(0.35, 0.75, fbm(uv + 4.0, 3.0, 4));
+      c = mix(c, c * vec3(0.72, 0.72, 0.75), patchy * 0.55);
+      float crack = smoothstep(0.02, 0.0, abs(ridged(uv, 5.0, 3) - 0.97)) * 0.6;
+      c *= 1.0 - crack;
+      return vec4(c, 1.0);
+    }`,
+  asphaltNormal: /* glsl */ `
+    float height(vec2 uv) {
+      vec3 w = worley(uv, 48.0);
+      return smoothstep(0.3, 0.08, w.x) * 0.5 + fbm(uv, 32.0, 3) * 0.25;
+    }`,
+  curb: /* glsl */ `
+    vec4 bake(vec2 uv) {
+      float band = step(0.5, fract(uv.y));
+      vec3 red = vec3(0.62, 0.035, 0.03);
+      vec3 white = vec3(0.78, 0.78, 0.76);
+      vec3 c = mix(red, white, band);
+      float edge = smoothstep(0.0, 0.04, fract(uv.y)) * smoothstep(1.0, 0.96, fract(uv.y));
+      c *= 0.8 + 0.2 * edge;
+      c *= 0.9 + fbm(uv, 8.0, 3) * 0.12;
+      float wear = smoothstep(0.35, 0.8, fbm(uv + 2.0, 6.0, 4));
+      c = mix(c, vec3(0.12), wear * 0.25 * (1.0 - uv.x));
+      return vec4(c, 1.0);
+    }`,
+  // Palm frond (alpha): a long rib with paired leaflets.
+  frond: /* glsl */ `
+    vec4 bake(vec2 uv) {
+      vec4 col = vec4(0.0);
+      float rib = smoothstep(0.012, 0.004, abs(uv.x - 0.5)) * step(0.02, uv.y);
+      if (rib > 0.0) col = vec4(0.25, 0.3, 0.1, 1.0);
+      for (int i = 0; i < 46; i++) {
+        float fi = float(i);
+        float h = hash12(vec2(fi * 1.3, uSeed + 7.0));
+        float t = 0.06 + fi / 46.0 * 0.9;
+        float side = mod(fi, 2.0) < 1.0 ? -1.0 : 1.0;
+        vec2 a = vec2(0.5, t);
+        float len = 0.44 * sin(3.1416 * clamp(t * 1.05, 0.0, 1.0)) * (0.8 + h * 0.3);
+        vec2 dir = normalize(vec2(side, -0.35 - h * 0.2));
+        vec2 b = a + dir * len;
+        vec2 pa = uv - a; vec2 ba = b - a;
+        float k = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+        float d = length(pa - ba * k);
+        float wdt = 0.018 * sin(3.1416 * k) + 0.002;
+        if (d < wdt) {
+          vec3 c1 = mix(vec3(0.12, 0.3, 0.06), vec3(0.34, 0.48, 0.12), h * 0.6 + k * 0.3);
+          col = vec4(c1, 1.0);
+        }
+      }
+      return col;
+    }`,
   // Foliage cards (alpha): a leafy twig and a pine needle spray.
   leaves: /* glsl */ `
     vec2 rot(vec2 p, float a) { float c = cos(a), s = sin(a); return vec2(c * p.x + s * p.y, -s * p.x + c * p.y); }
