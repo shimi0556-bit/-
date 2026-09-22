@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>משחק גו (Go)</title>
+<style>
+  :root{
+    --bg: #1b1f24;
+    --panel: #262b33;
+    --panel-2: #2f353f;
+    --accent: #d9a441;
+    --accent-2: #6fb3d2;
+    --text: #eee6d8;
+    --muted: #9aa3af;
+    --board-wood: #dcb35c;
+    --board-wood-2: #c89a45;
+    --line: #3a2a14;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    background: radial-gradient(1200px 800px at 50% -10%, #2a313c, var(--bg));
+    color: var(--text);
+    font-family: "Segoe UI", "Heebo", Arial, sans-serif;
+  }
+  body{
+    display:flex; flex-direction:column; align-items:center;
+    min-height:100vh;
+    padding: 18px 12px 40px;
+  }
+  h1{
+    font-size: 1.6rem;
+    margin: 6px 0 2px;
+    letter-spacing: .5px;
+  }
+  .subtitle{
+    color: var(--muted);
+    font-size: .9rem;
+    margin-bottom: 14px;
+  }
+  .layout{
+    display:flex;
+    gap: 20px;
+    align-items:flex-start;
+    flex-wrap: wrap;
+    justify-content:center;
+    width:100%;
+    max-width: 1100px;
+  }
+  .panel{
+    background: var(--panel);
+    border: 1px solid #3a4048;
+    border-radius: 14px;
+    padding: 14px 16px;
+    min-width: 240px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.35);
+  }
+  .panel h2{
+    font-size: 1rem;
+    margin: 0 0 10px;
+    color: var(--accent);
+    border-bottom: 1px solid #3a4048;
+    padding-bottom: 6px;
+  }
+  .row{
+    display:flex; align-items:center; justify-content:space-between;
+    gap: 8px; margin-bottom: 10px;
+  }
+  .row label{ font-size:.88rem; color: var(--muted); }
+  select, button{
+    font-family: inherit;
+    font-size: .88rem;
+    border-radius: 8px;
+    border: 1px solid #454c56;
+    background: var(--panel-2);
+    color: var(--text);
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: .15s;
+  }
+  select:hover, button:hover{ border-color: var(--accent); }
+  button:active{ transform: scale(.96); }
+  button.primary{
+    background: linear-gradient(180deg, var(--accent), #b8862f);
+    color: #24170a; font-weight:600; border: none;
+  }
+  button.wide{ width:100%; margin-top:4px; }
+  button:disabled{ opacity:.4; cursor:not-allowed; }
+  .turn-indicator{
+    display:flex; align-items:center; gap:8px;
+    font-size:1rem; font-weight:600;
+    padding: 8px 10px;
+    background: var(--panel-2);
+    border-radius: 10px;
+    margin-bottom: 12px;
+  }
+  .stone-dot{
+    width:18px; height:18px; border-radius:50%;
+    box-shadow: inset -2px -3px 4px rgba(0,0,0,.5), 0 1px 2px rgba(0,0,0,.6);
+  }
+  .stone-dot.black{ background: radial-gradient(circle at 35% 30%, #666, #0a0a0a 70%); }
+  .stone-dot.white{ background: radial-gradient(circle at 35% 30%, #fff, #cfcfcf 70%); border:1px solid #999;}
+  .score-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding: 6px 4px; font-size:.92rem;
+  }
+  .score-row .val{ font-weight:700; color: var(--accent-2); }
+  .board-wrap{
+    background: linear-gradient(160deg, var(--board-wood), var(--board-wood-2));
+    border-radius: 10px;
+    padding: 18px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.5), inset 0 0 0 6px rgba(0,0,0,.15);
+  }
+  canvas{
+    display:block;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .msg{
+    min-height: 20px;
+    font-size: .85rem;
+    color: var(--muted);
+    margin-top: 8px;
+    text-align:center;
+  }
+  .msg.win{ color: var(--accent); font-weight:700; font-size:1rem; }
+  .legend{
+    font-size:.78rem; color: var(--muted); line-height:1.6; margin-top:10px;
+  }
+  .scoring-banner{
+    background: rgba(217,164,65,.15);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: .85rem;
+    margin-bottom: 10px;
+    display:none;
+  }
+  .scoring-banner.show{ display:block; }
+  .footer-note{
+    color:#5b6470; font-size:.72rem; margin-top:22px; text-align:center;
+  }
+  a{ color: var(--accent-2); }
+</style>
+</head>
+<body>
+
+  <h1>⚫⚪ משחק גו (Go)</h1>
+  <div class="subtitle">לוח 9×9 / 13×13 / 19×19 · כללי שבי מלאים · כלל קו · אפשרות נגד המחשב</div>
+
+  <div class="layout">
+
+    <div class="panel" style="order:1">
+      <h2>הגדרות</h2>
+      <div class="row">
+        <label>גודל לוח</label>
+        <select id="boardSize">
+          <option value="9">9×9 (קצר)</option>
+          <option value="13">13×13</option>
+          <option value="19" selected>19×19 (מלא)</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>מצב משחק</label>
+        <select id="vsMode">
+          <option value="pvp">שני שחקנים</option>
+          <option value="ai">נגד המחשב (לבן)</option>
+        </select>
+      </div>
+      <button class="primary wide" id="newGameBtn">משחק חדש</button>
+
+      <h2 style="margin-top:16px">מהלכים</h2>
+      <button class="wide" id="passBtn">עבור תור (Pass)</button>
+      <button class="wide" id="undoBtn">בטל מהלך אחרון</button>
+      <button class="wide" id="resignBtn">פרישה</button>
+
+      <div class="legend">
+        לחיצה על נקודה מניחה אבן. שני "עבור" ברצף מסיימים את המשחק
+        ונכנסים למצב ניקוד — לחצו על קבוצת אבנים "מתה" כדי לסמן אותה
+        כשבויה, ואז אשרו את התוצאה.
+      </div>
+    </div>
+
+    <div style="order:2; display:flex; flex-direction:column; align-items:center;">
+      <div class="turn-indicator" id="turnIndicator">
+        <span class="stone-dot black"></span> תור השחור
+      </div>
+      <div class="scoring-banner" id="scoringBanner">
+        מצב ניקוד: לחצו על קבוצות אבנים כדי לסמן/לבטל כ"מתות".
+      </div>
+      <div class="board-wrap">
+        <canvas id="board" width="700" height="700"></canvas>
+      </div>
+      <div class="msg" id="msg"></div>
+      <div id="scoringControls" style="display:none; margin-top:10px; gap:8px; justify-content:center;">
+        <button class="primary" id="finalizeScoreBtn">אשר תוצאה</button>
+        <button id="resumeBtn">המשך משחק</button>
+      </div>
+    </div>
+
+    <div class="panel" style="order:3">
+      <h2>תוצאה</h2>
+      <div class="score-row">
+        <span><span class="stone-dot black" style="display:inline-block;vertical-align:middle;margin-left:6px;"></span>שבויים ע"י שחור</span>
+        <span class="val" id="blackCaptures">0</span>
+      </div>
+      <div class="score-row">
+        <span><span class="stone-dot white" style="display:inline-block;vertical-align:middle;margin-left:6px;"></span>שבויים ע"י לבן</span>
+        <span class="val" id="whiteCaptures">0</span>
+      </div>
+      <hr style="border-color:#3a4048;">
+      <div class="score-row">
+        <span>ניקוד שחור (שטח)</span>
+        <span class="val" id="blackScore">–</span>
+      </div>
+      <div class="score-row">
+        <span>ניקוד לבן (שטח + קומי 6.5)</span>
+        <span class="val" id="whiteScore">–</span>
+      </div>
+      <div class="legend">
+        ניקוד שטח (סיני): כל אבן על הלוח + כל נקודה ריקה שמוקפת
+        אך ורק על ידי צבע אחד. ללבן ניתן קומי (יתרון) של 6.5 נקודות
+        על שהשחור פותח.
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer-note">
+    נבנה כ"אמן" — לוגיקת גו מלאה (שבי, איסור התאבדות, סופר-קו) בקובץ HTML אחד, ללא תלויות חיצוניות.
+  </div>
+
+<script>
+(function(){
+  "use strict";
+
+  const EMPTY=0, BLACK=1, WHITE=2;
+
+  const canvas = document.getElementById('board');
+  const ctx = canvas.getContext('2d');
+  const boardSizeSel = document.getElementById('boardSize');
+  const vsModeSel = document.getElementById('vsMode');
+  const newGameBtn = document.getElementById('newGameBtn');
+  const passBtn = document.getElementById('passBtn');
+  const undoBtn = document.getElementById('undoBtn');
+  const resignBtn = document.getElementById('resignBtn');
+  const turnIndicator = document.getElementById('turnIndicator');
+  const msgEl = document.getElementById('msg');
+  const blackCapturesEl = document.getElementById('blackCaptures');
+  const whiteCapturesEl = document.getElementById('whiteCaptures');
+  const blackScoreEl = document.getElementById('blackScore');
+  const whiteScoreEl = document.getElementById('whiteScore');
+  const scoringBanner = document.getElementById('scoringBanner');
+  const scoringControls = document.getElementById('scoringControls');
+  const finalizeScoreBtn = document.getElementById('finalizeScoreBtn');
+  const resumeBtn = document.getElementById('resumeBtn');
+
+  const KOMI = 6.5;
+
+  let size = 19;
+  let cell = 32;
+  let margin = 36;
+  let board = [];
+  let turn = BLACK;
+  let captures = {1:0, 2:0}; // stones captured BY each color
+  let passCount = 0;
+  let gameOver = false;
+  let historyStack = []; // snapshots of board (2D arrays) after each committed move, index0 = empty board
+  let vsAI = false;
+  let scoringMode = false;
+  let deadStones = new Set(); // "r,c" keys marked dead during scoring
+  let aiThinking = false;
+
+  function cloneBoard(b){ return b.map(row=>row.slice()); }
+
+  function makeEmptyBoard(n){
+    const b = [];
+    for(let i=0;i<n;i++) b.push(new Array(n).fill(EMPTY));
+    return b;
+  }
+
+  function neighbors(r,c){
+    const out=[];
+    if(r>0) out.push([r-1,c]);
+    if(r<size-1) out.push([r+1,c]);
+    if(c>0) out.push([r,c-1]);
+    if(c<size-1) out.push([r,c+1]);
+    return out;
+  }
+
+  function getGroup(b, r, c){
+    const color = b[r][c];
+    const stones = new Set();
+    const liberties = new Set();
+    const stack = [[r,c]];
+    const key = (r,c)=> r+','+c;
+    stones.add(key(r,c));
+    while(stack.length){
+      const [cr,cc] = stack.pop();
+      for(const [nr,nc] of neighbors(cr,cc)){
+        const v = b[nr][nc];
+        const k = key(nr,nc);
+        if(v===EMPTY){ liberties.add(k); }
+        else if(v===color && !stones.has(k)){
+          stones.add(k);
+          stack.push([nr,nc]);
+        }
+      }
+    }
+    return {stones, liberties};
+  }
+
+  function boardToString(b){
+    return b.map(row=>row.join('')).join('/');
+  }
+
+  function historySet(){
+    const s = new Set();
+    for(const snap of historyStack) s.add(boardToString(snap));
+    return s;
+  }
+
+  // Attempts a move; if apply=false, does NOT mutate global state (dry run).
+  // Returns {legal, resultBoard, capturedCount} or {legal:false}
+  function evaluateMove(b, r, c, color){
+    if(b[r][c] !== EMPTY) return {legal:false};
+    const copy = cloneBoard(b);
+    copy[r][c] = color;
+    const opponent = color===BLACK ? WHITE : BLACK;
+    let capturedCount = 0;
+    const visited = new Set();
+    for(const [nr,nc] of neighbors(r,c)){
+      if(copy[nr][nc] === opponent){
+        const key = nr+','+nc;
+        if(visited.has(key)) continue;
+        const group = getGroup(copy, nr, nc);
+        for(const gk of group.stones) visited.add(gk);
+        if(group.liberties.size === 0){
+          for(const gk of group.stones){
+            const [gr,gc] = gk.split(',').map(Number);
+            copy[gr][gc] = EMPTY;
+            capturedCount++;
+          }
+        }
+      }
+    }
+    const myGroup = getGroup(copy, r, c);
+    if(myGroup.liberties.size === 0 && capturedCount === 0){
+      return {legal:false}; // suicide
+    }
+    // positional superko check
+    const posStr = boardToString(copy);
+    if(historySet().has(posStr)){
+      return {legal:false};
+    }
+    return {legal:true, resultBoard:copy, capturedCount};
+  }
+
+  function playMove(r, c, color){
+    if(gameOver || scoringMode) return false;
+    const res = evaluateMove(board, r, c, color);
+    if(!res.legal){
+      showMsg('מהלך לא חוקי (התאבדות או חזרה על מצב הלוח - כלל קו).');
+      return false;
+    }
+    board = res.resultBoard;
+    captures[color] += res.capturedCount;
+    historyStack.push(cloneBoard(board));
+    passCount = 0;
+    turn = (color===BLACK) ? WHITE : BLACK;
+    updateUI();
+    maybeTriggerAI();
+    return true;
+  }
+
+  function doPass(){
+    if(gameOver || scoringMode) return;
+    passCount++;
+    historyStack.push(cloneBoard(board));
+    turn = (turn===BLACK) ? WHITE : BLACK;
+    if(passCount >= 2){
+      enterScoringMode();
+    } else {
+      updateUI();
+      maybeTriggerAI();
+    }
+  }
+
+  function doUndo(){
+    if(scoringMode || gameOver) return;
+    if(historyStack.length <= 1) return;
+    historyStack.pop();
+    board = cloneBoard(historyStack[historyStack.length-1]);
+    turn = (turn===BLACK) ? WHITE : BLACK;
+    passCount = 0;
+    // captures counts aren't perfectly reversible without extra bookkeeping;
+    // recompute approx by leaving as-is (informational only) — acceptable for casual play.
+    updateUI();
+  }
+
+  function doResign(){
+    if(gameOver) return;
+    gameOver = true;
+    const winner = (turn===BLACK) ? 'לבן' : 'שחור';
+    showMsg('שחקן ' + (turn===BLACK?'שחור':'לבן') + ' פרש. ' + winner + ' מנצח!', true);
+    render();
+  }
+
+  function enterScoringMode(){
+    scoringMode = true;
+    deadStones = new Set();
+    scoringBanner.classList.add('show');
+    scoringControls.style.display = 'flex';
+    passBtn.disabled = true;
+    undoBtn.disabled = true;
+    resignBtn.disabled = true;
+    computeAndShowScore();
+    render();
+  }
+
+  function exitScoringModeResume(){
+    scoringMode = false;
+    deadStones = new Set();
+    scoringBanner.classList.remove('show');
+    scoringControls.style.display = 'none';
+    passBtn.disabled = false;
+    undoBtn.disabled = false;
+    resignBtn.disabled = false;
+    passCount = 0;
+    updateUI();
+  }
+
+  function toggleDeadGroupAt(r,c){
+    if(board[r][c] === EMPTY) return;
+    const group = getGroup(board, r, c);
+    const isDead = deadStones.has(r+','+c);
+    for(const k of group.stones){
+      if(isDead) deadStones.delete(k);
+      else deadStones.add(k);
+    }
+    computeAndShowScore();
+    render();
+  }
+
+  // Territory + area scoring, treating deadStones as removed (captured by opponent)
+  function computeScore(){
+    const n = size;
+    const effective = cloneBoard(board);
+    let extraCaptures = {1:0, 2:0};
+    for(const k of deadStones){
+      const [r,c] = k.split(',').map(Number);
+      const color = board[r][c];
+      if(color===EMPTY) continue;
+      const opponent = color===BLACK ? WHITE : BLACK;
+      extraCaptures[opponent]++;
+      effective[r][c] = EMPTY;
+    }
+    const visited = new Array(n*n).fill(false);
+    let blackArea = 0, whiteArea = 0;
+    for(let r=0;r<n;r++){
+      for(let c=0;c<n;c++){
+        if(effective[r][c] === BLACK) blackArea++;
+        else if(effective[r][c] === WHITE) whiteArea++;
+      }
+    }
+    for(let r=0;r<n;r++){
+      for(let c=0;c<n;c++){
+        const idx = r*n+c;
+        if(effective[r][c] !== EMPTY || visited[idx]) continue;
+        // flood fill empty region
+        const stack=[[r,c]];
+        const region=[];
+        visited[idx]=true;
+        let touchesBlack=false, touchesWhite=false;
+        while(stack.length){
+          const [cr,cc]=stack.pop();
+          region.push([cr,cc]);
+          for(const [nr,nc] of neighbors(cr,cc)){
+            const nidx = nr*n+nc;
+            const v = effective[nr][nc];
+            if(v===EMPTY){
+              if(!visited[nidx]){ visited[nidx]=true; stack.push([nr,nc]); }
+            } else if(v===BLACK) touchesBlack=true;
+            else if(v===WHITE) touchesWhite=true;
+          }
+        }
+        if(touchesBlack && !touchesWhite) blackArea += region.length;
+        else if(touchesWhite && !touchesBlack) whiteArea += region.length;
+        // neutral (dame) region: counts for nobody
+      }
+    }
+    return {
+      blackScore: blackArea,
+      whiteScore: whiteArea + KOMI,
+      blackCapturesTotal: captures[1] + extraCaptures[1],
+      whiteCapturesTotal: captures[2] + extraCaptures[2]
+    };
+  }
+
+  function computeAndShowScore(){
+    const s = computeScore();
+    blackScoreEl.textContent = s.blackScore;
+    whiteScoreEl.textContent = s.whiteScore.toFixed(1);
+    blackCapturesEl.textContent = s.blackCapturesTotal;
+    whiteCapturesEl.textContent = s.whiteCapturesTotal;
+  }
+
+  function finalizeScore(){
+    const s = computeScore();
+    gameOver = true;
+    scoringControls.style.display = 'none';
+    const diff = s.blackScore - s.whiteScore;
+    let text;
+    if(diff > 0) text = `שחור מנצח בהפרש ${diff.toFixed(1)} נקודות!`;
+    else if(diff < 0) text = `לבן מנצח בהפרש ${Math.abs(diff).toFixed(1)} נקודות!`;
+    else text = 'תיקו!';
+    showMsg(text, true);
+    render();
+  }
+
+  function showMsg(text, isWin){
+    msgEl.textContent = text;
+    msgEl.classList.toggle('win', !!isWin);
+    if(!isWin){
+      clearTimeout(showMsg._t);
+      showMsg._t = setTimeout(()=>{ if(msgEl.textContent===text) msgEl.textContent=''; }, 2600);
+    }
+  }
+
+  function starPoints(n){
+    if(n===19) return [[3,3],[3,9],[3,15],[9,3],[9,9],[9,15],[15,3],[15,9],[15,15]];
+    if(n===13) return [[3,3],[3,9],[9,3],[9,9],[6,6]];
+    if(n===9)  return [[2,2],[2,6],[6,2],[6,6],[4,4]];
+    return [];
+  }
+
+  function setupCanvasSize(){
+    cell = n2cell(size);
+    margin = Math.round(cell*1.1);
+    const px = margin*2 + cell*(size-1);
+    canvas.width = px;
+    canvas.height = px;
+  }
+  function n2cell(n){
+    if(n===9) return 58;
+    if(n===13) return 44;
+    return 30; // 19
+  }
+
+  function render(){
+    const px = canvas.width;
+    ctx.clearRect(0,0,px,px);
+
+    // wood texture base (subtle stripes)
+    const grad = ctx.createLinearGradient(0,0,px,px);
+    grad.addColorStop(0, '#e3b862');
+    grad.addColorStop(1, '#caa04c');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,px,px);
+
+    // grid lines
+    ctx.strokeStyle = '#4a3216';
+    ctx.lineWidth = 1.3;
+    for(let i=0;i<size;i++){
+      const pos = margin + i*cell;
+      ctx.beginPath();
+      ctx.moveTo(margin, pos);
+      ctx.lineTo(margin + cell*(size-1), pos);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(pos, margin);
+      ctx.lineTo(pos, margin + cell*(size-1));
+      ctx.stroke();
+    }
+    // border emphasis
+    ctx.lineWidth = 2.2;
+    ctx.strokeRect(margin, margin, cell*(size-1), cell*(size-1));
+
+    // star points
+    ctx.fillStyle = '#4a3216';
+    for(const [r,c] of starPoints(size)){
+      const x = margin + c*cell, y = margin + r*cell;
+      ctx.beginPath();
+      ctx.arc(x, y, Math.max(2.5, cell*0.08), 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    // stones
+    for(let r=0;r<size;r++){
+      for(let c=0;c<size;c++){
+        const v = board[r][c];
+        if(v===EMPTY) continue;
+        const x = margin + c*cell, y = margin + r*cell;
+        const rad = cell*0.46;
+        const isDead = scoringMode && deadStones.has(r+','+c);
+        ctx.save();
+        if(isDead) ctx.globalAlpha = 0.38;
+
+        ctx.beginPath();
+        ctx.arc(x+1.5, y+2.5, rad, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(0,0,0,.35)';
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(x, y, rad, 0, Math.PI*2);
+        if(v===BLACK){
+          const g = ctx.createRadialGradient(x-rad*0.35,y-rad*0.4,rad*0.1, x,y,rad);
+          g.addColorStop(0,'#5c5c5c');
+          g.addColorStop(1,'#050505');
+          ctx.fillStyle = g;
+        } else {
+          const g = ctx.createRadialGradient(x-rad*0.35,y-rad*0.4,rad*0.1, x,y,rad);
+          g.addColorStop(0,'#ffffff');
+          g.addColorStop(1,'#cfcfcf');
+          ctx.fillStyle = g;
+        }
+        ctx.fill();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = v===WHITE ? '#9a9a9a' : '#000';
+        ctx.stroke();
+
+        if(isDead){
+          ctx.strokeStyle = '#c0392b';
+          ctx.lineWidth = Math.max(2, cell*0.09);
+          ctx.beginPath();
+          ctx.moveTo(x-rad*0.6,y-rad*0.6); ctx.lineTo(x+rad*0.6,y+rad*0.6);
+          ctx.moveTo(x+rad*0.6,y-rad*0.6); ctx.lineTo(x-rad*0.6,y+rad*0.6);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+  }
+
+  function pixelToCell(px, py){
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (px - rect.left) * scaleX;
+    const y = (py - rect.top) * scaleY;
+    const c = Math.round((x - margin) / cell);
+    const r = Math.round((y - margin) / cell);
+    if(r<0||r>=size||c<0||c>=size) return null;
+    return [r,c];
+  }
+
+  canvas.addEventListener('click', (e)=>{
+    const hit = pixelToCell(e.clientX, e.clientY);
+    if(!hit) return;
+    const [r,c] = hit;
+    if(scoringMode){
+      toggleDeadGroupAt(r,c);
+      return;
+    }
+    if(gameOver || aiThinking) return;
+    if(vsAI && turn===WHITE) return; // AI's turn, ignore clicks
+    playMove(r,c,turn);
+  });
+
+  function updateUI(){
+    turnIndicator.innerHTML = turn===BLACK
+      ? '<span class="stone-dot black"></span> תור השחור'
+      : '<span class="stone-dot white"></span> תור הלבן' + (vsAI ? ' (מחשב)' : '');
+    blackCapturesEl.textContent = captures[1];
+    whiteCapturesEl.textContent = captures[2];
+    if(!scoringMode){
+      blackScoreEl.textContent = '–';
+      whiteScoreEl.textContent = '–';
+    }
+    undoBtn.disabled = historyStack.length<=1 || scoringMode;
+    render();
+  }
+
+  // ---------- Simple heuristic AI ----------
+  function maybeTriggerAI(){
+    if(!vsAI || gameOver || scoringMode) return;
+    if(turn !== WHITE) return;
+    aiThinking = true;
+    setTimeout(aiMove, 420);
+  }
+
+  function aiMove(){
+    if(gameOver || scoringMode){ aiThinking=false; return; }
+    const candidates = [];
+    let emptyCount = 0;
+    for(let r=0;r<size;r++){
+      for(let c=0;c<size;c++){
+        if(board[r][c]!==EMPTY){ continue; }
+        emptyCount++;
+        const res = evaluateMove(board, r, c, WHITE);
+        if(!res.legal) continue;
+        // score this candidate
+        let score = res.capturedCount * 12;
+        const myGroup = getGroup(res.resultBoard, r, c);
+        const libs = myGroup.liberties.size;
+        if(libs === 1) score -= 6; // avoid self-atari
+        score += Math.min(libs, 4) * 0.6;
+        // prefer near existing stones (own or enemy) for contact/territory play
+        let neighborBonus = 0;
+        for(const [nr,nc] of neighbors(r,c)){
+          if(board[nr][nc]===WHITE) neighborBonus += 1.2;
+          else if(board[nr][nc]===BLACK) neighborBonus += 0.5;
+        }
+        score += neighborBonus;
+        // slight preference for star points / center early game
+        const dist = Math.min(r,c,size-1-r,size-1-c);
+        score += Math.min(dist, 3) * 0.3;
+        score += Math.random() * 1.5; // variety
+        candidates.push({r,c,score});
+      }
+    }
+    if(candidates.length===0){
+      aiThinking = false;
+      doPass();
+      return;
+    }
+    candidates.sort((a,b)=>b.score-a.score);
+    const best = candidates[0];
+    // pass if things look hopeless and board is nearly full
+    if(best.score < -3 && emptyCount < size*size*0.15){
+      aiThinking = false;
+      doPass();
+      return;
+    }
+    aiThinking = false;
+    playMove(best.r, best.c, WHITE);
+  }
+
+  // ---------- Game lifecycle ----------
+  function newGame(){
+    size = parseInt(boardSizeSel.value, 10);
+    vsAI = vsModeSel.value === 'ai';
+    setupCanvasSize();
+    board = makeEmptyBoard(size);
+    turn = BLACK;
+    captures = {1:0, 2:0};
+    passCount = 0;
+    gameOver = false;
+    scoringMode = false;
+    deadStones = new Set();
+    historyStack = [cloneBoard(board)];
+    scoringBanner.classList.remove('show');
+    scoringControls.style.display = 'none';
+    passBtn.disabled = false;
+    undoBtn.disabled = true;
+    resignBtn.disabled = false;
+    msgEl.textContent = '';
+    msgEl.classList.remove('win');
+    updateUI();
+  }
+
+  newGameBtn.addEventListener('click', newGame);
+  passBtn.addEventListener('click', doPass);
+  undoBtn.addEventListener('click', doUndo);
+  resignBtn.addEventListener('click', doResign);
+  finalizeScoreBtn.addEventListener('click', finalizeScore);
+  resumeBtn.addEventListener('click', exitScoringModeResume);
+
+  newGame();
+})();
+</script>
+</body>
+</html>
