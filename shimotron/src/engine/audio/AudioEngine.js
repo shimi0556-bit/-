@@ -300,7 +300,8 @@ export class AudioEngine {
     this.windGain.gain.setTargetAtTime((0.05 + w * 0.12 + Math.min(h, 80) * 0.002) * gust, t, 0.3);
     this.windFilter.frequency.setTargetAtTime(350 + gust * 500 * w + h * 4, t, 0.4);
     const distCenter = Math.hypot(cam.position.x, cam.position.z);
-    const coast = Math.min(1, Math.max(0, (distCenter - 150) / 250));
+    // Games can say how close the listener is to the shore (0..1); default: distance from the island centre.
+    const coast = this.coastFactor ? this.coastFactor(cam.position) : Math.min(1, Math.max(0, (distCenter - 150) / 250));
     const swell = 0.6 + 0.4 * Math.sin(eng.time.elapsed * 0.45);
     this.surfGain.gain.setTargetAtTime((0.05 + coast * 0.35) * swell * (h < 60 ? 1 : 0.4), t, 0.4);
     this.cricketGain.gain.setTargetAtTime(atm.nightFactor * 0.016 * (0.6 + 0.4 * Math.sin(eng.time.elapsed * 0.7)), t, 0.5);

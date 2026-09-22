@@ -46,6 +46,7 @@ export class Physics {
     pair('player', 'rubber', 0.0, 0.2);
 
     this.fixedStep = 1 / 60;
+    this.maxSubSteps = 5;
     this.enabled = true;
     this.timeScale = 1;
     this.bodies = new Set();
@@ -196,9 +197,31 @@ export class Physics {
     this.bodies.delete(body);
   }
 
+  /**
+   * Fixed-step integration with render interpolation. Unlike World.step this
+   * never drops simulated time because a frame ran long (that turns into
+   * slow motion on slower devices); only a real backlog beyond maxSubSteps
+   * is discarded.
+   */
   step(dt) {
     if (!this.enabled) return;
-    this.world.step(this.fixedStep, dt * this.timeScale, 5);
+    const w = this.world;
+    const h = this.fixedStep;
+    this._acc = (this._acc || 0) + dt * this.timeScale;
+    let n = 0;
+    while (this._acc >= h && n < this.maxSubSteps) {
+      w.internalStep(h);
+      this._acc -= h;
+      n++;
+    }
+    if (this._acc >= h) this._acc %= h;
+    const t = this._acc / h;
+    for (const b of w.bodies) {
+      b.previousPosition.lerp(b.position, t, b.interpolatedPosition);
+      b.previousQuaternion.slerp(b.quaternion, t, b.interpolatedQuaternion);
+      b.previousQuaternion.normalize();
+    }
+    w.time += dt * this.timeScale;
   }
 
   /** Copies interpolated body transforms onto the entities' visuals. */

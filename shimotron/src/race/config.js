@@ -31,10 +31,10 @@ export const CAR = {
     dampRelaxation: 3.0,
     travel: 0.26,
     rollInfluence: 0.03,
-    grip: 3.4,
+    grip: 1.6,
   },
   engine: {
-    accel: 11.5, // m/s² at low speed
+    accel: 10.2, // m/s² at low speed
     topSpeed: 63, // m/s (~227 km/h)
     reverseTop: 12,
     frontShare: 0.34, // AWD split, rest to the rear
@@ -42,13 +42,16 @@ export const CAR = {
     idleRpm: 900,
     redline: 7800,
   },
-  brake: 30, // rolling-friction impulse per wheel per step
-  handbrake: 45,
-  handbrakeGrip: 0.42, // rear grip multiplier while the handbrake is held
-  steer: { max: 0.56, highSpeed: 0.16, speedRef: 40, rate: 3.2, returnRate: 5.5 },
-  downforce: 0.55, // g of extra grip at top speed
-  airDrag: 0.35,
-  nitro: { accel: 7, topSpeed: 76, drain: 0.28, refill: 0.018, driftRefill: 0.12 },
+  brake: { decel: 13, frontBias: 0.62 }, // m/s² at full pedal
+  handbrake: { decel: 5, grip: 0.55 }, // rear wheels only; grip multiplier while held
+  // Steering lock shrinks with speed toward the angle that just saturates the tyres.
+  steer: { max: 0.56, min: 0.016, gripAngle: 50, rate: 3.4, returnRate: 6 },
+  downforce: 0.55, // extra normal load (g) at top speed
+  drag: 0.00075, // aerodynamic deceleration per (m/s)²
+  rolling: 0.18, // m/s² rolling resistance
+  shiftTime: 0.14,
+  assist: { yaw: 0.55, antiRoll: 6 }, // stability help (keyboard friendly)
+  nitro: { accel: 6.5, topSpeed: 74, drain: 0.26, refill: 0.02, driftRefill: 0.1 },
   flipResetTime: 2.2,
 };
 

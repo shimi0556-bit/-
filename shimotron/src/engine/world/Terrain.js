@@ -235,7 +235,8 @@ export class Terrain {
     return { sand, dirt, rock, grass: Math.max(0, 1 - sand - dirt - rock) };
   }
 
-  build(materials) {
+  /** Samples the height grid (enough for heightAt/physics without any rendering). */
+  bakeHeights() {
     const n = this.segments;
     const w = n + 1;
     const half = this.size / 2;
@@ -244,6 +245,15 @@ export class Terrain {
     for (let iz = 0; iz < w; iz++) {
       for (let ix = 0; ix < w; ix++) this.heights[iz * w + ix] = this.height(-half + ix * step, -half + iz * step);
     }
+    return this.heights;
+  }
+
+  build(materials) {
+    const n = this.segments;
+    const w = n + 1;
+    const half = this.size / 2;
+    const step = this.size / n;
+    this.bakeHeights();
     // Global normals from central differences, so tiles share seamless edges.
     const normals = new Float32Array(w * w * 3);
     const H = this.heights;

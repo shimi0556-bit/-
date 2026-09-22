@@ -17,7 +17,7 @@ const ni = (g) => (g.index ? g.toNonIndexed() : g);
  * sways canopies. Foliage cards also get sun backlighting (light through
  * leaves) and keep their authored normals on both faces.
  */
-function windMaterial(material, uniforms, mode, foliage = false) {
+export function windMaterial(material, uniforms, mode, foliage = false) {
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
     shader.vertexShader = shader.vertexShader

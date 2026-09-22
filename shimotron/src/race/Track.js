@@ -4,6 +4,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RACE, CAR, AI } from './config.js';
 import { smoothstep } from '../engine/core/Random.js';
 
+
 const _v = new THREE.Vector3();
 
 /**
@@ -37,6 +38,9 @@ export class Track {
       return q ? q.dist - this.W : 1e9;
     };
     this._q = {};
+    // Physics surface rows: asphalt plus gravel shoulders, in ~200 m trimesh chunks.
+    const W = this.W;
+    this._roadPhysicsRows = { lats: [-(W + 4.5), -(W + 0.4), -W, -W / 2, 0, W / 2, W, W + 0.4, W + 4.5] };
   }
 
   // ------------------------------------------------------------ geometry
@@ -157,6 +161,17 @@ export class Track {
         if (h[j] < h[i] - maxRise) h[j] = h[i] - maxRise;
       }
     }
+    // Round off crests and dips (vertical curves) after the grade limit, then re-limit.
+    for (let round = 0; round < 3; round++) {
+      h = this._smoothLoop(h, 8, 3);
+      for (let pass = 0; pass < 6; pass++) {
+        for (let i = 0; i < n; i++) {
+          const j = (i + 1) % n;
+          if (h[j] > h[i] + maxRise) h[j] = h[i] + maxRise;
+          if (h[j] < h[i] - maxRise) h[j] = h[i] - maxRise;
+        }
+      }
+    }
     h = this._smoothLoop(h, 3, 4);
     for (let i = 0; i < n; i++) h[i] = Math.max(h[i], 2.9);
     this.h = h;
@@ -231,6 +246,57 @@ export class Track {
     out.bank = this.bank[bi] + (this.bank[j] - this.bank[bi]) * bu;
     out.s = (bi + bu) / this.n;
     return out;
+  }
+
+  /**
+   * Exact ray–road intersection for wheel rays (replaces a triangle mesh):
+   * asphalt height + banking, and the gravel shoulders that fall away to
+   * W + 4.5 m. Returns false when (from.x, from.z) is off the road strip,
+   * true when it handled the ray (hit or not). Fills a cannon RaycastResult.
+   */
+  raycastRoad(from, to, result, body) {
+    const q = this.nearest(from.x, from.z, this._rq || (this._rq = {}));
+    if (!q) return false;
+    const W = this.W;
+    const a = Math.abs(q.lat);
+    if (a > W + 4.5) return false;
+    const n = this.n;
+    const i = q.i;
+    const j = (i + 1) % n;
+    const lc = q.lat < -W ? -W : q.lat > W ? W : q.lat;
+    let y = q.h + lc * q.bank;
+    let slopeR = a <= W ? q.bank : 0;
+    if (a > W) {
+      const e = a - W;
+      y -= e < 0.4 ? e * 0.25 : 0.1 + (e - 0.4) * 0.02;
+      slopeR -= Math.sign(q.lat) * (e < 0.4 ? 0.25 : 0.02);
+    }
+    const slopeT = (this.h[j] - this.h[i]) / this.ds;
+    const tx = this.tx[i];
+    const tz = this.tz[i];
+    const gx = slopeT * tx - slopeR * tz;
+    const gz = slopeT * tz + slopeR * tx;
+    const il = 1 / Math.sqrt(gx * gx + 1 + gz * gz);
+    const nx = -gx * il;
+    const ny = il;
+    const nz = -gz * il;
+    let dx = to.x - from.x;
+    let dy = to.y - from.y;
+    let dz = to.z - from.z;
+    const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    dx /= len;
+    dy /= len;
+    dz /= len;
+    const denom = nx * dx + ny * dy + nz * dz;
+    if (denom > -1e-4) return true;
+    const t = (ny * (y - from.y)) / denom;
+    if (t < 0 || t > len) return true;
+    result.hitPointWorld.set(from.x + dx * t, from.y + dy * t, from.z + dz * t);
+    result.hitNormalWorld.set(nx, ny, nz);
+    result.distance = t;
+    result.body = body;
+    result.hasHit = true;
+    return true;
   }
 
   /** Road surface height at lateral offset `lat` of sample i (with banking). */
@@ -323,7 +389,10 @@ export class Track {
       const cz = pz[b];
       const area = Math.abs((bx - ax) * (cz - az) - (cx - ax) * (bz - az)) / 2;
       const R = area > 1e-6 ? (Math.hypot(bx - ax, bz - az) * Math.hypot(cx - bx, cz - bz) * Math.hypot(ax - cx, az - cz)) / (4 * area) : 1e6;
-      v[i] = Math.min(Math.sqrt(AI.grip * g * R), CAR.engine.topSpeed + 6);
+      v[i] = Math.min(Math.sqrt(AI.grip * (this.stage.roadGrip || 1) * g * R), CAR.engine.topSpeed + 6);
+      // Crests: stay planted (vertical curvature limits speed before the car goes light).
+      const hv = (this.h[a] - 2 * this.h[i] + this.h[b]) / (16 * this.ds * this.ds);
+      if (hv < -1e-5) v[i] = Math.min(v[i], Math.sqrt((0.75 * g) / -hv));
     }
     const ds = this.ds;
     for (let pass = 0; pass < 2; pass++) {
@@ -366,7 +435,7 @@ export class Track {
     const pos = new Float32Array(rows * cols * 3);
     const uv = new Float32Array(rows * cols * 2);
     const road = new Float32Array(rows * cols * 3);
-    const vRep = this.length / Math.round(this.length / 8);
+    const vRep = this.length / Math.round(this.length / 2.5);
     for (let r = 0; r < rows; r++) {
       const i = r % n;
       const rx = -this.tz[i];
@@ -380,7 +449,8 @@ export class Track {
         pos[k] = this.x[i] + rx * l;
         pos[k + 1] = this.surfaceY(i, lc) - (skirt ? 0.4 : 0);
         pos[k + 2] = this.z[i] + rz * l;
-        uv[(r * cols + c) * 2] = (lc + W) / (2 * W);
+        // Square 2.5 m texture tiles; markings come from aRoad, not the UVs.
+        uv[(r * cols + c) * 2] = lc / 2.5;
         uv[(r * cols + c) * 2 + 1] = d / vRep;
         road[k] = lc;
         road[k + 1] = d;
@@ -404,7 +474,7 @@ export class Track {
     geo.setIndex(idx);
     geo.computeVertexNormals();
     geo.computeBoundingSphere();
-    const mat = new THREE.MeshStandardMaterial({ name: 'אספלט', map: T.asphalt, normalMap: T.asphaltNormal, normalScale: new THREE.Vector2(0.6, 0.6), roughness: 0.86, metalness: 0 });
+    const mat = new THREE.MeshStandardMaterial({ name: 'אספלט', map: T.asphalt, normalMap: T.asphaltNormal, normalScale: new THREE.Vector2(0.3, 0.3), roughness: 0.86, metalness: 0 });
     const startLen = 2.4;
     mat.onBeforeCompile = (shader) => {
       shader.uniforms.uW = { value: W };
@@ -413,12 +483,15 @@ export class Track {
         .replace('#include <common>', '#include <common>\nattribute vec3 aRoad; varying vec3 vRoad;')
         .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRoad = aRoad;');
       shader.fragmentShader = shader.fragmentShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vRoad; uniform float uW; uniform float uLen; float rPaint; float rRubber;')
+        .replace('#include <common>', '#include <common>\nvarying vec3 vRoad; uniform float uW; uniform float uLen; float rPaint; float rRubber;\nfloat rHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\nfloat rNoise(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(rHash(i), rHash(i + vec2(1.0, 0.0)), f.x), mix(rHash(i + vec2(0.0, 1.0)), rHash(i + vec2(1.0, 1.0)), f.x), f.y); }')
         .replace(
           '#include <map_fragment>',
           `#include <map_fragment>
           {
             float l = vRoad.x; float d = vRoad.y; float line = vRoad.z;
+            // Large-scale patching and repairs so the 2.5 m tile never reads as a pattern.
+            float macro = rNoise(vec2(d * 0.045, l * 0.12)) * 0.6 + rNoise(vec2(d * 0.21, l * 0.35)) * 0.4;
+            diffuseColor.rgb *= 0.82 + macro * 0.36;
             float aw = fwidth(l) * 1.2 + 0.01;
             // Edge lines, dashed centre line.
             float edge = smoothstep(uW - 0.5 - aw, uW - 0.5, abs(l)) * (1.0 - smoothstep(uW - 0.25, uW - 0.25 + aw, abs(l)));
@@ -446,8 +519,6 @@ export class Track {
     this.group.add(mesh);
     this.roadMaterial = mat;
 
-    // Physics surface: asphalt plus gravel shoulders, in ~200 m trimesh chunks.
-    this._roadPhysicsRows = { lats: [-(W + 4.5), -(W + 0.4), -W, -W / 2, 0, W / 2, W, W + 0.4, W + 4.5] };
   }
 
   _curbs(T) {
@@ -459,6 +530,7 @@ export class Track {
     const ext = Math.round(14 / this.ds);
     const mark = new Uint8Array(n);
     for (let i = 0; i < n; i++) if (inCorner[i]) for (let k = -ext; k <= ext; k++) mark[(i + k + n) % n] = 1;
+    this.curbMark = mark;
     const profile = [
       [0.0, 0.0],
       [0.25, 0.06],
@@ -535,7 +607,6 @@ export class Track {
     postGeo.translate(0, 0.5, 0);
     const posts = [];
     const reflect = [];
-    this.railBoxes = [];
     for (const side of [-1, 1]) {
       const pos = [];
       const nrm = [];
@@ -557,16 +628,6 @@ export class Track {
         if (r % 2 === 0 && r < rows - 1) {
           posts.push(new THREE.Matrix4().makeRotationY(Math.atan2(this.tx[i], this.tz[i])).setPosition(x + rx * 0.12, gy - 0.05, z + rz * 0.12));
           if (r % 6 === 0) reflect.push({ m: new THREE.Matrix4().makeRotationY(Math.atan2(this.tx[i], this.tz[i])).setPosition(x - rx * 0.03, gy + 0.9, z - rz * 0.03), side });
-        }
-        // Physics: one box per 10 m.
-        if (r % 5 === 0) {
-          const j = (i + 5 * step) % n;
-          const x2 = this.x[j] + -this.tz[j] * side * off;
-          const z2 = this.z[j] + this.tx[j] * side * off;
-          const mx = (x + x2) / 2;
-          const mz = (z + z2) / 2;
-          const len = Math.hypot(x2 - x, z2 - z);
-          this.railBoxes.push({ x: mx, y: this._groundY(mx, mz) + 0.6, z: mz, len: len + 0.6, yaw: Math.atan2(x2 - x, z2 - z) });
         }
       }
       for (let r = 0; r < rows - 1; r++) {
@@ -607,6 +668,27 @@ export class Track {
     rm.computeBoundingSphere();
     rm.name = 'מחזירי אור';
     this.group.add(rm);
+  }
+
+  /** Physics boxes along both guard rails (6 m chords), independent of the visuals. */
+  _layoutRails() {
+    const n = this.n;
+    const off = this.W + 6.5;
+    const every = 3; // 6 m chords stay within ~0.1 m of the curved rail
+    this.railBoxes = [];
+    for (const side of [-1, 1]) {
+      for (let i = 0; i < n; i += every) {
+        const j = (i + every) % n;
+        const x = this.x[i] - this.tz[i] * side * off;
+        const z = this.z[i] + this.tx[i] * side * off;
+        const x2 = this.x[j] - this.tz[j] * side * off;
+        const z2 = this.z[j] + this.tx[j] * side * off;
+        const mx = (x + x2) / 2;
+        const mz = (z + z2) / 2;
+        const len = Math.hypot(x2 - x, z2 - z);
+        this.railBoxes.push({ x: mx, y: this._groundY(mx, mz) + 0.6, z: mz, len: len + 0.6, yaw: Math.atan2(x2 - x, z2 - z) });
+      }
+    }
   }
 
   _canvasMaterial(draw, w, h, emissive = 0) {
@@ -968,41 +1050,22 @@ export class Track {
 
   buildPhysics(physics) {
     const W = this.W;
+    if (!this.railBoxes) this._layoutRails();
     const lats = this._roadPhysicsRows.lats;
-    const chunk = 100;
-    const mat = physics.materials.ground;
-    for (let c0 = 0; c0 < this.n; c0 += chunk) {
-      const verts = [];
-      const idx = [];
-      const rows = Math.min(chunk, this.n - c0) + 1;
-      for (let r = 0; r < rows; r++) {
-        const i = (c0 + r) % this.n;
-        const rx = -this.tz[i];
-        const rz = this.tx[i];
-        for (const l of lats) {
-          const lc = THREE.MathUtils.clamp(l, -W, W);
-          const drop = Math.abs(l) > W + 0.01 ? 0.1 + (Math.abs(l) - W - 0.4) * 0.02 : 0;
-          verts.push(this.x[i] + rx * l, this.surfaceY(i, lc) - Math.max(0, drop), this.z[i] + rz * l);
-        }
-      }
-      const cols = lats.length;
-      for (let r = 0; r < rows - 1; r++) {
-        for (let c = 0; c < cols - 1; c++) {
-          const a = r * cols + c;
-          idx.push(a, a + 1, a + cols, a + 1, a + cols + 1, a + cols);
-        }
-      }
-      const shape = new CANNON.Trimesh(verts, idx);
-      const body = new CANNON.Body({ mass: 0, material: mat });
-      body.addShape(shape);
-      physics.world.addBody(body);
-      this.bodies.push(body);
-    }
-    for (const b of this.railBoxes) {
+    // The asphalt itself has no collision mesh: wheels use raycastRoad(), and the
+    // chassis' skid spheres rest on the terrain carved 0.26 m under it.
+    this.roadBody = new CANNON.Body({ mass: 0, material: physics.materials.ground });
+    // Rails as compound static bodies (~100 m each) to keep the body count low.
+    const per = 16;
+    for (let k = 0; k < this.railBoxes.length; k += per) {
+      const group = this.railBoxes.slice(k, k + per);
+      const o = group[0];
       const body = new CANNON.Body({ mass: 0, material: physics.materials.metal });
-      body.addShape(new CANNON.Box(new CANNON.Vec3(0.2, 0.75, b.len / 2)));
-      body.position.set(b.x, b.y, b.z);
-      body.quaternion.setFromEuler(0, b.yaw, 0);
+      body.position.set(o.x, o.y, o.z);
+      for (const b of group) {
+        const q = new CANNON.Quaternion().setFromEuler(0, b.yaw, 0);
+        body.addShape(new CANNON.Box(new CANNON.Vec3(0.2, 0.75, b.len / 2)), new CANNON.Vec3(b.x - o.x, b.y - o.y, b.z - o.z), q);
+      }
       physics.world.addBody(body);
       this.bodies.push(body);
     }
