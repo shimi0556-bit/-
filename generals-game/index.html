@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ג'נרלים - משחק כיבוש שטחים</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100%; overflow: hidden; background: #05050f;
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif; color: #cfe3ff;
+  }
+  #app { position: relative; width: 100vw; height: 100vh; display: flex; }
+
+  /* ---------- Overlays ---------- */
+  .overlay {
+    position: fixed; inset: 0; z-index: 50;
+    background: radial-gradient(circle at 50% 20%, #10163a 0%, #05050f 70%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 20px;
+  }
+  .overlay.hidden { display: none; }
+  .overlay h1 {
+    font-size: 54px; letter-spacing: 8px; color: #00d9ff;
+    text-shadow: 0 0 25px #00d9ff, 0 0 60px #0077aa; font-weight: 900; margin-bottom: 6px;
+  }
+  .overlay .subtitle { color: #7fa8c9; letter-spacing: 3px; margin-bottom: 34px; font-size: 15px; }
+  .panel {
+    background: rgba(10, 16, 40, 0.75); border: 1px solid #1e3a5f; border-radius: 14px;
+    padding: 28px 34px; box-shadow: 0 0 40px rgba(0, 217, 255, 0.08); min-width: 340px;
+  }
+  .option-row { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; text-align: right; }
+  .option-row label { font-size: 14px; color: #9fc4e8; letter-spacing: 1px; }
+  .btn-group { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .choice-btn {
+    background: #101833; border: 1px solid #29456e; color: #cfe3ff; padding: 9px 16px;
+    border-radius: 8px; cursor: pointer; font-size: 14px; transition: .15s;
+  }
+  .choice-btn:hover { border-color: #00d9ff; }
+  .choice-btn.active { background: #00d9ff; color: #05050f; border-color: #00d9ff; font-weight: 700; }
+  .big-btn {
+    margin-top: 8px; width: 100%; padding: 14px; font-size: 18px; font-weight: 800;
+    letter-spacing: 2px; background: linear-gradient(90deg, #00d9ff, #0077cc); color: #05050f;
+    border: none; border-radius: 10px; cursor: pointer; box-shadow: 0 0 25px rgba(0,217,255,.4);
+    transition: transform .1s;
+  }
+  .big-btn:hover { transform: translateY(-2px); }
+  .rules-hint { margin-top: 22px; font-size: 12.5px; color: #6d90b3; line-height: 1.9; max-width: 420px; }
+  .rules-hint b { color: #00d9ff; }
+  .key { display: inline-block; background: #16213e; border: 1px solid #2b4468; border-radius: 4px;
+    padding: 1px 7px; margin: 0 2px; font-family: monospace; color: #9fe6ff; }
+
+  #gameover-title { font-size: 44px; margin-bottom: 6px; }
+  #gameover-title.win { color: #5cff9a; text-shadow: 0 0 25px #5cff9a; }
+  #gameover-title.lose { color: #ff5c7a; text-shadow: 0 0 25px #ff5c7a; }
+  #gameover-sub { color: #9fc4e8; margin-bottom: 28px; font-size: 15px; }
+
+  /* ---------- Game layout ---------- */
+  #game-screen { display: flex; width: 100%; height: 100%; }
+  #board-wrap { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; background:
+    radial-gradient(circle at 50% 0%, #0b1230 0%, #05050f 75%); }
+  canvas#board { image-rendering: pixelated; box-shadow: 0 0 50px rgba(0,120,200,.15); border-radius: 6px; }
+
+  #sidebar {
+    width: 280px; flex-shrink: 0; background: rgba(8, 12, 28, 0.9); border-right: 1px solid #16213e;
+    display: flex; flex-direction: column; padding: 16px; gap: 14px; overflow-y: auto;
+  }
+  #sidebar h2 { color: #00d9ff; font-size: 16px; letter-spacing: 2px; border-bottom: 1px solid #1c2a4a; padding-bottom: 8px; }
+  #turn-counter { font-size: 28px; font-weight: 800; color: #cfe3ff; letter-spacing: 1px; }
+  #turn-counter span { font-size: 13px; color: #6d90b3; display: block; letter-spacing: 2px; margin-bottom: 2px; }
+
+  table#leaderboard { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table#leaderboard th { text-align: right; color: #6d90b3; font-weight: 600; padding: 4px 2px; font-size: 11px; letter-spacing: 1px; }
+  table#leaderboard td { padding: 6px 2px; border-top: 1px solid #16213e; }
+  .swatch { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-left: 6px; vertical-align: middle; }
+  tr.dead td { opacity: .35; text-decoration: line-through; }
+  tr.me td { font-weight: 700; }
+
+  #controls-box { font-size: 12.5px; color: #8fb3d6; line-height: 2; background: #0b1230; border: 1px solid #16213e;
+    border-radius: 10px; padding: 12px; }
+
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; background: #0b1230;
+    border: 1px solid #16213e; border-radius: 10px; padding: 10px 12px; font-size: 13px; }
+  .toggle-row.active { border-color: #00d9ff; box-shadow: 0 0 14px rgba(0,217,255,.25); }
+  #speed-row { display: flex; gap: 6px; }
+  #speed-row .choice-btn { padding: 6px 10px; font-size: 12px; }
+
+  #restart-btn { background: #241323; border: 1px solid #5a2848; color: #ff9ab0; padding: 10px; border-radius: 8px;
+    cursor: pointer; font-size: 13px; letter-spacing: 1px; margin-top: auto; }
+  #restart-btn:hover { background: #351733; }
+
+  #toast { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); background: rgba(10,16,40,.9);
+    border: 1px solid #29456e; padding: 8px 18px; border-radius: 20px; font-size: 13px; color: #9fe6ff;
+    opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 10; }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Start screen -->
+  <div id="start-screen" class="overlay">
+    <h1>ג'נרלים</h1>
+    <div class="subtitle">משחק אסטרטגיה בהשראת Generals.io</div>
+    <div class="panel">
+      <div class="option-row">
+        <label>גודל מפה</label>
+        <div class="btn-group" data-group="size">
+          <button class="choice-btn" data-value="small">קטנה</button>
+          <button class="choice-btn active" data-value="medium">בינונית</button>
+          <button class="choice-btn" data-value="large">גדולה</button>
+        </div>
+      </div>
+      <div class="option-row">
+        <label>מספר יריבים (בוטים)</label>
+        <div class="btn-group" data-group="bots">
+          <button class="choice-btn" data-value="1">1</button>
+          <button class="choice-btn active" data-value="2">2</button>
+          <button class="choice-btn" data-value="3">3</button>
+        </div>
+      </div>
+      <button class="big-btn" id="start-btn">התחל משחק</button>
+      <div class="rules-hint">
+        לחצו על שטח שלכם כדי לבחור אותו, ואז לחצו על שטח סמוך כדי לשלוח אליו צבא.<br>
+        אפשר גם להזיז את הבחירה עם <span class="key">↑</span><span class="key">↓</span><span class="key">←</span><span class="key">→</span>.<br>
+        <span class="key">Q</span> משנה מצב לשליחת חצי צבא בלבד.<br>
+        כבשו את ה<b>-גנרל</b> של כל היריבים לפני שיכבשו את שלכם!
+      </div>
+    </div>
+  </div>
+
+  <!-- Game over screen -->
+  <div id="gameover-screen" class="overlay hidden">
+    <div id="gameover-title">ניצחון!</div>
+    <div id="gameover-sub">כבשתם את כל היריבים</div>
+    <div class="panel" style="min-width:280px;">
+      <button class="big-btn" id="play-again-btn">שחקו שוב</button>
+    </div>
+  </div>
+
+  <!-- Game screen -->
+  <div id="game-screen" style="display:none;">
+    <aside id="sidebar">
+      <div>
+        <span id="turn-counter"><span>תור</span>0</span>
+      </div>
+      <div>
+        <h2>טבלת מובילים</h2>
+        <table id="leaderboard">
+          <thead><tr><th>שחקן</th><th>שטח</th><th>צבא</th></tr></thead>
+          <tbody id="leaderboard-body"></tbody>
+        </table>
+      </div>
+      <div class="toggle-row" id="half-toggle">
+        <span>מצב חצי-צבא (Q)</span>
+        <strong id="half-state">כבוי</strong>
+      </div>
+      <div>
+        <label style="font-size:12px;color:#6d90b3;">מהירות</label>
+        <div id="speed-row" style="margin-top:6px;">
+          <button class="choice-btn" data-speed="1000">0.5x</button>
+          <button class="choice-btn active" data-speed="500">1x</button>
+          <button class="choice-btn" data-speed="250">2x</button>
+          <button class="choice-btn" data-speed="125">4x</button>
+        </div>
+      </div>
+      <div id="controls-box">
+        <div>🖱️ לחיצה = בחירת שטח / שליחת צבא</div>
+        <div><span class="key">↑↓←→</span> הזזת צבא בכיוון</div>
+        <div><span class="key">Q</span> שליחת חצי צבא</div>
+        <div><span class="key">Esc</span> ביטול בחירה</div>
+      </div>
+      <button id="restart-btn">התחלה מחדש</button>
+    </aside>
+    <div id="board-wrap">
+      <div id="toast"></div>
+      <canvas id="board"></canvas>
+    </div>
+  </div>
+
+</div>
+<script src="game.js"></script>
+</body>
+</html>
