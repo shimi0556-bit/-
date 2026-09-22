@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABYSS - Deep Sea Submersible Simulator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        canvas { display: block; }
+
+        /* Loading Screen */
+        #loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #001018 0%, #012230 50%, #000a10 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 1000; transition: opacity 1s ease;
+        }
+        #loading-screen.fade-out { opacity: 0; pointer-events: none; }
+        #loading-screen h1 {
+            font-size: 72px; color: #22e2ff; text-shadow: 0 0 30px #22e2ff, 0 0 60px #0088aa;
+            letter-spacing: 14px; margin-bottom: 10px; font-weight: 900;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        #loading-screen .subtitle {
+            font-size: 16px; color: #6fb8cc; letter-spacing: 6px; margin-bottom: 50px;
+        }
+        .loading-bar-container {
+            width: 400px; height: 4px; background: rgba(255,255,255,0.08);
+            border-radius: 2px; overflow: hidden;
+        }
+        .loading-bar {
+            width: 0%; height: 100%; background: linear-gradient(90deg, #22e2ff, #0077ff);
+            border-radius: 2px; transition: width 0.3s;
+        }
+        #loading-text { color: #4a7280; font-size: 13px; margin-top: 15px; letter-spacing: 2px; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.65; } }
+
+        /* Start Screen */
+        #start-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #001018 0%, #012230 50%, #000a10 100%);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 999; transition: opacity 1s ease;
+        }
+        #start-screen.fade-out { opacity: 0; pointer-events: none; }
+        #start-screen h1 {
+            font-size: 76px; color: #22e2ff; text-shadow: 0 0 30px #22e2ff;
+            letter-spacing: 14px; margin-bottom: 5px; font-weight: 900;
+        }
+        #start-screen .route {
+            font-size: 18px; color: #ffaa33; letter-spacing: 3px; margin-bottom: 36px;
+            text-shadow: 0 0 15px #ffaa33;
+        }
+        .controls-info {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 13px 40px;
+            margin-bottom: 36px; color: #9cc; font-size: 13px;
+        }
+        .controls-info div { display: flex; align-items: center; gap: 10px; }
+        .key {
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);
+            padding: 4px 10px; border-radius: 4px; font-family: monospace;
+            color: #22e2ff; font-size: 12px; min-width: 30px; text-align: center;
+        }
+        .start-btn {
+            padding: 18px 60px; font-size: 20px; background: linear-gradient(135deg, #22e2ff, #0077ff);
+            border: none; border-radius: 50px; color: #001018; font-weight: 700; cursor: pointer;
+            letter-spacing: 4px; text-transform: uppercase; transition: all 0.3s;
+            box-shadow: 0 0 30px rgba(34,226,255,0.3);
+        }
+        .start-btn:hover {
+            transform: scale(1.05); box-shadow: 0 0 50px rgba(34,226,255,0.5);
+        }
+        .mode-select { display: flex; gap: 15px; margin-bottom: 28px; }
+        .mode-btn {
+            padding: 12px 26px; font-size: 13px; background: rgba(255,255,255,0.04);
+            border: 2px solid rgba(255,255,255,0.15); border-radius: 30px;
+            color: #9cc; cursor: pointer; letter-spacing: 2px; transition: all 0.3s;
+        }
+        .mode-btn.active {
+            border-color: #22e2ff; color: #22e2ff; background: rgba(34,226,255,0.1);
+            box-shadow: 0 0 20px rgba(34,226,255,0.2);
+        }
+        .mode-btn:hover { border-color: #22e2ff; color: #22e2ff; }
+
+        /* HUD */
+        #hud {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 100; display: none;
+        }
+        .hud-top {
+            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 26px; align-items: center;
+        }
+        .hud-box {
+            background: rgba(0,15,22,0.72); border: 1px solid rgba(34,226,255,0.3);
+            padding: 8px 18px; border-radius: 8px; color: #22e2ff; font-size: 13px;
+            backdrop-filter: blur(10px); letter-spacing: 1px;
+        }
+        .hud-box .label { color: #567; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; }
+        .hud-box .value { font-size: 20px; font-weight: 700; font-family: 'Courier New', monospace; }
+
+        .score-display {
+            position: absolute; top: 15px; right: 20px;
+            background: rgba(0,15,22,0.72); border: 1px solid rgba(255,170,51,0.4);
+            padding: 10px 20px; border-radius: 8px; backdrop-filter: blur(10px);
+        }
+        .score-display .label { color: #886; font-size: 10px; letter-spacing: 2px; }
+        .score-display .score-val { color: #ffaa33; font-size: 28px; font-weight: 700; font-family: 'Courier New'; }
+
+        .speed-display {
+            position: absolute; top: 15px; left: 20px;
+            background: rgba(0,15,22,0.72); border: 1px solid rgba(34,180,255,0.3);
+            padding: 10px 20px; border-radius: 8px; backdrop-filter: blur(10px);
+        }
+        .speed-display .label { color: #567; font-size: 10px; letter-spacing: 2px; }
+        .speed-display .speed-val { color: #34b4ff; font-size: 22px; font-weight: 700; font-family: 'Courier New'; }
+
+        /* Depth bar */
+        .depth-bar {
+            position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+            width: 10px; height: 220px; background: rgba(255,255,255,0.05);
+            border-radius: 5px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden;
+        }
+        .depth-bar-fill {
+            position: absolute; top: 0; width: 100%;
+            background: linear-gradient(to bottom, #22e2ff, #0077ff, #ff3355);
+            border-radius: 5px; transition: height 0.1s;
+        }
+        .depth-label {
+            position: absolute; right: 38px; top: 50%; transform: translateY(-50%);
+            color: #567; font-size: 10px; letter-spacing: 1px;
+            writing-mode: vertical-lr; text-orientation: mixed;
+        }
+
+        /* Sonar ring */
+        .sonar {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,15,22,0.72); border: 1px solid rgba(34,226,255,0.2);
+            padding: 8px 25px; border-radius: 20px; backdrop-filter: blur(10px);
+            display: flex; align-items: center; gap: 15px;
+        }
+        .sonar .dir { color: #445; font-size: 12px; font-family: 'Courier New'; }
+        .sonar .dir.active { color: #22e2ff; font-size: 14px; font-weight: 700; }
+
+        /* Ballast/throttle */
+        .throttle-display {
+            position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+        }
+        .throttle-bar {
+            width: 10px; height: 220px; background: rgba(255,255,255,0.05);
+            border-radius: 5px; border: 1px solid rgba(255,255,255,0.1); position: relative;
+        }
+        .throttle-fill {
+            position: absolute; bottom: 0; width: 100%;
+            background: linear-gradient(to top, #22cc99, #ffcc00, #ff4444);
+            border-radius: 5px; transition: height 0.1s;
+        }
+        .throttle-label { color: #567; font-size: 10px; letter-spacing: 1px; }
+
+        /* Minimap / sonar map */
+        .minimap {
+            position: absolute; bottom: 20px; right: 20px;
+            width: 180px; height: 120px;
+            background: rgba(0,15,22,0.85); border: 1px solid rgba(34,226,255,0.2);
+            border-radius: 8px; overflow: hidden; backdrop-filter: blur(10px);
+        }
+        .minimap canvas { width: 100%; height: 100%; }
+
+        .waypoint-indicator {
+            position: absolute; left: 50%; top: 80px; transform: translateX(-50%);
+            color: #ffcc33; font-size: 12px; letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(255,204,51,0.5);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .waypoint-indicator .arrow { font-size: 18px; animation: bob 1s ease-in-out infinite; }
+        @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+        .game-message {
+            position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%);
+            font-size: 34px; color: #22e2ff; text-shadow: 0 0 30px #22e2ff;
+            letter-spacing: 5px; opacity: 0; transition: opacity 0.5s;
+            pointer-events: none; text-align: center;
+        }
+        .game-message.show { opacity: 1; }
+
+        .checkpoint-flash {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(ellipse at center, rgba(34,226,255,0.15) 0%, transparent 70%);
+            pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 99;
+        }
+        .checkpoint-flash.active { opacity: 1; }
+
+        .warning {
+            position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+            color: #ff4455; font-size: 14px; letter-spacing: 3px; opacity: 0;
+        }
+        .warning.show { opacity: 1; animation: blink 0.5s ease-in-out infinite; }
+        @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        .sonar-ping-indicator {
+            position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
+            color: #22e2ff; font-size: 13px; letter-spacing: 4px; display: none;
+            text-shadow: 0 0 15px #22e2ff;
+            animation: blink 1s ease-in-out infinite;
+        }
+
+        .progress-container {
+            position: absolute; bottom: 55px; left: 50%; transform: translateX(-50%);
+            width: 300px;
+        }
+        .progress-labels {
+            display: flex; justify-content: space-between; margin-bottom: 4px;
+            font-size: 10px; color: #567; letter-spacing: 1px;
+        }
+        .progress-bar {
+            width: 100%; height: 4px; background: rgba(255,255,255,0.05);
+            border-radius: 2px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, #22e2ff, #ffaa33);
+            border-radius: 2px; transition: width 0.3s;
+        }
+
+        #game-over {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,8,15,0.92); display: none; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 1000;
+        }
+        #game-over h1 { font-size: 56px; color: #22e2ff; letter-spacing: 8px; margin-bottom: 15px; text-align: center; }
+        #game-over .final-score { font-size: 46px; color: #ffaa33; font-weight: 700; margin-bottom: 30px; }
+        .stats-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px;
+            margin-bottom: 30px; color: #89a; font-size: 14px;
+        }
+        .stats-grid .stat-val { color: #22e2ff; font-weight: 700; }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <h1>ABYSS</h1>
+        <div class="subtitle">DEEP SEA SUBMERSIBLE SIMULATOR</div>
+        <div class="loading-bar-container">
+            <div class="loading-bar" id="loading-bar"></div>
+        </div>
+        <div id="loading-text">PRESSURIZING HULL...</div>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="start-screen">
+        <h1>ABYSS</h1>
+        <div class="route">CONTINENTAL SHELF &rarr; CHALLENGER DEEP</div>
+        <div class="mode-select">
+            <div class="mode-btn active" data-mode="normal" onclick="selectMode('normal')">NORMAL</div>
+            <div class="mode-btn" data-mode="deep" onclick="selectMode('deep')">DEEP DIVE</div>
+            <div class="mode-btn" data-mode="extreme" onclick="selectMode('extreme')">EXTREME</div>
+        </div>
+        <div class="controls-info">
+            <div><span class="key">&uarr;</span> Dive (Nose Down)</div>
+            <div><span class="key">&darr;</span> Ascend (Nose Up)</div>
+            <div><span class="key">&larr;</span> Turn / Bank Left</div>
+            <div><span class="key">&rarr;</span> Turn / Bank Right</div>
+            <div><span class="key">W</span> Thrust Forward</div>
+            <div><span class="key">S</span> Reverse Thrust</div>
+            <div><span class="key">A/D</span> Rudder Left/Right</div>
+            <div><span class="key">SHIFT</span> Burst Thrusters</div>
+            <div><span class="key">SPACE</span> Sonar Ping</div>
+            <div><span class="key">C</span> Camera View</div>
+            <div><span class="key">M</span> Toggle Sonar Map</div>
+            <div><span class="key">R</span> Reset Position</div>
+        </div>
+        <button class="start-btn" onclick="startGame()">DIVE</button>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud">
+        <div class="speed-display">
+            <div class="label">SPEED KTS</div>
+            <div class="speed-val" id="speed-val">0</div>
+        </div>
+        <div class="hud-top">
+            <div class="hud-box">
+                <div class="label">DEPTH M</div>
+                <div class="value" id="depth-val">0</div>
+            </div>
+            <div class="hud-box">
+                <div class="label">HEADING</div>
+                <div class="value" id="heading-val">000&deg;</div>
+            </div>
+            <div class="hud-box">
+                <div class="label">HULL %</div>
+                <div class="value" id="hull-val">100</div>
+            </div>
+        </div>
+        <div class="score-display">
+            <div class="label">SCORE</div>
+            <div class="score-val" id="score-val">0</div>
+        </div>
+
+        <div class="depth-bar">
+            <div class="depth-bar-fill" id="depth-bar-fill" style="height: 0%"></div>
+        </div>
+        <div class="depth-label">DEPTH</div>
+
+        <div class="throttle-display">
+            <div class="throttle-label">THR</div>
+            <div class="throttle-bar">
+                <div class="throttle-fill" id="throttle-fill" style="height: 30%"></div>
+            </div>
+        </div>
+
+        <div class="sonar">
+            <span class="dir" id="dir-w">W</span>
+            <span class="dir" id="dir-nw">NW</span>
+            <span class="dir" id="dir-n">N</span>
+            <span class="dir" id="dir-ne">NE</span>
+            <span class="dir" id="dir-e">E</span>
+        </div>
+
+        <div class="waypoint-indicator" id="waypoint-indicator">
+            <span class="arrow">&#9660;</span>
+            <span id="waypoint-text">CORAL REEF ENTRANCE - 0.4 KM</span>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-labels">
+                <span>SURFACE</span><span>TRENCH</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+        </div>
+
+        <div class="sonar-ping-indicator" id="sonar-ping-ind">)) SONAR PING ((</div>
+
+        <div class="warning" id="hull-warning">&#9888; HULL PRESSURE CRITICAL</div>
+        <div class="game-message" id="game-message"></div>
+
+        <div class="minimap">
+            <canvas id="minimap-canvas" width="180" height="120"></canvas>
+        </div>
+    </div>
+
+    <div class="checkpoint-flash" id="checkpoint-flash"></div>
+
+    <!-- Game Over -->
+    <div id="game-over">
+        <h1>DIVE COMPLETE</h1>
+        <div class="final-score" id="final-score">0</div>
+        <div class="stats-grid" id="stats-grid"></div>
+        <button class="start-btn" onclick="restartGame()">DIVE AGAIN</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
