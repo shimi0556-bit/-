@@ -36,6 +36,9 @@ function webgl2Available() {
 }
 
 async function boot() {
+  // The page is Hebrew/RTL even when embedded in a host document without dir/lang.
+  document.documentElement.dir = 'rtl';
+  document.documentElement.lang = 'he';
   const loader = document.getElementById('loader');
   const bar = loader.querySelector('.bar i');
   const stepEl = loader.querySelector('.step');
