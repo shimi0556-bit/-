@@ -1,4 +1,4 @@
-import { STAGES, AI, RACE, CAR, CAR_TYPES, carRatings } from './config.js';
+import { STAGES, AI, RACE, CAR, CAR_TYPES, CAREER, PODIUM, carRatings } from './config.js';
 import { Race } from './Race.js';
 import { drawCarProfile } from './CarModel.js';
 import { ITEMS } from './Pickups.js';
@@ -38,7 +38,12 @@ const ICON = {
   shield: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 20 5v6c0 5-3.4 9.2-8 11-4.6-1.8-8-6-8-11V5z"/></svg>',
   item: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01" stroke-linecap="round"/></svg>',
   trophy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4M12 14v4M8 21h8M9 18h6"/></svg>',
+  crown: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 7.5l4.6 4.2L12 4.5l4.4 7.2L21 7.5 19.2 18H4.8z"/><rect x="4.8" y="19.2" width="14.4" height="2.2" rx="1.1"/><circle cx="3" cy="7" r="1.4"/><circle cx="12" cy="4" r="1.4"/><circle cx="21" cy="7" r="1.4"/></svg>',
+  medal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M7.5 2.5 12 9l4.5-6.5"/><circle cx="12" cy="15" r="6" fill="currentColor" fill-opacity=".22"/><path d="M12 11.6l1.05 2.1 2.3.34-1.66 1.62.39 2.3L12 16.9l-2.08 1.06.4-2.3-1.67-1.62 2.3-.34z" fill="currentColor" stroke="none"/></svg>',
+  coins: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>',
+  garage: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 10 12 4l9 6v10H3z"/><path d="M7 20v-6h10v6M7 17h10"/></svg>',
 };
+const money = (n) => `₪${Math.round(n).toLocaleString('he-IL')}`;
 const icon = (name) => {
   const s = document.createElement('span');
   s.innerHTML = ICON[name];
@@ -63,8 +68,33 @@ export class RaceUI {
   }
 
   clear() {
-    for (const el of [this.menuEl, this.hudEl, this.pauseEl, this.resultsEl, this.touchEl, this.stageEl, this.topEl]) el && el.remove();
-    this.menuEl = this.hudEl = this.pauseEl = this.resultsEl = this.touchEl = this.stageEl = this.topEl = null;
+    for (const el of [this.menuEl, this.hudEl, this.pauseEl, this.resultsEl, this.touchEl, this.stageEl, this.topEl, this.podiumEl, this.garageEl]) el && el.remove();
+    this.menuEl = this.hudEl = this.pauseEl = this.resultsEl = this.touchEl = this.stageEl = this.topEl = this.podiumEl = this.garageEl = null;
+    this._stopTimer();
+  }
+
+  _stopTimer() {
+    if (this._timer) clearInterval(this._timer);
+    this._timer = null;
+  }
+
+  /** Countdown on a button: calls fn at zero; returns a stop() handle. */
+  _countdown(btn, label, seconds, fn) {
+    this._stopTimer();
+    let left = seconds;
+    const paint = () => (btn.textContent = `${label} · ${left}`);
+    paint();
+    this._timer = setInterval(() => {
+      left--;
+      if (left <= 0) {
+        this._stopTimer();
+        fn();
+      } else paint();
+    }, 1000);
+    return () => {
+      this._stopTimer();
+      btn.textContent = label;
+    };
   }
 
   // ------------------------------------------------------------------ menu
@@ -114,8 +144,10 @@ export class RaceUI {
           'div',
           { class: 'row' },
           h('button', { class: 'btn primary big', type: 'button', onclick: () => g.startChampionship() }, icon('trophy'), state.champ ? `המשך אליפות · שלב ${state.champ.stage + 1}/${STAGES.length}` : `אליפות (${STAGES.length} איים)`),
+          h('button', { class: 'btn big career-btn', type: 'button', onclick: () => g.startCareer() }, icon('coins'), g.career ? `המשך קריירה · ${money(g.career.money)} · ${STAGES[g.career.stage].name}` : 'קריירה · מצב מתמשך'),
           h('button', { class: 'btn big', type: 'button', onclick: () => g.startSingle() }, icon('flag'), `מירוץ בודד · ${STAGES[state.selected].name}`),
           state.champ ? h('button', { class: 'btn', type: 'button', onclick: () => g.resetChampionship() }, 'אליפות חדשה') : null,
+          g.career ? h('button', { class: 'btn', type: 'button', onclick: () => g.resetCareer() }, 'קריירה חדשה') : null,
         ),
         h('div', { class: 'islands', role: 'group', 'aria-label': 'בחירת אי' }, cards),
         h('h2', { class: 'section-title' }, 'הרכב שלך'),
@@ -125,6 +157,7 @@ export class RaceUI {
           { class: 'settings' },
           h('label', { class: 'field' }, h('span', {}, 'רמת יריבים'), h('div', { class: 'seg' }, Object.entries(AI.difficulty).map(([k, d]) => segBtn('difficulty', k, d.label)))),
           h('label', { class: 'field' }, h('span', {}, 'הפתעות על המסלול'), h('div', { class: 'seg' }, [[true, 'כן'], [false, 'לא']].map(([v, l]) => segBtn('items', v, l)))),
+          h('label', { class: 'field' }, h('span', {}, `במת מנצחים כל ${PODIUM.every} מירוצים`), h('div', { class: 'seg' }, [[true, 'כן'], [false, 'לא']].map(([v, l]) => segBtn('podium', v, l)))),
           h('label', { class: 'field' }, h('span', {}, 'הקפות'), h('div', { class: 'seg' }, [1, 2, 3, 5].map((n) => segBtn('laps', n, String(n))))),
           h('label', { class: 'field' }, h('span', {}, 'גרפיקה'), h('div', { class: 'seg' }, [['low', 'נמוכה'], ['medium', 'בינונית'], ['high', 'גבוהה'], ['ultra', 'אולטרה']].map(([k, l]) => segBtn('quality', k, l)))),
           h('label', { class: 'field' }, h('span', {}, 'צבע המכונית שלך'), h('div', { class: 'seg' }, ['#e0262b', '#ff7a1a', '#f2f2f2', '#141414', '#2f6bff'].map((c) => h('button', { type: 'button', 'aria-pressed': String(s.color === c), 'aria-label': c, onclick: () => g.setSetting('color', c), style: `width:40px` }, h('span', { style: `display:block;width:18px;height:18px;border-radius:50%;margin:auto;background:${c};border:1px solid rgba(255,255,255,.35)` }))))),
@@ -575,7 +608,7 @@ export class RaceUI {
 
   // ---------------------------------------------------------- results
 
-  showResults(race, { champ, points, onNext, onRetry, onMenu, newRecord }) {
+  showResults(race, { champ, points, primary, onRetry, onMenu, newRecord, payout }) {
     if (this.resultsEl) this.resultsEl.remove();
     const leader = race.order[0];
     const rows = race.order.map((e, k) =>
@@ -601,20 +634,153 @@ export class RaceUI {
     const kids = [h('h2', { style: P.position === 1 ? 'color:var(--accent)' : '' }, title), h('p', { class: 'sub' }, `${this.game.stage.name} · ${race.laps} הקפות · ${(race.track.length / 1000).toFixed(2)} ק״מ להקפה`), table];
     if (newRecord) kids.push(h('p', { class: 'podium-note', style: 'color:var(--purple)' }, `שיא הקפה חדש לאי: ${Race.fmt(P.bestLap)}`));
     if (champ && points) kids.push(this._standings(points, champ));
+    if (payout) kids.push(this._payout(payout));
+    const go = primary ? h('button', { class: 'btn primary big', type: 'button' }, primary.label) : null;
+    let stop = null;
+    if (go) {
+      go.addEventListener('click', () => {
+        stop && stop();
+        primary.action();
+      });
+    }
     kids.push(
       h(
         'div',
         { class: 'row', style: 'margin-top:18px' },
-        onNext ? h('button', { class: 'btn primary big', type: 'button', onclick: onNext }, champ && champ.stage >= STAGES.length - 1 ? 'לטבלת האליפות' : 'לאי הבא') : null,
-        h('button', { class: 'btn', type: 'button', onclick: onRetry }, 'שוב באותו אי'),
-        h('button', { class: 'btn', type: 'button', onclick: onMenu }, 'תפריט'),
+        go,
+        onRetry ? h('button', { class: 'btn', type: 'button', onclick: () => (stop && stop(), onRetry()) }, 'שוב באותו אי') : null,
+        h('button', { class: 'btn', type: 'button', onclick: () => (stop && stop(), onMenu()) }, 'תפריט'),
       ),
     );
     const el = h('div', { class: 'screen', role: 'dialog', 'aria-label': 'תוצאות', style: 'background:rgba(6,8,12,.7)' }, h('div', { class: 'results' }, kids));
     this.resultsEl = el;
     this.root.append(el);
+    if (go && primary.auto) stop = this._countdown(go, primary.label, primary.auto, primary.action);
     const b = el.querySelector('.btn.primary') || el.querySelector('.btn');
     b && b.focus();
+  }
+
+  /** Career: prize money lines, total and new balance. */
+  _payout(p) {
+    return h(
+      'div',
+      { class: 'payout' },
+      h('h3', {}, icon('coins'), 'הרווחים שלך'),
+      h('ul', {}, p.lines.map(([label, amount]) => h('li', {}, h('span', {}, label), h('b', { class: 'num' }, `+${money(amount)}`)))),
+      h('div', { class: 'total' }, h('span', {}, 'סה״כ במירוץ'), h('b', { class: 'num' }, `+${money(p.total)}`)),
+      h('div', { class: 'total' }, h('span', {}, 'יתרה'), h('b', { class: 'num balance' }, money(p.money))),
+      p.item ? h('p', { class: 'carry' }, icon(p.item.kind), `${ITEMS[p.item.kind].name} נשאר/ת איתך לשלב הבא`) : null,
+    );
+  }
+
+  // ---------------------------------------------------------- podium
+
+  /**
+   * Overlay for the 3D ceremony: title on top, the three winners (2-1-3)
+   * with crown, cup and medal at the bottom, and the way on.
+   */
+  showPodium({ title, sub, list, after, onMenu }) {
+    this.clear();
+    const ICONS = ['crown', 'trophy', 'medal'];
+    const NAMES = ['כתר הזהב', 'גביע הכסף', 'מדליית הארד'];
+    const order = [1, 0, 2].filter((k) => list[k]);
+    const cards = order.map((k) => {
+      const d = list[k];
+      return h(
+        'div',
+        { class: `pod-card p${k + 1}${d.isPlayer ? ' me' : ''}`, style: `--car:${d.color}` },
+        h('div', { class: 'pod-icon' }, icon(ICONS[k])),
+        h('div', { class: 'pod-place' }, `מקום ${k + 1}`),
+        h('div', { class: 'pod-name' }, h('span', { class: 'dot' }), d.name),
+        h('div', { class: 'pod-pts' }, `${d.pts} נק׳ · ${NAMES[k]}`),
+      );
+    });
+    const meIdx = list.findIndex((d) => d.isPlayer);
+    const me = list[meIdx];
+    const note = meIdx >= 0 && meIdx < 3 ? (meIdx === 0 ? 'את/ה על המדרגה הגבוהה — הכתר שלך!' : 'עלית לבמה!') : me ? `סיימת במקום ${meIdx + 1} עם ${me.pts} נק׳` : '';
+    const btn = h('button', { class: 'btn primary big', type: 'button', onclick: () => after.action() }, after.label);
+    const el = h(
+      'div',
+      { class: 'podium-ui', role: 'dialog', 'aria-label': title },
+      h('div', { class: 'pod-top' }, h('h2', {}, title), h('p', {}, sub)),
+      h('div', { class: 'pod-bottom' }, h('div', { class: 'pod-cards' }, cards), note ? h('p', { class: 'pod-note' }, note) : null, h('div', { class: 'row', style: 'justify-content:center' }, btn, onMenu ? h('button', { class: 'btn', type: 'button', onclick: onMenu }, 'תפריט') : null)),
+    );
+    this.podiumEl = el;
+    this.root.append(el);
+    btn.focus({ preventScroll: true });
+  }
+
+  // ---------------------------------------------------------- garage
+
+  /**
+   * Career hub between races: balance and record, the surprise you carry,
+   * a shop for surprises and cars, and a countdown to the next island
+   * that stops as soon as you touch anything.
+   */
+  showGarage(career, { next, level, onGo, onMenu, onPickCar, onBuyCar, onBuyItem, paused = false }) {
+    this.clear();
+    const go = h('button', { class: 'btn primary big', type: 'button', onclick: () => onGo() }, 'יוצאים לדרך');
+    const hint = h('p', { class: 'garage-hint' }, paused ? 'הספירה נעצרה — לחצו "יוצאים לדרך" כשתהיו מוכנים' : 'המירוץ הבא נטען אוטומטית');
+    const held = career.item;
+    const items = Object.entries(CAREER.itemPrices).map(([kind, price]) =>
+      h(
+        'button',
+        { class: 'shop-item', type: 'button', style: `--c:${ITEMS[kind].color}`, disabled: career.money < price || (held && held.kind === kind) ? true : null, onclick: () => onBuyItem(kind) },
+        h('span', { class: 'ic' }, icon(kind)),
+        h('b', {}, ITEMS[kind].name),
+        h('span', { class: 'num' }, money(price)),
+      ),
+    );
+    const panel = h(
+      'div',
+      { class: 'garage' },
+      h(
+        'div',
+        { class: 'garage-head' },
+        h('div', {}, h('div', { class: 'kicker' }, 'קריירה · מצב מתמשך'), h('h2', {}, icon('garage'), 'המוסך')),
+        h('div', { class: 'balance' }, h('span', {}, 'יתרה'), h('b', { class: 'num' }, money(career.money))),
+      ),
+      h(
+        'div',
+        { class: 'chips' },
+        h('span', { class: 'chip' }, `${career.races} מירוצים`),
+        h('span', { class: 'chip' }, `${career.wins} ניצחונות`),
+        h('span', { class: 'chip' }, `${career.podiums} פודיומים`),
+        h('span', { class: 'chip' }, `סבב ${career.cycle + 1} · יריבים: ${level}`),
+        h('span', { class: 'chip' }, `סה״כ הרווחת ${money(career.earned)}`),
+      ),
+      h(
+        'div',
+        { class: 'next-race', style: `--c:${next.color}` },
+        h('div', {}, h('span', { class: 'lbl' }, 'המירוץ הבא'), h('h3', {}, next.name), h('p', {}, next.tagline)),
+        h('div', { class: 'row' }, go, h('button', { class: 'btn', type: 'button', onclick: onMenu }, 'תפריט')),
+      ),
+      hint,
+      h('h3', { class: 'section-title' }, 'ההפתעה שלך'),
+      h(
+        'div',
+        { class: 'held' },
+        held ? h('span', { class: 'held-item', style: `--c:${ITEMS[held.kind].color}` }, icon(held.kind), `${ITEMS[held.kind].name}${held.charges > 1 ? ` ×${held.charges}` : ''}`) : h('span', { class: 'held-item empty' }, 'אין — קנו אחת או אספו על המסלול'),
+        h('span', { class: 'garage-sub' }, 'הפתעה שלא השתמשתם בה עוברת איתכם לשלב הבא. קנייה מחליפה את מה שיש.'),
+      ),
+      h('div', { class: 'shop' }, items),
+      h('h3', { class: 'section-title' }, 'הרכבים שלך'),
+      this.carPicker({ selected: career.car, color: this.game.settings.color, onPick: onPickCar, owned: new Set(career.owned), money: career.money, onBuy: onBuyCar }),
+    );
+    const el = h('div', { class: 'screen', role: 'dialog', 'aria-label': 'המוסך', style: 'background:rgba(6,8,12,.62)' }, panel);
+    this.garageEl = el;
+    this.root.append(el);
+    if (!paused) {
+      const stop = this._countdown(go, 'יוצאים לדרך', CAREER.countdown, onGo);
+      // Any interaction with the shop stops the clock.
+      panel.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('.btn.primary')) return;
+        if (!this._timer) return;
+        stop();
+        hint.textContent = 'הספירה נעצרה — לחצו "יוצאים לדרך" כשתהיו מוכנים';
+      });
+    }
+    go.focus({ preventScroll: true });
   }
 
   _standings(points, champ) {

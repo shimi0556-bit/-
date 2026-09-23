@@ -97,9 +97,12 @@ export class Quality {
     this.renderScale = 1;
     this.minScale = 0.55;
     this.targetFps = 58;
+    this.maxPixels = { low: 1.6e6, medium: 2.8e6, high: 4.2e6, ultra: 8.4e6 };
     this._acc = 0;
     this._frames = 0;
     this._cooldown = 2;
+    this._ceiling = 1; // a scale that proved too slow is not retried for a while
+    this._ceilingT = 0;
   }
 
   /** Picks a starting preset from the GPU string and device class. */
@@ -122,7 +125,12 @@ export class Quality {
   }
 
   get dpr() {
-    return Math.min(window.devicePixelRatio || 1, this.settings.maxDpr) * this.renderScale;
+    let d = Math.min(window.devicePixelRatio || 1, this.settings.maxDpr);
+    // Pixel budget: very large or high-DPI screens would otherwise render far more pixels than the preset is meant for.
+    const css = Math.max(1, window.innerWidth * window.innerHeight);
+    const budget = this.maxPixels[this.presetName] || 4e6;
+    d = Math.min(d, Math.max(0.5, Math.sqrt(budget / css)));
+    return d * this.renderScale;
   }
 
   setPreset(name) {
@@ -131,6 +139,8 @@ export class Quality {
     this.settings = { ...PRESETS[name] };
     this.renderScale = 1;
     this._cooldown = 2;
+    this._ceiling = 1;
+    this._ceilingT = 0;
     this.engine.events.emit('quality', this.settings);
   }
 
@@ -152,19 +162,27 @@ export class Quality {
     this._acc += dt;
     this._frames++;
     this._cooldown -= dt;
-    if (this._acc < 1) return;
+    this._ceilingT -= dt;
+    if (this._ceilingT <= 0) this._ceiling = 1;
+    if (this._acc < 2) return; // judge on two-second averages, not single hitches
     const fps = this._frames / this._acc;
     this._acc = 0;
     this._frames = 0;
     if (this._cooldown > 0 || document.hidden) return;
     let next = this.renderScale;
-    if (fps < this.targetFps - 14) next -= 0.12;
-    else if (fps < this.targetFps - 4) next -= 0.06;
-    else if (fps > this.targetFps + 0.5 && this.renderScale < 1) next += 0.05;
+    if (fps < this.targetFps - 18) next -= 0.15;
+    else if (fps < this.targetFps - 6) next -= 0.08;
+    else if (fps > this.targetFps + 0.5 && this.renderScale < 1) next += 0.08;
     next = Math.min(1, Math.max(this.minScale, next));
+    if (next > this.renderScale && next >= this._ceiling - 1e-3) return; // that size was too slow recently
+    if (next < this.renderScale) {
+      // Remember the size that failed so we do not bounce back to it (each resize reallocates every render target).
+      this._ceiling = this.renderScale;
+      this._ceilingT = 30;
+    }
     if (Math.abs(next - this.renderScale) > 0.001) {
       this.renderScale = next;
-      this._cooldown = 1.5;
+      this._cooldown = 3;
       this.engine.resize();
     }
   }

@@ -10,6 +10,19 @@ const _fwd = new THREE.Vector3();
 const _zero = new THREE.Vector3();
 const _look = new THREE.Vector3();
 
+const _c = new THREE.Vector3();
+const _tmp = new THREE.Vector3();
+
+/** Moves `cur` towards `target` as a critically damped spring of angular frequency w (exact for any dt). */
+function smoothDamp(cur, target, vel, w, dt) {
+  const x = w * dt;
+  const e = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
+  _c.subVectors(cur, target);
+  _tmp.copy(vel).addScaledVector(_c, w).multiplyScalar(dt);
+  vel.addScaledVector(_tmp, -w).multiplyScalar(e);
+  cur.copy(target).add(_c.add(_tmp).multiplyScalar(e));
+}
+
 /**
  * Race camera rig (plugs into engine.cameraRig): chase / far / hood /
  * bumper views on a critically damped spring, speed FOV and nitro kick,
@@ -141,15 +154,16 @@ export class RaceCamera {
     cam.fov += (fovTarget - cam.fov) * (1 - Math.exp(-dt * 4));
     cam.updateProjectionMatrix();
 
-    // Road and engine vibration at speed, plus impact trauma.
+    // A light rumble off-road, plus impact trauma. Low frequencies only: a
+    // fast buzz aliases into random jitter at the frame rate.
     const eng = this.engine;
     const tt = eng.time.elapsed;
-    const buzz = this.mode === 'chase' ? Math.min(1, v / 60) * 0.0025 + car.offroad * 0.006 * Math.min(1, v / 15) : 0;
-    const k = this.trauma * this.trauma * 0.045 + buzz;
+    const buzz = this.mode === 'chase' ? car.offroad * 0.0022 * Math.min(1, v / 15) : 0;
+    const k = this.trauma * this.trauma * 0.04 + buzz;
     if (k > 1e-5) {
-      cam.rotateX(Math.sin(tt * 47.3) * k);
-      cam.rotateY(Math.sin(tt * 39.1 + 1.3) * k * 0.7);
-      cam.rotateZ(Math.sin(tt * 31.7 + 2.1) * k * 0.9);
+      cam.rotateX((Math.sin(tt * 13.1) + Math.sin(tt * 7.7 + 0.6) * 0.5) * k * 0.7);
+      cam.rotateY(Math.sin(tt * 9.3 + 1.3) * k * 0.5);
+      cam.rotateZ(Math.sin(tt * 11.7 + 2.1) * k * 0.6);
     }
     this.trauma = Math.max(0, this.trauma - dt * 1.6);
     this.snap = false;
@@ -169,16 +183,10 @@ export class RaceCamera {
       this.vel.set(0, 0, 0);
       this.lookVel.set(0, 0, 0);
     } else {
-      const w = stiffness;
-      _d.subVectors(targetPos, a).sub(this.offset).multiplyScalar(w * w);
-      _d.addScaledVector(this.vel, -2 * w);
-      this.vel.addScaledVector(_d, dt);
-      this.offset.addScaledVector(this.vel, dt);
-      const wl = stiffness * 1.6;
-      _d.subVectors(lookAt, a).sub(this.lookOffset).multiplyScalar(wl * wl);
-      _d.addScaledVector(this.lookVel, -2 * wl);
-      this.lookVel.addScaledVector(_d, dt);
-      this.lookOffset.addScaledVector(this.lookVel, dt);
+      // Closed-form critically damped step: stable at any frame time, so a
+      // slow or uneven frame rate never makes the camera overshoot and shake.
+      smoothDamp(this.offset, _d.subVectors(targetPos, a), this.vel, stiffness, dt);
+      smoothDamp(this.lookOffset, _d.subVectors(lookAt, a), this.lookVel, stiffness * 1.6, dt);
     }
     cam.position.addVectors(a, this.offset);
     this.look.addVectors(a, this.lookOffset);

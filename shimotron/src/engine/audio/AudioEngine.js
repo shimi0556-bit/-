@@ -255,6 +255,12 @@ export class AudioEngine {
       this._burst(this.master, { dur: 0.22, freq: 900, q: 0.7, gain: 0.35 });
       this._tone(this.master, { freq: 220, dur: 0.2, gain: 0.15, slide: 0.4 });
     } else if (kind === 'delete') this._tone(this.master, { freq: 600, dur: 0.16, gain: 0.07, slide: 0.4 });
+    else if (kind === 'buy') {
+      // Cash register: two bright pings over a short rattle.
+      this._burst(this.master, { dur: 0.12, freq: 3200, q: 1.5, gain: 0.12 });
+      this._tone(this.master, { freq: 1320, dur: 0.12, gain: 0.07, type: 'triangle', when: 0.05 });
+      this._tone(this.master, { freq: 1980, dur: 0.3, gain: 0.07, type: 'triangle', when: 0.14 });
+    }
     else if (kind === 'boom') {
       this._burst(this.master, { dur: 1.2, freq: 180, q: 0.5, gain: 1, type: 'lowpass' });
       this._tone(this.master, { freq: 70, dur: 1.0, gain: 0.5, slide: 0.35 });

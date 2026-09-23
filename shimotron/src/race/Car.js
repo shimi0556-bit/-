@@ -282,6 +282,7 @@ export class Car {
     this.vehicle.remove();
     this.object.removeFromParent();
     this.model.paint.dispose();
+    this.ctx.materials.untrackEmissive(this.model.tailMat);
     this.model.tailMat.dispose();
   }
 }

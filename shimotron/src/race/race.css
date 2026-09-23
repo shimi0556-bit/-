@@ -253,3 +253,85 @@ body.is-touch .minimap { width: 130px; height: 130px; }
 .touch .t-item { right: calc(210px + var(--safe-r)); bottom: calc(150px + var(--safe-b)); width: 70px; height: 70px; }
 .toast { opacity: 0; }
 @media (max-height: 500px) { .itemslot { top: calc(60px + var(--safe-t)); } }
+
+/* Career payout on the results screen */
+.btn.career-btn { border-color: rgba(61, 220, 151, 0.55); }
+.btn.career-btn svg { color: var(--good); }
+.payout { margin-top: 18px; padding: 12px 14px; border-radius: 14px; background: rgba(61, 220, 151, 0.07); border: 1px solid rgba(61, 220, 151, 0.28); }
+.payout h3 { margin: 0 0 8px; font: 700 28px/1 var(--display); display: flex; align-items: center; gap: 8px; color: var(--good); }
+.payout h3 svg { width: 22px; height: 22px; }
+.payout ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 14px; }
+.payout li, .payout .total { display: flex; justify-content: space-between; gap: 12px; }
+.payout li b { color: var(--good); }
+.payout .total { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); font-weight: 600; }
+.payout .balance { color: var(--accent); font-size: 18px; }
+.payout .carry { margin: 10px 0 0; display: flex; align-items: center; gap: 8px; color: var(--cyan); font-size: 13.5px; }
+.payout .carry svg { width: 18px; height: 18px; }
+
+/* Winners' podium overlay (the ceremony itself is 3D) */
+.podium-ui { position: fixed; inset: 0; z-index: 30; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: calc(18px + var(--safe-t)) 16px calc(18px + var(--safe-b)); }
+.podium-ui .btn, .podium-ui .pod-card { pointer-events: auto; }
+.pod-top { text-align: center; animation: podin 0.9s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+@keyframes podin { from { opacity: 0; transform: scale(1.5); } to { opacity: 1; transform: none; } }
+.pod-top h2 { margin: 0; font: 700 clamp(44px, 7vw, 84px)/0.9 var(--display); color: var(--accent); text-shadow: 0 4px 30px rgba(0, 0, 0, 0.6), 0 0 40px rgba(255, 176, 32, 0.35); }
+.pod-top p { margin: 6px 0 0; color: var(--text); text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8); }
+.pod-bottom { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+/* Left-to-right 2 · 1 · 3, matching the podium as the camera sees it. */
+.pod-cards { display: flex; gap: 10px; align-items: flex-end; justify-content: center; flex-wrap: nowrap; direction: ltr; }
+.pod-card { direction: rtl; width: min(190px, 30vw); padding: 8px 10px 10px; border-radius: 14px; text-align: center; background: var(--glass-strong); border: 1px solid var(--line); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); animation: rise 0.8s cubic-bezier(0.2, 0.9, 0.3, 1.15) both; }
+.pod-card.p1 { padding-top: 14px; border-color: #f2c230; box-shadow: 0 0 0 1px #f2c230, 0 14px 50px -14px #f2c230; animation-delay: 0.9s; }
+.pod-card.p2 { border-color: #cdd3de; animation-delay: 0.5s; }
+.pod-card.p3 { border-color: #cf8446; animation-delay: 0.2s; }
+.pod-card.me { background: linear-gradient(180deg, rgba(255, 176, 32, 0.2), var(--glass-strong)); }
+.pod-icon svg { width: 36px; height: 36px; }
+.pod-card.p1 .pod-icon { color: #ffc83d; filter: drop-shadow(0 0 12px rgba(255, 200, 61, 0.6)); }
+.pod-card.p1 .pod-icon svg { width: 48px; height: 48px; }
+.pod-card.p2 .pod-icon { color: #dfe4ec; }
+.pod-card.p3 .pod-icon { color: #d98a4a; }
+.pod-place { font: 700 26px/1 var(--display); color: var(--muted); }
+.pod-card.p1 .pod-place { color: #ffc83d; font-size: 32px; }
+.pod-name { font-weight: 700; font-size: 16px; margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.pod-name .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--car); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2); }
+.pod-pts { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+.pod-note { margin: 0; font-weight: 600; color: var(--text); text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9); }
+@keyframes rise { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (max-height: 520px) {
+  .pod-top h2 { font-size: 40px; }
+  .pod-card { padding: 6px 8px; }
+  .pod-icon svg, .pod-card.p1 .pod-icon svg { width: 30px; height: 30px; }
+  .pod-place, .pod-card.p1 .pod-place { font-size: 22px; }
+  .pod-pts { display: none; }
+}
+
+/* Career garage */
+.garage { max-width: 1100px; width: 100%; margin: auto; display: flex; flex-direction: column; gap: 14px; padding: 18px 20px; border-radius: 18px; background: var(--glass-strong); border: 1px solid var(--line); }
+.garage-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.garage-head .kicker { color: var(--good); font-weight: 600; letter-spacing: 2px; font-size: 12px; }
+.garage-head h2 { margin: 0; font: 700 56px/0.95 var(--display); display: flex; align-items: center; gap: 10px; }
+.garage-head h2 svg { width: 40px; height: 40px; color: var(--good); }
+.balance { text-align: end; }
+.balance span { display: block; color: var(--muted); font-size: 12px; font-weight: 600; }
+.balance b { font-size: 34px; color: var(--accent); }
+.garage .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.next-race { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; padding: 12px 16px; border-radius: 14px; border: 1px solid var(--c); background: linear-gradient(90deg, color-mix(in srgb, var(--c) 18%, transparent), transparent); }
+.next-race .lbl { color: var(--muted); font-size: 12px; font-weight: 600; }
+.next-race h3 { margin: 2px 0; font: 700 40px/1 var(--display); color: var(--c); }
+.next-race p { margin: 0; color: var(--muted); font-size: 13px; }
+.garage-hint { margin: -6px 0 0; color: var(--faint); font-size: 12.5px; }
+.held { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
+.held-item { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 12px; font-weight: 700; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); border: 1px solid var(--c); }
+.held-item svg { width: 22px; height: 22px; }
+.held-item.empty { color: var(--muted); background: rgba(255, 255, 255, 0.04); border: 1px dashed var(--line-strong); font-weight: 500; }
+.garage-sub { color: var(--faint); font-size: 12.5px; }
+.shop { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.shop-item { appearance: none; cursor: pointer; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: center; padding: 10px 12px; border-radius: 12px; text-align: start; color: var(--text); background: var(--glass); border: 1px solid var(--line); transition: border-color 0.15s, transform 0.15s; }
+.shop-item:hover:not([disabled]) { border-color: var(--c); transform: translateY(-1px); }
+.shop-item .ic { grid-row: span 2; width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); }
+.shop-item .ic svg { width: 24px; height: 24px; }
+.shop-item .num { color: var(--accent); font-size: 13px; }
+.shop-item[disabled] { opacity: 0.45; cursor: not-allowed; }
+@media (max-width: 760px) {
+  .garage { padding: 14px; }
+  .garage-head h2 { font-size: 42px; }
+  .next-race h3 { font-size: 32px; }
+}

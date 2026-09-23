@@ -254,6 +254,7 @@ export class Island {
         const mats = Array.isArray(o.material) ? o.material : [o.material];
         for (const m of mats) {
           if (!m || m.userData.keep) continue;
+          this.materials.untrackEmissive(m);
           m.dispose();
         }
       }

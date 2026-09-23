@@ -160,6 +160,11 @@ export class Materials {
     this.emissive.push({ material, base });
   }
 
+  untrackEmissive(material) {
+    const i = this.emissive.findIndex((x) => x.material === material);
+    if (i >= 0) this.emissive.splice(i, 1);
+  }
+
   setEmissiveBase(material, base) {
     const e = this.emissive.find((x) => x.material === material);
     if (e) e.base = base;

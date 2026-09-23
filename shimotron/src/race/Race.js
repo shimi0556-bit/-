@@ -57,6 +57,8 @@ export class Race {
         driver,
         name: r.name,
         color: r.color,
+        stripe: r.stripe,
+        type: r.type || 'gt',
         number: r.number,
         isPlayer: !!r.isPlayer,
         id: r.id,
@@ -80,6 +82,7 @@ export class Race {
         item: null, // held surprise { kind, charges }
         shield: 0,
         hits: 0, // shots/mines that connected (career bonus)
+        respawns: 0,
         topSpeed: 0,
       };
       this.entries.push(entry);
@@ -298,6 +301,7 @@ export class Race {
 
   /** Puts a car back on the track at its current lap position, pointing the right way. */
   respawn(e) {
+    e.respawns++;
     const tr = this.track;
     const b = e.car.body;
     let s = e.q ? e.q.s : e.lastS;

@@ -7,7 +7,7 @@ import { Particles } from '../engine/fx/Particles.js';
 import { AudioEngine } from '../engine/audio/AudioEngine.js';
 import { Terrain } from '../engine/world/Terrain.js';
 import { smoothstep } from '../engine/core/Random.js';
-import { STAGES, AI, RACE } from './config.js';
+import { STAGES, AI, RACE, CAREER, PODIUM, CAR_TYPES } from './config.js';
 import { generateTrack } from './TrackGenerator.js';
 import { Island } from './Island.js';
 import { Race } from './Race.js';
@@ -17,6 +17,7 @@ import { SkidMarks } from './Effects.js';
 import { CarAudio } from './CarAudio.js';
 import { RaceUI } from './ui.js';
 import { ITEMS } from './Pickups.js';
+import { Podium } from './Podium.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -47,6 +48,9 @@ class Game {
     this.settings = { difficulty: 'normal', laps: RACE.laps, quality: null, sound: true, color: '#e0262b', camera: 0, car: 'gt', items: true, podium: true, ...store.get('settings', {}) };
     this.records = store.get('records', {});
     this.champ = store.get('champ', null);
+    this.career = store.get('career', null);
+    this.series = store.get('series', null); // podium points for single races
+    this.podium = null;
     this.selected = 0;
     this.plans = {};
     this.previews = {};
@@ -119,6 +123,7 @@ class Game {
     engine.addSystem({ update: (dt, simDt) => this.race && this.race.update(simDt) });
     engine.addSystem({ update: (dt, simDt) => engine.particles.update(simDt) });
     engine.addSystem({ update: (dt) => this.island && this.island.update(dt) });
+    engine.addSystem({ update: (dt) => this.podium && this.podium.update(dt) });
     engine.addSystem({ update: () => this.skid.update() });
     engine.addSystem({ update: (dt) => engine.audio.update(dt) });
     engine.addSystem({ update: (dt) => this.carAudio && this.carAudio.update(dt) });
@@ -250,6 +255,7 @@ class Game {
 
   toMenu() {
     this._endRace();
+    this._endPodium();
     this.engine.paused = false;
     this.state = 'menu';
     this.camera.target = null;
@@ -329,7 +335,8 @@ class Game {
   roster() {
     const names = AI.names;
     const colors = AI.colors;
-    const list = [{ id: 'player', name: 'את/ה', color: this.settings.color, stripe: '#111111', number: 7, isPlayer: true, type: this.settings.car || 'gt' }];
+    const myCar = this.mode === 'career' && this.career ? this.career.car : this.settings.car || 'gt';
+    const list = [{ id: 'player', name: 'את/ה', color: this.settings.color, stripe: '#111111', number: 7, isPlayer: true, type: myCar }];
     // Opponents drive a mix of car types that rotates from island to island.
     const mix = ['gt', 'rally', 'muscle', 'formula', 'buggy', 'gt', 'hyper'];
     for (let i = 0; i < RACE.opponents; i++) {
@@ -374,8 +381,187 @@ class Game {
     this.ui.showMenu({ selected: this.selected, champ: this.champ });
   }
 
+  // ------------------------------------------------------------- career
+
+  /** Career ("מצב מתמשך"): money, a garage, surprises that carry over, islands that follow on by themselves. */
+  startCareer() {
+    this.mode = 'career';
+    this.engine.audio.unlock();
+    if (!this.career) {
+      this.career = { money: CAREER.startMoney, owned: ['gt'], car: 'gt', item: null, stage: 0, cycle: 0, races: 0, wins: 0, podiums: 0, earned: 0, series: { count: 0, points: {} } };
+      store.set('career', this.career);
+    }
+    this._garage();
+  }
+
+  resetCareer() {
+    this.career = null;
+    store.set('career', null);
+    this.ui.showMenu({ selected: this.selected, champ: this.champ });
+  }
+
+  /** Rivals get one level harder for every full lap of the islands. */
+  _difficulty() {
+    if (this.mode !== 'career' || !this.career) return this.settings.difficulty;
+    const levels = Object.keys(AI.difficulty);
+    const base = Math.max(0, levels.indexOf(this.settings.difficulty));
+    return levels[Math.min(levels.length - 1, base + this.career.cycle)];
+  }
+
+  _garage(paused = false) {
+    const C = this.career;
+    if (!C) return this.toMenu();
+    this._endRace();
+    this._endPodium();
+    this.mode = 'career';
+    this.state = 'garage';
+    this.engine.paused = false;
+    this.camera.target = null;
+    this.engine.cameraRig = this._flyover();
+    const next = STAGES[C.stage];
+    const again = () => this._garage(true);
+    this.ui.showGarage(C, {
+      next,
+      level: AI.difficulty[this._difficulty()].label,
+      paused,
+      onGo: () => this._launch(C.stage),
+      onMenu: () => this.toMenu(),
+      onPickCar: (id) => {
+        if (!C.owned.includes(id)) return;
+        C.car = id;
+        store.set('career', C);
+        this.engine.audio.ui('click');
+        again();
+      },
+      onBuyCar: (id) => {
+        const t = CAR_TYPES.find((c) => c.id === id);
+        if (!t || C.owned.includes(id) || C.money < t.price) return;
+        C.money -= t.price;
+        C.owned.push(id);
+        C.car = id;
+        store.set('career', C);
+        this.engine.audio.ui('buy');
+        again();
+      },
+      onBuyItem: (kind) => {
+        const price = CAREER.itemPrices[kind];
+        if (C.money < price) return;
+        C.money -= price;
+        C.item = { kind, charges: ITEMS[kind].charges };
+        store.set('career', C);
+        this.engine.audio.ui('buy');
+        again();
+      },
+    });
+  }
+
+  /** Prize money for the race just run; also banks the held surprise and moves the career on one island. */
+  _careerPayout(r) {
+    const C = this.career;
+    const P = r.player;
+    const place = r.order.indexOf(P) + 1;
+    const k = 1 + 0.25 * C.cycle;
+    const lines = [[`מקום ${place}`, Math.round((CAREER.prizes[place - 1] || 0) * k)]];
+    const fastest = r.entries.reduce((a, e) => (e.bestLap < a.bestLap ? e : a), r.entries[0]);
+    if (fastest === P && isFinite(P.bestLap)) lines.push(['הקפה המהירה במירוץ', CAREER.fastestLap]);
+    if (P.hits) lines.push([`${P.hits} פגיעות ביריבים`, P.hits * CAREER.hit]);
+    if (!P.respawns) lines.push(['מירוץ נקי, בלי חזרות למסלול', CAREER.clean]);
+    const total = lines.reduce((a, [, v]) => a + v, 0);
+    C.money += total;
+    C.earned += total;
+    C.races++;
+    if (place === 1) C.wins++;
+    if (place <= 3) C.podiums++;
+    C.item = P.item ? { kind: P.item.kind, charges: P.item.charges } : null;
+    C.stage = (C.stage + 1) % STAGES.length;
+    if (C.stage === 0) C.cycle++;
+    store.set('career', C);
+    return { lines, total, money: C.money, item: C.item };
+  }
+
+  // ------------------------------------------------------------- podium
+
+  /** Adds a finished race to this mode's podium series; returns the ceremony when one is due. */
+  _seriesAdd(r) {
+    if (!this.settings.podium) return null;
+    let S;
+    if (this.mode === 'champ') S = this.champ.series || (this.champ.series = { count: 0, points: {} });
+    else if (this.mode === 'career') S = this.career.series || (this.career.series = { count: 0, points: {} });
+    else S = this.series || (this.series = { count: 0, points: {} });
+    r.order.forEach((e, k) => {
+      const d = S.points[e.id] || (S.points[e.id] = { pts: 0 });
+      Object.assign(d, { name: e.name, color: e.color, stripe: e.stripe, number: e.number, type: e.type, isPlayer: e.isPlayer });
+      d.pts += RACE.points[k] || 0;
+    });
+    S.count++;
+    let due = null;
+    if (S.count >= PODIUM.every) {
+      due = { title: 'במת המנצחים', sub: `${S.count} המירוצים האחרונים · ${this.stage.name}`, list: Object.values(S.points).sort((a, b) => b.pts - a.pts) };
+      S.count = 0;
+      S.points = {};
+    }
+    if (this.mode === 'champ') store.set('champ', this.champ);
+    else if (this.mode === 'career') store.set('career', this.career);
+    else store.set('series', this.series);
+    return due;
+  }
+
+  /** The 3D ceremony on the start straight; `after` = { label, action } continues the game. */
+  _ceremony({ title, sub, list }, after) {
+    this._endRace();
+    this._endPodium();
+    this.ui.clear();
+    const pod = new Podium(this, list.slice(0, 3));
+    pod.build();
+    this.podium = pod;
+    this.state = 'podium';
+    this.engine.paused = false;
+    this.engine.cameraRig = pod.cameraRig();
+    if (list.findIndex((d) => d.isPlayer) === 0 && this.mode === 'career') {
+      // A win on points pays a bonus.
+      this.career.money += 2500;
+      store.set('career', this.career);
+      sub = `${sub} · בונוס כתר: ₪2,500`;
+    }
+    this.ui.showPodium({
+      title,
+      sub,
+      list,
+      after: {
+        label: after.label,
+        action: () => {
+          this._endPodium();
+          after.action();
+        },
+      },
+      onMenu: () => this.toMenu(),
+    });
+  }
+
+  _endPodium() {
+    if (!this.podium) return;
+    this.podium.dispose();
+    this.podium = null;
+    const crowd = this.island && this.island.track.crowdUniforms;
+    if (crowd) crowd.uCheer.value = 0.2;
+  }
+
+  _champEnd() {
+    const pts = this.champ.points;
+    this.champ = null;
+    store.set('champ', null);
+    const list = Object.values(pts).sort((a, b) => b.pts - a.pts);
+    const table = () => {
+      this.engine.cameraRig = this._flyover();
+      this.state = 'menu-results';
+      this.ui.showChampionshipEnd(pts, () => this.toMenu());
+    };
+    this._ceremony({ title: 'אלופי האליפות', sub: `${STAGES.length} איים — הטבלה הסופית`, list }, { label: 'לטבלה הסופית', action: table });
+  }
+
   async _launch(index) {
     const eng = this.engine;
+    this._endPodium();
     this.state = 'loading';
     eng.audio.unlock();
     if (!this.carAudio && eng.audio.ctx) this.carAudio = new CarAudio(eng.audio);
@@ -389,9 +575,11 @@ class Game {
       await nextFrame();
     }
     this._endRace();
+    this._endPodium();
     this.skid.clear();
     this.wheels.reset();
-    const race = new Race(this, this.island, { laps: this.settings.laps, difficulty: this.settings.difficulty, roster: this._gridOrder(this.roster()), items: this.settings.items, startItem: this.mode === 'career' && this.career ? this.career.item : null });
+    const career = this.mode === 'career' && this.career;
+    const race = new Race(this, this.island, { laps: this.settings.laps, difficulty: this._difficulty(), roster: this._gridOrder(this.roster()), items: career ? true : this.settings.items, startItem: career ? this.career.item : null });
     this.race = race;
     try {
       await Promise.race([eng.renderer.compileAsync(eng.scene, eng.camera), wait(6000)]);
@@ -590,49 +778,61 @@ class Game {
       store.set('records', this.records);
       newRecord = true;
     }
-    const champ = this.mode === 'champ' ? this.champ : null;
+    const mode = this.mode;
+    const champ = mode === 'champ' ? this.champ : null;
     if (champ) {
       r.order.forEach((e, k) => {
         const d = champ.points[e.id];
         if (!d) return;
+        Object.assign(d, { stripe: e.stripe, number: e.number, type: e.type });
         d.pts += RACE.points[k] || 0;
         d.results[champ.stage] = k + 1;
       });
       store.set('champ', champ);
     }
+    const payout = mode === 'career' && this.career ? this._careerPayout(r) : null;
+    const lastChamp = champ && champ.stage >= STAGES.length - 1;
+    let due = this._seriesAdd(r);
+    if (lastChamp) due = null; // the championship ceremony takes over
+    // Where the game goes after the results (and after a ceremony, if one is due).
+    let cont = null;
+    if (champ) {
+      cont = lastChamp
+        ? { label: 'לטקס האליפות', action: () => this._champEnd() }
+        : {
+            label: 'לאי הבא',
+            action: () => {
+              champ.stage++;
+              store.set('champ', champ);
+              this._launch(champ.stage);
+            },
+          };
+    } else if (payout) cont = { label: 'למוסך', action: () => this._garage() };
+    let primary = cont;
+    if (due) primary = { label: 'לבמת המנצחים', action: () => this._ceremony(due, cont || { label: 'מירוץ נוסף', action: () => this._launch(this.selected) }) };
+    if (primary && payout) primary.auto = 10; // career rolls on by itself
     this.ui.showResults(r, {
       champ,
       points: champ ? champ.points : null,
       newRecord,
-      onNext: champ
-        ? () => {
-            if (champ.stage >= STAGES.length - 1) {
-              const pts = champ.points;
-              this.champ = null;
-              store.set('champ', null);
-              this._endRace();
-              this.ui.showChampionshipEnd(pts, () => this.toMenu());
-            } else {
-              champ.stage++;
+      payout,
+      primary,
+      onRetry: payout
+        ? null
+        : () => {
+            if (champ) {
+              // A retry replaces this stage's result.
+              r.order.forEach((e, k) => {
+                const d = champ.points[e.id];
+                if (d) {
+                  d.pts -= RACE.points[k] || 0;
+                  d.results[champ.stage] = undefined;
+                }
+              });
               store.set('champ', champ);
-              this._launch(champ.stage);
             }
-          }
-        : null,
-      onRetry: () => {
-        if (champ) {
-          // A retry replaces this stage's result.
-          r.order.forEach((e, k) => {
-            const d = champ.points[e.id];
-            if (d) {
-              d.pts -= RACE.points[k] || 0;
-              d.results[champ.stage] = undefined;
-            }
-          });
-          store.set('champ', champ);
-        }
-        this._launch(this.selected);
-      },
+            this._launch(this.selected);
+          },
       onMenu: () => this.toMenu(),
     });
   }

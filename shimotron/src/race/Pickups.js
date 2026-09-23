@@ -38,7 +38,31 @@ export class Pickups {
     this.time = 0;
     this._boxes();
     this._assets();
+    this._warmup();
     this.engine.scene.add(this.group);
+  }
+
+  /**
+   * One of each lazily created mesh, parked far below the island: the
+   * start-of-race shader compile then covers them, so the first shot,
+   * mine or shield does not stall a frame compiling its program.
+   */
+  _warmup() {
+    const park = new THREE.Group();
+    park.position.set(0, -5000, 0);
+    park.name = 'חימום שיידרים';
+    for (const [g, m] of [
+      [this.shotGeo, this.shotMat],
+      [this.mineGeo, this.mineMat],
+      [this.mineTop, this.mineLight],
+      [this.spikeGeo, this.mineMat],
+      [this.shotGeo, this.shieldMat],
+    ]) {
+      const mesh = new THREE.Mesh(g, m);
+      mesh.castShadow = true;
+      park.add(mesh);
+    }
+    this.group.add(park);
   }
 
   // ------------------------------------------------------------ setup
@@ -463,5 +487,10 @@ export class Pickups {
     this.group.removeFromParent();
     this.boxMesh.geometry.dispose();
     this.boxMat.map.dispose();
+    const M = this.engine.materials;
+    for (const m of [this.boxMat, this.shotMat, this.mineMat, this.mineLight]) {
+      M.untrackEmissive(m);
+      m.dispose();
+    }
   }
 }

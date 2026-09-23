@@ -13,6 +13,24 @@ export const RACE = {
   respawnHeight: 0.9,
 };
 
+/** Winners' podium: a ceremony for the top three on points every `every` races. */
+export const PODIUM = { every: 4 };
+
+/**
+ * Career ("מצב מתמשך"): prize money by finishing position, bonuses, and
+ * the price of a surprise bought in the garage. Each lap of all the
+ * islands raises the rivals one difficulty level and the purses by 25%.
+ */
+export const CAREER = {
+  startMoney: 3000,
+  prizes: [6000, 4200, 3000, 2000, 1400, 900],
+  fastestLap: 800, // fastest lap of the race
+  hit: 250, // per shot or mine that connected
+  clean: 400, // no respawns
+  itemPrices: { shots: 900, mine: 700, turbo: 600, shield: 800 },
+  countdown: 15, // seconds in the garage before the next island loads
+};
+
 export const CAR = {
   mass: 1250,
   // Chassis collision boxes (half extents / offsets from the centre of mass).
