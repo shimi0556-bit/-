@@ -3,6 +3,7 @@ import * as CANNON from 'cannon-es';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RACE, CAR, AI } from './config.js';
 import { smoothstep } from '../engine/core/Random.js';
+import { createCrowd } from './Humans.js';
 
 
 /**
@@ -993,7 +994,6 @@ export class Track {
     const tiers = 7;
     const blocks = [];
     const crowd = [];
-    const figure = mergeGeometries([new THREE.CylinderGeometry(0.2, 0.24, 0.8, 6).translate(0, 0.4, 0), new THREE.SphereGeometry(0.14, 8, 6).translate(0, 0.95, 0)]);
     const segLen = 10;
     for (let d = s0; d < s1; d += segLen) {
       const p = this.pose(d / this.length, 0);
@@ -1012,7 +1012,7 @@ export class Track {
           if (Math.random() < 0.18) continue;
           const along = -segLen / 2 + (c + 0.5) * (segLen / 9) + (Math.random() - 0.5) * 0.4;
           const pp = q.clone().addScaledVector(p.tangent, along);
-          crowd.push({ x: pp.x, y: top, z: pp.z, yaw: yaw + Math.PI / 2 * (p.right.x * 0 + 1) });
+          crowd.push({ x: pp.x, y: top, z: pp.z, yaw: Math.atan2(-p.right.x, -p.right.z) + (Math.random() - 0.5) * 0.5 });
         }
       }
       // Roof over the stand.
@@ -1031,32 +1031,10 @@ export class Track {
     stand.castShadow = true;
     stand.receiveShadow = true;
     g.add(stand);
-    // Crowd: instanced figures that bounce and cheer.
+    // Crowd: people who bounce and throw their arms up when the cars pass.
     this.crowdUniforms = { uTime: { value: 0 }, uCheer: { value: 0.2 } };
-    const crowdMat = new THREE.MeshStandardMaterial({ roughness: 0.8 });
-    crowdMat.onBeforeCompile = (shader) => {
-      Object.assign(shader.uniforms, this.crowdUniforms);
-      shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nuniform float uTime; uniform float uCheer;').replace(
-        '#include <begin_vertex>',
-        `#include <begin_vertex>
-        #ifdef USE_INSTANCING
-          float ph = instanceMatrix[3].x * 1.7 + instanceMatrix[3].z * 2.3;
-          transformed.y += abs(sin(uTime * (5.0 + fract(ph) * 3.0) + ph)) * 0.22 * uCheer;
-        #endif`,
-      );
-    };
-    crowdMat.customProgramCacheKey = () => 'crowd';
-    const people = new THREE.InstancedMesh(figure, crowdMat, crowd.length);
-    const palette = ['#e83b3b', '#ffb020', '#39d9ff', '#ffffff', '#1f6fe0', '#1faa59', '#ff7a1a', '#8a4dff', '#2a2a2a'].map((c) => new THREE.Color(c));
-    crowd.forEach((c, k) => {
-      people.setMatrixAt(k, new THREE.Matrix4().makeRotationY(c.yaw).setPosition(c.x, c.y, c.z));
-      people.setColorAt(k, palette[k % palette.length]);
-    });
-    people.instanceMatrix.needsUpdate = true;
-    if (people.instanceColor) people.instanceColor.needsUpdate = true;
-    people.computeBoundingSphere();
-    people.name = 'קהל';
-    g.add(people);
+    const items = crowd.map((c) => ({ m: new THREE.Matrix4().makeRotationY(c.yaw).setPosition(c.x, c.y, c.z) }));
+    g.add(createCrowd(items, this.crowdUniforms));
     g.name = 'יציע';
     this.group.add(g);
   }

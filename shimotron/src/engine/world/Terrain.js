@@ -24,6 +24,8 @@ export class Terrain {
     this.clearance = options.clearance || null; // (x, z) => metres of free space to keep
     // Parametric island (games): when set, height() uses _islandHeight().
     this.island = options.island || null;
+    // How much of the shallow sea floor is coral reef (0 = bare sand).
+    this.reef = options.reef ?? 0;
     // Biome look: layer tints, snow line, grass roughness.
     this.biome = {
       grassTint: [1, 1, 1],
@@ -163,6 +165,7 @@ export class Terrain {
     const coast = smoothstep(0.62, 0.86, dist);
     h = lerp(h, 1.2 + hills * 0.12, coast * 0.85);
     h = lerp(-26 + hills * 0.5, h, island);
+    if (h < -0.4 && I.seabed !== false) h = this._seabed(x, z, h);
     if (I.lagoon) {
       const L = I.lagoon;
       const l = smoothstep(L.outer, L.inner, dist);
@@ -170,6 +173,33 @@ export class Terrain {
     }
     if (this.heightModifier) h = this.heightModifier(x, z, h);
     return h;
+  }
+
+  /**
+   * Below the waterline only: reef flats with coral heads near the shore,
+   * then meandering trenches (underwater canyons) and rock pinnacles as
+   * the floor drops away.
+   */
+  _seabed(x, z, h) {
+    // Reef bommies: knobbly mounds in the reef patches of the shallows.
+    const reef = this.reefAt(x, z, h);
+    if (reef > 0) h += reef * (0.9 + this.noise.noise(x * 0.16 + 2, z * 0.16 - 5) * 0.7 + Math.max(0, this.noise.noise(x * 0.05 - 7, z * 0.05 + 3)) * 2.4);
+    const deep = smoothstep(-0.4, -7, h);
+    const trench = Math.pow(this._ridged(x * 0.0038 + 11.3, z * 0.0038 - 7.9, 3), 2.4);
+    h -= deep * trench * 16;
+    const spire = Math.max(0, this.noise.noise(x * 0.018 + 3.1, z * 0.018 - 1.7) - 0.52);
+    h += deep * spire * spire * 60;
+    const bumps = this.noise.noise(x * 0.09, z * 0.09) * 0.6 + this.noise.noise(x * 0.23 + 4, z * 0.23) * 0.25;
+    h += (1 - deep) * bumps * 0.9;
+    return Math.min(h, -0.35);
+  }
+
+  /** Coral reef cover (0..1) at a point of sea floor `h` metres deep: patches between about 1 and 14 m. */
+  reefAt(x, z, h) {
+    if (!this.reef || h > -0.5 || h < -16) return 0;
+    const window = smoothstep(-0.5, -1.8, h) * smoothstep(-16, -10, h);
+    const p = this.noise.noise(x * 0.012 + 40, z * 0.012 - 13) + this.noise.noise(x * 0.05 - 9, z * 0.05 + 21) * 0.25;
+    return window * smoothstep(0.32 - this.reef * 0.3, 0.52 - this.reef * 0.3, p);
   }
 
   /** Analytic height in metres (sea level = 0). */
@@ -431,7 +461,7 @@ export class Terrain {
       data[i] = sand * 255;
       data[i + 1] = dirt * 255;
       data[i + 2] = rock * 255;
-      data[i + 3] = 255;
+      data[i + 3] = 255 - (h < -0.3 ? this.reefAt(x, z, h) : 0) * 255;
     }
   }
 
@@ -486,8 +516,8 @@ export class Terrain {
               c += 1.0 / length(vec2(p.x / (sin(i.x + tt) / inten), p.y / (cos(i.y + tt) / inten)));
             }
             c /= 4.0;
-            c = 1.17 - pow(c, 1.4);
-            return pow(abs(c), 8.0);
+            c = clamp(1.17 - pow(c, 1.4), 0.0, 1.17); // (unclamped, minified pixels blow up to thousands)
+            return pow(c, 8.0);
           }
           vec3 tBlendN(vec3 wn, vec3 tn, vec2 dir) { return normalize(vec3(tn.xy + wn.xz, wn.y)); }
           float tWet; vec4 tW; vec3 tTriW;`,
@@ -534,9 +564,22 @@ export class Terrain {
             col = mix(col, vec3(0.86, 0.9, 0.96) * (0.92 + 0.08 * sn), tSnow);
             // Under water: darken, tint, and dance with caustics.
             float under = smoothstep(0.05, -0.6, vTPos.y);
-            col *= mix(vec3(1.0), vec3(0.55, 0.72, 0.75), smoothstep(0.0, -3.0, vTPos.y));
+            // Coral reef patches (cover in the splat alpha): mottled reef rock with coloured coral heads.
+            float reef = (1.0 - sp.a) * under;
+            if (reef > 0.004) {
+              float m1 = texture2D(tRock, vTPos.xz * 0.21).r;
+              float m2 = texture2D(tGrass, vTPos.xz * 0.33 + 3.7).g;
+              float m3 = texture2D(tSand, vTPos.xz * 0.09 - 1.3).r;
+              vec3 rc = mix(vec3(0.5, 0.36, 0.38), vec3(0.34, 0.46, 0.3), smoothstep(0.3, 0.7, m2));
+              rc = mix(rc, vec3(0.95, 0.46, 0.42), smoothstep(0.6, 0.72, m1) * 0.85);
+              rc = mix(rc, vec3(0.92, 0.8, 0.36), smoothstep(0.62, 0.74, m3) * 0.7);
+              rc = mix(rc, vec3(0.55, 0.4, 0.8), smoothstep(0.66, 0.78, 1.0 - m3) * 0.5);
+              rc *= 0.62 + 0.55 * m1;
+              col = mix(col, rc, smoothstep(0.0, 0.6, reef));
+            }
+            col *= mix(vec3(1.0), vec3(0.5, 0.72, 0.76), smoothstep(0.0, -4.0, vTPos.y));
             if (under > 0.0) {
-              float cz = caustics(vTPos.xz * 0.42, uTime * 0.55);
+              float cz = caustics(vTPos.xz * 0.42, uTime * 0.55) * (1.0 - smoothstep(60.0, 260.0, length(vTPos - cameraPosition)));
               col += uCaustic * cz * under * exp(vTPos.y * 0.22) * 0.55;
             }
             diffuseColor.rgb *= col;
@@ -545,7 +588,7 @@ export class Terrain {
         .replace(
           '#include <roughnessmap_fragment>',
           `float roughnessFactor = dot(tW, vec4(0.88, 0.94, 0.82, 0.97));
-          roughnessFactor = mix(roughnessFactor, 0.28, tWet);`,
+          roughnessFactor = mix(roughnessFactor, 0.28, tWet * smoothstep(-0.6, 0.1, vTPos.y)); // the sea floor itself is not glossy`,
         )
         .replace(
           '#include <normal_fragment_maps>',

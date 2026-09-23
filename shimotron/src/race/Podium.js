@@ -3,6 +3,7 @@ import { Emitter } from '../engine/fx/Particles.js';
 import { createCarModel } from './CarModel.js';
 import { carSpec } from './config.js';
 import { smoothstep } from '../engine/core/Random.js';
+import { humanParts, paintHuman, SHOULDER_X, SHOULDER_Y, HAIRS } from './Humans.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const _m = new THREE.Matrix4();
@@ -196,37 +197,27 @@ export class Podium {
     fig.position.set(0.1, 0.22 + st.h + 0.03, st.z);
     fig.rotation.y = Math.PI / 2; // local +Z (the figure's front) → +X
     this.group.add(fig);
-    const suit = this._mat({ color: w.color, roughness: 0.5, metalness: 0.05 });
-    const stripe = this._mat({ color: w.stripe || '#111111', roughness: 0.5 });
-    const skin = this._mat({ color: SKIN[k % SKIN.length], roughness: 0.65 });
-    const dark = this._mat({ color: 0x141519, roughness: 0.6 });
-    // Legs, boots, torso, neck, head, hair.
-    for (const x of [-0.1, 0.1]) {
-      this._mesh(this._geo(new THREE.CylinderGeometry(0.085, 0.075, 0.82, 10)), suit, fig).position.set(x, 0.49, 0);
-      this._mesh(this._geo(new THREE.BoxGeometry(0.13, 0.1, 0.27)), dark, fig).position.set(x, 0.05, 0.04);
-    }
-    const torso = this._mesh(this._geo(new THREE.CapsuleGeometry(0.19, 0.42, 6, 14)), suit, fig);
-    torso.position.set(0, 1.16, 0);
-    torso.scale.set(1.18, 1, 0.78);
-    const band = this._mesh(this._geo(new THREE.CylinderGeometry(0.225, 0.225, 0.07, 18)), stripe, fig);
-    band.position.set(0, 1.02, 0);
-    band.scale.set(1, 1, 0.72);
-    this._mesh(this._geo(new THREE.CylinderGeometry(0.05, 0.06, 0.12, 8)), skin, fig).position.set(0, 1.5, 0);
-    const head = this._mesh(this._geo(new THREE.SphereGeometry(0.125, 18, 14)), skin, fig);
-    head.position.set(0, 1.66, 0.01);
-    const hair = this._mesh(this._geo(new THREE.SphereGeometry(0.132, 18, 10, 0, Math.PI * 2, 0, Math.PI * 0.52)), dark, fig);
-    hair.position.set(0, 1.675, -0.012);
-    hair.rotation.x = -0.25;
+    // A driver in race overalls in the car's colour: the shared human body, dressed by vertex colour.
+    const { body, armL, armR } = humanParts({ female: k === 1 && (w.name || '').endsWith('ה'), hair: 'short', build: 1.05 });
+    const dress = { skin: SKIN[k % SKIN.length], shirt: w.color, pants: w.color, hair: HAIRS[(k * 3) % HAIRS.length], shoes: 0x141519 };
+    const clothed = this._mat({ vertexColors: true, roughness: 0.55, metalness: 0.05 });
+    this._mesh(this._geo(paintHuman(body, dress)), clothed, fig);
     // Arms hang from shoulder pivots.
     const arms = [];
-    for (const side of [1, -1]) {
+    for (const [side, geo] of [
+      [1, armL],
+      [-1, armR],
+    ]) {
       const pivot = new THREE.Group();
-      pivot.position.set(side * 0.27, 1.42, 0);
+      pivot.position.set(side * SHOULDER_X, SHOULDER_Y, 0);
       fig.add(pivot);
-      this._mesh(this._geo(new THREE.CylinderGeometry(0.058, 0.05, 0.6, 8)), suit, pivot).position.set(0, -0.3, 0);
-      this._mesh(this._geo(new THREE.SphereGeometry(0.062, 10, 8)), dark, pivot).position.set(0, -0.62, 0);
+      this._mesh(this._geo(paintHuman(geo, dress)), clothed, pivot);
       arms.push({ pivot, side });
     }
+    // A stripe across the chest in the second colour.
+    const band = this._mesh(this._geo(new THREE.CylinderGeometry(0.19, 0.19, 0.06, 14)), this._mat({ color: w.stripe || '#111111', roughness: 0.5 }), fig);
+    band.position.set(0, 1.25, 0);
+    band.scale.set(1, 1, 0.64);
     const f = { fig, arms, k, baseY: fig.position.y };
     if (k === 0) f.prize = this._crown(fig);
     else if (k === 1) f.prize = this._cup(fig);
@@ -337,7 +328,7 @@ export class Podium {
       r.position.set(s * 0.06, 0.16, -0.012);
       r.rotation.z = s * 0.38;
     }
-    medal.position.set(0, 1.12, 0.2);
+    medal.position.set(0, 1.2, 0.13);
     medal.scale.setScalar(1.6);
     fig.add(medal);
     return medal;

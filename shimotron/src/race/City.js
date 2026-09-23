@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Random, smoothstep } from '../engine/core/Random.js';
+import { createCrowd } from './Humans.js';
 
 const _m = new THREE.Matrix4();
 const _q = new THREE.Quaternion();
@@ -1067,10 +1068,7 @@ export class City {
     const tr = this.track;
     const rng = this.rng;
     const W = tr.W;
-    const bodies = [];
-    const heads = [];
-    const shirts = [0xe0262b, 0xffffff, 0x1f6fe0, 0xf2c230, 0x1faa59, 0x111111, 0xff7a1a, 0x8a4dff, 0x18b8c9];
-    const skins = [0xe8b996, 0xd29f7a, 0xb57f58, 0x8a5a3c, 0xf1c9a8];
+    const people = [];
     for (let i = 0; i < tr.n; i += 2) {
       if (tr.covered[i]) continue;
       const slow = tr.speed ? Math.max(0, 1 - tr.speed[i] / 45) : 0.3;
@@ -1086,40 +1084,11 @@ export class City {
         // Face the road.
         const yaw = Math.atan2(tr.tz[i] * side, -tr.tx[i] * side) + rng.range(-0.6, 0.6);
         _q.setFromAxisAngle(UP, yaw);
-        const sc = rng.range(0.9, 1.08);
-        const m = new THREE.Matrix4().compose(_p.set(x, y, z), _q, _s.set(sc, sc, sc));
-        bodies.push({ m, c: new THREE.Color(rng.pick(shirts)) });
-        heads.push({ m, c: new THREE.Color(rng.pick(skins)) });
+        const sc = rng.range(0.92, 1.07);
+        people.push({ m: new THREE.Matrix4().compose(_p.set(x, y, z), _q, _s.set(sc, sc, sc)) });
       }
     }
-    const part = (g) => g.toNonIndexed();
-    const body = mergeGeometries([
-      part(new THREE.CylinderGeometry(0.1, 0.12, 0.85, 6).translate(0.1, 0.42, 0)),
-      part(new THREE.CylinderGeometry(0.1, 0.12, 0.85, 6).translate(-0.1, 0.42, 0)),
-      part(new THREE.CylinderGeometry(0.2, 0.18, 0.62, 8).translate(0, 1.15, 0)),
-      part(new THREE.CylinderGeometry(0.055, 0.05, 0.6, 5).rotateZ(2.6).translate(0.3, 1.52, 0)),
-      part(new THREE.CylinderGeometry(0.055, 0.05, 0.6, 5).rotateZ(-0.35).translate(-0.28, 1.08, 0)),
-    ]);
-    const head = new THREE.SphereGeometry(0.12, 10, 8).translate(0, 1.6, 0);
-    const fanMat = () => {
-      const m = new THREE.MeshStandardMaterial({ roughness: 0.8 });
-      m.onBeforeCompile = (shader) => {
-        shader.uniforms.uTime = this.uniforms.uTime;
-        shader.uniforms.uCheer = this.uniforms.uCheer;
-        shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nuniform float uTime; uniform float uCheer;').replace(
-          '#include <begin_vertex>',
-          `#include <begin_vertex>
-          #ifdef USE_INSTANCING
-            float ph = dot(instanceMatrix[3].xz, vec2(0.37, 0.71));
-            transformed.y += abs(sin(uTime * (4.0 + fract(ph) * 3.0) + ph)) * 0.14 * uCheer;
-          #endif`,
-        );
-      };
-      m.customProgramCacheKey = () => 'city-fans';
-      return m;
-    };
-    this._inst(body, fanMat(), bodies, 'צופים');
-    this._inst(head, fanMat(), heads, 'ראשי צופים', { cast: false });
+    this.group.add(createCrowd(people, this.uniforms, () => rng.random()));
   }
 
   /**

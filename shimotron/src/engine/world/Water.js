@@ -8,6 +8,30 @@ const WAVES = [
   [95, 7.5, 0.07, 0.45],
 ];
 
+/**
+ * The same Gerstner sum on the CPU: water height and surface slope at
+ * (x, z), so boats, buoys and swimmers ride the waves the shader draws.
+ */
+export function waveAt(x, z, time, amp = 1, out = { y: 0, dx: 0, dz: 0 }) {
+  out.y = 0;
+  out.dx = 0;
+  out.dz = 0;
+  for (const [deg, len, steep, scale] of WAVES) {
+    const a0 = (deg * Math.PI) / 180;
+    const k = (2 * Math.PI) / len;
+    const c = Math.sqrt(9.81 / k);
+    const dx = Math.cos(a0);
+    const dz = Math.sin(a0);
+    const f = k * (dx * x + dz * z - c * time);
+    const a = (steep / k) * scale * amp;
+    out.y += a * Math.sin(f);
+    const slope = a * k * Math.cos(f);
+    out.dx += dx * slope;
+    out.dz += dz * slope;
+  }
+  return out;
+}
+
 const GERSTNER = /* glsl */ `
 uniform float uTime;
 uniform vec4 uWaves[4];
@@ -53,6 +77,7 @@ export class Water {
       uSunColor: { value: new THREE.Color() },
       uShallow: { value: new THREE.Color(0.05, 0.42, 0.42) },
       uDeep: { value: new THREE.Color(0.004, 0.028, 0.055) },
+      uClarity: { value: 0.9 }, // how fast the water turns opaque with depth (lower = clearer)
     };
     this.mesh = new THREE.Mesh(this._geometry(engine.quality.settings.waterDetail), this._material());
     this.mesh.name = 'Ocean';
@@ -148,7 +173,7 @@ export class Water {
           `#include <common>
           ${GERSTNER}
           uniform sampler2D tHeight; uniform sampler2D tNormal; uniform float uTerrainSize;
-          uniform vec3 uSunDir; uniform vec3 uSunColor; uniform vec3 uShallow; uniform vec3 uDeep;
+          uniform vec3 uSunDir; uniform vec3 uSunColor; uniform vec3 uShallow; uniform vec3 uDeep; uniform float uClarity;
           varying vec3 vWPos; varying float vDepth; varying float vCrest;
           float wFoam; float wDepth; vec3 wN;`,
         )
@@ -172,7 +197,7 @@ export class Water {
             vec2 dd = (d1.xy + d2.xy) * detail;
             wN = normalize(vec3(n.x + dd.x, n.y, n.z + dd.y));
             // Absorption: shallow turquoise over sand, deep navy offshore.
-            float absorb = exp(-wDepth * 0.22);
+            float absorb = exp(-wDepth * min(0.22, 0.08 + uClarity * 0.8));
             vec3 body = mix(uDeep, uShallow, absorb);
             // Foam at the shore and on crests.
             float t = uTime;
@@ -185,9 +210,12 @@ export class Water {
             wFoam = clamp(shore * 0.85 + crest * 0.45, 0.0, 1.0) * (1.0 - smoothstep(150.0, 500.0, dist));
             diffuseColor.rgb = mix(body, vec3(0.9), wFoam);
             float fres = pow(1.0 - clamp(dot(wN, normalize(cameraPosition - vWPos)), 0.0, 1.0), 4.0);
-            diffuseColor.a = clamp(1.0 - exp(-wDepth * 0.9), 0.0, 1.0);
+            // Light path through the water: longer when looking in at a slant (refracted ray).
+            float cosI = clamp(normalize(cameraPosition - vWPos).y, 0.0, 1.0);
+            float cosR = sqrt(1.0 - (1.0 - cosI * cosI) / 1.777);
+            diffuseColor.a = clamp(1.0 - exp(-wDepth * uClarity / max(cosR, 0.2)), 0.0, 1.0);
             diffuseColor.a = max(diffuseColor.a, max(fres, wFoam));
-            diffuseColor.a = mix(diffuseColor.a, 1.0, smoothstep(40.0, 160.0, dist));
+            diffuseColor.a = mix(diffuseColor.a, 1.0, smoothstep(40.0 + 1400.0 * (1.0 - uClarity), 160.0 + 2600.0 * (1.0 - uClarity), dist));
           }`,
         )
         .replace('#include <roughnessmap_fragment>', `float roughnessFactor = mix(roughness, 0.6, wFoam);`)

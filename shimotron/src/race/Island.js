@@ -6,6 +6,7 @@ import { Track } from './Track.js';
 import { IslandFlora } from './Flora.js';
 import { City } from './City.js';
 import { Canyon } from './Canyon.js';
+import { Life } from './Life.js';
 import { Weather } from './Effects.js';
 import { RACE } from './config.js';
 import { GROUP } from './Vehicle.js';
@@ -52,6 +53,7 @@ export class Island {
       size: st.size,
       segments: SEGMENTS[q] || 520,
       seed: st.seed,
+      reef: st.life?.reef ?? 0.5,
     });
     this.terrain = terrain;
 
@@ -118,6 +120,11 @@ export class Island {
     for (const b of eng.physics.world.bodies) if (!before.has(b)) this.bodies.push(b);
     await nextFrame();
 
+    await progress(0.68, 'מאכלס שוניות, דגים, סירות ועדרים…');
+    this.life = new Life(eng, this, this.materials);
+    this.group.add(this.life.build());
+    await nextFrame();
+
     await progress(0.74, 'מכוון שמיים, ים ומזג אוויר…');
     if (this.water) this.applyWater(this.water);
     this._sky();
@@ -141,6 +148,7 @@ export class Island {
     w.uniforms.uTerrainSize.value = this.terrain.size;
     w.uniforms.uShallow.value.setRGB(...st.water.shallow);
     w.uniforms.uDeep.value.setRGB(...st.water.deep);
+    w.uniforms.uClarity.value = st.water.clarity ?? 0.9;
   }
 
   _sky() {
@@ -265,6 +273,7 @@ export class Island {
     const eng = this.engine;
     this.track.update(dt, eng);
     if (this.city) this.city.update(dt);
+    if (this.life) this.life.update(dt);
     if (this.weather) this.weather.update(dt);
     if (this.lava) {
       this.lava.uniforms.uTime.value = eng.time.elapsed;
