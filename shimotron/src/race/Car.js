@@ -281,9 +281,9 @@ export class Car {
     this.body.removeEventListener('collide', this._onCollide);
     this.vehicle.remove();
     this.object.removeFromParent();
-    this.model.paint.dispose();
-    this.ctx.materials.untrackEmissive(this.model.tailMat);
-    this.model.tailMat.dispose();
+    // Materials are retired, not disposed: the next race's cars reuse their compiled shaders.
+    this.ctx.materials.retire(this.model.paint);
+    this.ctx.materials.retire(this.model.tailMat);
   }
 }
 

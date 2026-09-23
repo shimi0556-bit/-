@@ -32,12 +32,16 @@ export class SkidMarks {
     this.mesh.userData.noPick = true;
     this.head = 0;
     this.dirty = false;
+    this._from = -1; // first quad written since the last upload (ring order)
+    this._count = 0;
   }
 
   /** Lays one segment. a/b: {x,y,z} centre points, side: unit right vector, width metres, alpha 0..1, tint rgb. */
   add(a, b, side, width, alpha, tint = [1, 1, 1]) {
     const i = this.head;
     this.head = (this.head + 1) % this.max;
+    if (this._from < 0) this._from = i;
+    this._count = Math.min(this.max, this._count + 1);
     const hw = width / 2;
     const p = this.pos;
     const o = i * 12;
@@ -64,17 +68,36 @@ export class SkidMarks {
     this.dirty = true;
   }
 
+  /** Uploads only the quads written this frame (one or two ranges of the ring), not the whole buffer. */
   update() {
     if (!this.dirty) return;
-    this.posAttr.needsUpdate = true;
-    this.colAttr.needsUpdate = true;
+    const pa = this.posAttr;
+    const ca = this.colAttr;
+    pa.clearUpdateRanges();
+    ca.clearUpdateRanges();
+    if (this._from >= 0 && this._count < this.max) {
+      const a = this._from;
+      const first = Math.min(this._count, this.max - a);
+      pa.addUpdateRange(a * 12, first * 12);
+      ca.addUpdateRange(a * 16, first * 16);
+      if (first < this._count) {
+        pa.addUpdateRange(0, (this._count - first) * 12);
+        ca.addUpdateRange(0, (this._count - first) * 16);
+      }
+    }
+    pa.needsUpdate = true;
+    ca.needsUpdate = true;
     this.dirty = false;
+    this._from = -1;
+    this._count = 0;
   }
 
   clear() {
     this.col.fill(0);
     this.pos.fill(0);
     this.dirty = true;
+    this._from = -1;
+    this._count = this.max; // whole buffer
   }
 }
 

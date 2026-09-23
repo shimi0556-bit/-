@@ -19,7 +19,13 @@ const SEGMENTS = { low: 420, medium: 520, high: 600, ultra: 640 };
  * weather, and the lava lake on the volcano island.
  */
 export class Island {
-  constructor(engine, materials, water, stage) {
+  /**
+   * opts.plan: a ready circuit plan (skips the search); opts.cache: a Map
+   * the game keeps of baked terrain grids, so revisiting an island skips
+   * the bake.
+   */
+  constructor(engine, materials, water, stage, opts = {}) {
+    this.opts = opts;
     this.engine = engine;
     this.materials = materials;
     this.water = water;
@@ -51,8 +57,9 @@ export class Island {
     await progress(0.18, 'מתכנן מסלול מירוץ…');
     // Canyons: plan the road on the valley floor, then raise the mesas around it.
     terrain.skipMesas = true;
-    const plan = generateTrack(terrain, st, { halfWidth: RACE.roadHalfWidth });
+    const plan = this.opts.plan || generateTrack(terrain, st, { halfWidth: RACE.roadHalfWidth });
     if (!plan) throw new Error(`לא נמצא מסלול תקין עבור ${st.name}`);
+    this.planGenerated = !this.opts.plan;
     const track = new Track(eng, terrain, plan.controls, st);
     terrain.skipMesas = false;
     this.track = track;
@@ -62,6 +69,20 @@ export class Island {
     terrain.clearance = track.clearance;
 
     await progress(0.32, 'חוצב את הכביש בשטח…');
+    // Heights and ground maps: from the cache when this island was built before, else baked in slices.
+    const cache = this.opts.cache;
+    const key = `${st.id}|${terrain.segments}|${plan.controls.length}|${Math.round(plan.length * 100)}`;
+    const hit = cache && cache.get(key);
+    if (hit) {
+      terrain.heights = hit.heights;
+      terrain.splatPre = hit.splat;
+    } else {
+      const baked = await terrain.prebake(() => new Promise((r) => setTimeout(r, 0)));
+      if (cache) {
+        cache.set(key, baked);
+        while (cache.size > 4) cache.delete(cache.keys().next().value);
+      }
+    }
     this.group.add(terrain.build(this.materials));
     await nextFrame();
     const before = new Set(eng.physics.world.bodies);
@@ -254,8 +275,7 @@ export class Island {
         const mats = Array.isArray(o.material) ? o.material : [o.material];
         for (const m of mats) {
           if (!m || m.userData.keep) continue;
-          this.materials.untrackEmissive(m);
-          m.dispose();
+          this.materials.retire(m); // keeps the shader program for the next island
         }
       }
     });

@@ -1,6 +1,34 @@
 import * as THREE from 'three';
 import { Random } from '../engine/core/Random.js';
 
+/** Bump when the generator's logic changes, so stored plans are regenerated. */
+export const GENERATOR_VERSION = 4;
+
+/**
+ * Signature of everything a plan depends on (generator version, island
+ * recipe, seed, size, track brief, road width): a stored plan is only
+ * reused while this matches.
+ */
+export function planSignature(stage, halfWidth) {
+  const str = JSON.stringify([GENERATOR_VERSION, stage.seed, stage.size, stage.island, stage.track, halfWidth]);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(36);
+}
+
+/** Compact, JSON-safe form of a plan. */
+export function packPlan(plan, sig) {
+  const r = (v) => Math.round(v * 100) / 100;
+  return { sig, controls: plan.controls.map((p) => [r(p.x), r(p.z)]), length: r(plan.length), minRadius: r(plan.minRadius), corners: plan.corners, tight: plan.tight, maxGrade: plan.maxGrade, cutFill: plan.cutFill, climb: plan.climb, score: plan.score };
+}
+
+export function unpackPlan(packed) {
+  return { ...packed, controls: packed.controls.map(([x, z]) => new THREE.Vector3(x, 0, z)) };
+}
+
 /**
  * Procedural circuit for any island.
  *

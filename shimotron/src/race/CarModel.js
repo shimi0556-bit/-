@@ -432,7 +432,21 @@ function sharedMaterials(materials) {
   return sharedMats;
 }
 
+const numberCache = new Map();
+
+/** Race-number decal, cached per number and colour (the same few are reused race after race). */
 function numberTexture(number, color) {
+  const key = `${number}|${color}`;
+  let tex = numberCache.get(key);
+  if (!tex) {
+    tex = drawNumber(number, color);
+    tex.userData.keep = true;
+    numberCache.set(key, tex);
+  }
+  return tex;
+}
+
+function drawNumber(number, color) {
   const cv = document.createElement('canvas');
   cv.width = 256;
   cv.height = 256;

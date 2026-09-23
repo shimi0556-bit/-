@@ -259,12 +259,48 @@ export class Terrain {
     return this.heights;
   }
 
+  /**
+   * Bakes the height grid and the splat/height maps in slices, awaiting
+   * `yieldFn` whenever a slice has used `budgetMs`, so a loading screen
+   * keeps animating. build() then reuses the results. Already-baked data
+   * (from a cache) can be handed in the same way: set `heights` and
+   * `splatPre` before build().
+   */
+  async prebake(yieldFn, budgetMs = 12) {
+    const n = this.segments;
+    const w = n + 1;
+    const half = this.size / 2;
+    const step = this.size / n;
+    const heights = new Float32Array(w * w);
+    let t = performance.now();
+    const slice = async () => {
+      if (performance.now() - t > budgetMs) {
+        await yieldFn();
+        t = performance.now();
+      }
+    };
+    for (let iz = 0; iz < w; iz++) {
+      for (let ix = 0; ix < w; ix++) heights[iz * w + ix] = this.height(-half + ix * step, -half + iz * step);
+      await slice();
+    }
+    this.heights = heights;
+    const S = 512;
+    const pre = { size: S, data: new Uint8Array(S * S * 4), hdata: new Float32Array(S * S) };
+    const nrm = new THREE.Vector3();
+    for (let v = 0; v < S; v++) {
+      this._splatRow(v, pre, nrm);
+      await slice();
+    }
+    this.splatPre = pre;
+    return { heights, splat: pre };
+  }
+
   build(materials) {
     const n = this.segments;
     const w = n + 1;
     const half = this.size / 2;
     const step = this.size / n;
-    this.bakeHeights();
+    if (!this.heights || this.heights.length !== w * w) this.bakeHeights();
     // Global normals from central differences, so tiles share seamless edges.
     const normals = new Float32Array(w * w * 3);
     const H = this.heights;
@@ -335,45 +371,16 @@ export class Terrain {
   }
 
   _buildSplat() {
-    const s = 512;
-    this.splatSize = s;
-    const data = new Uint8Array(s * s * 4);
-    const hdata = new Float32Array(s * s);
-    const half = this.size / 2;
-    const cell = this.size / s;
-    const nrm = new THREE.Vector3();
-    for (let v = 0; v < s; v++) {
-      for (let u = 0; u < s; u++) {
-        const x = -half + (u + 0.5) * cell;
-        const z = -half + (v + 0.5) * cell;
-        const h = this.heightAt(x, z);
-        hdata[v * s + u] = h;
-        this.normalAt(x, z, nrm);
-        const slope = 1 - nrm.y;
-        const nz = this.noise.noise(x * 0.03, z * 0.03);
-        const nz2 = this.noise.noise(x * 0.11 + 7, z * 0.11 - 3);
-        let sand = smoothstep(2.6 + nz * 1.2, 0.9, h);
-        let rock = smoothstep(0.16 + nz2 * 0.05, 0.32, slope) + smoothstep(46, 70, h + nz * 12) * 0.8;
-        rock = Math.min(1, rock);
-        const pd = this.plaza ? Math.hypot(x - this.plaza.x, z - this.plaza.z) : 1e9;
-        const path = this.paths.length ? smoothstep(3.2 + nz2 * 0.8, 1.2, this.distanceToPath(x, z)) * (this.plaza ? smoothstep(this.plaza.radius - 1, this.plaza.radius + 2, pd) : 1) : 0;
-        const patches = smoothstep(0.45, 0.75, this.noise.noise(x * 0.012 - 4, z * 0.012 + 9)) * 0.55;
-        let dirt = Math.max(path, patches * (1 - sand)) * (1 - rock);
-        sand *= 1 - rock;
-        if (this.splatModifier) ({ sand, dirt, rock } = this.splatModifier(x, z, { sand, dirt, rock }, h));
-        const sum = sand + dirt + rock;
-        if (sum > 1) {
-          sand /= sum;
-          dirt /= sum;
-          rock /= sum;
-        }
-        const i = (v * s + u) * 4;
-        data[i] = sand * 255;
-        data[i + 1] = dirt * 255;
-        data[i + 2] = rock * 255;
-        data[i + 3] = 255;
-      }
+    let pre = this.splatPre;
+    if (!pre) {
+      const S = 512;
+      pre = { size: S, data: new Uint8Array(S * S * 4), hdata: new Float32Array(S * S) };
+      const nrm = new THREE.Vector3();
+      for (let v = 0; v < S; v++) this._splatRow(v, pre, nrm);
     }
+    const s = pre.size;
+    const { data, hdata } = pre;
+    this.splatSize = s;
     this.splatData = data;
     this.splatTexture = new THREE.DataTexture(data, s, s, THREE.RGBAFormat);
     this.splatTexture.magFilter = THREE.LinearFilter;
@@ -384,6 +391,42 @@ export class Terrain {
     this.heightTexture.magFilter = THREE.LinearFilter;
     this.heightTexture.minFilter = THREE.LinearFilter;
     this.heightTexture.needsUpdate = true;
+  }
+
+  /** One row of the splat (sand, dirt, rock) and height maps. */
+  _splatRow(v, { size: s, data, hdata }, nrm) {
+    const half = this.size / 2;
+    const cell = this.size / s;
+    for (let u = 0; u < s; u++) {
+      const x = -half + (u + 0.5) * cell;
+      const z = -half + (v + 0.5) * cell;
+      const h = this.heightAt(x, z);
+      hdata[v * s + u] = h;
+      this.normalAt(x, z, nrm);
+      const slope = 1 - nrm.y;
+      const nz = this.noise.noise(x * 0.03, z * 0.03);
+      const nz2 = this.noise.noise(x * 0.11 + 7, z * 0.11 - 3);
+      let sand = smoothstep(2.6 + nz * 1.2, 0.9, h);
+      let rock = smoothstep(0.16 + nz2 * 0.05, 0.32, slope) + smoothstep(46, 70, h + nz * 12) * 0.8;
+      rock = Math.min(1, rock);
+      const pd = this.plaza ? Math.hypot(x - this.plaza.x, z - this.plaza.z) : 1e9;
+      const path = this.paths.length ? smoothstep(3.2 + nz2 * 0.8, 1.2, this.distanceToPath(x, z)) * (this.plaza ? smoothstep(this.plaza.radius - 1, this.plaza.radius + 2, pd) : 1) : 0;
+      const patches = smoothstep(0.45, 0.75, this.noise.noise(x * 0.012 - 4, z * 0.012 + 9)) * 0.55;
+      let dirt = Math.max(path, patches * (1 - sand)) * (1 - rock);
+      sand *= 1 - rock;
+      if (this.splatModifier) ({ sand, dirt, rock } = this.splatModifier(x, z, { sand, dirt, rock }, h));
+      const sum = sand + dirt + rock;
+      if (sum > 1) {
+        sand /= sum;
+        dirt /= sum;
+        rock /= sum;
+      }
+      const i = (v * s + u) * 4;
+      data[i] = sand * 255;
+      data[i + 1] = dirt * 255;
+      data[i + 2] = rock * 255;
+      data[i + 3] = 255;
+    }
   }
 
   _material(materials) {

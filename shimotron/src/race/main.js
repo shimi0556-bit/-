@@ -8,7 +8,8 @@ import { AudioEngine } from '../engine/audio/AudioEngine.js';
 import { Terrain } from '../engine/world/Terrain.js';
 import { smoothstep } from '../engine/core/Random.js';
 import { STAGES, AI, RACE, CAREER, PODIUM, CAR_TYPES } from './config.js';
-import { generateTrack } from './TrackGenerator.js';
+import { generateTrack, planSignature, packPlan, unpackPlan } from './TrackGenerator.js';
+import BAKED_PLANS from './plans.json';
 import { Island } from './Island.js';
 import { Race } from './Race.js';
 import { RaceCamera } from './RaceCamera.js';
@@ -53,6 +54,11 @@ class Game {
     this.podium = null;
     this.selected = 0;
     this.plans = {};
+    for (const st of STAGES) {
+      const p = this._storedPlan(st);
+      if (p) this.plans[st.id] = p;
+    }
+    this.bakeCache = new Map(); // terrain grids of recently built islands
     this.previews = {};
     this.island = null;
     this.race = null;
@@ -155,46 +161,78 @@ class Game {
 
   // ------------------------------------------------------------- islands
 
+  /** A circuit plan that is still valid for this stage: baked into the build, or saved by an earlier visit. */
+  _storedPlan(st) {
+    const sig = planSignature(st, RACE.roadHalfWidth);
+    const baked = BAKED_PLANS[st.id];
+    if (baked && baked.sig === sig) return unpackPlan(baked);
+    const saved = store.get('plans', {})[st.id];
+    if (saved && saved.sig === sig) return unpackPlan(saved);
+    return null;
+  }
+
+  _savePlan(st, plan) {
+    const all = store.get('plans', {});
+    all[st.id] = packPlan(plan, planSignature(st, RACE.roadHalfWidth));
+    store.set('plans', all);
+  }
+
   async loadIsland(index, progress) {
     const st = STAGES[index];
     if (this.island && this.island.stage === st && !this.islandDirty) return this.island;
-    this._endRace();
-    if (this.island) {
-      this.island.dispose();
-      this.island = null;
+    const eng = this.engine;
+    // Nothing to see behind the loading screen: stop drawing the old island while the new one is built.
+    const running = eng._running;
+    if (running) eng.stop();
+    try {
+      this._endRace();
+      this._endPodium();
+      if (this.island) {
+        this.island.dispose();
+        this.island = null;
+      }
+      this.skid.clear();
+      const island = new Island(eng, this.materials, this.water, st, { plan: this.plans[st.id], cache: this.bakeCache });
+      await island.build(progress);
+      if (!this.water) {
+        this.water = new Water(eng, island.terrain, this.materials);
+        island.applyWater(this.water);
+      }
+      this.island = island;
+      this.islandDirty = false;
+      if (island.planGenerated) this._savePlan(st, island.plan);
+      this.plans[st.id] = island.plan;
+      this.camera.groundHeight = (x, z) => island.terrain.heightAt(x, z);
+      this._flyT = 0;
+      return island;
+    } finally {
+      if (running) eng.start();
     }
-    this.skid.clear();
-    const island = new Island(this.engine, this.materials, this.water, st);
-    await island.build(progress);
-    if (!this.water) {
-      this.water = new Water(this.engine, island.terrain, this.materials);
-      island.applyWater(this.water);
-    }
-    this.island = island;
-    this.islandDirty = false;
-    this.plans[st.id] = island.plan;
-    this.previews[st.id] = this.previews[st.id] || this._preview(island.terrain, island.plan, st);
-    this.camera.groundHeight = (x, z) => island.terrain.heightAt(x, z);
-    this._flyT = 0;
-    return island;
   }
 
-  /** Generates every island's circuit in the background for the menu maps. */
+  /** Draws every island's menu map in the background (and plans any circuit that is not stored yet). */
   async _planAll() {
     for (const st of STAGES) {
-      if (this.plans[st.id]) continue;
-      await wait(60);
+      if (this.previews[st.id]) continue;
+      await wait(30);
       const terrain = new Terrain({}, { plaza: null, paths: [], island: st.island, size: st.size, seed: st.seed });
-      terrain.skipMesas = true;
-      const plan = generateTrack(terrain, st, { halfWidth: RACE.roadHalfWidth });
-      if (!plan) continue;
-      this.plans[st.id] = plan;
-      this.previews[st.id] = this._preview(terrain, plan, st);
+      let plan = this.plans[st.id];
+      if (!plan) {
+        // Only when a stage changed since the build: search once, then remember it.
+        terrain.skipMesas = true;
+        plan = generateTrack(terrain, st, { halfWidth: RACE.roadHalfWidth });
+        terrain.skipMesas = false;
+        if (!plan) continue;
+        this.plans[st.id] = plan;
+        this._savePlan(st, plan);
+      }
+      this.previews[st.id] = await this._preview(terrain, plan, st);
       if (this.state === 'menu') this.ui.refreshPreviews();
     }
   }
 
-  _preview(terrain, plan, st) {
+  /** Island map for the menu card, drawn a few rows at a time so the menu keeps moving. */
+  async _preview(terrain, plan, st) {
     const W = 320;
     const H = 200;
     const cv = document.createElement('canvas');
@@ -209,7 +247,12 @@ class Game {
     const tint = st.biome.grassTint || [1, 1, 1];
     const sand = st.biome.sandTint || [1, 1, 1];
     const snow = st.biome.snowLine !== undefined && st.biome.snowAmount > 0;
+    let t0 = performance.now();
     for (let y = 0; y < H; y++) {
+      if (performance.now() - t0 > 8) {
+        await wait(0);
+        t0 = performance.now();
+      }
       for (let x = 0; x < W; x++) {
         const wx = (x - W / 2) * k;
         const wz = (y - H / 2) * k;
@@ -268,21 +311,8 @@ class Game {
     this.selected = i;
     this.engine.audio.unlock();
     this.engine.audio.ui('click');
+    // The island itself is built when the race starts; the card's map shows it meanwhile.
     this.ui.showMenu({ selected: this.selected, champ: this.champ });
-    // Swap the backdrop to the chosen island.
-    this._loadInMenu(i);
-  }
-
-  async _loadInMenu(i) {
-    if (this._menuLoading) return;
-    const st = STAGES[i];
-    if (this.island && this.island.stage === st && !this.islandDirty) return;
-    this._menuLoading = true;
-    await this.loadIsland(i, (p, t) => this.ui.showLoader(t, p));
-    this.ui.hideLoader();
-    this._menuLoading = false;
-    this.engine.cameraRig = this._flyover();
-    if (this.state === 'menu' && this.selected !== i) this._loadInMenu(this.selected);
   }
 
   setSetting(key, value) {

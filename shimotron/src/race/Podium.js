@@ -559,13 +559,12 @@ export class Podium {
     this.group.removeFromParent();
     const M = this.materials;
     for (const o of this.owned) {
-      if (o.isMaterial) M.untrackEmissive(o);
-      o.dispose();
+      if (o.isMaterial) M.retire(o);
+      else o.dispose();
     }
     for (const c of this.cars) {
-      c.paint.dispose();
-      M.untrackEmissive(c.tailMat);
-      c.tailMat.dispose();
+      M.retire(c.paint);
+      M.retire(c.tailMat);
     }
     this.owned = [];
     this.cars = [];

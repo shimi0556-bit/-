@@ -160,6 +160,21 @@ export class Materials {
     this.emissive.push({ material, base });
   }
 
+  /**
+   * Lets go of a material without releasing its compiled shader program, so
+   * the next island or race that builds the same kind of material reuses it
+   * instead of compiling again (programs are shared by cache key and few in
+   * number). Only textures that belong to this material alone are freed.
+   */
+  retire(material) {
+    this.untrackEmissive(material);
+    const shared = Object.values(this.textures);
+    for (const k of ['map', 'emissiveMap', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'alphaMap', 'bumpMap']) {
+      const t = material[k];
+      if (t && t.isTexture && !t.userData.keep && !shared.includes(t)) t.dispose();
+    }
+  }
+
   untrackEmissive(material) {
     const i = this.emissive.findIndex((x) => x.material === material);
     if (i >= 0) this.emissive.splice(i, 1);

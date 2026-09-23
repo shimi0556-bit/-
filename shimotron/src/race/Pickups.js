@@ -488,9 +488,6 @@ export class Pickups {
     this.boxMesh.geometry.dispose();
     this.boxMat.map.dispose();
     const M = this.engine.materials;
-    for (const m of [this.boxMat, this.shotMat, this.mineMat, this.mineLight]) {
-      M.untrackEmissive(m);
-      m.dispose();
-    }
+    for (const m of [this.boxMat, this.shotMat, this.mineMat, this.mineLight]) M.retire(m);
   }
 }
