@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Car } from './Car.js';
 import { PlayerDriver } from './Drivers.js';
-import { Craft, CraftPlayer } from './Craft.js';
+import { Craft, CraftPlayer, roadSurface } from './Craft.js';
 import { waveAt } from '../engine/world/Water.js';
 import { GROUP } from './Vehicle.js';
 import { actionKeys } from './keys.js';
@@ -14,7 +14,7 @@ export const ROAM = {
   car: { name: 'מכונית', hint: 'על היבשה ועל הגשרים' },
   boat: { name: 'סירה', hint: 'על פני הים' },
   sub: { name: 'צוללת', hint: 'מתחת לים, בין השוניות' },
-  plane: { name: 'מטוס', hint: 'באוויר, מעל הכול' },
+  plane: { name: 'מטוס', hint: 'באוויר, מעל הכול — נוחת וממריא מהכביש' },
   glider: { name: 'מצנח רחיפה', hint: 'גלישה שקטה מלמעלה' },
 };
 
@@ -44,6 +44,8 @@ export class Explore {
       piers: obs.piers,
       decks: obs.decks,
       thermals: this._thermals(),
+      obstacles: () => island.life?.solids,
+      road: roadSurface(island.track),
       get wind() {
         const atm = game.engine.atmosphere;
         const s = 0.6 + atm.wind.strength * 0.8;
@@ -156,6 +158,7 @@ export class Explore {
     } else {
       const craft = new Craft(this.env, { kind, color, stripe: '#111111', name: 'את/ה', number: 7, isPlayer: true, position: new THREE.Vector3(spot.x, spot.y, spot.z), heading: spot.yaw, seed: 3 });
       if (kind === 'plane' || kind === 'glider') craft.chase3d = true;
+      if (spot.park !== undefined) craft.park(spot.park);
       if (spot.speed && kind !== 'plane' && kind !== 'glider') craft.speed = Math.min(spot.speed, 12);
       craft.vehicle.controls.hold = false;
       this.obj = craft;
@@ -218,6 +221,15 @@ export class Explore {
       const w = wet || { x: x + 900, z };
       const floor = this.ground(w.x, w.z);
       return { x: w.x, y: kind === 'sub' ? Math.max(floor + 3, -7) : 0.1, z: w.z, yaw };
+    }
+    // A plane on the road: parked on the asphalt, pointing along it, ready to take off.
+    const road = kind === 'plane' ? this.env.road(x, z) : null;
+    if (road !== null && (!here || here.y - road < 8)) {
+      const q = tr.nearest(x, z, {});
+      const tx = tr.tx[q.i];
+      const tz = tr.tz[q.i];
+      const s = Math.sin(yaw) * tx + Math.cos(yaw) * tz < 0 ? -1 : 1;
+      return { x, y: road, z, yaw: Math.atan2(tx * s, tz * s), park: road };
     }
     // Aircraft: above wherever we are.
     const alt = kind === 'glider' ? 180 : 90;

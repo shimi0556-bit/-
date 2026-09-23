@@ -25,7 +25,10 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 const _e = new THREE.Euler();
 const _v = new THREE.Vector3();
+const _n = new THREE.Vector3();
+const _edge = { lat: 0, lim: 0, rx: 0, rz: 0 };
 const _w = { y: 0, dx: 0, dz: 0 };
+const GEAR = 1.42; // plane: centre height above the wheels' contact
 const UP = new THREE.Vector3(0, 1, 0);
 
 /** Flat-coloured, non-indexed copy (so many parts merge into one mesh). */
@@ -255,11 +258,35 @@ function gliderLines() {
   return g;
 }
 
+/**
+ * For env.road: the circuit's asphalt height at (x, z), or null off the
+ * road. With `edge` it also fills { lat, lim, rx, rz }: how far across
+ * the road the point is, how far it may go, and the rightward direction.
+ */
+export function roadSurface(track) {
+  const q = {};
+  return (x, z, edge) => {
+    const r = track ? track.nearest(x, z, q) : null;
+    if (!r || r.dist > track.W + (edge ? 8 : 0.6)) return null;
+    if (edge) {
+      const j = (r.i + 1) % track.n;
+      const tx = track.tx[r.i] + (track.tx[j] - track.tx[r.i]) * r.u;
+      const tz = track.tz[r.i] + (track.tz[j] - track.tz[r.i]) * r.u;
+      edge.lat = r.lat;
+      edge.lim = track.W - 0.8;
+      edge.rx = -tz;
+      edge.rz = tx;
+    }
+    return r.h + clamp(r.lat, -track.W, track.W) * r.bank;
+  };
+}
+
 // ------------------------------------------------------------------ craft
 
 export class Craft {
   /**
-   * env: { engine, particles, ground(x, z), wave(x, z, out), piers, decks, thermals, wind }
+   * env: { engine, particles, ground(x, z), wave(x, z, out), piers, decks, thermals, wind,
+   *        obstacles() → moving hulls / balloons, road(x, z) → asphalt height or null }
    * opts: { kind, color, stripe, name, number, isPlayer, position, heading, seed }
    */
   constructor(env, opts) {
@@ -350,7 +377,20 @@ export class Craft {
     this._fwd();
     this.velocity.copy(this.forward).multiplyScalar(cruise);
     this.crash = 0;
+    this.grounded = false;
     this.object.visible = true;
+    this._pose();
+  }
+
+  /** Parked on the road with the engine running (planes): throttle to roll, Space to lift off. */
+  park(road) {
+    this.grounded = true;
+    this.position.y = road + GEAR;
+    this.speed = 0;
+    this.velocity.set(0, 0, 0);
+    this.pitch = 0;
+    this.bank = 0;
+    this._fwd();
     this._pose();
   }
 
@@ -439,6 +479,7 @@ export class Craft {
     this.offroad = g > -1.2 ? 1 : 0;
     if (g > -0.8) this._bounce(dt, 0.8);
     this._piers(dt, 3.2);
+    this._obstacles(1.6, 0.55);
   }
 
   _sub(dt, C) {
@@ -473,24 +514,112 @@ export class Craft {
     }
     if (g > -2.6) this._bounce(dt, 0.6);
     this._piers(dt, 3.4);
+    this._obstacles(2, 0.6);
   }
 
   _plane(dt, C) {
     const K = this.spec;
+    if (this.grounded) return this._taxi(dt, C);
     const target = (K.cruise + C.throttle * (K.top - K.cruise) - C.brake * (K.cruise - K.min)) * (this.topScale || 1);
     this.speed += (target - this.speed) * (1 - Math.exp(-dt * 0.9));
     this.speed = Math.max(K.min * 0.8, this.speed - Math.sin(this.pitch) * 9.81 * dt * 0.5);
-    this.bank += (C.steer * 1.05 - this.bank) * (1 - Math.exp(-dt * 2.6));
+    // Low over the road: the approach flattens out and the wings level, so a descent becomes a landing.
+    const below = this.env.road ? this.env.road(this.position.x, this.position.z) : null;
+    const low = below !== null && this.position.y - below < 14;
+    this.bank += (C.steer * (low ? 0.45 : 1.05) - this.bank) * (1 - Math.exp(-dt * 2.6));
     const climb = (C.up || 0) - (C.down || 0);
-    this.pitch += (climb * 0.55 - this.pitch) * (1 - Math.exp(-dt * 1.8));
+    this.pitch += ((low ? Math.max(climb * 0.55, -0.1) : climb * 0.55) - this.pitch) * (1 - Math.exp(-dt * (low ? 3 : 1.8)));
     this.yaw -= ((9.81 * Math.tan(this.bank)) / Math.max(this.speed, 20)) * dt * 1.25;
     this._fwd();
     this.velocity.copy(this.forward).multiplyScalar(this.speed);
     this.position.addScaledVector(this.velocity, dt);
     this.offroad = 0;
+    this._obstacles(3.2, 0.75);
     const g = Math.max(0, this.env.ground(this.position.x, this.position.z));
+    const road = this.env.road ? this.env.road(this.position.x, this.position.z) : null;
+    // Over the asphalt: a gentle, wings-level descent touches down instead of crashing.
+    if (road !== null && this.position.y < road + GEAR + 0.4 && this.position.y > road - 1.5) {
+      if (this.pitch > -0.45 && Math.abs(this.bank) < 0.55) return this._touchDown(road);
+      return this._crash();
+    }
     if (this.position.y < g + 1.5 || this._deck(1.2)) this._crash();
     if (this.position.y > 900) this.position.y = 900;
+  }
+
+  /** Wheels on the road. */
+  _touchDown(road) {
+    const hard = Math.max(0, -this.forward.y * this.speed);
+    this.grounded = true;
+    this.position.y = road + GEAR;
+    this.pitch = 0;
+    this.bank = 0;
+    this.hit = Math.min(1, 0.15 + hard / 14);
+    const P = this.env.particles;
+    if (P) {
+      const smoke = P.systems.smoke;
+      for (let i = 0; i < 10; i++) {
+        const s = i % 2 ? 1 : -1;
+        smoke.emit({ x: this.position.x + Math.cos(this.yaw) * s * 0.9, y: road + 0.2, z: this.position.z - Math.sin(this.yaw) * s * 0.9, vx: (Math.random() - 0.5) * 2, vy: 0.6 + Math.random(), vz: (Math.random() - 0.5) * 2, life: 1.2, size0: 0.5, size1: 2.6, color0: [0.75, 0.75, 0.75, 0.6], color1: [0.8, 0.8, 0.8, 0], drag: 1.2 });
+      }
+    }
+  }
+
+  /** Rolling on the road (or a flat field): throttle, brakes, nose-wheel steering, and Space to lift off. */
+  _taxi(dt, C) {
+    const K = this.spec;
+    const x0 = this.position.x;
+    const z0 = this.position.z;
+    const road = this.env.road ? this.env.road(x0, z0, _edge) : null;
+    const g = this.env.ground(x0, z0);
+    const surf = road !== null ? road : g;
+    const rough = road !== null ? 1 : 3.5;
+    const thrust = C.throttle * 9 - C.brake * (this.speed > 0.5 ? 14 : 0) - 0.35 * rough - this.speed * this.speed * 0.0016;
+    this.speed = clamp(this.speed + thrust * dt, 0, K.top * 0.9);
+    const eff = clamp(this.speed / 8, 0.25, 1) * (1 - clamp((this.speed - 25) / 40, 0, 0.7));
+    this.yaw -= C.steer * 0.9 * eff * dt;
+    this.bank += (C.steer * 0.04 * clamp(this.speed / 20, 0, 1) - this.bank) * (1 - Math.exp(-dt * 4));
+    // Nose follows the road's slope.
+    const fx = Math.sin(this.yaw);
+    const fz = Math.cos(this.yaw);
+    const ahead = this.env.road ? this.env.road(x0 + fx * 3, z0 + fz * 3) : null;
+    const lift = (C.up || 0) > 0.3 && this.speed > K.min * 0.85;
+    this.pitch = lift ? 0.2 : ahead !== null && road !== null ? Math.atan2(ahead - road, 3) : 0;
+    this._fwd();
+    this.velocity.copy(this.forward).multiplyScalar(this.speed);
+    this.position.x += this.velocity.x * dt;
+    this.position.z += this.velocity.z * dt;
+    this.offroad = road !== null ? 0 : 1;
+    if (lift) {
+      // Rotate and climb away.
+      this.grounded = false;
+      this.position.y = surf + GEAR + 0.6;
+      this.speed = Math.max(this.speed, K.min);
+      return;
+    }
+    const y = Math.max(surf, road === null ? 0 : -Infinity) + GEAR;
+    if (road === null && g < 0.2) return this._crash(); // rolled off into the sea
+    if (y < this.position.y - 2.5 && this.speed > K.min * 0.8) {
+      // Ran off a drop fast enough: airborne again.
+      this.grounded = false;
+      return;
+    }
+    this.position.y = y;
+    // The barriers keep a rolling plane on the asphalt: nudged back in, nose turned along the road.
+    if (road !== null && Math.abs(_edge.lat) > _edge.lim) {
+      const side = Math.sign(_edge.lat);
+      const over = Math.abs(_edge.lat) - _edge.lim;
+      this.position.x -= _edge.rx * side * over;
+      this.position.z -= _edge.rz * side * over;
+      const into = (this.forward.x * _edge.rx + this.forward.z * _edge.rz) * side;
+      if (into > 0) {
+        this._bumpYaw(_n.set(-_edge.rx * side, 0, -_edge.rz * side), 1.2);
+        this.pitch = 0;
+        this._fwd();
+        if (this.speed > 4) this.hit = Math.min(1, into * this.speed * 0.06);
+        this.speed *= 1 - clamp(into, 0, 1) * 0.5;
+      }
+    }
+    this._obstacles(3.2, 0.5);
   }
 
   _space(dt, C) {
@@ -530,14 +659,69 @@ export class Craft {
     }
   }
 
-  /** After a knock: heading swings away from what was hit. */
-  _bumpYaw(n) {
+  /** After a knock: heading swings away from what was hit (k = 2 mirrors it, 1 slides along it). */
+  _bumpYaw(n, k = 2) {
     const f = this.forward;
     const into = f.x * n.x + f.y * n.y + f.z * n.z;
     if (into >= 0) return;
-    const out = _v.set(f.x - 2 * into * n.x, f.y - 2 * into * n.y, f.z - 2 * into * n.z).normalize();
+    const out = _v.set(f.x - k * into * n.x, f.y - k * into * n.y, f.z - k * into * n.z);
+    if (out.lengthSq() < 0.01) return;
+    out.normalize();
     this.yaw = Math.atan2(out.x, out.z);
     this.pitch = Math.asin(clamp(out.y, -0.8, 0.8)) * 0.5;
+    this._fwd();
+  }
+
+  /**
+   * Ships and balloons: pushed out of them, glancing off to the side.
+   * `pad` = this craft's own radius, `keep` = speed kept on a knock,
+   * `up` = height of the part that touches above the craft's origin.
+   */
+  _obstacles(pad, keep, up = 0) {
+    const list = this.env.obstacles ? this.env.obstacles(this.position) : null;
+    if (!list || !list.length) return;
+    const p = this.position;
+    const py = p.y + up;
+    for (const O of list) {
+      let nx;
+      let ny = 0;
+      let nz;
+      if (O.y0 !== undefined) {
+        // Hull: a vertical cylinder.
+        if (py < O.y0 - pad * 0.5 || py > O.y1 + pad * 0.5) continue;
+        const dx = p.x - O.x;
+        const dz = p.z - O.z;
+        const d = Math.hypot(dx, dz);
+        const R = O.r + pad;
+        if (d >= R || d < 1e-3) continue;
+        nx = dx / d;
+        nz = dz / d;
+        p.x = O.x + nx * R;
+        p.z = O.z + nz * R;
+      } else {
+        const dx = p.x - O.x;
+        const dy = py - O.y;
+        const dz = p.z - O.z;
+        const d = Math.hypot(dx, dy, dz);
+        const R = O.r + pad;
+        if (d >= R || d < 1e-3) continue;
+        nx = dx / d;
+        ny = dy / d;
+        nz = dz / d;
+        p.set(O.x + nx * R, O.y + ny * R - up, O.z + nz * R);
+      }
+      const v = this.velocity;
+      const vn = v.x * nx + v.y * ny + v.z * nz;
+      if (vn >= 0) continue;
+      v.x -= 1.6 * vn * nx;
+      v.y -= 1.6 * vn * ny;
+      v.z -= 1.6 * vn * nz;
+      this.speed *= keep;
+      this.hit = Math.max(this.hit || 0, Math.min(1, 0.25 - vn / 14));
+      this._bumpYaw(_n.set(nx, this.kind === 'boat' ? 0 : ny, nz), 1.4);
+      if (this.kind === 'glider') this.vy = Math.max(this.vy, ny * 2);
+      if (O.push) O.push(-nx, -nz, -vn);
+    }
   }
 
   _glider(dt, C) {
@@ -555,6 +739,8 @@ export class Craft {
     this.velocity.set(Math.sin(this.yaw) * this.speed + W.x, this.vy, Math.cos(this.yaw) * this.speed + W.z);
     this.position.addScaledVector(this.velocity, dt);
     this.lift = lift;
+    // The canopy flies ~4 m above the pilot: that is what meets a balloon.
+    this._obstacles(5.5, 0.85, 5.5);
     const g = Math.max(0, this.env.ground(this.position.x, this.position.z));
     this.altitude = this.position.y - g;
     if (this.position.y < g + 0.9) {

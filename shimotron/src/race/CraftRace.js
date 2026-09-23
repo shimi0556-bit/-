@@ -1,4 +1,4 @@
-import { Craft, CraftPlayer, CraftAI, KINDS } from './Craft.js';
+import { Craft, CraftPlayer, CraftAI, KINDS, roadSurface } from './Craft.js';
 import { Course } from './Course.js';
 import { waveAt } from '../engine/world/Water.js';
 import { RACE, AI } from './config.js';
@@ -60,6 +60,8 @@ export class CraftRace {
       piers: c.piers,
       decks: c.decks,
       thermals: c.thermals,
+      obstacles: this.space ? null : (p) => this._obstaclesNear(p),
+      road: this.kind === 'plane' ? roadSurface(this.island.track) : null,
       solids: this.space ? this.space.rocks : null,
       collide: this.space ? (p) => this.space.collide(p) : null,
       get wind() {
@@ -67,6 +69,17 @@ export class CraftRace {
         return { x: atm.wind.dir.x * s, z: atm.wind.dir.y * s };
       },
     };
+  }
+
+  /** Ships and balloons of the island, and (sub races) the canyon's rocks around p. */
+  _obstaclesNear(p) {
+    const out = this._obs || (this._obs = []);
+    out.length = 0;
+    const L = this.island.life?.solids;
+    if (L) for (let i = 0; i < L.length; i++) out.push(L[i]);
+    const R = this.course.rocksNear(p.x, p.z);
+    if (R) for (let i = 0; i < R.length; i++) out.push(R[i]);
+    return out;
   }
 
   _build(roster) {
@@ -231,7 +244,7 @@ export class CraftRace {
       }
       if (!racing || e.finished) continue;
       const far = { boat: 140, sub: 90, plane: 260, glider: 320, space: 400 }[this.kind];
-      e.lost = e.q && e.q.dist < far ? 0 : e.lost + dt;
+      e.lost = (e.q && e.q.dist < far) || c.grounded ? 0 : e.lost + dt;
       if (e.lost > 4) {
         e.lost = 0;
         this.respawn(e);
@@ -241,7 +254,7 @@ export class CraftRace {
       const w = e.watch;
       const moved = (e.progress - w.p) * this.course.length;
       const trying = !e.isPlayer || e.autopilot || c.vehicle.controls.throttle > 0.3;
-      if (moved > 8 || !trying || this.clock < 4 || c.crash > 0) {
+      if (moved > 8 || !trying || this.clock < 4 || c.crash > 0 || c.grounded) {
         w.t = this.clock;
         w.p = e.progress;
       } else if (this.clock - w.t > 4) {

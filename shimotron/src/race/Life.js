@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Random } from '../engine/core/Random.js';
 import { waveAt } from '../engine/world/Water.js';
+import { paint, coralGeometries, CORAL_HEIGHT, CORAL_MAT, CORAL_COLORS, CORAL_SCALE, ZONES, pickWeighted, SPECIES, fishGeometry, FISH_PATTERN_GLSL } from './Sealife.js';
 
 const _m = new THREE.Matrix4();
 const _q = new THREE.Quaternion();
@@ -10,29 +11,15 @@ const _s = new THREE.Vector3();
 const _e = new THREE.Euler();
 const _w = { y: 0, dx: 0, dz: 0 };
 const UP = new THREE.Vector3(0, 1, 0);
-/** Height of each coral model at scale 1 (metres). */
-const CORAL_HEIGHT = { branch: 0.95, brain: 0.4, table: 0.56, fan: 1.45, tubes: 0.95, kelp: 4.3 };
-
-/** Non-indexed copy with a flat vertex colour and a scalar attribute (sway / head / tail mask). */
-function paint(g, color, mask = 0, name = 'aMask') {
-  g = g.index ? g.toNonIndexed() : g;
-  if (g.attributes.uv) g.deleteAttribute('uv');
-  const c = new THREE.Color(color);
-  const n = g.attributes.position.count;
-  const col = new Float32Array(n * 3);
-  for (let i = 0; i < n; i++) c.toArray(col, i * 3);
-  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  const m = new Float32Array(n);
-  for (let i = 0; i < n; i++) m[i] = typeof mask === 'function' ? mask(g.attributes.position.getX(i), g.attributes.position.getY(i), g.attributes.position.getZ(i)) : mask;
-  g.setAttribute(name, new THREE.BufferAttribute(m, 1));
-  return g;
-}
-
 /**
  * Life around an island, above and below the water:
- *   reefs    coral gardens on the shallow shelf — branching and brain
- *            corals, table and fan corals, tube sponges, swaying kelp;
- *   fish     schools of several species that wheel around their reefs;
+ *   reefs    the whole sea floor grows: coral gardens on the shelf
+ *            (staghorn, brain, table, pillar, plate and soft corals, sea
+ *            fans, anemones, giant clams, barrel and tube sponges), sea
+ *            grass and starfish on the sand, sea whips, fans and sponges
+ *            down the deep slopes, kelp forests (shapes in Sealife.js);
+ *   fish     schools of many species that wheel around their reefs and
+ *            dart away from a diver, reef sharks, eagle rays and turtles;
  *   dolphins pods cruising offshore that leap clear of the water;
  *   boats    sailboats, motorboats and fishing boats circling the island,
  *            riding the actual waves, with wakes;
@@ -54,6 +41,8 @@ export class Life {
     this.group.name = 'חיים';
     this.uniforms = { uTime: { value: 0 } };
     this.time = 0;
+    // What the racing craft bump into: hulls (vertical cylinders) and balloons (spheres), moved every frame.
+    this.solids = [];
   }
 
   build() {
@@ -116,93 +105,11 @@ export class Life {
 
   // ---------------------------------------------------------------- reefs
 
-  _coralGeos() {
-    const rng = this.rng;
-    const white = 0xffffff;
-    // Branching (staghorn): forks of thin tapering cylinders.
-    const branch = [];
-    const grow = (x, y, z, dir, len, r, depth) => {
-      const c = new THREE.CylinderGeometry(r * 0.6, r, len, 5, 1, depth > 0);
-      c.translate(0, len / 2, 0);
-      _q.setFromUnitVectors(UP, dir);
-      c.applyQuaternion(_q);
-      c.translate(x, y, z);
-      branch.push(paint(c, white, 0));
-      if (depth > 0) {
-        const tip = dir.clone().multiplyScalar(len);
-        for (let k = 0; k < 2; k++) {
-          const d = dir.clone().add(new THREE.Vector3(rng.range(-0.7, 0.7), rng.range(0.1, 0.5), rng.range(-0.7, 0.7))).normalize();
-          grow(x + tip.x, y + tip.y, z + tip.z, d, len * 0.72, r * 0.7, depth - 1);
-        }
-      }
-    };
-    for (let k = 0; k < 6; k++) grow(0, 0, 0, new THREE.Vector3(Math.cos(k * 1.1) * 0.6, 1, Math.sin(k * 1.1) * 0.6).normalize(), 0.5, 0.08, 1);
-    // Brain coral: a squashed, grooved dome.
-    const brain = new THREE.IcosahedronGeometry(0.6, 2);
-    const bp = brain.attributes.position;
-    for (let i = 0; i < bp.count; i++) {
-      _p.fromBufferAttribute(bp, i);
-      const groove = 1 + Math.sin(_p.x * 14 + Math.sin(_p.z * 9) * 2) * 0.04;
-      _p.multiplyScalar(groove);
-      _p.y = Math.max(_p.y, -0.1) * 0.62;
-      bp.setXYZ(i, _p.x, _p.y, _p.z);
-    }
-    brain.computeVertexNormals();
-    // Table coral: stem and a wide plate.
-    const table = mergeGeometries([paint(new THREE.CylinderGeometry(0.07, 0.12, 0.5, 6).translate(0, 0.25, 0), white), paint(new THREE.CylinderGeometry(0.9, 0.75, 0.07, 14).translate(0, 0.52, 0), white)]);
-    // Sea fan: a vertical disc that sways.
-    const fan = paint(new THREE.CircleGeometry(0.7, 12).translate(0, 0.75, 0), white, (x, y) => y / 1.4);
-    // Tube sponges.
-    const tubes = mergeGeometries(
-      [0, 1, 2, 3].map((k) => {
-        const h = 0.4 + k * 0.18;
-        return paint(new THREE.CylinderGeometry(0.1 + (k % 2) * 0.03, 0.12, h, 7, 1, true).translate(Math.cos(k * 1.7) * 0.16, h / 2, Math.sin(k * 1.7) * 0.16), white);
-      }),
-    );
-    // Kelp: tall twisted ribbons that wave.
-    const kelp = mergeGeometries(
-      [0, 1, 2, 3, 4].map((k) => {
-        const g = new THREE.PlaneGeometry(0.16, 3.2 + (k % 3) * 0.5, 1, 10);
-        g.translate(0, g.parameters.height / 2, 0);
-        const p = g.attributes.position;
-        for (let i = 0; i < p.count; i++) {
-          const y = p.getY(i);
-          const a = y * 0.9 + k;
-          const x = p.getX(i);
-          p.setXYZ(i, x * Math.cos(a), y, x * Math.sin(a));
-        }
-        g.computeVertexNormals();
-        g.translate(Math.cos(k * 2.4) * 0.25, 0, Math.sin(k * 2.4) * 0.25);
-        return paint(g, white, (x, y) => (y / 3.6) ** 1.4);
-      }),
-    );
-    return {
-      branch: mergeGeometries(branch),
-      brain: paint(brain, white),
-      table,
-      fan,
-      tubes,
-      kelp,
-    };
-  }
-
-  /**
-   * Coral is streamed: the sea floor is split into cells, each cell's
-   * corals are generated from its own seed the first time the camera comes
-   * near, and only the cells around the camera are drawn. That keeps the
-   * gardens dense wherever you look without paying for the whole coast.
-   */
-  _reefs() {
-    const t = this.terrain;
-    const low = this.engine.quality.presetName === 'low';
-    this.coralGeos = this._coralGeos();
-    this.reefCellSize = 34;
-    this.reefRange = low ? 2 : 3;
-    this.reefPerCell = Math.round(80 * Math.min(1.4, this.cfg.reef) * (low ? 0.6 : 1));
-    this.reefCache = new Map();
-    const cells = (this.reefRange * 2 + 1) ** 2;
-    const cap = cells * this.reefPerCell;
-    const rigid = new THREE.MeshStandardMaterial({ name: 'אלמוגים', vertexColors: true, roughness: 0.72 });
+  /** Coral models and their three materials (shared with the submarine course's reef canyon). */
+  coralKit() {
+    if (this._kit) return this._kit;
+    const geos = coralGeometries(this.rng, this.terrain.noise);
+    const rigid = new THREE.MeshStandardMaterial({ name: 'אלמוגים', vertexColors: true, roughness: 0.72, side: THREE.DoubleSide });
     rigid.onBeforeCompile = (shader) => {
       shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vCoral;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvCoral = position;');
       shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vCoral;').replace(
@@ -214,26 +121,115 @@ export class Life {
         diffuseColor.rgb *= mix(0.7, 1.08, smoothstep(-0.1, 0.5, vCoral.y));`,
       );
     };
-    rigid.customProgramCacheKey = () => 'life-coral';
-    const sway = this._animated({ name: 'אלמוגים נעים', vertexColors: true, roughness: 0.75, side: THREE.DoubleSide }, 'life-sway', 'transformed.x += sin(uTime * 1.2 + ph + transformed.y * 1.3) * 0.22 * aMask; transformed.z += cos(uTime * 0.9 + ph * 1.7) * 0.18 * aMask;');
+    rigid.customProgramCacheKey = () => 'life-coral-2';
+    const swayBody = 'transformed.x += sin(uTime * 1.2 + ph + transformed.y * 1.3) * 0.22 * aMask; transformed.z += cos(uTime * 0.9 + ph * 1.7) * 0.18 * aMask;';
+    const sway = this._animated({ name: 'אלמוגים נעים', vertexColors: true, roughness: 0.75, side: THREE.DoubleSide }, 'life-sway', swayBody);
     // Sea fans: a lace of fine branches, not a solid disc.
-    const fan = this._animated({ name: 'מניפות ים', vertexColors: true, roughness: 0.8, side: THREE.DoubleSide }, 'life-sway', 'transformed.x += sin(uTime * 1.2 + ph + transformed.y * 1.3) * 0.22 * aMask; transformed.z += cos(uTime * 0.9 + ph * 1.7) * 0.18 * aMask;');
-    const fanCompile = fan.onBeforeCompile;
-    fan.onBeforeCompile = (shader, r) => {
-      fanCompile(shader, r);
+    const lace = this._animated({ name: 'מניפות ים', vertexColors: true, roughness: 0.8, side: THREE.DoubleSide }, 'life-sway', swayBody);
+    const laceCompile = lace.onBeforeCompile;
+    lace.onBeforeCompile = (shader, r) => {
+      laceCompile(shader, r);
       shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vLace;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvLace = position.xy;');
       shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec2 vLace;').replace(
         '#include <alphatest_fragment>',
-        `vec2 lp = vLace * 14.0;
-        float web = min(abs(fract(lp.x + sin(lp.y * 0.7) * 0.6) - 0.5), abs(fract(lp.y * 0.8 + sin(lp.x * 0.9) * 0.5) - 0.5));
+        `vec2 lp = vLace * 12.0;
+        lp += vec2(sin(lp.y * 1.3 + 1.7), sin(lp.x * 1.1 - 0.4)) * 0.45;
+        float la = abs(fract(lp.x * 0.9 + lp.y * 0.35) - 0.5);
+        float lb = abs(fract(lp.y * 1.1 - lp.x * 0.3) - 0.5);
+        float lc = abs(fract((lp.x + lp.y) * 0.6 + sin(lp.x * 2.3) * 0.2) - 0.5);
+        float web = min(min(la, lb), lc * 1.2);
+        // Main veins fanning out from the stem.
+        float vein = abs(fract(atan(vLace.x, vLace.y) * 2.6) - 0.5);
         float rim = smoothstep(0.66, 0.7, length(vLace - vec2(0.0, 0.75)));
-        if (web > 0.16 && rim < 0.5) discard;`,
+        if (web > 0.1 && vein > 0.05 && rim < 0.5) discard;`,
       );
     };
-    fan.customProgramCacheKey = () => 'life-fan';
+    lace.customProgramCacheKey = () => 'life-fan-2';
+    this._kit = { geos, mats: { rigid, sway, lace } };
+    return this._kit;
+  }
+
+  _coralMat(kind) {
+    return this.coralKit().mats[CORAL_MAT[kind] || 'rigid'];
+  }
+
+  /**
+   * A fixed set of corals (items: { kind, m: Matrix4, c: Color }), drawn in
+   * chunks with the reef's own models and materials. The caller owns the
+   * returned group (remove it and call `.dispose()` on its meshes when done).
+   */
+  coralSet(items, cell = 90) {
+    const group = new THREE.Group();
+    group.name = 'שונית';
+    const { geos } = this.coralKit();
+    const byKind = new Map();
+    for (const it of items) {
+      if (!byKind.has(it.kind)) byKind.set(it.kind, []);
+      byKind.get(it.kind).push(it);
+    }
+    for (const [kind, list] of byKind) {
+      const cells = new Map();
+      for (const it of list) {
+        const key = `${Math.floor(it.m.elements[12] / cell)},${Math.floor(it.m.elements[14] / cell)}`;
+        if (!cells.has(key)) cells.set(key, []);
+        cells.get(key).push(it);
+      }
+      for (const chunk of cells.values()) {
+        const mesh = new THREE.InstancedMesh(geos[kind], this._coralMat(kind), chunk.length);
+        chunk.forEach((it, i) => {
+          mesh.setMatrixAt(i, it.m);
+          mesh.setColorAt(i, it.c);
+        });
+        mesh.instanceMatrix.needsUpdate = true;
+        mesh.instanceColor.needsUpdate = true;
+        mesh.computeBoundingSphere();
+        mesh.receiveShadow = true;
+        mesh.name = 'שונית';
+        mesh.userData.noPick = true;
+        group.add(mesh);
+      }
+    }
+    return group;
+  }
+
+  /** One coral of `kind` at (x, floor y, z): random size (never breaking the surface), turn and colour. */
+  coralItem(kind, x, y, z, rng, scale = 1) {
+    const [s0, s1] = CORAL_SCALE[kind];
+    let s = rng.range(s0, s1) * scale;
+    s = Math.min(s, (-y - 0.45) / CORAL_HEIGHT[kind]);
+    if (s < 0.3) return null;
+    const lean = kind === 'rock' ? 0.3 : 0.15;
+    _q.setFromEuler(_e.set(rng.range(-lean, lean), rng.range(0, 6.28), rng.range(-lean, lean)));
+    const c =
+      kind === 'kelp'
+        ? new THREE.Color().setHSL(rng.range(0.1, 0.17), 0.62, rng.range(0.22, 0.3))
+        : kind === 'grass'
+        ? new THREE.Color().setHSL(rng.range(0.2, 0.3), 0.5, rng.range(0.2, 0.32))
+        : new THREE.Color(rng.pick(CORAL_COLORS[kind])).offsetHSL(rng.range(-0.02, 0.02), 0, rng.range(-0.08, 0.05));
+    const sy = kind === 'rock' ? s * rng.range(0.6, 1.1) : s * rng.range(0.8, 1.2);
+    return { kind, m: new THREE.Matrix4().compose(new THREE.Vector3(x, y - (kind === 'rock' ? 0.3 * sy : 0.1), z), _q.clone(), new THREE.Vector3(s, sy, s)), c };
+  }
+
+  /**
+   * Coral is streamed: the sea floor is split into cells, each cell's
+   * corals are generated from its own seed the first time the camera comes
+   * near, and only the cells around the camera are drawn. That keeps the
+   * whole sea floor dense wherever you look without paying for the whole coast.
+   */
+  _reefs() {
+    const t = this.terrain;
+    const low = this.engine.quality.presetName === 'low';
+    const { geos } = this.coralKit();
+    this.reefCellSize = 34;
+    this.reefRange = low ? 2 : 3;
+    this.reefPerCell = Math.round(150 * Math.min(1.4, 0.55 + this.cfg.reef * 0.6) * (low ? 0.55 : 1));
+    this.reefCache = new Map();
+    const cells = (this.reefRange * 2 + 1) ** 2;
+    const cap = cells * this.reefPerCell;
     this.reefMeshes = {};
-    for (const kind of Object.keys(this.coralGeos)) {
-      const mesh = new THREE.InstancedMesh(this.coralGeos[kind], kind === 'fan' ? fan : kind === 'kelp' ? sway : rigid, kind === 'kelp' ? cap : Math.ceil(cap * 0.6));
+    for (const kind of Object.keys(geos)) {
+      const share = kind === 'grass' || kind === 'kelp' ? 0.6 : 0.35;
+      const mesh = new THREE.InstancedMesh(geos[kind], this._coralMat(kind), Math.ceil(cap * share));
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       mesh.setColorAt(0, new THREE.Color());
       mesh.count = 0;
@@ -268,31 +264,44 @@ export class Life {
     cell = [];
     if (Math.abs((cx + 0.5) * S) < half && Math.abs((cz + 0.5) * S) < half) {
       const rng = new Random(((cx * 73856093) ^ (cz * 19349663) ^ (this.stage.seed * 83492791)) >>> 0 || 1);
-      const hot = [0xff6f91, 0xff9a3c, 0xffd23a, 0xb266ff, 0x3de0c8, 0xff4a5a, 0xf5f0e0, 0x7ad0ff, 0xe8a0ff, 0xff8fb0];
-      const kinds = ['branch', 'branch', 'branch', 'brain', 'brain', 'table', 'fan', 'fan', 'tubes'];
+      const N = t.noise;
       // Garden centres inside the cell; corals crowd around them.
       let gx = 0;
       let gz = 0;
       for (let k = 0; k < this.reefPerCell * 3 && cell.length < this.reefPerCell; k++) {
-        if (k % 10 === 0) {
+        if (k % 8 === 0) {
           gx = (cx + rng.random()) * S;
           gz = (cz + rng.random()) * S;
         }
-        const x = gx + rng.range(-7, 7);
-        const z = gz + rng.range(-7, 7);
+        const x = gx + rng.range(-6, 6);
+        const z = gz + rng.range(-6, 6);
         const h = t.heightAt(x, z);
-        if (h > -0.8 || h < -22) continue;
+        if (h > -0.8 || h < -70) continue;
         const cover = t.reefAt ? t.reefAt(x, z, h) : 0;
-        const kelp = h < -6 && t.noise.noise(x * 0.02 - 30, z * 0.02 + 8) > 0.2;
-        if (kelp ? rng.random() > 0.55 : rng.random() > cover * cover) continue;
-        const kind = kelp ? 'kelp' : rng.pick(kinds);
-        let s = kind === 'kelp' ? rng.range(0.8, 2.0) : kind === 'table' ? rng.range(0.9, 2.2) : rng.range(0.7, 2.3) * (0.7 + cover * 0.4);
-        // Nothing breaks the surface: shallow corals stay small.
-        s = Math.min(s, (-h - 0.45) / CORAL_HEIGHT[kind]);
-        if (s < 0.35) continue;
-        _q.setFromEuler(_e.set(rng.range(-0.15, 0.15), rng.range(0, 6.28), rng.range(-0.15, 0.15)));
-        const c = kind === 'kelp' ? new THREE.Color().setHSL(rng.range(0.16, 0.3), 0.55, rng.range(0.22, 0.35)) : new THREE.Color(rng.pick(hot)).offsetHSL(0, 0, rng.range(-0.08, 0.05));
-        cell.push({ kind, m: new THREE.Matrix4().compose(new THREE.Vector3(x, h - 0.1, z), _q.clone(), new THREE.Vector3(s, s * rng.range(0.8, 1.2), s)), c });
+        // Patchiness: dense gardens and thinner stretches between them, everywhere.
+        const patch = 0.55 + 0.45 * N.noise(x * 0.03 + 17, z * 0.03 - 4);
+        const kelp = h < -6 && h > -30 && N.noise(x * 0.02 - 30, z * 0.02 + 8) > 0.25;
+        let zone;
+        let keep;
+        if (kelp) {
+          zone = null;
+          keep = 0.5;
+        } else if (cover > 0.05) {
+          zone = ZONES.reef;
+          keep = 0.4 + 0.6 * cover;
+        } else if (h > -16) {
+          // Sea grass meadows in swathes, coral heads and sponges scattered between them.
+          const meadow = N.noise(x * 0.045 - 3, z * 0.045 + 12) > -0.05;
+          zone = meadow ? ZONES.meadow : ZONES.sand;
+          keep = (meadow ? 0.85 : 0.55) * patch;
+        } else {
+          zone = ZONES.deep;
+          keep = 0.6 * patch * (0.55 + 0.45 * THREE.MathUtils.smoothstep(-h, 16, 30));
+        }
+        if (rng.random() > keep) continue;
+        const kind = kelp ? 'kelp' : pickWeighted(rng, zone);
+        const it = this.coralItem(kind, x, h, z, rng, kind === 'rock' ? 1 : 0.75 + cover * 0.45);
+        if (it) cell.push(it);
       }
     }
     this.reefCache.set(key, cell);
@@ -313,14 +322,22 @@ export class Life {
     const S = this.reefCellSize;
     const cx = Math.floor(cam.x / S);
     const cz = Math.floor(cam.z / S);
-    if (this.reefShown && cx === this.reefCx && cz === this.reefCz) return;
+    // Cells well behind the camera are left out; turning round refreshes them.
+    this.engine.camera.getWorldDirection(_p);
+    const look = Math.atan2(_p.x, _p.z);
+    const turned = Math.abs(Math.atan2(Math.sin(look - (this.reefLook || 0)), Math.cos(look - (this.reefLook || 0)))) > 0.5;
+    if (this.reefShown && cx === this.reefCx && cz === this.reefCz && !turned) return;
     this.reefShown = true;
     this.reefCx = cx;
     this.reefCz = cz;
+    this.reefLook = look;
+    const fx = Math.sin(look);
+    const fz = Math.cos(look);
     for (const m of Object.values(M)) m.count = 0;
     const R = this.reefRange;
     for (let dz = -R; dz <= R; dz++) {
       for (let dx = -R; dx <= R; dx++) {
+        if ((dx * fx + dz * fz) < -1.6 && Math.abs(_p.y) < 0.85) continue;
         for (const it of this._reefCell(cx + dx, cz + dz)) {
           const m = M[it.kind];
           if (m.count >= m.instanceMatrix.count) continue;
@@ -338,38 +355,37 @@ export class Life {
 
   // ---------------------------------------------------------------- fish
 
-  _fishGeometry() {
-    // Body along +Z (nose forward), tail fin, dorsal fin; aMask = how far towards the tail (for the swim wiggle).
-    const body = new THREE.SphereGeometry(0.5, 7, 5);
-    body.scale(0.32, 0.5, 1);
-    const tail = new THREE.BufferGeometry();
-    tail.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, -0.45, 0, 0.32, -0.85, 0, -0.32, -0.85, 0, 0.32, -0.85, 0, 0, -0.45, 0, -0.32, -0.85], 3));
-    tail.computeVertexNormals();
-    const dorsal = new THREE.BufferGeometry();
-    dorsal.setAttribute('position', new THREE.Float32BufferAttribute([0, 0.22, 0.2, 0, 0.42, -0.1, 0, 0.22, -0.3, 0, 0.42, -0.1, 0, 0.22, 0.2, 0, 0.22, -0.3], 3));
-    dorsal.computeVertexNormals();
-    const tailMask = (x, y, z) => Math.max(0, Math.min(1, (0.1 - z) / 0.95));
-    return mergeGeometries([paint(body, 0xffffff, tailMask), paint(tail, 0xffffff, tailMask), paint(dorsal, 0xffffff, tailMask)]);
+  /** Fish material for one kind of motion: 'swim' (tail wiggle), 'flap' (ray wings), 'paddle' (turtle flippers). */
+  _fishMaterial(motion) {
+    const body = {
+      swim: 'transformed.x += sin(uTime * 9.0 + ph * 5.0 + transformed.z * 6.0) * 0.1 * aMask;',
+      flap: 'transformed.y += sin(uTime * 2.2 + ph * 3.0 - abs(transformed.x) * 2.0) * 0.28 * aMask;',
+      paddle: 'transformed.y += sin(uTime * 1.6 + ph * 3.0) * 0.18 * aMask; transformed.z += cos(uTime * 1.6 + ph * 3.0) * 0.08 * aMask;',
+    }[motion];
+    const mat = this._animated({ name: 'דגים', vertexColors: true, roughness: 0.38, metalness: 0.28, side: THREE.DoubleSide }, `life-fish-${motion}`, body);
+    const prev = mat.onBeforeCompile;
+    mat.onBeforeCompile = (shader, r) => {
+      prev(shader, r);
+      shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nattribute float iPattern; varying vec3 vFishPos; varying float vPattern;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvFishPos = position; vPattern = iPattern;');
+      shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vFishPos; varying float vPattern;').replace('#include <color_fragment>', `#include <color_fragment>\n${FISH_PATTERN_GLSL}`);
+    };
+    mat.customProgramCacheKey = () => `life-fish-${motion}-v3`;
+    return mat;
   }
 
   _fish() {
     const t = this.terrain;
     const rng = this.rng;
-    const species = [
-      { name: 'sardine', size: 0.2, count: [40, 90], color: 0xb8c8d8, stripe: 0, speed: 3.2, radius: 5, depth: [-18, -3] },
-      { name: 'tang', size: 0.28, count: [10, 24], color: 0x2f6bff, stripe: 0, speed: 2, radius: 3.5, depth: [-10, -1.5], reef: true },
-      { name: 'yellow', size: 0.24, count: [10, 22], color: 0xffd23a, stripe: 0, speed: 2, radius: 3, depth: [-10, -1.5], reef: true },
-      { name: 'clown', size: 0.14, count: [4, 9], color: 0xff7a1a, stripe: 2, speed: 1.2, radius: 1.5, depth: [-8, -1.5], reef: true },
-      { name: 'parrot', size: 0.5, count: [4, 9], color: 0x3de0a0, stripe: 1, speed: 1.6, radius: 4, depth: [-14, -2], reef: true },
-      { name: 'grouper', size: 0.9, count: [1, 3], color: 0x7a5a40, stripe: 1, speed: 1.1, radius: 5, depth: [-20, -4] },
-      { name: 'tuna', size: 1.1, count: [8, 16], color: 0x44607a, stripe: 0, speed: 5, radius: 8, depth: [-24, -6] },
-    ];
     const schools = [];
     const half = t.size / 2 - 40;
-    const want = Math.round(80 * this.cfg.fish);
+    const want = Math.round(95 * this.cfg.fish);
+    // The big ones are rare: a few of each per island.
+    const rare = { shark: 2, ray: 3, turtle: 3, grouper: 4 };
+    const counts = {};
     let guard = 0;
-    while (schools.length < want && guard++ < 4000) {
-      const sp = rng.pick(species);
+    while (schools.length < want && guard++ < 5000) {
+      const sp = rng.pick(SPECIES);
+      if (rare[sp.name] && (counts[sp.name] || 0) >= rare[sp.name]) continue;
       let x;
       let z;
       if (sp.reef && this.reefSpots && this.reefSpots.length) {
@@ -382,58 +398,45 @@ export class Life {
       }
       const floor = t.heightAt(x, z);
       if (floor > sp.depth[1] - 1 || floor < sp.depth[0] - 12) continue;
+      counts[sp.name] = (counts[sp.name] || 0) + 1;
       const n = Math.round(rng.range(sp.count[0], sp.count[1]));
       const fish = [];
-      for (let k = 0; k < n; k++) fish.push({ ph: rng.range(0, 6.28), orbit: rng.range(0.3, 1), tilt: rng.range(-0.5, 0.5), rr: rng.range(0.3, 1), off: rng.range(-1, 1), s: sp.size * rng.range(0.85, 1.15) });
-      schools.push({ sp, ax: x, az: z, floor, n, fish, ang: rng.range(0, 6.28), roam: rng.range(8, 26), dir: rng.random() < 0.5 ? 1 : -1, bob: rng.range(0, 6.28), x, y: 0, z });
+      for (let k = 0; k < n; k++) fish.push({ ph: rng.range(0, 6.28), orbit: rng.range(0.3, 1), tilt: rng.range(-0.5, 0.5), rr: rng.range(0.3, 1), off: rng.range(-1, 1), s: sp.size * rng.range(0.85, 1.15), fx: 0, fy: 0, fz: 0 });
+      schools.push({ sp, ax: x, az: z, floor, n, fish, ang: rng.range(0, 6.28), roam: rng.range(8, 26) * (sp.radius > 8 ? 2 : 1), dir: rng.random() < 0.5 ? 1 : -1, bob: rng.range(0, 6.28), x, y: 0, z });
     }
     this.schools = schools;
-    const total = schools.reduce((a, s) => a + s.n, 0);
-    const mat = this._animated(
-      { name: 'דגים', vertexColors: true, roughness: 0.35, metalness: 0.35 },
-      'life-fish',
-      `transformed.x += sin(uTime * 9.0 + ph * 5.0 + transformed.z * 5.0) * 0.12 * aMask * aMask;`,
-    );
-    // Countershading and bands, per instance colour.
-    const prev = mat.onBeforeCompile;
-    mat.onBeforeCompile = (shader, r) => {
-      prev(shader, r);
-      shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nattribute float iStripe; varying vec3 vFishPos; varying float vStripe;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvFishPos = position; vStripe = iStripe;');
-      shader.fragmentShader = shader.fragmentShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vFishPos; varying float vStripe;')
-        .replace(
-          '#include <color_fragment>',
-          `#include <color_fragment>
-          diffuseColor.rgb *= mix(1.35, 0.62, smoothstep(-0.2, 0.25, vFishPos.y));
-          float band = step(0.72, fract(vFishPos.z * 2.6 + 0.3));
-          diffuseColor.rgb = mix(diffuseColor.rgb, vStripe > 1.5 ? vec3(1.0) : diffuseColor.rgb * 0.35, band * step(0.5, vStripe));`,
-        );
-    };
-    mat.customProgramCacheKey = () => 'life-fish-v2';
-    const geo = this._fishGeometry();
-    const stripe = new THREE.InstancedBufferAttribute(new Float32Array(total), 1);
-    geo.setAttribute('iStripe', stripe);
-    const mesh = new THREE.InstancedMesh(geo, mat, total);
-    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    mesh.frustumCulled = false;
-    mesh.userData.noPick = true;
-    mesh.name = 'להקות דגים';
-    let k = 0;
+    // One instanced mesh per species: its own body, fins and markings.
+    this.fishMeshes = [];
+    const mats = { swim: this._fishMaterial('swim'), flap: this._fishMaterial('flap'), paddle: this._fishMaterial('paddle') };
     const c = new THREE.Color();
-    for (const s of schools) {
-      s.base = k;
-      for (let i = 0; i < s.n; i++, k++) {
-        c.set(s.sp.color).offsetHSL(rng.range(-0.02, 0.02), 0, rng.range(-0.06, 0.06));
-        mesh.setColorAt(k, c);
-        stripe.array[k] = s.sp.stripe;
+    for (const sp of SPECIES) {
+      const mine = schools.filter((s) => s.sp === sp);
+      const total = mine.reduce((a, s) => a + s.n, 0);
+      if (!total) continue;
+      const geo = fishGeometry(sp.shape);
+      geo.setAttribute('iPattern', new THREE.InstancedBufferAttribute(new Float32Array(total).fill(sp.pattern), 1));
+      const motion = sp.shape === 'ray' ? 'flap' : sp.shape === 'turtle' ? 'paddle' : 'swim';
+      const mesh = new THREE.InstancedMesh(geo, mats[motion], total);
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      mesh.frustumCulled = false;
+      mesh.userData.noPick = true;
+      mesh.name = 'להקות דגים';
+      let k = 0;
+      for (const s of mine) {
+        s.mesh = mesh;
+        s.base = k;
+        for (let i = 0; i < s.n; i++, k++) {
+          c.set(sp.color).offsetHSL(rng.range(-0.02, 0.02), 0, rng.range(-0.06, 0.06));
+          mesh.setColorAt(k, c);
+        }
       }
+      mesh.instanceColor.needsUpdate = true;
+      _m.makeScale(0, 0, 0);
+      for (let i = 0; i < total; i++) mesh.setMatrixAt(i, _m);
+      this.fishMeshes.push(mesh);
+      this.group.add(mesh);
     }
-    mesh.instanceColor.needsUpdate = true;
-    _m.makeScale(0, 0, 0);
-    for (let i = 0; i < total; i++) mesh.setMatrixAt(i, _m);
     for (const s of schools) s.hidden = true;
-    this.fishMesh = mesh;
-    this.group.add(mesh);
   }
 
   /** Schools far from the camera swim in again somewhere near it, so wherever you look there are fish. */
@@ -464,22 +467,25 @@ export class Life {
   }
 
   _updateFish(dt) {
-    const mesh = this.fishMesh;
-    if (!mesh) return;
+    if (!this.fishMeshes) return;
     this._relocateFish();
     const cam = this.engine.camera.position;
     const t = this.time;
+    const dirty = new Set();
     for (const s of this.schools) {
+      const mesh = s.mesh;
       // Each school owns a fixed run of instances (its colours live there); far schools collapse to nothing.
       if (Math.abs(s.ax - cam.x) > 320 || Math.abs(s.az - cam.z) > 320) {
         if (!s.hidden) {
           _m.makeScale(0, 0, 0);
           for (let i = 0; i < s.n; i++) mesh.setMatrixAt(s.base + i, _m);
           s.hidden = true;
+          dirty.add(mesh);
         }
         continue;
       }
       s.hidden = false;
+      dirty.add(mesh);
       let k = s.base;
       const sp = s.sp;
       // The school wanders around its anchor.
@@ -487,25 +493,47 @@ export class Life {
       s.x = s.ax + Math.cos(s.ang) * s.roam;
       s.z = s.az + Math.sin(s.ang * 0.8) * s.roam * 0.7;
       const floor = this.terrain.heightAt(s.x, s.z);
-      const top = -0.9;
-      const bottom = floor + 1 + sp.size;
-      s.y = THREE.MathUtils.clamp(THREE.MathUtils.lerp(bottom, top, 0.35 + 0.15 * Math.sin(t * 0.3 + s.bob)), bottom, top);
+      const top = -0.9 - sp.size * 0.3;
+      const bottom = floor + 0.6 + sp.size * (sp.floor ? 0.3 : 1);
+      const mid = sp.floor ? 0.05 : 0.35;
+      // Never out of the water, even where the floor comes up close to the surface.
+      s.y = Math.min(top, THREE.MathUtils.clamp(THREE.MathUtils.lerp(bottom, top, mid + 0.15 * Math.sin(t * 0.3 + s.bob)), bottom, top));
       const hx = -Math.sin(s.ang) * s.roam * s.dir;
       const hz = Math.cos(s.ang * 0.8) * s.roam * 0.7 * 0.8 * s.dir;
       const heading = Math.atan2(hx, hz);
+      const solo = s.n <= 3 && sp.size > 0.8;
       for (const f of s.fish) {
         const a = t * (0.6 + f.orbit * 0.5) + f.ph;
-        const r = sp.radius * f.rr;
-        const ox = Math.cos(a) * r * 0.6 + f.off * sp.radius * 0.4;
-        const oz = Math.sin(a) * r;
-        const oy = Math.sin(a * 1.3 + f.ph) * r * 0.3 + f.tilt;
-        const yaw = heading + Math.sin(a) * 0.35;
-        _q.setFromEuler(_e.set(Math.sin(a * 1.3) * 0.15, yaw, 0));
-        _m.compose(_p.set(s.x + ox, THREE.MathUtils.clamp(s.y + oy, bottom - 0.6, top), s.z + oz), _q, _s.set(f.s, f.s, f.s));
+        const r = sp.radius * f.rr * (solo ? 0.3 : 1);
+        let px = s.x + Math.cos(a) * r * 0.6 + f.off * sp.radius * 0.4 * (solo ? 0.3 : 1);
+        let pz = s.z + Math.sin(a) * r;
+        let py = Math.min(top, THREE.MathUtils.clamp(s.y + Math.sin(a * 1.3 + f.ph) * r * (solo ? 0.05 : 0.3) + f.tilt * (solo ? 0.2 : 1), bottom - 0.6, top));
+        // Startled by whoever comes close: the fish dart aside, then drift back.
+        const dx = px + f.fx - cam.x;
+        const dy = py + f.fy - cam.y;
+        const dz = pz + f.fz - cam.z;
+        const d = Math.hypot(dx, dy, dz);
+        const scare = 7 + sp.size * 3;
+        if (d < scare && d > 1e-3 && !solo) {
+          const push = ((scare - d) / scare) * dt * 14;
+          f.fx += (dx / d) * push;
+          f.fy += (dy / d) * push * 0.5;
+          f.fz += (dz / d) * push;
+        }
+        const back = 1 - Math.min(1, dt * 0.6);
+        f.fx *= back;
+        f.fy *= back;
+        f.fz *= back;
+        px += f.fx;
+        py = Math.min(top, py + f.fy);
+        pz += f.fz;
+        const yaw = heading + Math.sin(a) * (solo ? 0.15 : 0.35);
+        _q.setFromEuler(_e.set(Math.sin(a * 1.3) * (solo ? 0.05 : 0.15), yaw, sp.shape === 'ray' ? Math.sin(t * 0.5 + f.ph) * 0.08 : 0));
+        _m.compose(_p.set(px, py, pz), _q, _s.set(f.s, f.s, f.s));
         mesh.setMatrixAt(k++, _m);
       }
     }
-    mesh.instanceMatrix.needsUpdate = true;
+    for (const m of dirty) m.instanceMatrix.needsUpdate = true;
   }
 
   // ---------------------------------------------------------------- dolphins
@@ -707,7 +735,12 @@ export class Life {
       const kind = rng.pick(['motor', 'motor', 'sail', 'sail', 'fishing']);
       const loop = loops[i % loops.length];
       const speed = kind === 'motor' ? rng.range(8, 12) : kind === 'sail' ? rng.range(3.5, 5.5) : rng.range(3, 4.5);
-      list.push({ kind, loop, u: rng.random(), speed, dir: rng.random() < 0.5 ? 1 : -1, lat: rng.range(-15, 15) });
+      const b = { kind, loop, u: rng.random(), speed, dir: rng.random() < 0.5 ? 1 : -1, lat: rng.range(-15, 15) };
+      // Three discs along the hull, bow to stern.
+      const [len, beam, top] = { motor: [7, 2.4, 1.3], sail: [9, 2.6, 1.4], fishing: [11, 3.6, 3.0] }[kind];
+      b.parts = [0.32, 0, -0.32].map((f, k) => ({ x: 0, z: 0, y0: -1.2, y1: top, r: beam * (k === 0 ? 0.36 : 0.52), off: f * len }));
+      this.solids.push(...b.parts);
+      list.push(b);
     }
     this.boatList = list;
     const mat = new THREE.MeshStandardMaterial({ name: 'סירות', vertexColors: true, roughness: 0.45, metalness: 0.1, side: THREE.DoubleSide });
@@ -766,6 +799,10 @@ export class Life {
       const z = _p.z + tan.x * b.lat;
       waveAt(x, z, t, amp, _w);
       const yaw = Math.atan2(tan.x, tan.z);
+      for (const S of b.parts) {
+        S.x = x + tan.x * S.off;
+        S.z = z + tan.z * S.off;
+      }
       const pitch = -(_w.dx * tan.x + _w.dz * tan.z) - (b.kind === 'motor' ? 0.05 : 0);
       const roll = _w.dx * tan.z - _w.dz * tan.x + (b.kind === 'sail' ? 0.12 : 0);
       _q.setFromEuler(_e.set(pitch, yaw, roll, 'YXZ'));
@@ -858,7 +895,18 @@ export class Life {
       b.scale.setScalar(s);
       const a = rng.range(0, 6.28);
       const r = rng.range(0, R * 0.9);
-      this.balloonList.push({ g: b, flame, x: Math.cos(a) * r, z: Math.sin(a) * r, alt: rng.range(70, 210), ph: rng.range(0, 6.28), burn: 0 });
+      const B = { g: b, flame, s, x: Math.cos(a) * r, z: Math.sin(a) * r, alt: rng.range(70, 210), ph: rng.range(0, 6.28), burn: 0, px: 0, pz: 0 };
+      // Envelope and basket; a knock sends the balloon drifting off the other way.
+      const push = (nx, nz, v) => {
+        B.px += nx * Math.min(v, 20) * 0.25;
+        B.pz += nz * Math.min(v, 20) * 0.25;
+      };
+      B.parts = [
+        { x: 0, y: 0, z: 0, r: 7 * s, dy: 9 * s, push },
+        { x: 0, y: 0, z: 0, r: 1.5 * s, dy: -4.4 * s, push },
+      ];
+      this.solids.push(...B.parts);
+      this.balloonList.push(B);
       this.group.add(b);
     }
   }
@@ -871,8 +919,10 @@ export class Life {
     const R = this.stage.island.radius * 1.2;
     let burning = 0;
     for (const b of this.balloonList) {
-      b.x += wx * dt;
-      b.z += wz * dt;
+      b.x += (wx + b.px) * dt;
+      b.z += (wz + b.pz) * dt;
+      b.px *= 1 - Math.min(1, dt * 0.4);
+      b.pz *= 1 - Math.min(1, dt * 0.4);
       // Drifted off the island: come back in on the far side.
       if (Math.hypot(b.x, b.z) > R) {
         b.x = -b.x * 0.9;
@@ -882,6 +932,14 @@ export class Life {
       const y = ground + b.alt + Math.sin(this.time * 0.2 + b.ph) * 6;
       b.g.position.set(b.x, y, b.z);
       b.g.rotation.y += dt * 0.03;
+      for (const S of b.parts) {
+        S.x = b.x;
+        S.y = y + S.dy;
+        S.z = b.z;
+      }
+      // Swaying after a knock.
+      b.g.rotation.z = THREE.MathUtils.clamp(b.px * 0.03, -0.25, 0.25);
+      b.g.rotation.x = THREE.MathUtils.clamp(-b.pz * 0.03, -0.25, 0.25);
       // Burner blasts now and then.
       b.burn -= dt;
       if (b.burn < -Math.random() * 20) b.burn = 1.5 + Math.random() * 2;

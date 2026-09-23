@@ -1,5 +1,11 @@
 import * as THREE from 'three';
 import { Random } from '../engine/core/Random.js';
+import { CORAL_COLORS, ZONES, pickWeighted } from './Sealife.js';
+
+const _q = new THREE.Quaternion();
+const _e = new THREE.Euler();
+/** What crowns the canyon's rocks. */
+const CANYON_TOP = { branch: 3, brain: 1.5, table: 1.4, plate: 1.2, soft: 1.4, anemone: 1, pillar: 0.8, fan: 1, tubes: 0.8, barrel: 0.6, clam: 0.3 };
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
@@ -52,6 +58,7 @@ export class Course {
     if (this.kind === 'plane') this._settleAltitude();
     this._gates();
     this._visuals();
+    if (this.kind === 'sub') this._reefCanyon();
     this.engine.scene.add(this.group);
     return this;
   }
@@ -182,9 +189,157 @@ export class Course {
   }
 
   _sub() {
-    const pts = this._coastal(11, 0.62, 20, 100, -8);
-    this._clearPiers(pts, 14);
+    // Down the reef slope where there is room for a canyon.
+    const pts = this._coastal(14, 0.62, 25, 110, -10);
+    this._clearPiers(pts, 22);
     return pts;
+  }
+
+  /**
+   * The submarines race down a reef canyon: walls of coral-crusted rock
+   * rise on both sides of the course, rock arches span it between the
+   * gates, and the floor between them is a garden of every kind of coral.
+   * The rocks are solid: `rocksNear(x, z)` gives the ones around a point.
+   */
+  _reefCanyon() {
+    const life = this.island.life;
+    if (!life || !life.coralSet) return;
+    const rng = new Random(this.stage.seed * 131 + 7);
+    const N = this.terrain.noise;
+    const items = [];
+    const rocks = [];
+    const tones = CORAL_COLORS.rock;
+    const rock = (x, y, z, s, sy, crown) => {
+      _q.setFromEuler(_e.set(rng.range(-0.3, 0.3), rng.range(0, 6.28), rng.range(-0.3, 0.3)));
+      items.push({ kind: 'rock', m: new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), _q.clone(), new THREE.Vector3(s, sy, s)), c: new THREE.Color(rng.pick(tones)) });
+      rocks.push({ x, y: y + 0.42 * sy, z, r: s * 0.92 });
+      // The top of a wall is crowned with coral.
+      const top = y + 0.9 * sy;
+      for (let k = 0; k < crown; k++) {
+        const kind = pickWeighted(rng, CANYON_TOP);
+        const it = life.coralItem(kind, x + rng.range(-0.5, 0.5) * s, top, z + rng.range(-0.5, 0.5) * s, rng, 0.9);
+        if (it) items.push(it);
+      }
+    };
+    const n = this.n;
+    const width = (i, side) => 16 + N.noise(i * 0.04 + side * 7.1, 3.3) * 4;
+    for (let i = 0; i < n; i += 2) {
+      const cx = this.x[i];
+      const cz = this.z[i];
+      const cy = this.y[i];
+      const rx = -this.tz[i];
+      const rz = this.tx[i];
+      for (const side of [-1, 1]) {
+        const w = width(i, side);
+        // A wall: boulders stacked from the floor to a few metres under the surface.
+        const r0 = rng.range(3.4, 4.8);
+        const bx = cx + rx * side * (w + r0 * 0.85);
+        const bz = cz + rz * side * (w + r0 * 0.85);
+        const floor = this.ground(bx, bz);
+        const top = Math.min(-2.4, cy + rng.range(6, 10));
+        let y = floor - r0 * 0.3;
+        let s = r0;
+        const stack = [];
+        for (let layer = 0; layer < 3 && y + s * 0.6 < top; layer++) {
+          const fit = Math.min(s, (top - y) / 1.05);
+          if (fit < 1.4) break;
+          const lean = layer * rng.range(-0.5, 0.9);
+          const x = bx + rx * side * lean + this.tx[i] * rng.range(-1.5, 1.5);
+          const z = bz + rz * side * lean + this.tz[i] * rng.range(-1.5, 1.5);
+          // Never into the canyon of another stretch of the course (where it doubles back).
+          if (this._otherNear(x, z, i, 11 + fit * 0.85)) break;
+          stack.push([x, y, z, fit, fit * rng.range(0.75, 1.05)]);
+          y += fit * rng.range(0.7, 0.9);
+          s = fit * rng.range(0.72, 0.92);
+        }
+        stack.forEach((r, k) => rock(...r, k === stack.length - 1 ? 2 : 0));
+        // Sea fans and soft corals growing out from the wall's face.
+        if (rng.random() < 0.6) {
+          const fx = cx + rx * side * (w - 0.6);
+          const fz = cz + rz * side * (w - 0.6);
+          const it = life.coralItem(rng.random() < 0.6 ? 'fan' : 'soft', fx, Math.max(this.ground(fx, fz), floor) + rng.range(0, 3), fz, rng, 1.2);
+          if (it) items.push(it);
+        }
+      }
+      // The canyon floor: a coral garden (tall kelp only near the walls).
+      for (let k = 0; k < 3; k++) {
+        const lat = rng.range(-1, 1) * (width(i, 1) - 1.5);
+        const x = cx + rx * lat + this.tx[i] * rng.range(-4, 4);
+        const z = cz + rz * lat + this.tz[i] * rng.range(-4, 4);
+        const g = this.ground(x, z);
+        const kind = Math.abs(lat) > 11 && rng.random() < 0.35 ? 'kelp' : pickWeighted(rng, ZONES.reef);
+        const it = life.coralItem(kind, x, g, z, rng, kind === 'rock' ? 0.8 : 1);
+        if (it && (kind !== 'rock' || Math.abs(lat) > 7)) {
+          items.push(it);
+          if (kind === 'rock') rocks.push({ x, y: g, z, r: Math.hypot(it.m.elements[0], it.m.elements[1], it.m.elements[2]) * 0.9 });
+        }
+      }
+    }
+    // Arches between the gates, where there is room under the surface.
+    for (let k = 0; k < this.gates.length; k++) {
+      const a = this.gates[k];
+      const b = this.gates[(k + 1) % this.gates.length];
+      let sm = (a.s + b.s) / 2;
+      if (b.s < a.s) sm = (a.s + b.s + 1) / 2;
+      const i = Math.floor((sm % 1) * n);
+      const cy = this.y[i];
+      const crown = Math.min(-2.2, cy + 9.5);
+      if (crown - cy < 6.5) continue;
+      const cx = this.x[i];
+      const cz = this.z[i];
+      const rx = -this.tz[i];
+      const rz = this.tx[i];
+      const half = (width(i, 1) + width(i, -1)) / 2 + 1.5;
+      if (this._otherNear(cx + rx * half, cz + rz * half, i, 30) || this._otherNear(cx - rx * half, cz - rz * half, i, 30)) continue;
+      const floor = Math.min(this.ground(cx + rx * half, cz + rz * half), this.ground(cx - rx * half, cz - rz * half));
+      const rise = crown - floor;
+      const arc = (Math.PI * (half + rise)) / 2;
+      const count = Math.round(arc / 3.2);
+      for (let j = 0; j <= count; j++) {
+        const t = (j / count) * Math.PI;
+        const lat = Math.cos(t) * half;
+        const s = 2.3 + Math.sin(t * 3 + k) * 0.3;
+        const y = floor + Math.sin(t) * rise - s * 0.9;
+        rock(cx + rx * lat, y, cz + rz * lat, s, s * 0.9, t > 0.6 && t < 2.5 ? 1 : 0);
+      }
+    }
+    this.rockList = rocks;
+    // Bucket the rocks for quick lookups.
+    const C = 40;
+    this.rockGrid = new Map();
+    for (const R of rocks) {
+      const e = R.r + 4;
+      for (let gx = Math.floor((R.x - e) / C); gx <= Math.floor((R.x + e) / C); gx++) {
+        for (let gz = Math.floor((R.z - e) / C); gz <= Math.floor((R.z + e) / C); gz++) {
+          const key = gx * 100003 + gz;
+          if (!this.rockGrid.has(key)) this.rockGrid.set(key, []);
+          this.rockGrid.get(key).push(R);
+        }
+      }
+    }
+    this.reefGroup = life.coralSet(items);
+    this.engine.scene.add(this.reefGroup);
+  }
+
+  /** Is another stretch of the course (not the one around sample i) within r of (x, z)? */
+  _otherNear(x, z, i, r) {
+    const n = this.n;
+    const r2 = r * r;
+    for (let j = 0; j < n; j += 2) {
+      let d = Math.abs(j - i);
+      if (this.closed) d = Math.min(d, n - d);
+      if (d * (this.length / n) < r * 2.2) continue;
+      const dx = this.x[j] - x;
+      const dz = this.z[j] - z;
+      if (dx * dx + dz * dz < r2) return true;
+    }
+    return false;
+  }
+
+  /** Canyon rocks around (x, z) (sub races), or null. */
+  rocksNear(x, z) {
+    if (!this.rockGrid) return null;
+    return this.rockGrid.get(Math.floor(x / 40) * 100003 + Math.floor(z / 40)) || null;
   }
 
   /** Depth profile for the submarines: a few metres over the floor, below the surface, smoothed. */
@@ -746,6 +901,12 @@ export class Course {
   }
 
   dispose() {
+    if (this.reefGroup) {
+      // Shared coral models and materials stay with the island's life; only the instances go.
+      this.reefGroup.removeFromParent();
+      this.reefGroup.traverse((o) => o.isInstancedMesh && o.dispose());
+      this.reefGroup = null;
+    }
     this.group.removeFromParent();
     this.group.traverse((o) => o.geometry && o.geometry.dispose());
     for (const m of this.mats) {
