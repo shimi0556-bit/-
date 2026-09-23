@@ -328,9 +328,10 @@ export class Track {
     let target;
     if (q.dist <= W + 0.4) target = roadY - 0.26;
     else target = roadY - 0.1 - Math.max(0, q.dist - (W + 0.4)) * 0.02;
-    const inner = W + 4.5;
+    // Carved canyons keep a flat verge past the barriers before the walls rise.
+    const inner = W + ((this.stage.cut ?? 1.35) < 1 ? 9 : 4.5);
     const diff = Math.abs(h - target);
-    const k = smoothstep(inner, inner + 5 + diff * 1.35, q.dist);
+    const k = smoothstep(inner, inner + 5 + diff * (this.stage.cut ?? 1.35), q.dist);
     return target + (h - target) * k;
   }
 
@@ -600,17 +601,37 @@ export class Track {
     const W = this.W;
     const off = W + 6.5;
     const step = 2; // samples between rail vertices
-    const railMat = new THREE.MeshStandardMaterial({ name: 'מעקה', color: 0xc3c9d1, metalness: 0.85, roughness: 0.32, side: THREE.DoubleSide });
+    // Street circuits get painted concrete (Jersey) barriers, the rest steel armco.
+    const concrete = this.stage.barrier === 'concrete';
+    const railMat = concrete
+      ? new THREE.MeshStandardMaterial({ name: 'מחסום בטון', map: this._barrierTexture(), roughness: 0.85, metalness: 0, side: THREE.DoubleSide })
+      : new THREE.MeshStandardMaterial({ name: 'מעקה', color: 0xc3c9d1, metalness: 0.85, roughness: 0.32, side: THREE.DoubleSide });
     const postGeo = new THREE.BoxGeometry(0.12, 1.0, 0.12);
     postGeo.translate(0, 0.5, 0);
     const posts = [];
     const reflect = [];
+    // Profile: [inward offset towards the road, height].
+    const prof = concrete
+      ? [
+          [0.4, -0.05],
+          [0.34, 0.08],
+          [0.17, 0.33],
+          [0.07, 0.88],
+          [-0.13, 0.88],
+          [-0.24, -0.05],
+        ]
+      : [
+          [0, 0.42],
+          [0.07, 0.58],
+          [0, 0.74],
+        ];
     for (const side of [-1, 1]) {
       const pos = [];
       const nrm = [];
+      const uv = [];
       const idx = [];
       const rows = Math.ceil(n / step) + 1;
-      const prof = [0.42, 0.58, 0.74];
+      let dist = 0;
       for (let r = 0; r < rows; r++) {
         const i = (r * step) % n;
         const rx = -this.tz[i] * side;
@@ -618,15 +639,18 @@ export class Track {
         const x = this.x[i] + rx * off;
         const z = this.z[i] + rz * off;
         const gy = this._groundY(x, z);
+        if (r) dist += this.ds * step;
         for (let c = 0; c < prof.length; c++) {
-          const bulge = c === 1 ? 0.07 : 0;
-          pos.push(x - rx * bulge, gy + prof[c], z - rz * bulge);
+          const [inw, h] = prof[c];
+          pos.push(x - rx * inw, gy + h, z - rz * inw);
           nrm.push(-rx, 0, -rz);
+          uv.push(dist / 6, c / (prof.length - 1));
         }
-        if (r % 2 === 0 && r < rows - 1) {
+        if (!concrete && r % 2 === 0 && r < rows - 1) {
           posts.push(new THREE.Matrix4().makeRotationY(Math.atan2(this.tx[i], this.tz[i])).setPosition(x + rx * 0.12, gy - 0.05, z + rz * 0.12));
           if (r % 6 === 0) reflect.push({ m: new THREE.Matrix4().makeRotationY(Math.atan2(this.tx[i], this.tz[i])).setPosition(x - rx * 0.03, gy + 0.9, z - rz * 0.03), side });
         }
+        if (concrete && r % 6 === 0 && r < rows - 1) reflect.push({ m: new THREE.Matrix4().makeRotationY(Math.atan2(this.tx[i], this.tz[i])).setPosition(x - rx * 0.1, gy + 0.72, z - rz * 0.1), side });
       }
       for (let r = 0; r < rows - 1; r++) {
         for (let c = 0; c < prof.length - 1; c++) {
@@ -637,7 +661,9 @@ export class Track {
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
       geo.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
+      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
       geo.setIndex(idx);
+      if (concrete) geo.computeVertexNormals();
       geo.computeBoundingSphere();
       const rail = new THREE.Mesh(geo, railMat);
       rail.castShadow = true;
@@ -645,6 +671,7 @@ export class Track {
       rail.name = 'מעקה בטיחות';
       this.group.add(rail);
     }
+    if (posts.length) {
     const postMesh = new THREE.InstancedMesh(postGeo, materials.lib.darkMetal, posts.length);
     posts.forEach((m, k) => postMesh.setMatrixAt(k, m));
     postMesh.instanceMatrix.needsUpdate = true;
@@ -652,6 +679,7 @@ export class Track {
     postMesh.castShadow = true;
     postMesh.name = 'עמודי מעקה';
     this.group.add(postMesh);
+    }
     // Night reflectors (amber left, white right) that glow under exposure.
     const refl = new THREE.MeshStandardMaterial({ color: 0x111111, emissive: 0xffffff, emissiveIntensity: 1, roughness: 0.3 });
     materials.trackEmissive(refl, 1.2);
@@ -666,6 +694,37 @@ export class Track {
     rm.computeBoundingSphere();
     rm.name = 'מחזירי אור';
     this.group.add(rm);
+  }
+
+  /** Concrete barrier paint: red/white blocks along a grey base with grime at the foot. */
+  _barrierTexture() {
+    const cv = document.createElement('canvas');
+    cv.width = 256;
+    cv.height = 64;
+    const g = cv.getContext('2d');
+    g.fillStyle = '#9a978f';
+    g.fillRect(0, 0, 256, 64);
+    // Road-facing slope (v 0..0.6 of the profile) painted in alternating blocks.
+    g.fillStyle = '#c8261e';
+    g.fillRect(0, 12, 128, 26);
+    g.fillStyle = '#ecebe6';
+    g.fillRect(128, 12, 128, 26);
+    const grime = g.createLinearGradient(0, 0, 0, 14);
+    grime.addColorStop(0, 'rgba(30,28,26,0.75)');
+    grime.addColorStop(1, 'rgba(30,28,26,0)');
+    g.fillStyle = grime;
+    g.fillRect(0, 0, 256, 14);
+    for (let i = 0; i < 1400; i++) {
+      g.fillStyle = `rgba(${Math.random() < 0.5 ? '0,0,0' : '255,255,255'},${Math.random() * 0.06})`;
+      g.fillRect(Math.random() * 256, Math.random() * 64, 2, 2);
+    }
+    g.fillStyle = 'rgba(0,0,0,0.35)';
+    g.fillRect(0, 0, 2, 64);
+    const tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.anisotropy = 8;
+    return tex;
   }
 
   /** Physics boxes along both guard rails (6 m chords), independent of the visuals. */

@@ -1,6 +1,6 @@
 /**
  * Shimotron Rally — every tunable number lives here.
- * Sections: race rules, car physics, AI, camera, and the five island stages.
+ * Sections: race rules, car physics, car types, AI, camera, and the seven island stages.
  */
 
 export const RACE = {
@@ -295,5 +295,58 @@ export const STAGES = [
     weather: 'ash',
     lavaLake: true,
     track: { radius: [0.52, 0.63], wiggle: 0.3, targetLength: [3100, 4300] },
+  },
+  {
+    id: 'city',
+    name: 'העיר הסואנת',
+    tagline: 'מגדלי זכוכית, ניאון ותנועה בכל רחוב — מירוץ רחוב בשעת ערביים',
+    color: '#ffb020',
+    seed: 83,
+    size: 2400,
+    segments: 460,
+    island: { radius: 860, stretch: [1.06, 1], base: 5, hills: 1.2, ranges: [], mountainHeight: 0, coastRough: 0.05 },
+    biome: { grassTint: [0.5, 0.52, 0.5], sandTint: [0.95, 0.92, 0.86], dirtTint: [0.55, 0.55, 0.57], rockTint: [0.7, 0.7, 0.72] },
+    flora: { pine: 0, oak: 0.7, palm: 0.35, cactus: 0, deadTree: 0, trees: 260, grass: 0.15, flowers: 0.2, foliageTint: '#ffffff' },
+    water: { shallow: [0.05, 0.3, 0.36], deep: [0.004, 0.02, 0.05] },
+    sky: { time: 18.3, azimuth: 0.9, turbidity: 3.2, rayleigh: 1.3, clouds: 0.35, cloudDensity: 0.5, fog: 0.0011, wind: 0.8 },
+    weather: null,
+    city: true,
+    barrier: 'concrete',
+    roadGrip: 1,
+    track: { radius: [0.45, 0.64], wiggle: 0.34, targetLength: [3200, 4300] },
+  },
+  {
+    id: 'canyon',
+    name: 'קניון הגעש',
+    tagline: 'צוקי אבן אדומה, קניונים צרים ושלושה הרי געש בוערים במדבר',
+    color: '#e0582a',
+    seed: 97,
+    size: 2400,
+    segments: 460,
+    island: {
+      radius: 880,
+      stretch: [1.08, 0.96],
+      base: 9,
+      hills: 4,
+      ranges: [],
+      mountainHeight: 0,
+      dunes: { angle: 1.2, height: 2.5, wavelength: 70 },
+      mesas: { freq: 0.0042, threshold: 0.12, height: 38 },
+      volcanoes: [
+        { x: -30, z: 20, radius: 220, height: 180, craterRadius: 0.2, craterDepth: 42 },
+        { x: 470, z: -470, radius: 190, height: 240, craterRadius: 0.22, craterDepth: 34 },
+        { x: -520, z: 400, radius: 180, height: 220, craterRadius: 0.24, craterDepth: 30 },
+      ],
+    },
+    biome: { grassTint: [2.3, 1.15, 0.95], sandTint: [1.32, 0.94, 0.66], dirtTint: [1.28, 0.8, 0.56], rockTint: [1.3, 0.74, 0.52], strata: 1 },
+    flora: { pine: 0, oak: 0, palm: 0.12, cactus: 0.9, deadTree: 0.6, trees: 700, grass: 0.2, flowers: 0, foliageTint: '#d8c890' },
+    water: { shallow: [0.1, 0.4, 0.38], deep: [0.01, 0.04, 0.06] },
+    sky: { time: 17.1, azimuth: 1.8, turbidity: 4.2, rayleigh: 1.5, clouds: 0.15, cloudDensity: 0.35, fog: 0.0009, wind: 1.2 },
+    weather: 'dust',
+    cut: 0.3, // steep canyon walls where the road is carved through rock
+    lavaLake: true,
+    lavaGain: 0.3, // daylight: keep the lakes orange instead of blown out
+    roadGrip: 0.97,
+    track: { radius: [0.38, 0.58], wiggle: 0.36, targetLength: [3100, 4400] },
   },
 ];

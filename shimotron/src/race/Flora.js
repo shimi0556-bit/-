@@ -202,7 +202,7 @@ export function deadTreeGeometry(seed = 1) {
  * where the camera actually is.
  */
 export class IslandFlora extends Vegetation {
-  constructor(engine, terrain, materials, stage, track) {
+  constructor(engine, terrain, materials, stage, track, blocked = null) {
     const W = track.W;
     const n = track.n;
     super(engine, terrain, materials, {
@@ -211,8 +211,12 @@ export class IslandFlora extends Vegetation {
         const i = Math.floor(rng.random() * n);
         const side = rng.random() < 0.5 ? -1 : 1;
         const off = side * (W + 3 + Math.pow(rng.random(), 1.6) * 55);
-        return { x: track.x[i] - track.tz[i] * off, z: track.z[i] + track.tx[i] * off };
+        const x = track.x[i] - track.tz[i] * off;
+        const z = track.z[i] + track.tx[i] * off;
+        if (blocked && blocked(x, z)) return null;
+        return { x, z };
       },
+      blocked,
       colliderFilter: () => false, // rails enclose the circuit; scenery is visual only
     });
     this.stage = stage;

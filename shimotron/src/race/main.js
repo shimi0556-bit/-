@@ -180,6 +180,7 @@ class Game {
       if (this.plans[st.id]) continue;
       await wait(60);
       const terrain = new Terrain({}, { plaza: null, paths: [], island: st.island, size: st.size, seed: st.seed });
+      terrain.skipMesas = true;
       const plan = generateTrack(terrain, st, { halfWidth: RACE.roadHalfWidth });
       if (!plan) continue;
       this.plans[st.id] = plan;

@@ -12,7 +12,9 @@ for (const st of STAGES) {
   if (only && st.id !== only) continue;
   const t0 = Date.now();
   const terrain = new Terrain({}, { plaza: null, paths: [], island: st.island, size: st.size, seed: st.seed });
+  terrain.skipMesas = true;
   const tr = generateTrack(terrain, st, { log: true });
+  terrain.skipMesas = false;
   const ms = Date.now() - t0;
   if (!tr) { console.log(st.id, 'NO TRACK', ms + 'ms'); continue; }
   console.log(st.id, JSON.stringify({ len: Math.round(tr.length), minR: Math.round(tr.minRadius), corners: tr.corners, tight: tr.tight, grade: (tr.maxGrade * 100).toFixed(1), cut: tr.cutFill.toFixed(1), climb: Math.round(tr.climb), score: tr.score.toFixed(1), ms }));

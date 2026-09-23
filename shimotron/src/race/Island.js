@@ -4,6 +4,7 @@ import { Emitter } from '../engine/fx/Particles.js';
 import { generateTrack } from './TrackGenerator.js';
 import { Track } from './Track.js';
 import { IslandFlora } from './Flora.js';
+import { City } from './City.js';
 import { Weather } from './Effects.js';
 import { RACE } from './config.js';
 import { GROUP } from './Vehicle.js';
@@ -48,9 +49,12 @@ export class Island {
     this.terrain = terrain;
 
     await progress(0.18, 'מתכנן מסלול מירוץ…');
+    // Canyons: plan the road on the valley floor, then raise the mesas around it.
+    terrain.skipMesas = true;
     const plan = generateTrack(terrain, st, { halfWidth: RACE.roadHalfWidth });
     if (!plan) throw new Error(`לא נמצא מסלול תקין עבור ${st.name}`);
     const track = new Track(eng, terrain, plan.controls, st);
+    terrain.skipMesas = false;
     this.track = track;
     this.plan = plan;
     terrain.heightModifier = track.heightModifier;
@@ -69,8 +73,15 @@ export class Island {
     track.buildPhysics(eng.physics);
     await nextFrame();
 
+    if (st.city) {
+      await progress(0.56, 'בונה את העיר…');
+      this.city = new City(eng, terrain, track, st, this.materials);
+      this.group.add(this.city.build());
+      await nextFrame();
+    }
+
     await progress(0.62, 'שותל צמחייה…');
-    const flora = new IslandFlora(eng, terrain, this.materials, st, track);
+    const flora = new IslandFlora(eng, terrain, this.materials, st, track, this.city ? (x, z) => this.city.blocked(x, z) : null);
     this.flora = flora;
     this.group.add(flora.build());
     for (const b of eng.physics.world.bodies) if (!before.has(b)) this.bodies.push(b);
@@ -83,7 +94,8 @@ export class Island {
       this.weather = new Weather(eng, st.weather);
       this.group.add(this.weather.points);
     }
-    if (st.island.volcano) this._volcano();
+    const volcanoes = st.island.volcanoes || (st.island.volcano ? [st.island.volcano] : []);
+    volcanoes.forEach((V, k) => this._volcano(V, k === 0));
     this.dustColor = this._dustColor();
     eng.scene.add(this.group);
     return this;
@@ -131,9 +143,8 @@ export class Island {
     return [0.62 * tint[0], 0.55 * tint[1], 0.45 * tint[2]].map((v) => Math.min(1, v));
   }
 
-  /** Glowing lava lake in the crater, a light over it and a slow ash plume. */
-  _volcano() {
-    const V = this.stage.island.volcano;
+  /** Glowing lava lake in the crater, a light over it and a slow ash plume (the big plume only on the main cone). */
+  _volcano(V, main = true) {
     const t = this.terrain;
     const R = V.radius * V.craterRadius;
     let floor = Infinity;
@@ -145,7 +156,8 @@ export class Island {
       }
     }
     const level = floor + 3;
-    const uniforms = { uTime: { value: 0 }, uGain: { value: 1 } };
+    if (!this.lavaUniforms) this.lavaUniforms = { uTime: { value: 0 }, uGain: { value: 1 } };
+    const uniforms = this.lavaUniforms;
     const mat = new THREE.ShaderMaterial({
       uniforms,
       fog: false,
@@ -178,10 +190,10 @@ export class Island {
     const glow = new THREE.PointLight(0xff5a1a, 0, R * 5, 1.6);
     glow.position.set(V.x, level + 18, V.z);
     this.group.add(glow);
-    this.lights.push({ light: glow, base: 600 });
+    this.lights.push({ light: glow, base: main ? 600 : 260 });
     const plume = new Emitter(this.engine.particles.systems.smoke, {
       position: new THREE.Vector3(V.x, level + 6, V.z),
-      rate: 3,
+      rate: main ? 3 : 1.2,
       radius: R * 0.4,
       spread: 0.25,
       speed: [4, 8],
@@ -220,10 +232,11 @@ export class Island {
   update(dt) {
     const eng = this.engine;
     this.track.update(dt, eng);
+    if (this.city) this.city.update(dt);
     if (this.weather) this.weather.update(dt);
     if (this.lava) {
       this.lava.uniforms.uTime.value = eng.time.elapsed;
-      this.lava.uniforms.uGain.value = (eng.materials.emissiveScale || 1) * 0.6;
+      this.lava.uniforms.uGain.value = (eng.materials.emissiveScale || 1) * 0.6 * (this.stage.lavaGain ?? 1);
     }
     for (const l of this.lights) l.light.intensity = l.base * (0.85 + 0.15 * Math.sin(eng.time.elapsed * 3.1) * Math.sin(eng.time.elapsed * 1.7));
   }
@@ -233,6 +246,7 @@ export class Island {
     for (const b of this.bodies) eng.physics.world.removeBody(b);
     this.bodies = [];
     for (const e of this.emitters) eng.particles.remove(e);
+    if (this.city) this.city.dispose();
     this.group.removeFromParent();
     this.group.traverse((o) => {
       if (o.isMesh || o.isPoints || o.isInstancedMesh) {

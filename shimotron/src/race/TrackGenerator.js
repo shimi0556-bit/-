@@ -18,6 +18,7 @@ export function generateTrack(terrain, stage, { halfWidth = 7, attempts = 48, lo
   const R = I.radius;
   const [sx, sz] = I.stretch || [1, 1];
   const T = stage.track;
+  const volcanoes = I.volcanoes || (I.volcano ? [I.volcano] : []);
   const rng = new Random(stage.seed * 7919 + 13);
   let best = null;
   const reasons = {};
@@ -60,6 +61,8 @@ export function generateTrack(terrain, stage, { halfWidth = 7, attempts = 48, lo
         const gx = terrain.height(x + 14, z) - terrain.height(x - 14, z);
         const gz = terrain.height(x, z + 14) - terrain.height(x, z - 14);
         cost += Math.hypot(gx, gz) * 0.35;
+        // Skirt the volcanoes' flanks instead of climbing them.
+        for (const V of volcanoes) cost += Math.max(0, 1 - Math.hypot(x - V.x, z - V.z) / (V.radius * 0.95)) * 400;
         if (cost < bestCost) {
           bestCost = cost;
           bestR = r;
@@ -73,7 +76,7 @@ export function generateTrack(terrain, stage, { halfWidth = 7, attempts = 48, lo
       const th = (i / K) * Math.PI * 2;
       return new THREE.Vector3(Math.cos(th) * r * R * sx, 0, Math.sin(th) * r * R * sz);
     });
-    const result = evaluate(terrain, pts, halfWidth, T);
+    const result = evaluate(terrain, pts, halfWidth, T, volcanoes);
     if (result.reject) reasons[result.reject] = (reasons[result.reject] || 0) + 1;
     else if (!best || result.score > best.score) best = result;
   }
@@ -81,7 +84,7 @@ export function generateTrack(terrain, stage, { halfWidth = 7, attempts = 48, lo
   return best;
 }
 
-function evaluate(terrain, controls, W, T) {
+function evaluate(terrain, controls, W, T, volcanoes = []) {
   const curve = new THREE.CatmullRomCurve3(controls, true, 'centripetal', 0.5);
   const length = curve.getLength();
   const n = Math.round(length / 2);
@@ -106,6 +109,7 @@ function evaluate(terrain, controls, W, T) {
     inTight = isTight;
   }
   if (minR < 22) return { reject: 'radius' };
+  for (const V of volcanoes) for (let i = 0; i < n; i += 4) if (Math.hypot(P[i].x - V.x, P[i].z - V.z) < V.radius * 0.72) return { reject: 'volcano' };
   const step = 5;
   for (let i = 0; i < n; i += step) {
     for (let j = i + 45; j < Math.min(n, n - 45 + i); j += step) {

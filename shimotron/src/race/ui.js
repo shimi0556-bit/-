@@ -3,6 +3,9 @@ import { Race } from './Race.js';
 import { drawCarProfile } from './CarModel.js';
 import { ITEMS } from './Pickups.js';
 
+/** The island count in words (masculine, for 'איים'). */
+const ISLANDS = ['', 'אחד', 'שניים', 'שלושה', 'ארבעה', 'חמישה', 'שישה', 'שבעה', 'שמונה', 'תשעה', 'עשרה'][STAGES.length] || String(STAGES.length);
+
 const h = (tag, attrs = {}, ...kids) => {
   const el = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {
@@ -106,11 +109,11 @@ export class RaceUI {
       h(
         'div',
         { class: 'menu-grid' },
-        h('div', { class: 'brand' }, h('div', { class: 'kicker' }, 'SHIMOTRON RALLY'), h('h1', {}, 'שימוטרון ראלי'), h('p', {}, 'חמישה איים, חמישה מסלולים של יותר משלושה קילומטרים, שש מכוניות — ואליפות אחת. כל אי נבנה בזמן אמת: שטח, ים, צמחייה, שמיים ומזג אוויר.')),
+        h('div', { class: 'brand' }, h('div', { class: 'kicker' }, 'SHIMOTRON RALLY'), h('h1', {}, 'שימוטרון ראלי'), h('p', {}, `${ISLANDS} איים — מיערות ודיונות ועד עיר סואנת וקניון הרי געש — מסלולים של יותר משלושה קילומטרים, שישה סוגי רכבים, הפתעות על המסלול, אליפות וקריירה. כל אי נבנה בזמן אמת.`)),
         h(
           'div',
           { class: 'row' },
-          h('button', { class: 'btn primary big', type: 'button', onclick: () => g.startChampionship() }, icon('trophy'), state.champ ? `המשך אליפות · שלב ${state.champ.stage + 1}/5` : 'אליפות (5 איים)'),
+          h('button', { class: 'btn primary big', type: 'button', onclick: () => g.startChampionship() }, icon('trophy'), state.champ ? `המשך אליפות · שלב ${state.champ.stage + 1}/${STAGES.length}` : `אליפות (${STAGES.length} איים)`),
           h('button', { class: 'btn big', type: 'button', onclick: () => g.startSingle() }, icon('flag'), `מירוץ בודד · ${STAGES[state.selected].name}`),
           state.champ ? h('button', { class: 'btn', type: 'button', onclick: () => g.resetChampionship() }, 'אליפות חדשה') : null,
         ),
@@ -641,7 +644,7 @@ export class RaceUI {
         { class: 'results', style: 'text-align:center' },
         h('div', { html: ICON.trophy.replace('<svg', '<svg class="trophy"') }),
         h('h2', { style: me === 1 ? 'color:var(--accent)' : '' }, title),
-        h('p', { class: 'sub' }, 'חמישה איים, חמישה מסלולים — הנה הטבלה הסופית'),
+        h('p', { class: 'sub' }, `${ISLANDS} איים, ${ISLANDS} מסלולים — הנה הטבלה הסופית`),
         h('table', { class: 'tbl', style: 'text-align:start' }, h('tbody', {}, list.map((d, k) => h('tr', { class: d.isPlayer ? 'me' : '', style: `--car:${d.color}` }, h('td', { class: 'pos' }, k + 1), h('td', {}, h('span', { class: 'car' }), d.name), h('td', { class: 'pts' }, `${d.pts} נק׳`))))),
         h('div', { class: 'row', style: 'justify-content:center;margin-top:18px' }, h('button', { class: 'btn primary big', type: 'button', onclick: onMenu }, 'לתפריט הראשי')),
       ),

@@ -116,7 +116,8 @@ export class Vegetation {
   /**
    * options.grassSampler(rng) → {x, z} | null picks grass/flower spots (default:
    * a disk around the plaza); options.colliderFilter(c) → bool decides which
-   * trees and rocks get static physics (default: the island's heart).
+   * trees and rocks get static physics (default: the island's heart);
+   * options.blocked(x, z) → bool keeps scenery off built-up ground.
    */
   constructor(engine, terrain, materials, options = {}) {
     this.engine = engine;
@@ -141,6 +142,7 @@ export class Vegetation {
     if (t.plaza && Math.hypot(x - t.plaza.x, z - t.plaza.z) < clearPlaza) return null;
     if (clearPath > 0 && t.paths.length && t.distanceToPath(x, z) < clearPath) return null;
     if (t.clearance && t.clearance(x, z) < clearPath * 2 + 4) return null;
+    if (this.options.blocked && this.options.blocked(x, z)) return null;
     return h;
   }
 

@@ -32,6 +32,7 @@ export class Terrain {
       rockTint: [1, 1, 1],
       snowLine: 9999,
       snowAmount: 0,
+      strata: 0, // sandstone banding in the rock layer (desert canyons)
       ...(options.biome || {}),
     };
     const rng = new Random(this.seed);
@@ -141,9 +142,19 @@ export class Terrain {
       const wave = Math.pow(Math.abs(Math.sin((u / (D.wavelength || 90)) * Math.PI + n * 3.0)), 1.6);
       h += wave * (D.height || 8) * (0.6 + 0.4 * this.noise.noise(x * 0.002, z * 0.002));
     }
-    if (I.volcano) {
-      const V = I.volcano;
+    if (I.mesas && !this.skipMesas) {
+      // Flat-topped plateaus with near-vertical walls (and a second, higher step).
+      const M = I.mesas;
+      const m = this._fbm(x * M.freq + 3.3, z * M.freq - 8.1, 4) + this.noise.noise(x * M.freq * 4, z * M.freq * 4) * 0.06;
+      const edge = 0.035;
+      let inland = smoothstep(0.95, 0.7, Math.hypot(x / sx, z / sz) / R);
+      // Keep volcano cones clean.
+      for (const V of I.volcanoes || []) inland *= smoothstep(0.75, 1.15, Math.hypot(x - V.x, z - V.z) / V.radius);
+      h += (smoothstep(M.threshold, M.threshold + edge, m) * M.height + smoothstep(M.threshold + 0.18, M.threshold + 0.18 + edge, m) * M.height * 0.6) * inland;
+    }
+    for (const V of I.volcanoes || (I.volcano ? [I.volcano] : [])) {
       const dv = Math.hypot(x - V.x, z - V.z) / V.radius;
+      if (dv >= 1) continue;
       const ribs = this._ridged(x * 0.012, z * 0.012, 3);
       const cone = Math.pow(Math.max(0, 1 - dv), 1.7) * V.height * (0.88 + ribs * 0.2);
       const crater = smoothstep(V.craterRadius, V.craterRadius * 0.55, dv) * V.craterDepth;
@@ -395,6 +406,7 @@ export class Terrain {
       uTintDirt: { value: new THREE.Vector3(...this.biome.dirtTint) },
       uTintRock: { value: new THREE.Vector3(...this.biome.rockTint) },
       uSnow: { value: new THREE.Vector2(this.biome.snowLine, this.biome.snowAmount) },
+      uStrata: { value: this.biome.strata },
     };
     this.uniforms = uniforms;
     mat.onBeforeCompile = (shader) => {
@@ -414,7 +426,7 @@ export class Terrain {
           varying vec3 vTPos; varying vec3 vTNrm;
           uniform sampler2D tSplat, tGrass, tGrassN, tRock, tRockN, tSand, tSandN, tDirt;
           uniform float uSize; uniform float uTime; uniform vec3 uCaustic;
-          uniform vec3 uTintGrass; uniform vec3 uTintSand; uniform vec3 uTintDirt; uniform vec3 uTintRock; uniform vec2 uSnow;
+          uniform vec3 uTintGrass; uniform vec3 uTintSand; uniform vec3 uTintDirt; uniform vec3 uTintRock; uniform vec2 uSnow; uniform float uStrata;
           float tSnow;
           // Animated caustic web (iterated domain warp), sharpened into bright filaments.
           float caustics(vec2 p, float t) {
@@ -446,6 +458,12 @@ export class Terrain {
             tTriW = pow(abs(n), vec3(4.0)); tTriW /= dot(tTriW, vec3(1.0));
             vec3 rock = texture2D(tRock, vTPos.zy * 0.045).rgb * tTriW.x + texture2D(tRock, vTPos.xz * 0.045).rgb * tTriW.y + texture2D(tRock, vTPos.xy * 0.045).rgb * tTriW.z;
             grass *= uTintGrass; sand *= uTintSand; dirt *= uTintDirt; rock *= uTintRock;
+            if (uStrata > 0.0) {
+              // Sedimentary bands: thin bright and dark layers that wobble with the rock.
+              float band = vTPos.y * 0.55 + sin(vTPos.x * 0.021 + vTPos.z * 0.017) * 1.6 + sin(vTPos.z * 0.063) * 0.4;
+              float layer = 0.5 + 0.5 * sin(band) * sin(band * 0.37 + 1.3);
+              rock *= mix(vec3(1.0), mix(vec3(0.72, 0.62, 0.58), vec3(1.18, 1.06, 0.92), layer), uStrata);
+            }
             // Height-aware blending keeps transitions crisp instead of muddy.
             float hg = dot(grass, vec3(0.33)) + 0.2;
             float hs = dot(sand, vec3(0.33));
