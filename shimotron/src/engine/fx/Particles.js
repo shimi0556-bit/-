@@ -306,8 +306,6 @@ export class Particles {
       dust: new ParticleSystem(engine, { name: 'אבק', texture: T.smoke, max: Math.round(600 * q), additive: false, lit: true }),
       // White water: bow spray, rooster tails and splashes.
       spray: new ParticleSystem(engine, { name: 'רסס', texture: T.spray || T.smoke, max: Math.round(2400 * q), additive: false, lit: true, gain: 2.3 }),
-      // Rocket exhaust: the billowing clouds of a launch.
-      plume: new ParticleSystem(engine, { name: 'ענן שיגור', texture: T.smoke, max: Math.round(1800 * q), additive: false, lit: true }),
     };
     this.emitters = [];
     this.materials = materials;

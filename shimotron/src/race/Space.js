@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Random } from '../engine/core/Random.js';
 
 /**
@@ -225,17 +225,102 @@ export class SpaceScene {
 
   _asteroids() {
     const rng = this.rng;
-    const base = new THREE.IcosahedronGeometry(1, 2);
-    const p = base.attributes.position;
-    for (let i = 0; i < p.count; i++) {
-      const v = new THREE.Vector3().fromBufferAttribute(p, i);
-      const k = 1 + Math.sin(v.x * 3.1 + v.y * 1.7) * 0.18 + Math.sin(v.z * 4.3 - v.x * 2.2) * 0.12 + Math.sin(v.y * 7.1) * 0.06;
-      v.multiplyScalar(k);
-      p.setXYZ(i, v.x, v.y * 0.8, v.z);
+    // 3D value noise for the shapes.
+    const hash = (x, y, z) => {
+      let h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(z, 1274126177);
+      h = Math.imul(h ^ (h >>> 13), 1103515245);
+      return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+    };
+    const noise = (x, y, z) => {
+      const xi = Math.floor(x);
+      const yi = Math.floor(y);
+      const zi = Math.floor(z);
+      const f = (t) => t * t * (3 - 2 * t);
+      const u = f(x - xi);
+      const v = f(y - yi);
+      const w = f(z - zi);
+      const L = (a, b, t) => a + (b - a) * t;
+      const c = (dx, dy, dz) => hash(xi + dx, yi + dy, zi + dz);
+      return L(L(L(c(0, 0, 0), c(1, 0, 0), u), L(c(0, 1, 0), c(1, 1, 0), u), v), L(L(c(0, 0, 1), c(1, 0, 1), u), L(c(0, 1, 1), c(1, 1, 1), u), v), w) * 2 - 1;
+    };
+    const fbm = (x, y, z, o) => {
+      let sum = 0;
+      let amp = 0.5;
+      let fr = 1;
+      for (let i = 0; i < o; i++) {
+        sum += amp * noise(x * fr, y * fr, z * fr);
+        amp *= 0.5;
+        fr *= 2.1;
+      }
+      return sum;
+    };
+    this.rockGeos = [];
+    for (let variant = 0; variant < 3; variant++) {
+      let g = new THREE.IcosahedronGeometry(1, 6);
+      g.deleteAttribute('uv');
+      g.deleteAttribute('normal');
+      g = mergeVertices(g);
+      const p = g.attributes.position;
+      const seed = variant * 17.3 + 3.1;
+      // Craters: dents with raised rims.
+      const craters = [];
+      for (let k = 0; k < 7 + variant * 2; k++) {
+        const d = new THREE.Vector3(rng.range(-1, 1), rng.range(-1, 1), rng.range(-1, 1)).normalize();
+        craters.push({ d, r: rng.range(0.18, 0.5), depth: rng.range(0.05, 0.14) });
+      }
+      const stretch = [new THREE.Vector3(1.25, 0.8, 1), new THREE.Vector3(1, 0.9, 1.1), new THREE.Vector3(1.45, 0.75, 0.85)][variant];
+      const shade = new Float32Array(p.count);
+      const v = new THREE.Vector3();
+      for (let i = 0; i < p.count; i++) {
+        v.fromBufferAttribute(p, i).normalize();
+        let h = 1 + fbm(v.x * 1.3 + seed, v.y * 1.3, v.z * 1.3 - seed, 5) * 0.45;
+        let crater = 0;
+        for (const C of craters) {
+          const ang = Math.acos(THREE.MathUtils.clamp(v.dot(C.d), -1, 1));
+          const t = ang / C.r;
+          if (t < 1) crater -= C.depth * (1 - t * t);
+          else if (t < 1.35) crater += C.depth * 0.35 * Math.sin(((t - 1) / 0.35) * Math.PI);
+        }
+        h += crater;
+        shade[i] = crater;
+        p.setXYZ(i, v.x * h * stretch.x, v.y * h * stretch.y, v.z * h * stretch.z);
+      }
+      g.computeVertexNormals();
+      // Regolith colour: darker in the craters, lighter on rims and ridges, a few rusty patches.
+      const col = new Float32Array(p.count * 3);
+      const c = new THREE.Color();
+      for (let i = 0; i < p.count; i++) {
+        v.fromBufferAttribute(p, i);
+        const n = fbm(v.x * 2.2 - seed, v.y * 2.2, v.z * 2.2 + seed, 3);
+        c.setRGB(0.5, 0.47, 0.44).multiplyScalar(0.82 + n * 0.35 + shade[i] * 2.2);
+        if (fbm(v.x * 1.1 + 7, v.y * 1.1, v.z * 1.1 - 3, 2) > 0.18) c.lerp(new THREE.Color(0.55, 0.36, 0.24), 0.45);
+        c.toArray(col, i * 3);
+      }
+      g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      this.rockGeos.push(g);
     }
-    base.computeVertexNormals();
-    this.rockGeo = base;
-    this.rockMat = this._mat(new THREE.MeshStandardMaterial({ color: 0x7a7068, roughness: 0.95, metalness: 0.05 }));
+    this.rockGeo = this.rockGeos[0];
+    // Gritty close-up detail: a bump from noise in object space.
+    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.93, metalness: 0.04 });
+    mat.onBeforeCompile = (shader) => {
+      shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vRock;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvRock = position;');
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying vec3 vRock;\nfloat rh(vec3 p){ return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }\nfloat rn(vec3 p){ vec3 i = floor(p); vec3 f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(mix(rh(i), rh(i + vec3(1,0,0)), f.x), mix(rh(i + vec3(0,1,0)), rh(i + vec3(1,1,0)), f.x), f.y), mix(mix(rh(i + vec3(0,0,1)), rh(i + vec3(1,0,1)), f.x), mix(rh(i + vec3(0,1,1)), rh(i + vec3(1,1,1)), f.x), f.y), f.z); }')
+        .replace(
+          '#include <normal_fragment_maps>',
+          `#include <normal_fragment_maps>
+          {
+            vec3 q = vRock * 9.0;
+            float e = 0.12;
+            float b0 = rn(q) + rn(q * 2.7) * 0.5;
+            vec3 grad = vec3(rn(q + vec3(e, 0, 0)) - rn(q - vec3(e, 0, 0)), rn(q + vec3(0, e, 0)) - rn(q - vec3(0, e, 0)), rn(q + vec3(0, 0, e)) - rn(q - vec3(0, 0, e)));
+            normal = normalize(normal - (mat3(viewMatrix) * grad) * 0.9);
+            diffuseColor.rgb *= 0.85 + 0.3 * b0;
+          }`,
+        );
+    };
+    mat.customProgramCacheKey = () => 'asteroid-v2';
+    this.rockMat = this._mat(mat);
   }
 
   /** Scatters the belt around a stretch of the course (keeping the racing line open). */
@@ -279,15 +364,26 @@ export class SpaceScene {
       list.push(m.clone());
       this.rocks.push({ x: pos.x, y: pos.y, z: pos.z, r: size * 0.95 });
     }
-    const mesh = new THREE.InstancedMesh(this.rockGeo, this.rockMat, list.length);
-    list.forEach((mm, i) => mesh.setMatrixAt(i, mm));
-    mesh.computeBoundingSphere();
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    mesh.name = 'חגורת אסטרואידים';
-    this.rockMesh = mesh;
-    (this.rockMeshes = this.rockMeshes || []).push(mesh);
-    this.group.add(mesh);
+    // Three shapes, and each rock its own tint: grey, brown, rusty, now and then an icy one.
+    const tints = [0xffffff, 0xd8c8b8, 0xc8a890, 0xe8e0d8, 0xbfd8ff];
+    const c = new THREE.Color();
+    for (let v = 0; v < this.rockGeos.length; v++) {
+      const mine = list.filter((_, i) => i % this.rockGeos.length === v);
+      if (!mine.length) continue;
+      const mesh = new THREE.InstancedMesh(this.rockGeos[v], this.rockMat, mine.length);
+      mine.forEach((mm, i) => {
+        mesh.setMatrixAt(i, mm);
+        c.set(tints[Math.floor(rng.random() * (rng.random() < 0.9 ? 4 : 5))]).multiplyScalar(0.85 + rng.random() * 0.3);
+        mesh.setColorAt(i, c);
+      });
+      mesh.computeBoundingSphere();
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.name = 'חגורת אסטרואידים';
+      this.rockMesh = mesh;
+      (this.rockMeshes = this.rockMeshes || []).push(mesh);
+      this.group.add(mesh);
+    }
   }
 
   /** Motes drifting past the camera, so speed reads in empty space. */
