@@ -1108,9 +1108,11 @@ class Game {
   }
 
   _keys() {
-    const block = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'];
+    const block = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'AltRight', 'AltLeft'];
     window.addEventListener('keydown', (e) => {
-      if ((this.state === 'race' || this.state === 'explore') && block.includes(e.code)) e.preventDefault();
+      const playing = this.state === 'race' || this.state === 'explore';
+      // Ctrl is the fire key: keep the browser's Ctrl shortcuts (save, find, bookmark…) out of the game.
+      if (playing && (block.includes(e.code) || e.ctrlKey)) e.preventDefault();
       if (e.repeat) return;
       if (this.state !== 'race' && this.state !== 'explore') return;
       if (e.code === 'Escape' || e.code === 'KeyP') this.pause(!this.paused);
@@ -1118,6 +1120,13 @@ class Game {
       else if (e.code === 'KeyM') {
         this.settings.sound = !this.settings.sound;
         this.engine.audio.setEnabled(this.settings.sound);
+      }
+    });
+    // Ctrl+W can't be blocked by a page: ask before leaving mid-race instead of losing it.
+    window.addEventListener('beforeunload', (e) => {
+      if (this.state === 'race' || this.state === 'explore') {
+        e.preventDefault();
+        e.returnValue = '';
       }
     });
     document.addEventListener('visibilitychange', () => {
@@ -1175,7 +1184,7 @@ class Game {
     if (r.state === 'racing' && P.wrongWay > 1.2) {
       this._wrongT = (this._wrongT || 0) - dt;
       if (this._wrongT <= 0) {
-        this.ui.message('כיוון שגוי!', 'warn', 'לחצו R לחזרה למסלול', 1200);
+        this.ui.message('כיוון שגוי!', 'warn', 'לחצו AltGr לחזרה למסלול', 1200);
         this._wrongT = 1.3;
       }
     }

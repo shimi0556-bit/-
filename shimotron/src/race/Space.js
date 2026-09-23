@@ -253,17 +253,17 @@ export class SpaceScene {
     const list = [];
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
-    for (let k = 0; k < 420; k++) {
+    for (let k = 0; k < 300; k++) {
       const s = from + rng.random() * (to - from);
       const pose = course.pose(s, 0);
       const t = pose.tangent;
       const r = pose.right;
       const up = new THREE.Vector3().crossVectors(r, t).normalize();
       const a = rng.random() * Math.PI * 2;
-      const d = 35 + Math.pow(rng.random(), 1.6) * 260;
+      const d = 70 + Math.pow(rng.random(), 1.6) * 280;
       const size = 3 + Math.pow(rng.random(), 2.5) * 34;
       const pos = pose.position.clone().addScaledVector(r, Math.cos(a) * d).addScaledVector(up, Math.sin(a) * d * 0.7);
-      if (d - size < 26) continue;
+      if (d - size < 58) continue; // a wide open lane down the racing line
       q.setFromEuler(new THREE.Euler(rng.random() * 6, rng.random() * 6, rng.random() * 6));
       m.compose(pos, q, new THREE.Vector3(size, size * rng.range(0.7, 1), size * rng.range(0.8, 1.2)));
       list.push(m.clone());
@@ -311,8 +311,9 @@ export class SpaceScene {
     const N = 24;
     for (let i = 0; i < N; i++) {
       const a = (i / N) * Math.PI * 2;
-      const r = 1300 + Math.sin(a * 2) * 380 + Math.sin(a * 3 + 1) * 160;
-      pts.push(new THREE.Vector3(Math.cos(a) * r, Math.sin(a * 2 + 0.5) * 170 + Math.sin(a * 5) * 60, Math.sin(a) * r * 0.8));
+      // Gentle: long sweeping bends and small climbs (the space race is for everyone).
+      const r = 1300 + Math.sin(a * 2) * 260 + Math.sin(a * 3 + 1) * 90;
+      pts.push(new THREE.Vector3(Math.cos(a) * r, Math.sin(a * 2 + 0.5) * 90 + Math.sin(a * 5) * 25, Math.sin(a) * r * 0.8));
     }
     return pts;
   }

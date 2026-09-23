@@ -500,7 +500,7 @@ export class Craft {
     this.bank += (C.steer * 1.0 - this.bank) * (1 - Math.exp(-dt * 3));
     const climb = (C.up || 0) - (C.down || 0);
     this.pitch += (climb * 0.7 - this.pitch) * (1 - Math.exp(-dt * 2.2));
-    this.yaw -= this.bank * 0.72 * dt;
+    this.yaw -= this.bank * 0.95 * dt;
     this._fwd();
     this.velocity.copy(this.forward).multiplyScalar(this.speed);
     this.position.addScaledVector(this.velocity, dt);
@@ -515,7 +515,7 @@ export class Craft {
       if (d >= R || d < 1e-3) continue;
       const n = _v.set(dx / d, dy / d, dz / d);
       this.position.set(S.x + n.x * R, S.y + n.y * R, S.z + n.z * R);
-      this.speed *= 0.55;
+      this.speed *= 0.8;
       this.hit = 1;
       this._bumpYaw(n);
     }
@@ -523,7 +523,7 @@ export class Craft {
       const n = this.env.collide(this.position);
       if (n) {
         this.position.addScaledVector(n, 2);
-        this.speed *= 0.55;
+        this.speed *= 0.8;
         this.hit = 1;
         this._bumpYaw(n);
       }
@@ -807,7 +807,7 @@ export class CraftAI {
     const ahead = course.pose(q.s + (look * 2.5) / course.length, 0);
     const bend = Math.abs(wrap(Math.atan2(ahead.tangent.x, ahead.tangent.z) - Math.atan2(target.tangent.x, target.tangent.z)));
     const pace = clamp(1 - bend * 0.9, 0.35, 1) * (0.9 + this.skill * 0.1) * (1 + rubber);
-    c.topScale = (0.9 + this.skill * 0.1) * (1 + rubber * 0.5);
+    c.topScale = (0.9 + this.skill * 0.1) * (1 + rubber * 0.5) * (c.kind === 'space' ? 0.9 : 1);
     if (c.kind === 'boat' || c.kind === 'sub') {
       const vt = (K.top * pace);
       C.throttle = c.speed < vt ? 1 : 0.3;

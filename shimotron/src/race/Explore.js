@@ -5,6 +5,7 @@ import { PlayerDriver } from './Drivers.js';
 import { Craft, CraftPlayer } from './Craft.js';
 import { waveAt } from '../engine/world/Water.js';
 import { GROUP } from './Vehicle.js';
+import { actionKeys } from './keys.js';
 
 const STEP = 1 / 60;
 
@@ -247,10 +248,10 @@ export class Explore {
         this.obj.hit = 0;
       }
     }
-    // Keys: V cycles vehicles, R puts you back somewhere sensible.
+    // Keys: V cycles vehicles, AltGr puts you back somewhere sensible.
     const order = Object.keys(ROAM);
     if (I.wasPressed('KeyV')) this.game.roamVehicle(order[(order.indexOf(this.kind) + 1) % order.length]);
-    if (I.wasPressed('KeyR') || this.game.touch.reset) {
+    if (actionKeys(I).reset || this.game.touch.reset) {
       this.game.touch.reset = false;
       this.spawn(this.kind);
     }

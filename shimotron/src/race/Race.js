@@ -2,6 +2,7 @@ import { Car } from './Car.js';
 import { PlayerDriver, AIDriver, updateDrafts } from './Drivers.js';
 import { Pickups } from './Pickups.js';
 import { RACE, AI, CAR } from './config.js';
+import { actionKeys } from './keys.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
@@ -178,11 +179,12 @@ export class Race {
       const I = this.engine.input;
       const pad = I.gamepad;
       const padUse = !!(pad && pad.buttons[2] && pad.buttons[2].pressed);
-      const use = I.wasPressed('KeyE') || I.wasPressed('KeyF') || I.wasPressed('ControlLeft') || I.wasPressed('ControlRight') || I.wasPressed('Enter') || this.touch.item || (padUse && !this._padUse);
+      const keys = actionKeys(I);
+      const use = keys.use || this.touch.item || (padUse && !this._padUse);
       this._padUse = padUse;
       this.touch.item = false;
       if (use && this.pickups) this.pickups.use(P);
-      if (I.wasPressed('KeyR') || this.touch.reset) {
+      if (keys.reset || this.touch.reset) {
         this.touch.reset = false;
         this.respawn(P);
       }

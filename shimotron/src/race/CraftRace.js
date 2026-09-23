@@ -2,6 +2,7 @@ import { Craft, CraftPlayer, CraftAI, KINDS } from './Craft.js';
 import { Course } from './Course.js';
 import { waveAt } from '../engine/world/Water.js';
 import { RACE, AI } from './config.js';
+import { actionKeys } from './keys.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const STEP = 1 / 60;
@@ -94,7 +95,8 @@ export class CraftRace {
       if (this.kind === 'plane') craft.smoke = true;
       if (this.kind === 'plane' || this.kind === 'glider' || this.kind === 'space') craft.chase3d = true;
       const range = this.difficulty.skill;
-      const skill = r.isPlayer ? 1 : range[0] + ((k * 0.37 + 0.13) % 1) * (range[1] - range[0]);
+      let skill = r.isPlayer ? 1 : range[0] + ((k * 0.37 + 0.13) % 1) * (range[1] - range[0]);
+      if (this.kind === 'space' && !r.isPlayer) skill *= 0.9; // the space race is the gentle one
       const driver = r.isPlayer ? new CraftPlayer(craft, this.engine.input, this.touch) : new CraftAI(craft, c, { skill, lane: ((k % 3) - 1) * sp.lane * 0.7, seed: k + 1 });
       const back = c.closed ? (1 - s) * L : 0;
       const e = {
@@ -199,11 +201,10 @@ export class CraftRace {
       e.topSpeed = Math.max(e.topSpeed, e.craft.kmh);
     }
     this._rank();
-    this.course.update(dt, this._nextGateIndex(P));
+    this.course.update(dt, this._nextGateIndex(P), P);
 
     if (racing && !P.finished) {
-      const I = this.engine.input;
-      if (I.wasPressed('KeyR') || this.touch.reset) {
+      if (actionKeys(this.engine.input).reset || this.touch.reset) {
         this.touch.reset = false;
         this.respawn(P);
       }

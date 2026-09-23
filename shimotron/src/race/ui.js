@@ -193,7 +193,8 @@ export class RaceUI {
           h('span', {}, h('kbd', {}, 'רווח'), ' בלם יד (דריפט)'),
           h('span', {}, h('kbd', {}, 'Shift'), ' ניטרו'),
           h('span', {}, h('kbd', {}, 'C'), ' מצלמה'),
-          h('span', {}, h('kbd', {}, 'R'), ' חזרה למסלול'),
+          h('span', {}, h('kbd', {}, 'AltGr'), ' חזרה למסלול'),
+          h('span', {}, h('kbd', {}, 'Ctrl'), ' ירייה / מוקש'),
           h('span', {}, h('kbd', {}, 'Esc'), ' עצירה'),
           h('span', {}, 'תומך גם בג׳ויסטיק ובמסך מגע'),
         ),
@@ -330,7 +331,7 @@ export class RaceUI {
       ),
       h('div', { class: 'bl' }, h('div', { class: 'speedo' }, speedo)),
       h('div', { class: 'br' }, minimap),
-      (els.item = h('div', { class: 'pill itemslot', hidden: race.pickups ? null : true }, h('span', { class: 'ico' }), h('span', { class: 'name' }), h('span', { class: 'key' }, g.isTouch ? '' : 'E'))),
+      (els.item = h('div', { class: 'pill itemslot', hidden: race.pickups ? null : true }, h('span', { class: 'ico' }), h('span', { class: 'name' }), h('span', { class: 'key' }, g.isTouch ? '' : 'Ctrl'))),
     );
     this.hudEl = hud;
     this.root.append(hud);

@@ -506,7 +506,8 @@ export class Course {
 
   _gates() {
     const spacing = { boat: 230, sub: 150, plane: 330, glider: 260, space: 420 }[this.kind];
-    const radius = { boat: 13, sub: 6.5, plane: 15, glider: 19, space: 24 }[this.kind];
+    // Generous gates: easy to see coming and to fly, sail or dive through.
+    const radius = { boat: 20, sub: 11, plane: 24, glider: 28, space: 40 }[this.kind];
     const L = this.length;
     const count = Math.max(4, Math.round(L / spacing));
     this.gates = [];
@@ -519,7 +520,7 @@ export class Course {
     for (const U of this.under || []) {
       const q = this.nearest(U.x, U.z);
       if (!q) continue;
-      const g = this._gate(q.s, 6.2);
+      const g = this._gate(q.s, 7);
       g.under = true;
       this.gates.push(g);
     }
@@ -569,14 +570,51 @@ export class Course {
     this.group.add(this.marker);
     if (this.landing) this.group.add(this._target());
     if (this.thermals.length) this._thermalVisuals();
+    this._guides();
+  }
+
+  /** Arrows showing the way: chevrons along the line ahead of the player, a big one over the next gate. */
+  _guides() {
+    const shape = new THREE.Shape();
+    const pts = [[0, 2.4], [2, 0.3], [1.1, 0.3], [1.1, -1.9], [-1.1, -1.9], [-1.1, 0.3], [-2, 0.3]];
+    shape.moveTo(...pts[0]);
+    for (const p of pts.slice(1)) shape.lineTo(...p);
+    shape.closePath();
+    const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.35, bevelEnabled: false }).rotateX(Math.PI / 2);
+    const mat = new THREE.MeshStandardMaterial({ color: 0x221a00, emissive: 0xffd23a, emissiveIntensity: 1, transparent: true, opacity: 0.9, depthWrite: false });
+    this.materials.trackEmissive(mat, 3);
+    this.mats.push(mat);
+    this.arrowMat = mat;
+    const size = { boat: 2.2, sub: 1.3, plane: 3, glider: 2.6, space: 4 }[this.kind];
+    this.arrowSize = size;
+    this.chevrons = [];
+    for (let k = 0; k < 6; k++) {
+      const m = new THREE.Mesh(geo, mat);
+      m.scale.setScalar(size);
+      m.userData.noPick = true;
+      m.renderOrder = 7;
+      this.group.add(m);
+      this.chevrons.push(m);
+    }
+    this.gateArrow = new THREE.Mesh(geo, mat);
+    this.gateArrow.scale.setScalar(size * 2.2);
+    this.gateArrow.userData.noPick = true;
+    this.group.add(this.gateArrow);
+  }
+
+  /** Arrow along `dir`, tipped up so it reads from behind (the chase camera). */
+  _placeArrow(m, pos, dir, tilt = 0.95) {
+    m.position.copy(pos);
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
+    if (tilt) m.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -tilt));
   }
 
   _gateGeometry(g) {
     const r = g.radius;
     const checker = g.index === 0 || g.final;
     let geo;
-    if (this.kind === 'boat') geo = new THREE.TorusGeometry(r, 0.85, 8, 28, Math.PI);
-    else geo = new THREE.TorusGeometry(r, this.kind === 'sub' ? 0.35 : this.kind === 'glider' ? 0.7 : this.kind === 'space' ? 1.2 : 0.9, 8, 36);
+    if (this.kind === 'boat') geo = new THREE.TorusGeometry(r, 1.2, 10, 36, Math.PI);
+    else geo = new THREE.TorusGeometry(r, this.kind === 'sub' ? 0.5 : this.kind === 'glider' ? 1.0 : this.kind === 'space' ? 1.8 : 1.3, 10, 48);
     geo = geo.toNonIndexed();
     const pos = geo.attributes.position;
     const col = new Float32Array(pos.count * 3);
@@ -654,8 +692,42 @@ export class Course {
   }
 
   /** Marks the next gate (for the player) and moves the scenery. */
-  update(dt, next) {
+  update(dt, next, player = null) {
     const g = this.gates[next];
+    // Chevrons run ahead of the player along the course, lit one after another.
+    if (this.chevrons && player && player.q) {
+      const t = performance.now() * 0.001;
+      const step = { boat: 16, sub: 12, plane: 26, glider: 22, space: 34 }[this.kind];
+      const lift = { boat: 3.2, sub: 0, plane: 0, glider: 0, space: 0 }[this.kind];
+      const dir = new THREE.Vector3();
+      this.chevrons.forEach((m, k) => {
+        const s = player.q.s + ((k + 1.5) * step) / this.length;
+        if (!this.closed && s > 1) {
+          m.visible = false;
+          return;
+        }
+        const f = (((s % 1) + 1) % 1) * this.n;
+        const i = Math.min(this.m - 1, Math.floor(f));
+        const p = this.pose(s, 0).position;
+        p.y = (this.kind === 'boat' ? 0 : p.y) + lift;
+        dir.set(this.tx[i], this.kind === 'boat' ? 0 : this.ty[i], this.tz[i]).normalize();
+        this._placeArrow(m, p, dir);
+        m.visible = true;
+        const wave = 0.5 + 0.5 * Math.sin(t * 6 - k * 0.9);
+        m.scale.setScalar(this.arrowSize * (0.8 + wave * 0.35));
+      });
+    }
+    if (this.gateArrow) {
+      if (g) {
+        const up = new THREE.Vector3(0, 1, 0);
+        const p = g.pos.clone().addScaledVector(up, g.radius + 4 + Math.sin(performance.now() * 0.004) * 1.2);
+        if (this.kind === 'sub') p.y = Math.min(p.y, -2);
+        const d = g.tangent.clone();
+        d.y -= 0.35; // tilted down towards the opening
+        this._placeArrow(this.gateArrow, p, d.normalize(), 0.5);
+        this.gateArrow.visible = true;
+      } else this.gateArrow.visible = false;
+    }
     if (g) {
       this.marker.visible = true;
       this.marker.geometry = this.gateMeshes[next].geometry;
