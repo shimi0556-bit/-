@@ -370,4 +370,12 @@ body.is-touch .minimap { width: 130px; height: 130px; }
 .roambar .key { opacity: 0.6; font-size: 12px; padding: 0 6px; }
 .hud.roam .worldmap { image-rendering: auto; }
 .roam-btn { border-color: rgba(57, 217, 255, 0.5); }
-@media (max-width: 760px) { .roambar { bottom: calc(150px + var(--safe-b)); flex-wrap: wrap; justify-content: center; max-width: 92vw; } .roambar button { padding: 6px 8px; font-size: 12px; } }
+@media (max-width: 760px) {
+  .hud.roam .tr { top: calc(64px + var(--safe-t)); }
+  .roamwhere { min-width: 0; padding: 7px 10px; }
+  .roamwhere b { font-size: 20px; }
+  .roamwhere .lbl + b + .lbl { display: none; }
+  .roambar { top: calc(64px + var(--safe-t)); bottom: auto; left: calc(10px + var(--safe-l)); transform: none; flex-direction: column; align-items: stretch; }
+  .roambar button { padding: 6px 8px; font-size: 12px; }
+  .roambar .key { display: none; }
+}
