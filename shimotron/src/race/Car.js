@@ -47,6 +47,7 @@ export class Car {
     this.offroad = 0;
     this.scrape = 0;
     this._fx();
+    if (isPlayer) this._headlights();
     // Rail scrapes and car-to-car hits.
     this._onCollide = (e) => {
       const other = e.body;
@@ -98,11 +99,11 @@ export class Car {
           radius: 0.02,
           speed: [5, 9],
           life: [0.08, 0.16],
-          size0: [0.2, 0.28],
-          size1: [0.05, 0.08],
-          color0: [0.45, 0.65, 1.0, 1],
-          color1: [1.0, 0.45, 0.2, 0],
-          intensity: 7,
+          size0: [0.12, 0.18],
+          size1: [0.03, 0.05],
+          color0: [0.35, 0.55, 1.0, 1],
+          color1: [1.0, 0.35, 0.1, 0],
+          intensity: 1.1,
         }),
     );
     this.sparks = new Emitter(P.systems.sparks, {
@@ -120,6 +121,18 @@ export class Car {
       intensity: 20,
     });
     for (const e of [...this.smoke, ...this.dust, ...this.flames, this.sparks]) P.add(e);
+  }
+
+  /** Two real spot lights for the player's car (they matter on the night island). */
+  _headlights() {
+    this.lamps = [];
+    for (const x of [0.62, -0.62]) {
+      const l = new THREE.SpotLight(0xfff1dc, 0, 140, 0.48, 0.55, 1.6);
+      l.position.set(x, -0.05, 2.1);
+      l.target.position.set(x * 3, -0.6, 24);
+      this.object.add(l, l.target);
+      this.lamps.push(l);
+    }
   }
 
   get speed() {
@@ -175,6 +188,10 @@ export class Car {
     const braking = (C.brake > 0.1 && !veh.reversing) || C.handbrake;
     this.brakeGlow += ((braking ? 1 : 0) - this.brakeGlow) * Math.min(1, dt * 18);
     this.ctx.materials.setEmissiveBase(this.model.tailMat, 0.22 + this.brakeGlow * 1.3);
+    const night = this.ctx.engine.atmosphere.nightFactor;
+    if (this.lamps) for (const l of this.lamps) l.intensity = 26 * night + 2;
+    // Daytime running lights stay subtle; full beams glow after dusk (shared material).
+    if (this.isPlayer) this.ctx.materials.setEmissiveBase(this.model.headMat, 0.08 + night * 0.6);
 
     // Wheel contact points (world).
     const infos = veh.vehicle.wheelInfos;
@@ -219,7 +236,7 @@ export class Car {
     veh.surfaceDrag = drag / 4;
 
     // Rear smoke on asphalt, dust on loose ground.
-    const smokeRate = v > 4 ? Math.max(0, slide - 0.25) * 60 : 0;
+    const smokeRate = v > 4 ? Math.max(0, slide - 0.45) * 90 : 0;
     const dustRate = v > 3 ? Math.min(1, v / 25) * 26 * this.offroad : 0;
     for (let k = 0; k < 2; k++) {
       const x = k === 0 ? CAR.wheel.track : -CAR.wheel.track;
@@ -236,7 +253,7 @@ export class Car {
     for (let k = 0; k < 2; k++) {
       this._local(k === 0 ? 0.34 : -0.34, -0.3, -2.26, this.flames[k].position);
       this.flames[k].o.dir.copy(this.forward).negate();
-      this.flames[k].rate = veh.nitroActive ? 140 : C.throttle > 0.9 && veh.shift > 0 ? 40 : 0;
+      this.flames[k].rate = veh.nitroActive ? 60 : 0;
     }
     // Sparks while scraping a rail.
     if (this.scrape > 0.05 && v > 5) {

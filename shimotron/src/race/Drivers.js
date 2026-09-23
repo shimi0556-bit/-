@@ -184,8 +184,11 @@ export class AIDriver {
     const myTarget = Math.min(tr.speed[q.i], tr.speed[lead]) * skill;
     const lim = tr.W - 1.1;
 
-    // ---- traffic: commit to a side to pass slower cars, keep clear of cars alongside
-    let wantOffset = this.bias;
+    // ---- traffic: commit to a side to pass slower cars, keep clear of cars alongside.
+    // Off the grid, hold the starting lane for a few seconds before merging onto the line.
+    if (this.lane === undefined) this.lane = q.lat;
+    const merge = clamp((this.clock - 4) / 8, 0, 1);
+    let wantOffset = this.bias * merge + (this.lane - tr.line[k]) * (1 - merge);
     let followSpeed = Infinity;
     const myLat = q.lat;
     for (const o of others) {

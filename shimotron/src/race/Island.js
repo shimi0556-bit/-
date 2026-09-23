@@ -170,7 +170,7 @@ export class Island {
     const glow = new THREE.PointLight(0xff5a1a, 0, R * 5, 1.6);
     glow.position.set(V.x, level + 18, V.z);
     this.group.add(glow);
-    this.lights.push({ light: glow, base: 9000 });
+    this.lights.push({ light: glow, base: 600 });
     const plume = new Emitter(this.engine.particles.systems.smoke, {
       position: new THREE.Vector3(V.x, level + 6, V.z),
       rate: 3,

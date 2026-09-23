@@ -332,13 +332,14 @@ class Game {
 
   /** Grid order: in the championship the points leader starts last; otherwise the player starts mid-pack. */
   _gridOrder(list) {
-    if (this.champ && this.mode === 'champ') {
-      const pts = this.champ.points;
-      return [...list].sort((a, b) => (pts[a.id]?.pts || 0) - (pts[b.id]?.pts || 0));
-    }
     const ai = list.filter((r) => !r.isPlayer);
     const me = list.find((r) => r.isPlayer);
-    return [...ai.slice(0, 3), me, ...ai.slice(3)];
+    const base = [...ai.slice(0, 3), me, ...ai.slice(3)];
+    if (this.champ && this.mode === 'champ') {
+      const pts = this.champ.points;
+      return base.map((r, i) => ({ r, i })).sort((a, b) => (pts[a.r.id]?.pts || 0) - (pts[b.r.id]?.pts || 0) || a.i - b.i).map((x) => x.r);
+    }
+    return base;
   }
 
   startSingle() {
@@ -365,6 +366,7 @@ class Game {
 
   async _launch(index) {
     const eng = this.engine;
+    this.state = 'loading';
     eng.audio.unlock();
     if (!this.carAudio && eng.audio.ctx) this.carAudio = new CarAudio(eng.audio);
     this.ui.clear();

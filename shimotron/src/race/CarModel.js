@@ -376,7 +376,7 @@ export function createCarModel(materials, { color = '#d42a2a', number = 1, strip
     g.add(plane);
   }
   const roofNum = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.42), numMat);
-  roofNum.rotation.x = -Math.PI / 2;
+  roofNum.rotation.set(-Math.PI / 2, 0, Math.PI); // reads upright from behind
   roofNum.position.set(0, sectionParams(-0.25).roof + 0.004, -0.25);
   g.add(roofNum);
   g.userData.paint = paint;

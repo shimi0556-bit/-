@@ -49,7 +49,6 @@ export class RaceUI {
     this.root = root;
     this.game = game;
     this.hudEls = null;
-    this._msgT = 0;
     this._hudT = 0;
   }
 
@@ -194,6 +193,7 @@ export class RaceUI {
       minimap,
     };
     this.hudEls = els;
+    this._hudT = 0;
     const hud = h(
       'div',
       { class: 'hud', 'aria-hidden': 'true' },
@@ -468,7 +468,7 @@ export class RaceUI {
     const g = this.game;
     const el = h(
       'div',
-      { class: 'screen', role: 'dialog', 'aria-label': 'עצירה', style: 'align-items:center;justify-content:center;background:rgba(6,8,12,.78)' },
+      { class: 'screen', role: 'dialog', 'aria-label': 'עצירה', style: 'background:rgba(6,8,12,.78)' },
       h(
         'div',
         { class: 'results', style: 'max-width:420px;text-align:center' },
@@ -527,7 +527,7 @@ export class RaceUI {
         h('button', { class: 'btn', type: 'button', onclick: onMenu }, 'תפריט'),
       ),
     );
-    const el = h('div', { class: 'screen', role: 'dialog', 'aria-label': 'תוצאות', style: 'align-items:center;justify-content:center' }, h('div', { class: 'results' }, kids));
+    const el = h('div', { class: 'screen', role: 'dialog', 'aria-label': 'תוצאות', style: 'background:rgba(6,8,12,.7)' }, h('div', { class: 'results' }, kids));
     this.resultsEl = el;
     this.root.append(el);
     const b = el.querySelector('.btn.primary') || el.querySelector('.btn');
@@ -555,7 +555,7 @@ export class RaceUI {
     const title = me === 1 ? 'אלופ/ת שימוטרון ראלי!' : `סיימת את האליפות במקום ${me}`;
     const el = h(
       'div',
-      { class: 'screen', role: 'dialog', 'aria-label': 'סיום אליפות', style: 'align-items:center;justify-content:center' },
+      { class: 'screen', role: 'dialog', 'aria-label': 'סיום אליפות', style: 'background:rgba(6,8,12,.7)' },
       h(
         'div',
         { class: 'results', style: 'text-align:center' },

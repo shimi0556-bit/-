@@ -5,8 +5,6 @@ import { RACE, CAR, AI } from './config.js';
 import { smoothstep } from '../engine/core/Random.js';
 
 
-const _v = new THREE.Vector3();
-
 /**
  * A race circuit built from a closed spline:
  *  - path sampled every 2 m with tangents, right vectors and signed curvature,
@@ -1115,4 +1113,3 @@ export class Track {
   }
 }
 
-export { _v };

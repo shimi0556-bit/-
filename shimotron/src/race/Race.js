@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import { Car } from './Car.js';
 import { PlayerDriver, AIDriver, updateDrafts } from './Drivers.js';
 import { RACE, AI, CAR } from './config.js';
@@ -334,4 +333,3 @@ export class Race {
   }
 }
 
-export { THREE };

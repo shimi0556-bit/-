@@ -112,7 +112,7 @@ export const STAGES = [
     biome: { grassTint: [1.55, 1.18, 0.62], sandTint: [1.25, 1.0, 0.72], dirtTint: [1.3, 0.95, 0.7], rockTint: [1.35, 0.95, 0.72] },
     flora: { pine: 0, oak: 0, palm: 0.35, cactus: 1, deadTree: 0.25, trees: 900, grass: 0.35, flowers: 0, foliageTint: '#d9e0a0' },
     water: { shallow: [0.1, 0.45, 0.4], deep: [0.01, 0.05, 0.07] },
-    sky: { time: 17.55, azimuth: 2.3, turbidity: 5.5, rayleigh: 1.6, clouds: 0.1, cloudDensity: 0.35, fog: 0.0012, wind: 1.3 },
+    sky: { time: 16.7, azimuth: 3.6, turbidity: 3.8, rayleigh: 1.5, clouds: 0.12, cloudDensity: 0.35, fog: 0.0008, wind: 1.3 },
     weather: 'dust',
     track: { radius: [0.5, 0.66], wiggle: 0.4, targetLength: [3400, 4500] },
   },

@@ -89,7 +89,7 @@ export class Weather {
     this.kind = kind;
     const preset = {
       snow: { count: 9000, box: [70, 40, 70], fall: 1.6, drift: 0.9, size: 0.09, color: [1, 1, 1], alpha: 0.9, emissive: 0 },
-      dust: { count: 2200, box: [90, 14, 90], fall: -0.05, drift: 7, size: 0.5, color: [0.86, 0.62, 0.4], alpha: 0.2, emissive: 0 },
+      dust: { count: 7000, box: [60, 12, 60], fall: 0.15, drift: 9, size: 0.03, color: [0.95, 0.72, 0.48], alpha: 0.45, emissive: 0 },
       ash: { count: 6000, box: [70, 40, 70], fall: 0.7, drift: 1.4, size: 0.07, color: [0.3, 0.29, 0.28], alpha: 0.85, emissive: 0.08 },
     }[kind];
     this.preset = preset;
@@ -114,17 +114,15 @@ export class Weather {
       uEmber: { value: kind === 'ash' ? 1 : 0 },
       uEmberGain: { value: 1 },
       uPixel: { value: 1 },
-      uVel: { value: new THREE.Vector3() },
     };
     const mat = new THREE.ShaderMaterial({
       uniforms: this.uniforms,
       transparent: true,
       depthWrite: false,
-      blending: kind === 'dust' ? THREE.NormalBlending : THREE.NormalBlending,
       vertexShader: /* glsl */ `
         attribute vec4 aSeed;
         uniform float uTime, uFall, uDrift, uSize, uPixel, uEmber;
-        uniform vec3 uCam, uBox, uVel;
+        uniform vec3 uCam, uBox;
         uniform vec2 uWind;
         varying float vFade;
         varying float vEmber;

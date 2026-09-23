@@ -122,7 +122,7 @@ export class CarAudio {
     this.voices.set(car, { panner, g, lp, o1, o2 });
   }
 
-  update(dt, listenerCar) {
+  update(dt) {
     if (!this.enabled || !this.audio.enabled) return;
     const t = this.ctx.currentTime;
     const p = this.player;
@@ -166,7 +166,6 @@ export class CarAudio {
       v.lp.frequency.setTargetAtTime(500 + veh.controls.throttle * 1400, t, 0.05);
       v.g.gain.setTargetAtTime(0.06 + veh.controls.throttle * 0.1, t, 0.08);
     }
-    void listenerCar;
   }
 
   /** Countdown and finish cues. */

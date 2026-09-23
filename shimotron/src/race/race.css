@@ -160,14 +160,14 @@ kbd { font: 600 11px var(--mono); padding: 1px 6px; border-radius: 5px; border: 
 .flash { position: fixed; inset: 0; z-index: 24; pointer-events: none; background: #fff; opacity: 0; transition: opacity 0.5s; }
 
 /* ---------------------------------------------------------- results */
-.results { max-width: 860px; width: 100%; margin: auto; padding: 22px; border-radius: 18px; background: var(--glass-strong); border: 1px solid var(--line); }
+.results { max-width: 860px; width: 100%; margin: auto; flex: none; padding: 20px 22px; border-radius: 18px; background: var(--glass-strong); border: 1px solid var(--line); }
 .results h2 { margin: 0; font: 700 56px/0.95 var(--display); }
 .results .sub { color: var(--muted); margin: 4px 0 16px; }
 table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .tbl th { color: var(--faint); font-weight: 600; font-size: 12px; text-align: start; padding: 6px 8px; border-bottom: 1px solid var(--line); }
-.tbl td { padding: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.tbl td { padding: 6px 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
 .tbl tr.me td { background: rgba(255, 176, 32, 0.1); }
-.tbl .pos { font: 700 26px/1 var(--display); width: 44px; }
+.tbl .pos { font: 700 24px/1 var(--display); width: 40px; }
 .tbl .car { display: inline-block; width: 10px; height: 18px; border-radius: 3px; vertical-align: middle; margin-inline-end: 8px; background: var(--car); }
 .tbl .pts { font-weight: 700; color: var(--accent); }
 .podium-note { margin-top: 14px; color: var(--muted); font-size: 13px; }
@@ -205,3 +205,15 @@ body.is-touch .minimap { width: 130px; height: 130px; }
   .hud .tr .board { display: none; }
 }
 .msg.lights { color: #ff2a1a; font: 700 clamp(40px, 6vw, 64px)/1 var(--ui); letter-spacing: 10px; top: 18%; text-shadow: 0 0 24px rgba(255, 40, 20, 0.7); }
+/* Short landscape phones: keep position, lap and speed; drop the rest. */
+@media (max-height: 500px) {
+  .hud .br, .hud .tl { display: none; }
+  .posbox .big { font-size: 44px; }
+  .posbox .of { font-size: 22px; }
+  .lapbox b { font-size: 24px; }
+  body.is-touch .speedo { transform: scale(0.62); }
+  body.is-touch .hud .bl { bottom: calc(118px + var(--safe-b)); }
+  .stagename h2 { font-size: 40px; }
+  .brand h1 { font-size: 56px; }
+  .brand p { display: none; }
+}

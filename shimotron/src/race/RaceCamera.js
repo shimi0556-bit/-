@@ -121,7 +121,7 @@ export class RaceCamera {
       const m = car.object.matrixWorld;
       const local = new THREE.Vector3(0, view.height - 0.6 + (view.id === 'hood' ? 0.1 : 0), -view.distance);
       if (view.id === 'bumper') local.set(0, view.height - 0.65, CAR.body.half[2] + 0.3);
-      if (view.id === 'hood') local.set(0, 0.42, 0.55);
+      if (view.id === 'hood') local.set(0, 0.3, 0.98);
       cam.position.copy(local.applyMatrix4(m));
       const dir = _d.set(0, -0.02, 1).transformDirection(m);
       if (this.lookBack) dir.negate();

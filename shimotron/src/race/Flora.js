@@ -60,14 +60,6 @@ function tube(curve, rings, sides, radius, { ribs = 0, ribDepth = 0, capTop = fa
   return g;
 }
 
-function colorize(g, rgb) {
-  const n = g.attributes.position.count;
-  const c = new Float32Array(n * 3);
-  for (let i = 0; i < n; i++) c.set(rgb, i * 3);
-  g.setAttribute('color', new THREE.BufferAttribute(c, 3));
-  return g.index ? g.toNonIndexed() : g;
-}
-
 /** Coconut palm: curved ringed trunk + a crown of drooping textured fronds. */
 export function palmGeometry(seed = 1) {
   const rng = new Random(seed);
