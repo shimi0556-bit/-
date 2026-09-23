@@ -10,6 +10,7 @@ const _w = new CANNON.Vec3();
 const Z = new CANNON.Vec3(0, 0, 1);
 const Y = new CANNON.Vec3(0, 1, 0);
 const X = new CANNON.Vec3(1, 0, 0);
+const STUNNED = { throttle: 0, brake: 0.25, steer: 0, handbrake: false, nitro: false, hold: false };
 
 /** Collision groups: car chassis, and the terrain heightfield's shape. */
 export const GROUP = { car: 4, terrain: 8 };
@@ -40,12 +41,14 @@ export function carMaterial(physics) {
  * handbrake and nitro booleans.
  */
 export class Vehicle {
-  constructor(physics, { position, heading = 0, ground = null } = {}) {
+  constructor(physics, { position, heading = 0, ground = null, spec = CAR } = {}) {
     this.physics = physics;
+    this.spec = spec;
+    const S = spec;
     const mat = carMaterial(physics);
-    const body = new CANNON.Body({ mass: CAR.mass, material: mat, allowSleep: false, angularDamping: 0.05, linearDamping: 0.004 });
-    const b = CAR.body;
-    const c = CAR.cabin;
+    const body = new CANNON.Body({ mass: S.mass, material: mat, allowSleep: false, angularDamping: 0.05, linearDamping: 0.004 });
+    const b = S.body;
+    const c = S.cabin;
     // Boxes hit rails and other cars but skip the terrain heightfield (box-vs-heightfield
     // is by far the most expensive test in cannon); the four skid spheres touch the ground.
     for (const [half, off] of [[b.half, b.offset], [c.half, c.offset]]) {
@@ -56,7 +59,13 @@ export class Vehicle {
     // Skid spheres: boxes cannot touch the road trimesh, spheres can.
     // Skid spheres under the floor and on the roof keep a bottomed-out or flipped car
     // on the ground; they only touch the (cheap) terrain heightfield.
-    for (const [x, y, z, r] of [[0.62, -0.3, 1.55, 0.2], [-0.62, -0.3, 1.55, 0.2], [0.62, -0.3, -1.55, 0.2], [-0.62, -0.3, -1.55, 0.2], [0, 0.42, 0.2, 0.3], [0, 0.42, -0.6, 0.3]]) {
+    // Floor spheres sit 10 cm above the tyres' contact patch at rest.
+    const Wh = S.wheel;
+    const floorY = Wh.height - (Wh.restLength - 9.82 / (4 * Wh.stiffness)) - Wh.radius + 0.1 + 0.2;
+    const sx = Math.min(0.62, b.half[0] - 0.25);
+    const sz = b.half[2] - 0.57;
+    const top = c.offset[1] + c.half[1] - 0.12;
+    for (const [x, y, z, r] of [[sx, floorY, sz, 0.2], [-sx, floorY, sz, 0.2], [sx, floorY, -sz, 0.2], [-sx, floorY, -sz, 0.2], [0, top, c.offset[2] + 0.35, 0.3], [0, top, c.offset[2] - 0.45, 0.3]]) {
       const sphere = new CANNON.Sphere(r);
       sphere.collisionFilterMask = GROUP.terrain;
       body.addShape(sphere, new CANNON.Vec3(x, y, z));
@@ -66,7 +75,7 @@ export class Vehicle {
     this.body = body;
 
     const vehicle = new CANNON.RaycastVehicle({ chassisBody: body, indexRightAxis: 0, indexUpAxis: 1, indexForwardAxis: 2 });
-    const W = CAR.wheel;
+    const W = S.wheel;
     const opts = {
       radius: W.radius,
       directionLocal: new CANNON.Vec3(0, -1, 0),
@@ -93,7 +102,7 @@ export class Vehicle {
     this.steerAngle = 0; // current road-wheel angle (+ = right)
     this.speed = 0; // signed forward speed m/s
     this.gear = 1;
-    this.rpm = CAR.engine.idleRpm;
+    this.rpm = S.engine.idleRpm;
     this.shift = 0; // seconds left in a gear change
     this.nitro = 1; // tank 0..1
     this.nitroActive = false;
@@ -109,6 +118,8 @@ export class Vehicle {
     this.gripScale = [1, 1, 1, 1]; // per-wheel surface grip
     this.surfaceDrag = 0; // extra rolling resistance off the asphalt (m/s²)
     this.draft = 0; // slipstream 0..1 (set by the race: close behind another car)
+    this.boost = 0; // seconds of turbo left (pickup)
+    this.stun = 0; // seconds of being knocked out of control (hit by a shot or a mine)
 
     if (position) this.place(position, heading);
     vehicle.addToWorld(physics.world);
@@ -153,17 +164,20 @@ export class Vehicle {
 
   /** Max road-wheel angle at a given speed: generous when slow, grip-limited when fast. */
   steerLimit(v) {
-    const S = CAR.steer;
-    const grip = S.gripAngle / Math.max(1, v * v);
-    return clamp(grip, S.min, S.max);
+    const T = this.spec.steer;
+    const grip = T.gripAngle / Math.max(1, v * v);
+    return clamp(grip, T.min, T.max);
   }
 
   preStep(dt) {
+    const S = this.spec;
     const b = this.body;
     const veh = this.vehicle;
-    const C = this.controls;
-    const E = CAR.engine;
-    const m = CAR.mass;
+    const C = this.stun > 0 ? STUNNED : this.controls;
+    if (this.stun > 0) this.stun -= dt;
+    if (this.boost > 0) this.boost -= dt;
+    const E = S.engine;
+    const m = S.mass;
 
     b.quaternion.vmult(Z, _f);
     b.quaternion.vmult(Y, _u);
@@ -176,7 +190,7 @@ export class Vehicle {
     // ---- steering (rate limited, speed sensitive)
     const lim = this.steerLimit(Math.abs(vf));
     const want = clamp(C.steer, -1, 1) * lim;
-    const rate = (Math.abs(want) > Math.abs(this.steerAngle) && Math.sign(want) === Math.sign(this.steerAngle || want) ? CAR.steer.rate : CAR.steer.returnRate) * dt;
+    const rate = (Math.abs(want) > Math.abs(this.steerAngle) && Math.sign(want) === Math.sign(this.steerAngle || want) ? S.steer.rate : S.steer.returnRate) * dt;
     this.steerAngle += clamp(want - this.steerAngle, -rate, rate);
     // Positive cannon steering turns toward +x (left), so negate.
     veh.setSteeringValue(-this.steerAngle, 0);
@@ -184,18 +198,18 @@ export class Vehicle {
 
     // ---- gearbox (automatic)
     const gears = E.gears;
-    const top = (this.nitroActive ? CAR.nitro.topSpeed : E.topSpeed) * (1 + 0.06 * this.draft);
+    const top = (this.nitroActive || this.boost > 0 ? S.nitro.topSpeed * (this.boost > 0 ? 1.08 : 1) : E.topSpeed) * (1 + 0.06 * this.draft);
     const gearTop = (g) => (E.topSpeed * gears[gears.length - 1]) / gears[g];
     if (this.shift > 0) this.shift -= dt;
     if (!this.reversing) {
       const r = Math.abs(vf) / gearTop(this.gear);
       if (r > 0.94 && this.gear < gears.length - 1 && this.shift <= 0) {
         this.gear++;
-        this.shift = CAR.shiftTime;
+        this.shift = S.shiftTime;
         if (this.onShift) this.onShift(this.gear, true);
       } else if (this.gear > 1 && Math.abs(vf) < gearTop(this.gear - 1) * 0.62) {
         this.gear--;
-        this.shift = CAR.shiftTime * 0.5;
+        this.shift = S.shiftTime * 0.5;
         if (this.onShift) this.onShift(this.gear, false);
       }
     }
@@ -219,18 +233,18 @@ export class Vehicle {
       drive = vf > -E.reverseTop ? -pedal * E.accel * 0.55 : 0;
       if (throttle > 0.1) brake = throttle;
     } else {
-      const aero = CAR.drag * (1 - 0.45 * this.draft) * vf * vf + CAR.rolling;
+      const aero = S.drag * (1 - 0.45 * this.draft) * vf * vf + S.rolling;
       const curve = Math.max(0, 1 - Math.pow(Math.max(0, vf) / top, 2.2));
-      const boost = this.nitroActive ? CAR.nitro.accel : 0;
-      drive = throttle * ((E.accel + boost) * curve + aero * (vf / top < 1 ? 1 : 0));
+      const boost = (this.nitroActive ? S.nitro.accel : 0) + (this.boost > 0 ? 9 : 0);
+      drive = Math.max(throttle, this.boost > 0 ? 1 : 0) * ((E.accel + boost) * curve + aero * (vf / top < 1 ? 1 : 0));
       if (this.shift > 0) drive *= 0.25;
       brake = pedal;
     }
 
     // ---- nitro
     this.nitroActive = !!C.nitro && this.nitro > 0.02 && throttle > 0.2 && !this.reversing && this.airborne < 0.3;
-    if (this.nitroActive) this.nitro = Math.max(0, this.nitro - CAR.nitro.drain * dt);
-    else this.nitro = Math.min(1, this.nitro + CAR.nitro.refill * dt);
+    if (this.nitroActive) this.nitro = Math.max(0, this.nitro - S.nitro.drain * dt);
+    else this.nitro = Math.min(1, this.nitro + S.nitro.refill * dt);
 
     // ---- apply engine: AWD split, negative = forward (+z) in cannon's convention
     const F = drive * m;
@@ -241,9 +255,9 @@ export class Vehicle {
     veh.applyEngineForce(-F * (1 - fs) * 0.5, 3);
 
     // Brakes are impulse caps per step, so scale by dt to stay step-size independent.
-    const bForce = brake * CAR.brake.decel * m;
-    const fb = CAR.brake.frontBias;
-    const hb = C.handbrake ? CAR.handbrake.decel * m : 0;
+    const bForce = brake * S.brake.decel * m;
+    const fb = S.brake.frontBias;
+    const hb = C.handbrake ? S.handbrake.decel * m : 0;
     veh.setBrake(bForce * fb * 0.5 * dt, 0);
     veh.setBrake(bForce * fb * 0.5 * dt, 1);
     veh.setBrake((bForce * (1 - fb) * 0.5 + hb * 0.5) * dt, 2);
@@ -255,19 +269,19 @@ export class Vehicle {
     // Grip per wheel: surface (set by the car from what it rolls on) × handbrake on the rear.
     for (let i = 0; i < 4; i++) {
       const w = veh.wheelInfos[i];
-      const hb = i >= 2 && C.handbrake ? CAR.handbrake.grip : 1;
-      const target = CAR.wheel.grip * this.gripScale[i] * hb;
+      const hb = i >= 2 && C.handbrake ? S.handbrake.grip : 1;
+      const target = S.wheel.grip * this.gripScale[i] * hb;
       w.frictionSlip += (target - w.frictionSlip) * Math.min(1, dt * (hb < 1 ? 12 : 4));
     }
 
     // ---- aero: downforce (more grip at speed) and drag along the velocity
     const q = (vf / E.topSpeed) ** 2;
-    const down = CAR.downforce * m * 9.82 * q;
+    const down = S.downforce * m * 9.82 * q;
     b.force.x -= _u.x * down;
     b.force.y -= _u.y * down;
     b.force.z -= _u.z * down;
     if (vAbs > 0.5) {
-      const d = (CAR.drag * (1 - 0.45 * this.draft) * vAbs * vAbs + (CAR.rolling + this.surfaceDrag) * (this.airborne > 0 ? 0 : 1) * Math.min(1, vAbs / 3)) * m;
+      const d = (S.drag * (1 - 0.45 * this.draft) * vAbs * vAbs + (S.rolling + this.surfaceDrag) * (this.airborne > 0 ? 0 : 1) * Math.min(1, vAbs / 3)) * m;
       b.force.x -= (v.x / vAbs) * d;
       b.force.y -= (v.y / vAbs) * d * 0.3;
       b.force.z -= (v.z / vAbs) * d;
@@ -283,8 +297,8 @@ export class Vehicle {
       this.slip[i] += (s - this.slip[i]) * Math.min(1, dt * 20);
       this.compression[i] = w.isInContact ? (w.suspensionRestLength - w.suspensionLength) / w.maxSuspensionTravel : -0.3;
       const locked = i >= 2 && C.handbrake && w.isInContact;
-      const spinV = w.isInContact ? vf : this.wheelSpinRate?.[i] ?? vf;
-      if (!locked) this.wheelSpin[i] += (spinV * dt) / CAR.wheel.radius;
+      const spinV = vf;
+      if (!locked) this.wheelSpin[i] += (spinV * dt) / S.wheel.radius;
     }
     this.airborne = grounded === 0 ? this.airborne + dt : 0;
 
@@ -292,9 +306,9 @@ export class Vehicle {
     const av = b.angularVelocity;
     const yawRate = av.dot(_u);
     const expected = (vf * Math.tan(this.steerAngle)) / this.wheelBase * -1; // right turn = negative yaw about +y
-    if (grounded >= 3 && Math.abs(vf) > 4) {
+    if (grounded >= 3 && Math.abs(vf) > 4 && this.stun <= 0) {
       const err = yawRate - expected;
-      const k = CAR.assist.yaw * clamp((Math.abs(vf) - 4) / 10, 0, 1) * (C.handbrake ? 0.25 : 1) * this.assist;
+      const k = S.assist.yaw * clamp((Math.abs(vf) - 4) / 10, 0, 1) * (C.handbrake ? 0.25 : 1) * this.assist;
       const inertia = b.inertia.y || m;
       const tq = -err * k * inertia * 8;
       b.torque.x += _u.x * tq;
@@ -306,7 +320,7 @@ export class Vehicle {
     const pitch = _f.y; // sin of pitch (+ = nose up)
     this.upsideDown = _u.y < 0.2 ? this.upsideDown + dt : 0;
     if (_u.y > 0.2) {
-      const ar = CAR.assist.antiRoll * m;
+      const ar = S.assist.antiRoll * m;
       const dz = grounded >= 3 ? 0.1 : 0;
       let rollT = -Math.sign(roll) * Math.max(0, Math.abs(roll) - dz) * ar * (grounded >= 3 ? 1.5 : 0.5);
       // Arcade safety net: past ~20° of roll, right the car firmly (rail hits, door-to-door).

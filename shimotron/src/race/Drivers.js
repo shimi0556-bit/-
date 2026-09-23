@@ -72,7 +72,7 @@ export class PlayerDriver {
       const lt = b[6] ? b[6].value : 0;
       gas = Math.max(gas, rt, b[0] && b[0].pressed ? 1 : 0);
       brk = Math.max(brk, lt, b[1] && b[1].pressed && !gas ? 1 : 0);
-      hand = hand || (b[2] && b[2].pressed) || (b[5] && b[5].pressed);
+      hand = hand || (b[5] && b[5].pressed);
       nitro = nitro || (b[3] && b[3].pressed) || (b[4] && b[4].pressed);
     }
     steer = clamp(steer, -1, 1);
@@ -114,6 +114,11 @@ export class AIDriver {
     this.enabled = true;
     this._q = {};
     this.mistake = 0; // brief moments of lifting/wide lines, more for low skill
+    // The track's speed profile is for the base car; scale it for this car's grip and top speed.
+    const sp = car.vehicle.spec;
+    const g = (s) => s.wheel.grip * (1 + s.downforce * 0.3);
+    this.gripK = Math.sqrt(g(sp) / g(CAR));
+    this.topSpeed = sp.engine.topSpeed + 2;
     this.mistakeT = 3 + Math.random() * 6;
   }
 
@@ -155,9 +160,9 @@ export class AIDriver {
     // Wrong way / upside down / stuck bookkeeping.
     const along = hx * tr.tx[q.i] + hz * tr.tz[q.i];
     this.wrongWay = along < -0.3 && v > 2 ? this.wrongWay + dt : Math.max(0, this.wrongWay - dt);
-    if (this.wrongWay > 2.5 || car.vehicle.upsideDown > CAR.flipResetTime) {
+    if (this.wrongWay > 1.5 || car.vehicle.upsideDown > CAR.flipResetTime) {
       this.needsRespawn = true;
-      this.reason = this.wrongWay > 2.5 ? 'wrong-way' : 'flipped';
+      this.reason = this.wrongWay > 1.5 ? 'wrong-way' : 'flipped';
     }
 
     // Rubber band against the player's progress (metres).
@@ -181,7 +186,7 @@ export class AIDriver {
     const look = AI.lookahead[0] + AI.lookahead[1] * v;
     const k = (q.i + Math.round(look / tr.ds)) % n;
     const lead = (q.i + Math.round((6 + v * 0.35) / tr.ds)) % n;
-    const myTarget = Math.min(tr.speed[q.i], tr.speed[lead]) * skill;
+    const myTarget = Math.min(Math.min(tr.speed[q.i], tr.speed[lead]) * this.gripK, this.topSpeed) * skill;
     const lim = tr.W - 1.1;
 
     // ---- traffic: commit to a side to pass slower cars, keep clear of cars alongside.
@@ -229,6 +234,8 @@ export class AIDriver {
       this.pass.t -= dt;
       if (this.pass.t <= 0) this.pass = null;
     }
+    // Heading for a surprise box (set by Pickups) unless we are busy passing.
+    if (this.seekLat != null && !this.pass) wantOffset = this.seekLat - tr.line[k];
     wantOffset = clamp(tr.line[k] + wantOffset, -lim, lim) - tr.line[k];
     this.offset += clamp(wantOffset - this.offset, -3.6 * dt, 3.6 * dt);
     this.offset = clamp(this.offset, -2 * lim, 2 * lim);
@@ -270,13 +277,13 @@ export class AIDriver {
       if (this.reverseT <= 0) this.stuck = 0;
     } else if (v < 1.5 && throttle > 0.3) {
       this.stuck += dt;
-      if (this.stuck > 1.8) {
+      if (this.stuck > 0.8) {
         this.recoveries++;
-        if (this.recoveries > 2) {
+        if (this.recoveries > 1) {
           this.needsRespawn = true;
           this.reason = 'stuck';
         }
-        else this.reverseT = 1.4;
+        else this.reverseT = 0.9;
       }
     } else {
       this.stuck = Math.max(0, this.stuck - dt);

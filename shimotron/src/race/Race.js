@@ -1,5 +1,6 @@
 import { Car } from './Car.js';
 import { PlayerDriver, AIDriver, updateDrafts } from './Drivers.js';
+import { Pickups } from './Pickups.js';
 import { RACE, AI, CAR } from './config.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -46,7 +47,7 @@ export class Race {
       const heading = Math.atan2(pose.tangent.x, pose.tangent.z);
       const position = pose.position.clone();
       position.y += 0.66;
-      const car = new Car(ctx, { color: r.color, stripe: r.stripe, number: r.number, name: r.name, isPlayer: r.isPlayer, position, heading });
+      const car = new Car(ctx, { color: r.color, stripe: r.stripe, number: r.number, name: r.name, isPlayer: r.isPlayer, position, heading, type: r.type || 'gt' });
       const skillRange = this.difficulty.skill;
       const skill = r.isPlayer ? 1 : skillRange[0] + ((k * 0.37 + 0.13) % 1) * (skillRange[1] - skillRange[0]);
       const driver = r.isPlayer ? new PlayerDriver(car, this.engine.input, this.touch) : new AIDriver(car, tr, { skill, rubber: this.difficulty.rubber, seed: k + 1 });
@@ -74,7 +75,11 @@ export class Race {
         _q: {},
         wrongWay: 0,
         stuckT: 0,
+        watch: { t: 0, p: -back / L }, // no-progress watchdog
         launchDelay: r.isPlayer ? 0 : 0.08 + Math.random() * 0.35 * (1.1 - skill),
+        item: null, // held surprise { kind, charges }
+        shield: 0,
+        hits: 0, // shots/mines that connected (career bonus)
         topSpeed: 0,
       };
       this.entries.push(entry);
@@ -86,6 +91,9 @@ export class Race {
     this.engine.physics.world.addEventListener('preStep', this._preStep);
     this.lights = 0;
     this.track.setStartLights(0);
+    this.pickups = opts.items ? new Pickups(this) : null;
+    if (this.pickups && opts.startItem) this.pickups.give(this.player, opts.startItem.kind, opts.startItem.charges);
+    this.events.on('item:hit', this._onHit = ({ by }) => by && by.hits++);
   }
 
   // ------------------------------------------------------------ physics step
@@ -152,6 +160,7 @@ export class Race {
       this._progress(e, dt);
     }
     this.game.wheels.commit();
+    if (this.pickups) this.pickups.update(dt);
     this._rank();
 
     // Player helpers: wrong way, manual reset.
@@ -164,14 +173,36 @@ export class Race {
         P.wrongWay = backwards ? P.wrongWay + dt : Math.max(0, P.wrongWay - dt * 2);
       }
       const I = this.engine.input;
+      const pad = I.gamepad;
+      const padUse = !!(pad && pad.buttons[2] && pad.buttons[2].pressed);
+      const use = I.wasPressed('KeyE') || I.wasPressed('KeyF') || I.wasPressed('ControlLeft') || I.wasPressed('ControlRight') || I.wasPressed('Enter') || this.touch.item || (padUse && !this._padUse);
+      this._padUse = padUse;
+      this.touch.item = false;
+      if (use && this.pickups) this.pickups.use(P);
       if (I.wasPressed('KeyR') || this.touch.reset) {
         this.touch.reset = false;
         this.respawn(P);
       }
     }
-    // Automatic recovery for everyone: flipped, drowned, lost.
+    // Automatic recovery for everyone: flipped, drowned, lost, or simply not getting anywhere.
+    const racingNow = this.state === 'racing' || this.state === 'finished';
     for (const e of this.entries) {
       const b = e.car.body;
+      if (racingNow && !e.finished) {
+        const w = e.watch;
+        const moved = (e.progress - w.p) * tr.length;
+        const C = e.car.vehicle.controls;
+        const trying = !e.isPlayer || e.autopilot || C.throttle > 0.3 || C.brake > 0.3;
+        if (moved > 6 || !trying || this.clock < 4) {
+          w.t = this.clock;
+          w.p = e.progress;
+        } else if (this.clock - w.t > (e.isPlayer ? 2.5 : 2)) {
+          this.respawn(e);
+          if (e.isPlayer) this.events.emit('race:auto-respawn', e);
+          w.t = this.clock;
+          w.p = e.progress;
+        }
+      }
       const flipped = e.car.vehicle.upsideDown > CAR.flipResetTime;
       const drowned = b.position.y < -0.6;
       const lost = !e.q || e.q.dist > tr.W + 14;
@@ -296,7 +327,9 @@ export class Race {
       e.driver.wrongWay = 0;
       e.driver.reverseT = 0;
     }
-    b.velocity.set(pose.tangent.x * 8, 0, pose.tangent.z * 8);
+    b.velocity.set(pose.tangent.x * 11, 0, pose.tangent.z * 11);
+    e.watch.t = this.clock;
+    e.watch.p = e.progress;
     if (e.isPlayer) this.events.emit('race:respawn', e);
   }
 
@@ -327,6 +360,8 @@ export class Race {
   }
 
   dispose() {
+    if (this.pickups) this.pickups.dispose();
+    this.events.off('item:hit', this._onHit);
     this.engine.physics.world.removeEventListener('preStep', this._preStep);
     for (const e of this.entries) e.car.dispose();
     this.entries = [];

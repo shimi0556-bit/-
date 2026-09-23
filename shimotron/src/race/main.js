@@ -16,6 +16,7 @@ import { WheelBatch } from './CarModel.js';
 import { SkidMarks } from './Effects.js';
 import { CarAudio } from './CarAudio.js';
 import { RaceUI } from './ui.js';
+import { ITEMS } from './Pickups.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -43,7 +44,7 @@ const store = {
  */
 class Game {
   constructor() {
-    this.settings = { difficulty: 'normal', laps: RACE.laps, quality: null, sound: true, color: '#e0262b', camera: 0, ...store.get('settings', {}) };
+    this.settings = { difficulty: 'normal', laps: RACE.laps, quality: null, sound: true, color: '#e0262b', camera: 0, car: 'gt', items: true, podium: true, ...store.get('settings', {}) };
     this.records = store.get('records', {});
     this.champ = store.get('champ', null);
     this.selected = 0;
@@ -52,7 +53,7 @@ class Game {
     this.island = null;
     this.race = null;
     this.state = 'boot';
-    this.touch = { left: false, right: false, gas: false, brake: false, nitro: false, handbrake: false, reset: false };
+    this.touch = { left: false, right: false, gas: false, brake: false, nitro: false, handbrake: false, reset: false, item: false };
     this.isTouch = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 1;
     if (this.isTouch) document.body.classList.add('is-touch');
   }
@@ -85,8 +86,14 @@ class Game {
     engine.physics.fixedStep = 1 / 120;
     engine.physics.maxSubSteps = 10;
     engine.physics.world.allowSleep = false;
-    engine.pipeline.params.bloomStrength = 0.5;
+    engine.pipeline.params.bloomStrength = 0.42;
+    engine.pipeline.params.bloomThreshold = 1.5;
+    engine.pipeline.params.raysIntensity = 0.18;
     engine.pipeline.params.vignette = 0.36;
+    // A gentler sun for driving: dimmer disc and a tighter forward-scatter halo.
+    engine.atmosphere.skyUniforms.showSunDisc.value = 0.22;
+    engine.atmosphere.model.mieCoefficient = 0.0032;
+    engine.atmosphere.model.mieDirectionalG = 0.72;
     window.shimotron = { engine, version: VERSION, THREE, game: this };
 
     await progress(0.14, 'אופה טקסטורות פרוצדורליות על ה־GPU…');
@@ -321,11 +328,13 @@ class Game {
   roster() {
     const names = AI.names;
     const colors = AI.colors;
-    const list = [{ id: 'player', name: 'את/ה', color: this.settings.color, stripe: '#111111', number: 7, isPlayer: true }];
+    const list = [{ id: 'player', name: 'את/ה', color: this.settings.color, stripe: '#111111', number: 7, isPlayer: true, type: this.settings.car || 'gt' }];
+    // Opponents drive a mix of car types that rotates from island to island.
+    const mix = ['gt', 'rally', 'muscle', 'formula', 'buggy', 'gt', 'hyper'];
     for (let i = 0; i < RACE.opponents; i++) {
       let color = colors[i];
       if (color.toLowerCase() === this.settings.color.toLowerCase()) color = colors[(i + RACE.opponents) % colors.length];
-      list.push({ id: `ai${i}`, name: names[i], color, stripe: i % 2 ? '#111111' : '#f2f2f2', number: [3, 11, 21, 44, 55, 88][i], isPlayer: false });
+      list.push({ id: `ai${i}`, name: names[i], color, stripe: i % 2 ? '#111111' : '#f2f2f2', number: [3, 11, 21, 44, 55, 88][i], isPlayer: false, type: mix[(i + this.selected * 2) % mix.length] });
     }
     return list;
   }
@@ -381,7 +390,7 @@ class Game {
     this._endRace();
     this.skid.clear();
     this.wheels.reset();
-    const race = new Race(this, this.island, { laps: this.settings.laps, difficulty: this.settings.difficulty, roster: this._gridOrder(this.roster()) });
+    const race = new Race(this, this.island, { laps: this.settings.laps, difficulty: this.settings.difficulty, roster: this._gridOrder(this.roster()), items: this.settings.items, startItem: this.mode === 'career' && this.career ? this.career.item : null });
     this.race = race;
     try {
       await Promise.race([eng.renderer.compileAsync(eng.scene, eng.camera), wait(6000)]);
@@ -490,6 +499,38 @@ class Game {
       this.ui.message(place === 1 ? 'ניצחון!' : `מקום ${place}`, place === 1 ? 'gold' : '', 'קו הסיום', 2400);
     });
     ev.on('race:respawn', () => this.ui.flash());
+    // Surprises: sounds for everyone nearby, messages for the player.
+    const au = () => (this.engine.audio.enabled ? this.engine.audio : null);
+    ev.on('item:get', ({ entry, kind }) => {
+      if (!entry.isPlayer) return;
+      const a = au();
+      if (a) [880, 1175, 1568].forEach((f, i) => a._tone(a.master, { freq: f, dur: 0.12, gain: 0.07, type: 'triangle', when: i * 0.06 }));
+      this.ui.toast(`קיבלת ${ITEMS[kind].name}!`, ITEMS[kind].color);
+    });
+    ev.on('item:use', ({ entry, kind }) => {
+      const a = au();
+      const near = entry.car.position.distanceTo(this.engine.camera.position) < 60;
+      if (!a || !near) return;
+      if (kind === 'shots') a._burst(a.master, { dur: 0.18, freq: 700, q: 0.8, gain: 0.3 });
+      else if (kind === 'turbo') a._tone(a.master, { freq: 220, dur: 0.6, gain: 0.12, slide: 3, type: 'sawtooth' });
+      else if (kind === 'shield') a._tone(a.master, { freq: 520, dur: 0.5, gain: 0.08, slide: 2 });
+      else if (kind === 'mine') a._tone(a.master, { freq: 330, dur: 0.15, gain: 0.08, type: 'square' });
+      if (entry.isPlayer && kind === 'turbo') this.engine.events.emit('shake', { strength: 0.25 });
+    });
+    ev.on('item:hit', ({ entry, by, point }) => {
+      const a = au();
+      if (a && point.distanceTo(this.engine.camera.position) < 120) a.ui('boom');
+      if (entry.isPlayer) {
+        this.ui.message('נפגעת!', 'warn', '', 900);
+        this.engine.events.emit('shake', { strength: 0.8 });
+      } else if (by && by.isPlayer) this.ui.message('פגיעה!', 'gold', entry.name, 900);
+    });
+    ev.on('item:blocked', ({ entry, point }) => {
+      const a = au();
+      if (a && point && point.distanceTo(this.engine.camera.position) < 80) a._tone(a.master, { freq: 1400, dur: 0.3, gain: 0.08, slide: 0.5 });
+      if (entry.isPlayer) this.ui.toast('המגן ספג את הפגיעה', ITEMS.shield.color);
+    });
+    ev.on('race:auto-respawn', () => this.ui.message('חוזרים למסלול', 'warn', 'המכונית נתקעה', 900));
     ev.on('car:impact', ({ car, speed, point, rail, other }) => {
       const eng = this.engine;
       if (speed > 4) eng.particles.impact(point, null, Math.min(1.4, speed / 12));

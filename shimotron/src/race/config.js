@@ -52,8 +52,139 @@ export const CAR = {
   shiftTime: 0.14,
   assist: { yaw: 0.55, antiRoll: 6 }, // stability help (keyboard friendly)
   nitro: { accel: 6.5, topSpeed: 74, drain: 0.26, refill: 0.02, driftRefill: 0.1 },
-  flipResetTime: 2.2,
+  flipResetTime: 1.2,
 };
+
+/**
+ * Car types. `spec` is merged over CAR (physics); `shape` drives the
+ * procedural body in CarModel.js. Prices apply in career mode only.
+ */
+export const CAR_TYPES = [
+  {
+    id: 'gt',
+    name: 'GT ספורט',
+    desc: 'מאוזנת: מהירה, יציבה וסלחנית, טובה בכל מסלול',
+    price: 0,
+    spec: {},
+    shape: {},
+  },
+  {
+    id: 'rally',
+    name: 'ראלי',
+    desc: 'תאוצה חדה, מתלים גבוהים ואחיזה מעולה בחצץ, בחול ובשלג',
+    price: 6000,
+    spec: {
+      mass: 1150,
+      body: { half: [0.9, 0.34, 1.95], offset: [0, -0.1, 0] },
+      cabin: { half: [0.72, 0.28, 1.1], offset: [0, 0.4, -0.3] },
+      wheel: { radius: 0.35, front: 1.25, rear: -1.22, track: 0.8, restLength: 0.38, travel: 0.32, stiffness: 32, dampCompression: 4.2, grip: 1.62 },
+      engine: { accel: 11.2, topSpeed: 58, frontShare: 0.5 },
+      downforce: 0.35,
+      offroad: 1.45,
+    },
+    shape: { halfL: 2.0, w: 0.84, flare: 0.1, floor: -0.36, belt: 0.14, hoodDrop: 0.12, roof: 0.66, cabin: [0.72, 0.22, -0.95, -1.62], tailLen: 0.12, duck: 0, wing: 'rally', extras: ['lightbar', 'mudflaps'] },
+  },
+  {
+    id: 'muscle',
+    name: 'מאסל',
+    desc: 'מנוע ענק ומהירות שיא גבוהה, הנעה אחורית — הזנב אוהב לברוח',
+    price: 9000,
+    spec: {
+      mass: 1520,
+      body: { half: [0.95, 0.3, 2.32], offset: [0, -0.16, 0] },
+      cabin: { half: [0.74, 0.26, 1.0], offset: [0, 0.36, -0.45] },
+      wheel: { radius: 0.38, width: 0.3, front: 1.5, rear: -1.4, track: 0.84, grip: 1.55 },
+      engine: { accel: 10.4, topSpeed: 67, frontShare: 0.06 },
+      handbrake: { grip: 0.45 },
+      downforce: 0.25,
+      drag: 0.0007,
+      offroad: 0.9,
+    },
+    shape: { halfL: 2.4, w: 0.9, flare: 0.05, belt: 0.15, hoodDrop: 0.08, roof: 0.58, cabin: [0.3, -0.25, -0.85, -1.55], cabinW: 0.8, duck: 0.07, wing: 'none', lights: 'round', extras: ['hoodScoop'] },
+  },
+  {
+    id: 'buggy',
+    name: 'באגי שטח',
+    desc: 'גלגלים ענקיים וכלוב גלגול: לא מפחד מחול ודשא, איטי יותר על אספלט',
+    price: 7000,
+    spec: {
+      mass: 900,
+      body: { half: [0.9, 0.32, 1.7], offset: [0, -0.02, 0] },
+      cabin: { half: [0.62, 0.3, 0.72], offset: [0, 0.45, -0.2] },
+      wheel: { radius: 0.45, width: 0.34, front: 1.2, rear: -1.15, track: 0.88, height: 0.08, restLength: 0.44, travel: 0.4, stiffness: 26, dampCompression: 3.6, dampRelaxation: 2.6, grip: 1.52 },
+      engine: { accel: 12, topSpeed: 59, frontShare: 0.45 },
+      downforce: 0.15,
+      drag: 0.0009,
+      offroad: 1.75,
+    },
+    shape: { open: true, halfL: 1.75, w: 0.6, flare: 0, arches: false, floor: -0.28, belt: 0.04, hoodDrop: 0.1, tailRise: 0, noseLen: 0.28, wing: 'none', lights: 'round', skirts: false, splitter: false, diffuser: false, mirrors: false, extras: ['cage', 'helmet', 'spare', 'lightbar'] },
+  },
+  {
+    id: 'formula',
+    name: 'פורמולה',
+    desc: 'אחיזה והצמדה מטורפות על אספלט — ומחוץ לכביש היא אבודה',
+    price: 14000,
+    spec: {
+      mass: 780,
+      body: { half: [0.95, 0.24, 2.3], offset: [0, -0.2, 0] },
+      cabin: { half: [0.3, 0.2, 0.6], offset: [0, 0.18, -0.35] },
+      wheel: { radius: 0.34, width: 0.36, front: 1.62, rear: -1.32, track: 0.82, restLength: 0.22, travel: 0.14, stiffness: 58, dampCompression: 5.5, grip: 1.9 },
+      engine: { accel: 12, topSpeed: 71, frontShare: 0 },
+      downforce: 1.25,
+      drag: 0.00068,
+      offroad: 0.6,
+    },
+    shape: { open: true, formula: true, halfL: 2.35, w: 0.28, flare: 0, arches: false, floor: -0.44, belt: 0.0, hoodDrop: 0.08, tailRise: 0.12, noseLen: 1.0, pods: 0.34, wing: 'formula', lights: 'none', skirts: false, splitter: false, mirrors: false, extras: ['helmet', 'airbox', 'halo'] },
+  },
+  {
+    id: 'hyper',
+    name: 'היפרקאר',
+    desc: 'הכי מהירה שיש, עם כנף ענקית ומיכל ניטרו גדול',
+    price: 22000,
+    spec: {
+      mass: 1380,
+      body: { half: [1.0, 0.28, 2.22], offset: [0, -0.18, 0] },
+      cabin: { half: [0.7, 0.22, 0.9], offset: [0, 0.3, -0.1] },
+      wheel: { radius: 0.37, width: 0.31, front: 1.4, rear: -1.38, track: 0.86, grip: 1.72 },
+      engine: { accel: 12.4, topSpeed: 75, frontShare: 0.3 },
+      downforce: 0.85,
+      drag: 0.0007,
+      nitro: { drain: 0.16 },
+    },
+    shape: { halfL: 2.3, w: 0.97, flare: 0.09, floor: -0.45, belt: 0.04, hoodDrop: 0.22, roof: 0.5, cabin: [0.95, 0.2, -0.35, -1.5], cabinW: 0.7, wing: 'big', extras: ['fins'] },
+  },
+];
+
+const merge = (a, b) => {
+  const out = Array.isArray(a) ? [...a] : { ...a };
+  for (const [k, v] of Object.entries(b || {})) out[k] = v && typeof v === 'object' && !Array.isArray(v) && a && typeof a[k] === 'object' ? merge(a[k], v) : v;
+  return out;
+};
+
+/** Physics spec for a car type: CAR with the type's overrides and derived values. */
+export function carSpec(typeId = 'gt') {
+  const t = CAR_TYPES.find((c) => c.id === typeId) || CAR_TYPES[0];
+  const s = merge(CAR, t.spec);
+  s.id = t.id;
+  s.offroad = s.offroad || 1;
+  s.nitro = { ...s.nitro, topSpeed: s.engine.topSpeed * 1.17 };
+  // Steering lock that just saturates the tyres scales with grip and wheelbase.
+  const wb = s.wheel.front - s.wheel.rear;
+  s.steer = { ...s.steer, gripAngle: CAR.steer.gripAngle * (s.wheel.grip / CAR.wheel.grip) * (wb / (CAR.wheel.front - CAR.wheel.rear)) };
+  return s;
+}
+
+/** 0–10 ratings for the garage cards. */
+export function carRatings(typeId) {
+  const s = carSpec(typeId);
+  const clamp10 = (v) => Math.max(1, Math.min(10, Math.round(v)));
+  return {
+    speed: clamp10((s.engine.topSpeed - 45) / 3),
+    accel: clamp10((s.engine.accel - 8.5) * 2.6),
+    grip: clamp10((s.wheel.grip + s.downforce * 0.35 - 1.2) * 11),
+    offroad: clamp10(s.offroad * 5.6),
+  };
+}
 
 export const AI = {
   names: ['אריאל', 'נועה', 'יונתן', 'שירה', 'עומר', 'מאיה', 'איתי'],

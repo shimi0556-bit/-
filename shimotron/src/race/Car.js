@@ -2,20 +2,17 @@ import * as THREE from 'three';
 import { Emitter } from '../engine/fx/Particles.js';
 import { Vehicle } from './Vehicle.js';
 import { createCarModel } from './CarModel.js';
-import { CAR } from './config.js';
+import { carSpec } from './config.js';
 
 const _m = new THREE.Matrix4();
 const _w = new THREE.Matrix4();
 const _q = new THREE.Quaternion();
 const _qs = new THREE.Quaternion();
 const _p = new THREE.Vector3();
-const _s = new THREE.Vector3(1, 1, 1);
 const _a = new THREE.Vector3();
 const _b = new THREE.Vector3();
 const _side = new THREE.Vector3();
 const UP = new THREE.Vector3(0, 1, 0);
-const WHEEL_X = [CAR.wheel.track, -CAR.wheel.track, CAR.wheel.track, -CAR.wheel.track];
-const WHEEL_Z = [CAR.wheel.front, CAR.wheel.front, CAR.wheel.rear, CAR.wheel.rear];
 
 /**
  * One race car: physics (Vehicle) + procedural model + wheels in the shared
@@ -23,16 +20,22 @@ const WHEEL_Z = [CAR.wheel.front, CAR.wheel.front, CAR.wheel.rear, CAR.wheel.rea
  * `surface(x, z)` from the world says what each wheel is rolling on.
  */
 export class Car {
-  constructor(ctx, { color, stripe, number, name, isPlayer = false, position, heading = 0 }) {
+  constructor(ctx, { color, stripe, number, name, isPlayer = false, position, heading = 0, type = 'gt' }) {
     this.ctx = ctx;
     this.name = name;
     this.color = color;
     this.number = number;
     this.isPlayer = isPlayer;
-    this.vehicle = new Vehicle(ctx.physics, { position, heading, ground: ctx.ground });
+    this.type = type;
+    this.spec = carSpec(type);
+    const Wh = this.spec.wheel;
+    this.wheelX = [Wh.track, -Wh.track, Wh.track, -Wh.track];
+    this.wheelZ = [Wh.front, Wh.front, Wh.rear, Wh.rear];
+    this.wheelScale = ctx.wheels.scaleFor(Wh);
+    this.vehicle = new Vehicle(ctx.physics, { position, heading, ground: ctx.ground, spec: this.spec });
     this.body = this.vehicle.body;
     this.body.userData = { car: this };
-    const model = createCarModel(ctx.materials, { color, number, stripe });
+    const model = createCarModel(ctx.materials, { color, number, stripe, type });
     this.model = model;
     this.object = model.group;
     this.object.name = `מכונית ${number}`;
@@ -165,14 +168,14 @@ export class Car {
     for (let i = 0; i < 4; i++) {
       const info = infos[i];
       const len = info.isInContact ? info.suspensionLength : Math.min(info.suspensionRestLength + 0.05, info.suspensionLength + 0.2);
-      _p.set(WHEEL_X[i], CAR.wheel.height - len, WHEEL_Z[i]);
+      _p.set(this.wheelX[i], this.spec.wheel.height - len, this.wheelZ[i]);
       const left = i % 2 === 0;
       const steer = i < 2 ? -veh.steerAngle : 0;
       const spin = veh.wheelSpin[i];
       _q.setFromAxisAngle(UP, steer + (left ? Math.PI : 0));
       _qs.setFromAxisAngle(_a.set(1, 0, 0), left ? -spin : spin);
       _q.multiply(_qs);
-      _m.compose(_p, _q, _s);
+      _m.compose(_p, _q, this.wheelScale);
       _w.multiplyMatrices(this.object.matrixWorld, _m);
       W.set(this.wheelBase + i, _w);
     }
@@ -219,7 +222,7 @@ export class Car {
         if (last && last.distanceToSquared(cur) > 0.36) {
           _side.subVectors(cur, last).cross(UP).normalize();
           const tint = s === 'snow' ? [0.55, 0.6, 0.7] : s === 'sand' ? [0.55, 0.42, 0.3] : [1, 1, 1];
-          this.ctx.skid.add(last, cur, _side, CAR.wheel.width * 0.9, Math.min(0.75, k * 0.9), tint);
+          this.ctx.skid.add(last, cur, _side, this.spec.wheel.width * 0.9, Math.min(0.75, k * 0.9), tint);
           last.copy(cur);
         } else if (!last) this.lastMark[i] = cur.clone();
       } else this.lastMark[i] = null;
@@ -228,10 +231,14 @@ export class Car {
     // Surface grip and drag feed back into the physics.
     const G = this.ctx.surfaceGrip;
     let drag = 0;
+    // Off-road ability (buggy, rally) turns loose ground from a penalty into almost nothing.
+    const ability = this.spec.offroad;
     for (let i = 0; i < 4; i++) {
       const sf = this.surfaces[i];
-      veh.gripScale[i] = infos[i].isInContact ? G[sf]?.[0] ?? 1 : 1;
-      drag += G[sf]?.[1] ?? 0;
+      const loose = sf !== 'asphalt' && sf !== 'curb';
+      const base = G[sf]?.[0] ?? 1;
+      veh.gripScale[i] = infos[i].isInContact ? (loose ? Math.min(1.02, base * ability) : base) : 1;
+      drag += (G[sf]?.[1] ?? 0) / (loose ? ability * ability : 1);
     }
     veh.surfaceDrag = drag / 4;
 
@@ -239,8 +246,8 @@ export class Car {
     const smokeRate = v > 4 ? Math.max(0, slide - 0.45) * 90 : 0;
     const dustRate = v > 3 ? Math.min(1, v / 25) * 26 * this.offroad : 0;
     for (let k = 0; k < 2; k++) {
-      const x = k === 0 ? CAR.wheel.track : -CAR.wheel.track;
-      this._local(x, -0.5, CAR.wheel.rear - 0.25, this.smoke[k].position);
+      const x = k === 0 ? this.spec.wheel.track : -this.spec.wheel.track;
+      this._local(x, -0.5, this.spec.wheel.rear - 0.25, this.smoke[k].position);
       this.smoke[k].rate = this.offroad > 0.5 ? 0 : smokeRate;
       this.dust[k].position.copy(this.smoke[k].position);
       this.dust[k].rate = dustRate + (this.offroad > 0.5 ? smokeRate * 0.5 : 0);
@@ -251,7 +258,7 @@ export class Car {
     }
     // Nitro flames out of both exhausts.
     for (let k = 0; k < 2; k++) {
-      this._local(k === 0 ? 0.34 : -0.34, -0.3, -2.26, this.flames[k].position);
+      this._local(k === 0 ? 0.34 : -0.34, -0.3, -(this.spec.body.half[2] + 0.14), this.flames[k].position);
       this.flames[k].o.dir.copy(this.forward).negate();
       this.flames[k].rate = veh.nitroActive ? 60 : 0;
     }

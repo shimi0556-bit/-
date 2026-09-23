@@ -1,5 +1,7 @@
-import { STAGES, AI, RACE, CAR } from './config.js';
+import { STAGES, AI, RACE, CAR, CAR_TYPES, carRatings } from './config.js';
 import { Race } from './Race.js';
+import { drawCarProfile } from './CarModel.js';
+import { ITEMS } from './Pickups.js';
 
 const h = (tag, attrs = {}, ...kids) => {
   const el = document.createElement(tag);
@@ -27,6 +29,11 @@ const ICON = {
   hand: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 4v10"/><circle cx="12" cy="18" r="3"/></svg>',
   sound: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg>',
   flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 21V4"/><path d="M5 4h12l-2 4 2 4H5"/></svg>',
+  shots: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9.5h9l3 2.5-3 2.5H3z"/><circle cx="18.5" cy="12" r="2.5"/><path d="M3 5h5l2 1.5L8 8H3zM3 16h5l2 1.5L8 19H3z" opacity=".6"/></svg>',
+  mine: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="13" r="6"/><path d="M12 3v4M12 19v3M3 13h3M18 13h3M5.6 6.6l2.2 2.2M16.2 17.2l2 2M5.6 19.4l2.2-2.2M16.2 8.8l2-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="13" r="1.8" fill="#ff3b3b"/></svg>',
+  turbo: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6l7 6-7 6zM12 6l7 6-7 6z"/></svg>',
+  shield: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 20 5v6c0 5-3.4 9.2-8 11-4.6-1.8-8-6-8-11V5z"/></svg>',
+  item: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01" stroke-linecap="round"/></svg>',
   trophy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4M12 14v4M8 21h8M9 18h6"/></svg>',
 };
 const icon = (name) => {
@@ -108,10 +115,13 @@ export class RaceUI {
           state.champ ? h('button', { class: 'btn', type: 'button', onclick: () => g.resetChampionship() }, 'אליפות חדשה') : null,
         ),
         h('div', { class: 'islands', role: 'group', 'aria-label': 'בחירת אי' }, cards),
+        h('h2', { class: 'section-title' }, 'הרכב שלך'),
+        this.carPicker({ selected: s.car || 'gt', color: s.color, onPick: (id) => g.setSetting('car', id) }),
         h(
           'div',
           { class: 'settings' },
           h('label', { class: 'field' }, h('span', {}, 'רמת יריבים'), h('div', { class: 'seg' }, Object.entries(AI.difficulty).map(([k, d]) => segBtn('difficulty', k, d.label)))),
+          h('label', { class: 'field' }, h('span', {}, 'הפתעות על המסלול'), h('div', { class: 'seg' }, [[true, 'כן'], [false, 'לא']].map(([v, l]) => segBtn('items', v, l)))),
           h('label', { class: 'field' }, h('span', {}, 'הקפות'), h('div', { class: 'seg' }, [1, 2, 3, 5].map((n) => segBtn('laps', n, String(n))))),
           h('label', { class: 'field' }, h('span', {}, 'גרפיקה'), h('div', { class: 'seg' }, [['low', 'נמוכה'], ['medium', 'בינונית'], ['high', 'גבוהה'], ['ultra', 'אולטרה']].map(([k, l]) => segBtn('quality', k, l)))),
           h('label', { class: 'field' }, h('span', {}, 'צבע המכונית שלך'), h('div', { class: 'seg' }, ['#e0262b', '#ff7a1a', '#f2f2f2', '#141414', '#2f6bff'].map((c) => h('button', { type: 'button', 'aria-pressed': String(s.color === c), 'aria-label': c, onclick: () => g.setSetting('color', c), style: `width:40px` }, h('span', { style: `display:block;width:18px;height:18px;border-radius:50%;margin:auto;background:${c};border:1px solid rgba(255,255,255,.35)` }))))),
@@ -136,6 +146,35 @@ export class RaceUI {
     this.refreshPreviews();
     const first = cards[state.selected];
     if (first) first.focus({ preventScroll: true });
+  }
+
+  /**
+   * Row of car cards: side profile, name, one-line character and four rating bars.
+   * opts: { selected, color, onPick(id), owned?: Set, money?, onBuy?(id) } — owned/money switch on career prices.
+   */
+  carPicker({ selected, color, onPick, owned = null, money = 0, onBuy = null }) {
+    const labels = { speed: 'מהירות', accel: 'תאוצה', grip: 'אחיזה', offroad: 'שטח' };
+    const cards = CAR_TYPES.map((t) => {
+      const cv = h('canvas', { width: 320, height: 120, 'aria-hidden': 'true' });
+      drawCarProfile(cv, t.id, color);
+      const r = carRatings(t.id);
+      const have = !owned || owned.has(t.id);
+      const bars = h(
+        'div',
+        { class: 'bars' },
+        Object.entries(labels).map(([k, l]) => h('div', { class: 'bar-row' }, h('span', {}, l), h('i', { style: `--v:${r[k] * 10}%` }))),
+      );
+      const buy = !have
+        ? h('button', { class: 'btn small', type: 'button', disabled: money < t.price ? true : null, onclick: (e) => { e.stopPropagation(); onBuy && onBuy(t.id); } }, `קנייה · ₪${t.price.toLocaleString('he-IL')}`)
+        : null;
+      return h(
+        'button',
+        { class: `carcard${have ? '' : ' locked'}`, type: 'button', 'aria-pressed': String(selected === t.id), onclick: () => have && onPick(t.id) },
+        cv,
+        h('div', { class: 'meta' }, h('h3', {}, t.name), h('p', {}, t.desc), bars, buy),
+      );
+    });
+    return h('div', { class: 'cars', role: 'group', 'aria-label': 'בחירת רכב' }, cards);
   }
 
   /** Draws each island card's map (terrain relief + circuit) once its plan exists. */
@@ -211,6 +250,7 @@ export class RaceUI {
       ),
       h('div', { class: 'bl' }, h('div', { class: 'speedo' }, speedo)),
       h('div', { class: 'br' }, minimap),
+      (els.item = h('div', { class: 'pill itemslot', hidden: race.pickups ? null : true }, h('span', { class: 'ico' }), h('span', { class: 'name' }), h('span', { class: 'key' }, g.isTouch ? '' : 'E'))),
     );
     this.hudEl = hud;
     this.root.append(hud);
@@ -251,6 +291,20 @@ export class RaceUI {
     el.style.animationDuration = `${ms}ms`;
   }
 
+  /** Small transient notice under the top buttons. */
+  toast(text, color = '') {
+    if (!this.toastEl) {
+      this.toastEl = h('div', { class: 'toast pill', role: 'status' });
+      this.root.append(this.toastEl);
+    }
+    const el = this.toastEl;
+    el.textContent = text;
+    el.style.color = color || '';
+    el.style.opacity = '1';
+    clearTimeout(this._toastT);
+    this._toastT = setTimeout(() => (el.style.opacity = '0'), 1600);
+  }
+
   flash() {
     if (!this.flashEl) return;
     this.flashEl.style.transition = 'none';
@@ -288,6 +342,14 @@ export class RaceUI {
     bind('t-brake', 'brake', 'brake', 'בלם');
     bind('t-nitro', 'nitro', 'nitro', 'ניטרו');
     bind('t-hand', 'handbrake', 'hand', 'בלם יד');
+    if (this.game.race && this.game.race.pickups) {
+      const b = h('button', { class: 't-item', type: 'button', 'aria-label': 'שימוש בהפתעה', html: ICON.item });
+      b.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        T.item = true;
+      });
+      pad.append(b);
+    }
     this.touchEl = pad;
     this.root.append(pad);
   }
@@ -335,6 +397,24 @@ export class RaceUI {
       return h('li', { class: e.isPlayer ? 'me' : '', style: `--car:${e.color}` }, h('span', { class: 'p' }, k + 1), h('span', { class: 'c' }), h('span', {}, e.name), h('span', { class: 'g num' }, running ? gap : ''));
     });
     els.board.replaceChildren(...rows);
+    // Held surprise.
+    if (els.item && race.pickups) {
+      const it = P.item;
+      const key = it ? `${it.kind}:${it.charges}` : '';
+      if (key !== this._itemKey) {
+        this._itemKey = key;
+        els.item.classList.toggle('empty', !it);
+        els.item.style.setProperty('--ic', it ? ITEMS[it.kind].color : '#667286');
+        els.item.children[0].innerHTML = ICON[it ? it.kind : 'item'];
+        els.item.children[1].textContent = it ? `${ITEMS[it.kind].name}${it.charges > 1 ? ` ×${it.charges}` : ''}` : 'אין הפתעה';
+        if (it) {
+          els.item.classList.remove('pulse');
+          void els.item.offsetWidth;
+          els.item.classList.add('pulse');
+        }
+      }
+      els.item.classList.toggle('shielded', P.shield > 0);
+    }
   }
 
   _drawSpeedo(cv, car) {

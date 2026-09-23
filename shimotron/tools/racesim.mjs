@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { Terrain } from '../src/engine/world/Terrain.js';
 import { Physics } from '../src/engine/physics/Physics.js';
-import { STAGES, RACE, AI } from '../src/race/config.js';
+import { STAGES, RACE, AI, carSpec } from '../src/race/config.js';
 import { generateTrack } from '../src/race/TrackGenerator.js';
 import { Track } from '../src/race/Track.js';
 import { Vehicle, GROUP } from '../src/race/Vehicle.js';
@@ -37,13 +37,15 @@ for (let k = 0; k < Number(nCars); k++) {
   const pose = track.pose(s, col === 0 ? -3.4 : 3.4);
   const pos = pose.position.clone();
   pos.y += 0.66;
-  const vehicle = new Vehicle(physics, { position: pos, heading: Math.atan2(pose.tangent.x, pose.tangent.z), ground: (f, t, r) => track.raycastRoad(f, t, r, track.roadBody) });
+  const types = (process.env.TYPES || 'gt').split(',');
+  const type = types[k % types.length];
+  const vehicle = new Vehicle(physics, { position: pos, heading: Math.atan2(pose.tangent.x, pose.tangent.z), ground: (f, t, r) => track.raycastRoad(f, t, r, track.roadBody), spec: carSpec(type) });
   vehicle.assist = 1.2;
   const car = { vehicle, body: vehicle.body };
   vehicle.body.userData = { simCar: k };
   const skill = process.env.REVERSE ? Number(skillArg) - (Number(nCars) - 1 - k) * 0.015 : Number(skillArg) - k * 0.01;
   const driver = new AIDriver(car, track, { skill, rubber: 0, seed: k + 1 });
-  cars.push({ id: k, car, driver, progress: -back / L, lastS: s, q: null, _q: {}, respawns: 0, flips: 0, hits: 0, minV: 99, laps: [], lapStart: 0, crossed: -1 });
+  cars.push({ id: k, type, car, driver, progress: -back / L, lastS: s, q: null, _q: {}, respawns: 0, flips: 0, hits: 0, minV: 99, laps: [], lapStart: 0, crossed: -1 });
   vehicle.body.addEventListener('collide', (e) => {
     const sp = Math.abs(e.contact.getImpactVelocityAlongNormal());
     if (sp > 3) cars[k].hits++;
@@ -128,5 +130,5 @@ while (clock < total) {
   }
 }
 console.log('summary:');
-for (const c of cars) console.log(`  car${c.id} skill ${c.driver.baseSkill.toFixed(2)} progress ${(c.progress * 100).toFixed(1)}% laps ${c.laps.map((t) => t.toFixed(1)).join(',')} respawns ${c.respawns} flips ${c.flips} hits ${c.hits}`);
+for (const c of cars) console.log(`  car${c.id} ${c.type.padEnd(7)} skill ${c.driver.baseSkill.toFixed(2)} progress ${(c.progress * 100).toFixed(1)}% laps ${c.laps.map((t) => t.toFixed(1)).join(',')} respawns ${c.respawns} flips ${c.flips} hits ${c.hits}`);
 console.log(`sim ${total}s in ${((Date.now() - t0) / 1000).toFixed(1)} s wall`);

@@ -103,7 +103,15 @@ export class Island {
   _sky() {
     const atm = this.engine.atmosphere;
     const s = this.stage.sky;
-    atm.sunAzimuth = s.azimuth;
+    // Put the sun behind the grid, over one shoulder, so the start straight is not a drive into it.
+    atm.sunAzimuth = 0;
+    const d0 = atm.computeSunDirection(s.time, new THREE.Vector3());
+    const tr = this.track;
+    const side = s.azimuth >= 0 ? 1 : -1;
+    const a = Math.PI * 0.78 * side;
+    const dx = tr.tx[0] * Math.cos(a) - tr.tz[0] * Math.sin(a);
+    const dz = tr.tx[0] * Math.sin(a) + tr.tz[0] * Math.cos(a);
+    atm.sunAzimuth = Math.atan2(-dz, dx) - Math.atan2(-d0.z, d0.x);
     atm.setTime(s.time, true);
     atm.daySpeed = 0;
     atm.model.turbidity = s.turbidity;

@@ -150,7 +150,7 @@ kbd { font: 600 11px var(--mono); padding: 1px 6px; border-radius: 5px; border: 
 .msg.go { color: var(--good); }
 .msg.gold { color: var(--accent); }
 @keyframes pop { 0% { opacity: 0; transform: translate(-50%, -50%) scale(1.6); } 25% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -54%) scale(0.98); } }
-.toast { position: fixed; top: calc(90px + var(--safe-t)); left: 50%; transform: translateX(-50%); z-index: 26; padding: 8px 16px; font-weight: 600; pointer-events: none; transition: opacity 0.3s; }
+.toast { position: fixed; top: calc(112px + var(--safe-t)); left: 50%; transform: translateX(-50%); z-index: 26; padding: 8px 16px; font-weight: 600; pointer-events: none; transition: opacity 0.3s; }
 .stagename { position: fixed; bottom: calc(24px + var(--safe-b)); left: 50%; transform: translateX(-50%); z-index: 21; text-align: center; pointer-events: none; }
 .stagename h2 { margin: 0; font: 700 64px/0.9 var(--display); text-shadow: 0 4px 30px rgba(0, 0, 0, 0.6); }
 .stagename p { margin: 4px 0 0; color: var(--text); opacity: 0.85; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8); }
@@ -217,3 +217,39 @@ body.is-touch .minimap { width: 130px; height: 130px; }
   .brand h1 { font-size: 56px; }
   .brand p { display: none; }
 }
+
+/* Car picker */
+.section-title { margin: 6px 0 -8px; font: 700 30px/1 var(--display); color: var(--text); }
+.cars { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.carcard {
+  appearance: none; cursor: pointer; padding: 0; text-align: start; color: inherit; overflow: hidden;
+  border: 1px solid var(--line); border-radius: 14px; background: var(--glass); display: flex; flex-direction: column;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.carcard:hover { transform: translateY(-2px); border-color: var(--line-strong); }
+.carcard[aria-pressed='true'] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.carcard canvas { width: 100%; aspect-ratio: 8 / 3; display: block; background: radial-gradient(120% 90% at 50% 100%, rgba(255, 176, 32, 0.12), transparent 60%); }
+.carcard .meta { padding: 8px 12px 12px; display: flex; flex-direction: column; gap: 4px; }
+.carcard h3 { margin: 0; font: 700 26px/1 var(--display); }
+.carcard p { margin: 0; color: var(--muted); font-size: 12px; min-height: 32px; }
+.carcard.locked canvas { filter: grayscale(0.8) brightness(0.7); }
+.bars { display: grid; gap: 3px; margin-top: 2px; }
+.bar-row { display: grid; grid-template-columns: 48px 1fr; align-items: center; gap: 8px; font-size: 11.5px; color: var(--muted); }
+.bar-row i { display: block; height: 5px; border-radius: 3px; background: linear-gradient(90deg, var(--accent) var(--v), rgba(255, 255, 255, 0.08) var(--v)); }
+.btn.small { padding: 6px 10px; font-size: 13px; margin-top: 6px; }
+.btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+
+/* Held surprise */
+.itemslot { position: absolute; top: calc(66px + var(--safe-t)); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px; color: var(--ic, var(--text)); font-weight: 700; }
+.itemslot .ico { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; background: color-mix(in srgb, var(--ic) 22%, transparent); }
+.itemslot .ico svg { width: 22px; height: 22px; }
+.itemslot .name { color: var(--text); font-size: 14px; }
+.itemslot .key { font: 600 11px var(--mono); padding: 1px 6px; border-radius: 5px; border: 1px solid var(--line-strong); color: var(--muted); }
+.itemslot.empty { opacity: 0.55; }
+.itemslot.empty .key { display: none; }
+.itemslot.pulse { animation: itempulse 0.6s ease-out; }
+.itemslot.shielded { box-shadow: 0 0 0 2px #9b7bff, 0 0 24px #9b7bff88; }
+@keyframes itempulse { 0% { transform: translateX(-50%) scale(1.35); } 100% { transform: translateX(-50%) scale(1); } }
+.touch .t-item { right: calc(210px + var(--safe-r)); bottom: calc(150px + var(--safe-b)); width: 70px; height: 70px; }
+.toast { opacity: 0; }
+@media (max-height: 500px) { .itemslot { top: calc(60px + var(--safe-t)); } }
