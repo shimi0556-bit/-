@@ -17,7 +17,7 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
  * nearest(), pose(), outline(), length, x/z samples.
  */
 export class Course {
-  constructor(kind, { island, world, engine, materials }) {
+  constructor(kind, { island, world, engine, materials, space = null }) {
     this.kind = kind;
     this.island = island;
     this.world = world;
@@ -30,13 +30,15 @@ export class Course {
     this.group = new THREE.Group();
     this.group.name = 'מסלול שערים';
     this.thermals = [];
-    const obs = world.obstacles();
+    this.space = space;
+    const obs = kind === 'space' ? { piers: [], decks: [] } : world.obstacles();
     this.piers = obs.piers;
     this.decks = obs.decks;
   }
 
   /** Ground or sea floor in local coordinates, also beyond the island's own square. */
   ground(x, z) {
+    if (this.kind === 'space') return -1e9;
     const half = this.terrain.size / 2;
     if (Math.abs(x) < half - 2 && Math.abs(z) < half - 2) return this.terrain.heightAt(x, z);
     return this.world.groundAt(...this.world.toWorld(x, z));
@@ -238,6 +240,10 @@ export class Course {
       cur = next;
     }
     this.y.set(cur);
+  }
+
+  _space() {
+    return this.space.courseControls();
   }
 
   _plane() {
@@ -499,8 +505,8 @@ export class Course {
   // ------------------------------------------------------------ gates
 
   _gates() {
-    const spacing = { boat: 230, sub: 150, plane: 330, glider: 260 }[this.kind];
-    const radius = { boat: 13, sub: 6.5, plane: 15, glider: 19 }[this.kind];
+    const spacing = { boat: 230, sub: 150, plane: 330, glider: 260, space: 420 }[this.kind];
+    const radius = { boat: 13, sub: 6.5, plane: 15, glider: 19, space: 24 }[this.kind];
     const L = this.length;
     const count = Math.max(4, Math.round(L / spacing));
     this.gates = [];
@@ -542,8 +548,8 @@ export class Course {
       return m;
     };
     const stripeMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55 });
-    this.gateMat = kind === 'sub' ? glow(0x3de0ff, 1.2) : stripeMat;
-    this.nextMat = glow(kind === 'sub' ? 0x9ff6ff : 0xffc23a, kind === 'sub' ? 4 : 2.5);
+    this.gateMat = kind === 'sub' ? glow(0x3de0ff, 1.2) : kind === 'space' ? glow(0xff3df0, 2.2) : stripeMat;
+    this.nextMat = glow(kind === 'sub' ? 0x9ff6ff : kind === 'space' ? 0x7ff6ff : 0xffc23a, kind === 'sub' ? 4 : kind === 'space' ? 7 : 2.5);
     this.mats = [this.gateMat, this.nextMat, stripeMat];
     this.gateMeshes = [];
     for (const g of this.gates) {
@@ -570,7 +576,7 @@ export class Course {
     const checker = g.index === 0 || g.final;
     let geo;
     if (this.kind === 'boat') geo = new THREE.TorusGeometry(r, 0.85, 8, 28, Math.PI);
-    else geo = new THREE.TorusGeometry(r, this.kind === 'sub' ? 0.35 : this.kind === 'glider' ? 0.7 : 0.9, 8, 36);
+    else geo = new THREE.TorusGeometry(r, this.kind === 'sub' ? 0.35 : this.kind === 'glider' ? 0.7 : this.kind === 'space' ? 1.2 : 0.9, 8, 36);
     geo = geo.toNonIndexed();
     const pos = geo.attributes.position;
     const col = new Float32Array(pos.count * 3);

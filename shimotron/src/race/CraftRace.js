@@ -20,6 +20,7 @@ export class CraftRace {
     this.kind = opts.kind;
     this.spec = KINDS[this.kind];
     this.title = this.spec.name;
+    if (this.kind === 'space') this.stageName = 'מסלול במסלול: מעל הארכיפלג';
     this.events = game.engine.events;
     this.difficulty = AI.difficulty[opts.difficulty] || AI.difficulty.normal;
     this.state = 'intro';
@@ -30,10 +31,16 @@ export class CraftRace {
     this.checkpoints = new Map();
     this.touch = game.touch;
     this.pickups = null;
-    this.course = new Course(this.kind, { island, world: game.world, engine: game.engine, materials: game.materials }).build();
+    this.space = opts.space || null;
+    this.course = new Course(this.kind, { island, world: game.world, engine: game.engine, materials: game.materials, space: this.space }).build();
+    if (this.space) {
+      this.space.placeStation(this.course, 0.52);
+      this.space.scatterRocks(this.course, 0.1, 0.36);
+      this.space.scatterRocks(this.course, 0.64, 0.88);
+    }
     this.track = this.course;
     // Long laps for the slow craft: cap how many.
-    const cap = { boat: 3, sub: 2, plane: 3, glider: 1 }[this.kind];
+    const cap = { boat: 3, sub: 2, plane: 3, glider: 1, space: 2 }[this.kind];
     this.laps = this.course.closed ? Math.min(cap, opts.laps || RACE.laps) : 1;
     this.acc = 0;
     this._build(opts.roster);
@@ -52,6 +59,8 @@ export class CraftRace {
       piers: c.piers,
       decks: c.decks,
       thermals: c.thermals,
+      solids: this.space ? this.space.rocks : null,
+      collide: this.space ? (p) => this.space.collide(p) : null,
       get wind() {
         const s = 0.6 + atm.wind.strength * 0.8;
         return { x: atm.wind.dir.x * s, z: atm.wind.dir.y * s };
@@ -83,7 +92,7 @@ export class CraftRace {
       const heading = Math.atan2(pose.tangent.x, pose.tangent.z);
       const craft = new Craft(env, { kind: this.kind, color: r.color, stripe: r.stripe, name: r.name, number: r.number, isPlayer: r.isPlayer, position: pos, heading, seed: k + 3 });
       if (this.kind === 'plane') craft.smoke = true;
-      if (this.kind === 'plane' || this.kind === 'glider') craft.chase3d = true;
+      if (this.kind === 'plane' || this.kind === 'glider' || this.kind === 'space') craft.chase3d = true;
       const range = this.difficulty.skill;
       const skill = r.isPlayer ? 1 : range[0] + ((k * 0.37 + 0.13) % 1) * (range[1] - range[0]);
       const driver = r.isPlayer ? new CraftPlayer(craft, this.engine.input, this.touch) : new CraftAI(craft, c, { skill, lane: ((k % 3) - 1) * sp.lane * 0.7, seed: k + 1 });
@@ -220,7 +229,7 @@ export class CraftRace {
         c.hit = 0;
       }
       if (!racing || e.finished) continue;
-      const far = { boat: 140, sub: 90, plane: 260, glider: 320 }[this.kind];
+      const far = { boat: 140, sub: 90, plane: 260, glider: 320, space: 400 }[this.kind];
       e.lost = e.q && e.q.dist < far ? 0 : e.lost + dt;
       if (e.lost > 4) {
         e.lost = 0;
@@ -247,7 +256,7 @@ export class CraftRace {
   /** Crafts push each other apart instead of passing through. */
   _separate() {
     const E = this.entries;
-    const R = { boat: 4.2, sub: 4, plane: 6, glider: 7 }[this.kind];
+    const R = { boat: 4.2, sub: 4, plane: 6, glider: 7, space: 6 }[this.kind];
     for (let i = 0; i < E.length; i++) {
       for (let j = i + 1; j < E.length; j++) {
         const a = E[i].craft.position;

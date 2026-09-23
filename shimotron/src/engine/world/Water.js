@@ -281,7 +281,7 @@ export class Water {
     }
     const cam = eng.camera.position;
     // Seen from high above (the world map) the sea must reach the horizon: stretch the grid.
-    const grow = Math.max(1, cam.y / 250);
+    const grow = Math.max(1, cam.y / 60);
     this.mesh.scale.set(grow, 1, grow);
     const snap = 4 * grow;
     this.mesh.position.set(Math.round(cam.x / snap) * snap, this.level, Math.round(cam.z / snap) * snap);

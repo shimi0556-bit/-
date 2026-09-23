@@ -43,6 +43,8 @@ function patchSkyShader(material) {
 				float moonHalo = pow( max( dot( direction, uMoonDir ), 0.0 ), 60.0 ) * 0.02 + pow( max( dot( direction, uMoonDir ), 0.0 ), 6.0 ) * 0.0025;
 				texColor += ( night + vec3( 0.75, 0.85, 1.0 ) * moonHalo ) * uNight;
 			}
+			// Below the horizon (seen from high up, past the end of the sea mesh): distant sea haze, not sky.
+			if ( direction.y < 0.0 ) texColor = mix( texColor, texColor * vec3( 0.32, 0.42, 0.52 ), smoothstep( 0.0, -0.03, direction.y ) );
 			// Clouds`,
     );
   material.needsUpdate = true;
@@ -344,12 +346,23 @@ export class Atmosphere {
     u.time.value = t;
     u.uNight.value = this.nightFactor;
     u.uMoonDir.value.copy(this.moonDir);
+    // Climbing out of the air (space race): the sky thins to black, stars come out.
+    const sp = this.space || 0;
+    if (sp > 0) {
+      u.rayleigh.value *= 1 - sp * 0.97;
+      u.mieCoefficient.value *= 1 - sp * 0.95;
+      u.cloudCoverage.value *= 1 - sp;
+    }
+    if (Math.abs(sp - (this._lastSpace || 0)) > 0.04) {
+      this._lastSpace = sp;
+      this._envDirty = true;
+    }
 
     // Physically derived light from the CPU sky model.
     const sky = this.model;
     const irr = sky.irradiance(this.sunDir);
     const nightAmb = [0.006, 0.009, 0.018];
-    this.skyIrradiance = irr.map((v, i) => v + nightAmb[i]);
+    this.skyIrradiance = irr.map((v, i) => (v + nightAmb[i]) * (1 - sp * 0.85));
     const trans = sky.sunTransmittance(this.sunDir);
     const vis = THREE.MathUtils.smoothstep(elev, -0.035, 0.05);
     const sunIrr = trans.map((v) => v * 58 * vis);
@@ -377,7 +390,7 @@ export class Atmosphere {
 
     // Stars, moon.
     this.starUniforms.uTime.value = t;
-    this.starUniforms.uNight.value = this.nightFactor;
+    this.starUniforms.uNight.value = Math.max(this.nightFactor, sp);
     this.starUniforms.uPixelRatio.value = eng.renderer.getPixelRatio();
     for (const k of ['cloudCoverage', 'cloudScale', 'cloudSpeed', 'cloudElevation', 'cloudDensity', 'time']) this.starUniforms[k].value = u[k].value;
     this.stars.position.copy(eng.camera.position);
@@ -391,7 +404,7 @@ export class Atmosphere {
     const hz = sky.horizon(this.sunDir);
     const f = eng.scene.fog;
     if (f) {
-      f.density = this.fogDensity;
+      f.density = this.fogDensity * (1 - sp);
       f.color.setRGB(hz.average[0] + nightAmb[0] * 0.5, hz.average[1] + nightAmb[1] * 0.5, hz.average[2] + nightAmb[2] * 0.5);
       // Under the sea: thick blue-green water instead of air, no sky.
       const uw = this.underwater;
@@ -413,7 +426,15 @@ export class Atmosphere {
         sh.w = 0.98;
         eng.scene.background = null;
       }
-      this.sky.visible = !uw;
+      this.sky.visible = !uw && sp < 0.995;
+      if (sp >= 0.995 && !uw) {
+        if (!this._spaceBg) this._spaceBg = new THREE.Color(0, 0, 0);
+        eng.scene.background = this._spaceBg;
+        this._wasSpace = true;
+      } else if (this._wasSpace && !uw) {
+        eng.scene.background = null;
+        this._wasSpace = false;
+      }
       this._wasUnder = uw;
     }
     fogParams.sunDir.x = this.sunDir.x;
@@ -433,7 +454,8 @@ export class Atmosphere {
     const eSurf = sunLum * Math.max(elev, 0.1) * 0.9 + luminance(this.skyIrradiance) + luminance(moonIrr) * 0.6;
     const surfLum = (0.3 * eSurf) / Math.PI;
     const skyLum = luminance(hz.average) * 0.85 + luminance(hz.toward) * 0.15 + 0.004;
-    const meter = Math.exp(0.58 * Math.log(Math.max(surfLum, 1e-5)) + 0.42 * Math.log(skyLum));
+    let meter = Math.exp(0.58 * Math.log(Math.max(surfLum, 1e-5)) + 0.42 * Math.log(skyLum));
+    if (sp > 0) meter = Math.exp(THREE.MathUtils.lerp(Math.log(meter), Math.log(Math.max(surfLum * 0.8, 1e-5)), sp));
     this.targetExposure = THREE.MathUtils.clamp(0.2 / meter, 0.004, 9) * Math.pow(2, this.exposureBias);
     if (this.forceAdapt) {
       this.exposure = this.targetExposure;

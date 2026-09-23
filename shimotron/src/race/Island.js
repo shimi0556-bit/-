@@ -7,6 +7,7 @@ import { IslandFlora } from './Flora.js';
 import { City } from './City.js';
 import { Canyon } from './Canyon.js';
 import { Life } from './Life.js';
+import { Spaceport } from './Launch.js';
 import { Weather } from './Effects.js';
 import { RACE } from './config.js';
 import { GROUP } from './Vehicle.js';
@@ -108,6 +109,11 @@ export class Island {
       await progress(0.56, 'בונה את העיר…');
       this.group.add(this.city.build());
       await nextFrame();
+    }
+    if (this.opts.pad) {
+      // The spaceport, with its rocket on the mount.
+      this.spaceport = new Spaceport(eng, this.materials, this.opts.pad);
+      this.group.add(this.spaceport.build());
     }
     if (st.gorge) {
       await progress(0.56, 'מפסל קשתות סלע ונקיקים…');

@@ -354,3 +354,9 @@ body.is-touch .minimap { width: 130px; height: 130px; }
   .garage-head h2 { font-size: 42px; }
   .next-race h3 { font-size: 32px; }
 }
+
+/* Scene changes and the launch film. */
+.whiteout { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 60; transition: opacity 0.25s; }
+.launchcap { position: fixed; left: 0; right: 0; bottom: calc(28px + var(--safe-b)); text-align: center; z-index: 30; pointer-events: none; text-shadow: 0 2px 18px rgba(0, 0, 0, 0.7); }
+.launchcap h2 { margin: 0; font: 700 44px/1.1 'Karantina', 'IBM Plex Sans Hebrew', sans-serif; color: #fff; }
+.launchcap p { margin: 6px 0 0; color: rgba(255, 255, 255, 0.75); font-size: 14px; }

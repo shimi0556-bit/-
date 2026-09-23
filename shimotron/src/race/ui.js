@@ -60,7 +60,7 @@ const ordinal = (n) => `${n}`;
  * championship table, plus the touch pad. Pure view: the Game calls in.
  */
 /** Race kinds for the single race. */
-const KIND_LABEL = { car: 'מכוניות', boat: 'סירות', sub: 'צוללות', plane: 'מטוסים', glider: 'מצנחי רחיפה' };
+const KIND_LABEL = { car: 'מכוניות', boat: 'סירות', sub: 'צוללות', plane: 'מטוסים', glider: 'מצנחי רחיפה', space: 'חלל' };
 
 export class RaceUI {
   constructor(root, game) {
@@ -340,7 +340,7 @@ export class RaceUI {
     );
     this.topEl = top;
     this.root.append(top);
-    this.stageEl = h('div', { class: 'stagename' }, h('h2', { style: `color:${stage.color}` }, stage.name), h('p', {}, `${race.title ? `${race.title} · ` : `${stage.tagline} · `}${(race.track.length / 1000).toFixed(2)} ק״מ · ${race.laps === 1 ? 'מקצה אחד' : `${race.laps} הקפות`}`));
+    this.stageEl = h('div', { class: 'stagename' }, h('h2', { style: `color:${stage.color}` }, race.stageName || stage.name), h('p', {}, `${race.title ? `${race.title} · ` : `${stage.tagline} · `}${(race.track.length / 1000).toFixed(2)} ק״מ · ${race.laps === 1 ? 'מקצה אחד' : `${race.laps} הקפות`}`));
     this.root.append(this.stageEl);
     this.msgEl = this.msgEl || h('div', { class: 'msg', role: 'status', 'aria-live': 'assertive' });
     this.root.append(this.msgEl);
@@ -348,6 +348,29 @@ export class RaceUI {
     this.root.append(this.flashEl);
     if (g.isTouch) this._touchPad();
     this._mapCache = null;
+  }
+
+  /** White-out between scenes (0 clear .. 1 white). */
+  fade(k) {
+    if (!this.fadeEl) {
+      this.fadeEl = h('div', { class: 'whiteout' });
+      this.root.append(this.fadeEl);
+    }
+    this.fadeEl.style.opacity = String(k);
+  }
+
+  /** The launch film: captions only (and a hint that it can be skipped). */
+  launchScreen(on) {
+    if (this.launchEl) {
+      this.launchEl.remove();
+      this.launchEl = null;
+    }
+    if (!on) return;
+    this.clear();
+    this.msgEl = this.msgEl || h('div', { class: 'msg', role: 'status', 'aria-live': 'assertive' });
+    this.root.append(this.msgEl);
+    this.launchEl = h('div', { class: 'launchcap' }, h('h2', {}, 'שיגור מנמל החלל של העיר'), h('p', {}, 'לחיצה או רווח — דילוג'));
+    this.root.append(this.launchEl);
   }
 
   hideStageName() {

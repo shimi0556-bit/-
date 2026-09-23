@@ -18,6 +18,7 @@ export const KINDS = {
   sub: { name: 'צוללות', short: 'צוללות', top: 17, accel: 5, drag: 0.012, turn: 0.95, laps: true, music: 'deep', lane: 3.5, spacing: 12 },
   plane: { name: 'מטוסי מרוץ', short: 'מטוסים', cruise: 46, top: 64, min: 30, laps: true, music: 'sky', lane: 5, spacing: 45 },
   glider: { name: 'מצנחי רחיפה', short: 'מצנחים', trim: 10.5, fast: 14.5, slow: 7.2, laps: false, music: 'sky', lane: 6, spacing: 22 },
+  space: { name: 'מירוץ חלל', short: 'חלליות', cruise: 85, top: 140, min: 45, laps: true, music: 'space', lane: 8, spacing: 40 },
 };
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -196,6 +197,47 @@ function gliderModel(color, stripe, seed) {
   return mergeGeometries(parts);
 }
 
+function shipModel(color, stripe, seed) {
+  const prof = [
+    [0.02, 5.2],
+    [0.45, 4.6],
+    [0.9, 3.0],
+    [1.15, 0.8],
+    [1.2, -1.5],
+    [1.05, -3.6],
+    [0.85, -4.4],
+  ].map(([r, z]) => new THREE.Vector2(r, z));
+  const body = new THREE.LatheGeometry(prof, 14).rotateX(Math.PI / 2).rotateX(Math.PI);
+  body.scale(1, 0.62, 1);
+  const tri = (pts, c) => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+    g.computeVertexNormals();
+    return paint(g, c);
+  };
+  const wing = (s) => {
+    // Swept delta: root chord along the body, tip well back and out; top and bottom faces.
+    const a = [s * 0.9, 0, 2.2];
+    const b = [s * 5.6, -0.25, -3.2];
+    const c = [s * 0.9, 0, -3.8];
+    const top = s > 0 ? [...a, ...c, ...b] : [...a, ...b, ...c];
+    const bot = s > 0 ? [...a, ...b, ...c] : [...a, ...c, ...b];
+    return [tri(top.map((v, i) => (i % 3 === 1 ? v + 0.08 : v)), color), tri(bot.map((v, i) => (i % 3 === 1 ? v - 0.08 : v)), stripe)];
+  };
+  const parts = [
+    paint(body, color),
+    ...wing(1),
+    ...wing(-1),
+    paint(new THREE.BoxGeometry(0.12, 1.6, 1.8).rotateZ(0.35).translate(0.9, 0.9, -3.2), stripe), // twin fins
+    paint(new THREE.BoxGeometry(0.12, 1.6, 1.8).rotateZ(-0.35).translate(-0.9, 0.9, -3.2), stripe),
+    paint(new THREE.CylinderGeometry(0.62, 0.7, 3.4, 12).rotateX(Math.PI / 2).translate(1.5, -0.1, -2.6), 0x3a3e45), // nacelles
+    paint(new THREE.CylinderGeometry(0.62, 0.7, 3.4, 12).rotateX(Math.PI / 2).translate(-1.5, -0.1, -2.6), 0x3a3e45),
+    paint(new THREE.SphereGeometry(0.62, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2).scale(0.9, 0.8, 2.2).translate(0, 0.52, 1.6), 0x16283a), // canopy
+    paint(new THREE.BoxGeometry(2.2, 0.06, 0.4).translate(0, 0.45, -0.6), stripe),
+  ];
+  return mergeGeometries(parts);
+}
+
 function gliderLines() {
   const pts = [];
   const cells = 7;
@@ -254,7 +296,7 @@ export class Craft {
       upsideDown: 0,
     };
     const seed = opts.seed || 1;
-    const geo = { boat: boatModel, sub: subModel, plane: planeModel, glider: gliderModel }[this.kind](opts.color, opts.stripe || '#111111', seed);
+    const geo = { boat: boatModel, sub: subModel, plane: planeModel, glider: gliderModel, space: shipModel }[this.kind](opts.color, opts.stripe || '#111111', seed);
     this.mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.42, metalness: 0.15, side: this.kind === 'glider' ? THREE.DoubleSide : THREE.FrontSide });
     this.object = new THREE.Group();
     this.object.name = `${this.spec.short}: ${opts.name}`;
@@ -269,6 +311,24 @@ export class Craft {
       disc.position.z = 4.15;
       this.prop = disc;
       this.object.add(disc);
+    }
+    if (this.kind === 'space') {
+      // Engine glow: two hot discs and flame cones that grow with thrust.
+      const glow = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0x7fb8ff, emissiveIntensity: 1 });
+      env.engine.materials.trackEmissive(glow, 8);
+      this.glowMat = glow;
+      const cone = new THREE.MeshBasicMaterial({ color: 0x6fa8ff, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false });
+      this.coneMat = cone;
+      this.flames = [];
+      for (const x of [1.5, -1.5]) {
+        const disc = new THREE.Mesh(new THREE.CircleGeometry(0.55, 14), glow);
+        disc.position.set(x, -0.1, -4.32);
+        disc.rotation.y = Math.PI;
+        const f = new THREE.Mesh(new THREE.ConeGeometry(0.5, 3, 12, 1, true).rotateX(-Math.PI / 2).translate(0, 0, -1.5), cone);
+        f.position.set(x, -0.1, -4.35);
+        this.object.add(disc, f);
+        this.flames.push(f);
+      }
     }
     this.object.traverse((o) => (o.userData.noPick = true));
     env.engine.scene.add(this.object);
@@ -285,7 +345,7 @@ export class Craft {
     this.pitch = 0;
     this.bank = 0;
     this.vy = 0;
-    const cruise = this.kind === 'plane' ? this.spec.cruise : this.kind === 'glider' ? this.spec.trim : 0;
+    const cruise = this.kind === 'plane' || this.kind === 'space' ? this.spec.cruise : this.kind === 'glider' ? this.spec.trim : 0;
     this.speed = cruise;
     this._fwd();
     this.velocity.copy(this.forward).multiplyScalar(cruise);
@@ -309,7 +369,7 @@ export class Craft {
     if (C.hold) {
       // Before the start: boats idle on the swell, aircraft hang in formation.
       if (this.kind === 'boat') this._float(time, dt);
-      this.speed = this.kind === 'plane' ? this.spec.cruise : this.kind === 'glider' ? this.spec.trim : 0;
+      this.speed = this.kind === 'plane' || this.kind === 'space' ? this.spec.cruise : this.kind === 'glider' ? this.spec.trim : 0;
       this.velocity.set(0, 0, 0);
       this._gauges(dt);
       return;
@@ -317,6 +377,7 @@ export class Craft {
     if (this.kind === 'boat') this._boat(dt, C, time);
     else if (this.kind === 'sub') this._sub(dt, C);
     else if (this.kind === 'plane') this._plane(dt, C);
+    else if (this.kind === 'space') this._space(dt, C);
     else this._glider(dt, C);
     this._gauges(dt);
   }
@@ -331,7 +392,7 @@ export class Craft {
     const target = this.kind === 'glider' ? 0 : 1200 + f * 5200 + C.throttle * 900;
     V.rpm += (target - V.rpm) * (1 - Math.exp(-dt * 6));
     const alt = this.position.y;
-    V.gear = this.kind === 'boat' ? String(1 + Math.min(4, Math.floor(f * 5))) : this.kind === 'sub' ? `${Math.round(-alt)}מ` : `${Math.round(alt)}מ`;
+    V.gear = this.kind === 'boat' ? String(1 + Math.min(4, Math.floor(f * 5))) : this.kind === 'sub' ? `${Math.round(-alt)}מ` : this.kind === 'space' ? '' : `${Math.round(alt)}מ`;
     V.nitro = this.kind === 'boat' ? this.boost : null;
     V.nitroActive = !!this.nitroOn;
   }
@@ -430,6 +491,53 @@ export class Craft {
     const g = Math.max(0, this.env.ground(this.position.x, this.position.z));
     if (this.position.y < g + 1.5 || this._deck(1.2)) this._crash();
     if (this.position.y > 900) this.position.y = 900;
+  }
+
+  _space(dt, C) {
+    const K = this.spec;
+    const target = (K.cruise + C.throttle * (K.top - K.cruise) - C.brake * (K.cruise - K.min)) * (this.topScale || 1);
+    this.speed += (target - this.speed) * (1 - Math.exp(-dt * 1.3));
+    this.bank += (C.steer * 1.0 - this.bank) * (1 - Math.exp(-dt * 3));
+    const climb = (C.up || 0) - (C.down || 0);
+    this.pitch += (climb * 0.7 - this.pitch) * (1 - Math.exp(-dt * 2.2));
+    this.yaw -= this.bank * 0.72 * dt;
+    this._fwd();
+    this.velocity.copy(this.forward).multiplyScalar(this.speed);
+    this.position.addScaledVector(this.velocity, dt);
+    this.offroad = 0;
+    // Rocks and the station: bounce off, lose speed.
+    for (const S of this.env.solids || []) {
+      const dx = this.position.x - S.x;
+      const dy = this.position.y - S.y;
+      const dz = this.position.z - S.z;
+      const d = Math.hypot(dx, dy, dz);
+      const R = S.r + 2.2;
+      if (d >= R || d < 1e-3) continue;
+      const n = _v.set(dx / d, dy / d, dz / d);
+      this.position.set(S.x + n.x * R, S.y + n.y * R, S.z + n.z * R);
+      this.speed *= 0.55;
+      this.hit = 1;
+      this._bumpYaw(n);
+    }
+    if (this.env.collide) {
+      const n = this.env.collide(this.position);
+      if (n) {
+        this.position.addScaledVector(n, 2);
+        this.speed *= 0.55;
+        this.hit = 1;
+        this._bumpYaw(n);
+      }
+    }
+  }
+
+  /** After a knock: heading swings away from what was hit. */
+  _bumpYaw(n) {
+    const f = this.forward;
+    const into = f.x * n.x + f.y * n.y + f.z * n.z;
+    if (into >= 0) return;
+    const out = _v.set(f.x - 2 * into * n.x, f.y - 2 * into * n.y, f.z - 2 * into * n.z).normalize();
+    this.yaw = Math.atan2(out.x, out.z);
+    this.pitch = Math.asin(clamp(out.y, -0.8, 0.8)) * 0.5;
   }
 
   _glider(dt, C) {
@@ -566,6 +674,12 @@ export class Craft {
   update(dt) {
     this._pose();
     if (this.prop) this.prop.rotation.z += dt * 60;
+    if (this.flames) {
+      const C = this.vehicle.controls;
+      const k = 0.6 + C.throttle * 1.2 - C.brake * 0.4 + Math.random() * 0.15;
+      for (const f of this.flames) f.scale.set(1, 1, Math.max(0.2, k));
+      this.env.engine.materials.setEmissiveBase(this.glowMat, 5 + C.throttle * 7);
+    }
     const P = this.env.particles;
     const cam = this.env.engine.camera.position;
     const near = this.position.distanceTo(cam) < (this.isPlayer ? 400 : 160);
@@ -592,6 +706,7 @@ export class Craft {
   }
 
   dispose() {
+    if (this.glowMat) this.env.engine.materials.untrackEmissive(this.glowMat);
     this.object.removeFromParent();
     this.object.traverse((o) => {
       if (o.geometry) o.geometry.dispose();
@@ -624,7 +739,7 @@ export class CraftPlayer {
     let steer = I.axis('KeyA', 'KeyD') + I.axis('ArrowLeft', 'ArrowRight') + (T.right ? 1 : 0) - (T.left ? 1 : 0);
     let gas = I.isDown('KeyW') || I.isDown('ArrowUp') || T.gas ? 1 : 0;
     let brk = I.isDown('KeyS') || I.isDown('ArrowDown') || T.brake ? 1 : 0;
-    const air = kind === 'plane' || kind === 'sub';
+    const air = kind === 'plane' || kind === 'sub' || kind === 'space';
     let up = air && (I.isDown('Space') || T.nitro) ? 1 : 0;
     let down = air && (I.isDown('ShiftLeft') || I.isDown('ShiftRight') || I.isDown('KeyX') || T.handbrake) ? 1 : 0;
     let nitro = kind === 'boat' && (I.isDown('ShiftLeft') || I.isDown('ShiftRight') || I.isDown('KeyN') || T.nitro);
@@ -675,7 +790,7 @@ export class CraftAI {
     const q = course.nearest(c.position.x, c.position.z, this._q);
     if (!q) return;
     const v = Math.max(4, Math.abs(c.speed));
-    const look = { boat: 16 + v * 1.1, sub: 14 + v * 1.2, plane: 40 + v * 1.3, glider: 30 + v * 2 }[c.kind];
+    const look = { boat: 16 + v * 1.1, sub: 14 + v * 1.2, plane: 40 + v * 1.3, glider: 30 + v * 2, space: 50 + v * 0.9 }[c.kind];
     const wobble = Math.sin(performance.now() * 0.0003 + this.seed) * 0.4;
     // Tighten to the centre line near a gate (small gates under bridges especially).
     let near = 1;
@@ -687,7 +802,7 @@ export class CraftAI {
     const target = course.pose(q.s + look / course.length, (this.lane + wobble) * near);
     const want = Math.atan2(target.position.x - c.position.x, target.position.z - c.position.z);
     const err = wrap(want - c.yaw);
-    C.steer = clamp(-err * (c.kind === 'plane' ? 2.2 : 2.6), -1, 1);
+    C.steer = clamp(-err * (c.kind === 'plane' || c.kind === 'space' ? 2.2 : 2.6), -1, 1);
     // Bends ahead set the pace.
     const ahead = course.pose(q.s + (look * 2.5) / course.length, 0);
     const bend = Math.abs(wrap(Math.atan2(ahead.tangent.x, ahead.tangent.z) - Math.atan2(target.tangent.x, target.tangent.z)));
@@ -698,11 +813,11 @@ export class CraftAI {
       C.throttle = c.speed < vt ? 1 : 0.3;
       C.brake = c.speed > vt + 3 ? 0.6 : 0;
       C.nitro = c.kind === 'boat' && bend < 0.12 && c.boost > 0.5 && this.skill > 0.8;
-    } else if (c.kind === 'plane') {
+    } else if (c.kind === 'plane' || c.kind === 'space') {
       C.throttle = pace > 0.8 ? 1 : 0.4;
       C.brake = pace < 0.5 ? 0.5 : 0;
     }
-    if (c.kind === 'sub' || c.kind === 'plane') {
+    if (c.kind === 'sub' || c.kind === 'plane' || c.kind === 'space') {
       const dy = target.position.y - c.position.y - c.velocity.y * 0.6;
       C.up = clamp(dy * 0.2, 0, 1);
       C.down = clamp(-dy * 0.2, 0, 1);

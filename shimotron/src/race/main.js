@@ -24,6 +24,7 @@ import { RaceUI } from './ui.js';
 import { ITEMS } from './Pickups.js';
 import { Podium } from './Podium.js';
 import { World, WORLD } from './World.js';
+import { SpaceScene } from './Space.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -131,17 +132,18 @@ class Game {
     // Systems, in order.
     engine.addSystem({ update: () => materials.update(engine.atmosphere.exposure, engine.time.elapsed) });
     engine.addSystem({ update: (dt, simDt) => this.water && this.water.update(dt, simDt) });
-    engine.addSystem({ update: (dt) => this.island && this.state !== 'menu' && this.island.flora && this.island.flora.update(dt) });
+    engine.addSystem({ update: (dt) => this.island && this.state !== 'menu' && !this.inSpace && this.island.flora && this.island.flora.update(dt) });
     engine.addSystem({ update: (dt, simDt) => this.race && this.race.update(simDt) });
     engine.addSystem({ update: (dt, simDt) => engine.particles.update(simDt) });
-    engine.addSystem({ update: (dt) => this.island && this.state !== 'menu' && this.island.update(dt) });
+    engine.addSystem({ update: (dt) => this.island && this.state !== 'menu' && !this.inSpace && this.island.update(dt) });
+    engine.addSystem({ update: (dt) => this.space && this.space.update(dt) });
     engine.addSystem({ update: (dt) => this.podium && this.podium.update(dt) });
     engine.addSystem({ update: () => this.skid.update() });
     engine.addSystem({ update: (dt) => engine.audio.update(dt) });
     engine.addSystem({ update: (dt) => this.carAudio && this.carAudio.update(dt) });
     engine.addSystem({ update: (dt) => this._frame(dt) });
     engine.audio.coastFactor = (p) => {
-      if (!this.island || this.state === 'menu') return 0;
+      if (!this.island || this.state === 'menu' || this.inSpace) return 0;
       const t = this.island.terrain;
       let wet = 0;
       for (const [dx, dz] of [[70, 0], [-70, 0], [0, 70], [0, -70], [0, 0]]) wet += t.heightAt(p.x + dx, p.z + dz) < 0.3 ? 1 : 0;
@@ -215,7 +217,8 @@ class Game {
         this.island = null;
       }
       this.skid.clear();
-      const island = new Island(eng, this.materials, this.water, st, { plan: this.plans[st.id], cache: this.bakeCache, keepOut: (x, z) => this.world.keepOut(st.id, x, z) });
+      const pad = this.world.pad && this.world.pad.id === st.id ? this.world.pad : null;
+      const island = new Island(eng, this.materials, this.water, st, { plan: this.plans[st.id], cache: this.bakeCache, keepOut: (x, z) => this.world.keepOut(st.id, x, z), pad });
       await island.build(progress);
       this.island = island;
       // The world shifts so this island sits at the origin; its stand-in steps aside.
@@ -322,6 +325,8 @@ class Game {
   toMenu() {
     this._endRace();
     this._endPodium();
+    this._exitSpace();
+    this.ui.fade(0);
     this.engine.paused = false;
     this.state = 'menu';
     this.camera.target = null;
@@ -364,10 +369,45 @@ class Game {
       }
       cam.clearViewOffset();
       cam.near = 0.25;
-      cam.far = 12000;
+      cam.far = 20000;
     }
     cam.updateProjectionMatrix();
     this.mapOn = on;
+  }
+
+  /** Into orbit: the islands, the sea and the sky give way to the planet below and the stars. */
+  _enterSpace() {
+    const eng = this.engine;
+    if (!this.space) this.space = new SpaceScene(eng, this.materials).build();
+    this.inSpace = true;
+    this.world.group.visible = false;
+    if (this.island) this.island.group.visible = false;
+    this.water.mesh.visible = false;
+    const atm = eng.atmosphere;
+    atm.sunAzimuth = 0.6;
+    atm.setTime(10.2, true);
+    atm.fogDensity = 0;
+    this.space.enter();
+    const cam = eng.camera;
+    cam.near = 0.5;
+    cam.far = 42000;
+    cam.updateProjectionMatrix();
+    const A = eng.audio;
+    if (A.buses && A.ctx) A.buses.ambience.gain.setTargetAtTime(0, A.ctx.currentTime, 0.3);
+  }
+
+  _exitSpace() {
+    if (!this.inSpace) return;
+    this.inSpace = false;
+    this.space.exit();
+    this.world.group.visible = true;
+    this.water.mesh.visible = true;
+    if (this.island) {
+      this.island.group.visible = !this.mapOn;
+      this.island._sky();
+    }
+    const A = this.engine.audio;
+    if (A.ctx) A.setBus('ambience', this.settings.audio.ambience);
   }
 
   /** Sky for the world map: a clear afternoon, little haze, so every island shows. */
@@ -576,6 +616,7 @@ class Game {
     this._endRace();
     this._endPodium();
     this.mode = 'career';
+    this._exitSpace();
     this.state = 'garage';
     this.engine.paused = false;
     this.camera.target = null;
@@ -672,6 +713,8 @@ class Game {
   /** The 3D ceremony on the start straight; `after` = { label, action } continues the game. */
   _ceremony({ title, sub, list }, after) {
     this._endRace();
+    this._exitSpace();
+    this._showMap(false);
     this._endPodium();
     this.ui.clear();
     const pod = new Podium(this, list.slice(0, 3));
@@ -724,7 +767,12 @@ class Game {
 
   async _launch(index) {
     const eng = this.engine;
+    const fromMap = this.mapOn;
     this._endPodium();
+    this._exitSpace();
+    // The space race always lifts off from the city's spaceport.
+    const wantKind = this.mode === 'single' && KINDS[this.settings.kind] ? this.settings.kind : 'car';
+    if (wantKind === 'space') index = Math.max(0, STAGES.findIndex((s) => s.id === WORLD.hub));
     this.state = 'loading';
     this._audioReady();
     if (!this.carAudio && eng.audio.ctx) this.carAudio = new CarAudio(eng.audio);
@@ -752,13 +800,28 @@ class Game {
     this.wheels.reset();
     const career = this.mode === 'career' && this.career;
     // Boats, submarines, planes and paragliders: single races only (championship and career are on wheels).
-    const kind = this.mode === 'single' && KINDS[this.settings.kind] ? this.settings.kind : 'car';
+    const kind = wantKind;
     this.kind = kind;
+    if (kind === 'space') {
+      // Countdown on the pad, liftoff over the city, up out of the air — then the race in orbit.
+      if (fromMap && this.island.spaceport) {
+        this.ui.hideLoader();
+        this.state = 'launch';
+        this.ui.launchScreen(true);
+        this.island.spaceport.reset();
+        eng.camera.far = 400000; // up there the sea must reach the horizon
+        eng.camera.updateProjectionMatrix();
+        await this.island.spaceport.play(this, { message: (t, sub) => this.ui.message(t, 'lights', sub, 950), fade: (k) => this.ui.fade(k) });
+        this.ui.launchScreen(false);
+        this.island.spaceport.reset();
+      }
+      this._enterSpace();
+    }
     let race;
     if (kind === 'car') race = new Race(this, this.island, { laps: this.settings.laps, difficulty: this._difficulty(), roster: this._gridOrder(this.roster()), items: career ? true : this.settings.items, startItem: career ? this.career.item : null });
     else {
       if (!this.carAudio && eng.audio.ctx) this.carAudio = new CarAudio(eng.audio);
-      race = new CraftRace(this, this.island, { kind, laps: this.settings.laps, difficulty: this._difficulty(), roster: this._gridOrder(this.roster()) });
+      race = new CraftRace(this, this.island, { kind, laps: this.settings.laps, difficulty: this._difficulty(), roster: this._gridOrder(this.roster()), space: this.inSpace ? this.space : null });
     }
     this.race = race;
     try {
@@ -767,6 +830,7 @@ class Game {
       /* optional */
     }
     this.ui.hideLoader();
+    this.ui.fade(0);
     this.state = 'race';
     eng.paused = false;
     this.camera.target = race.player.car;

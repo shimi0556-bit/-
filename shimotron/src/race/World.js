@@ -82,6 +82,7 @@ export class World {
     }
     await progress(0.5, 'מותח גשרים בין האיים…');
     this._bridges();
+    this._pad();
     for (let k = 0; k < n; k++) {
       const st = this.stages[k];
       await progress(0.55 + (k / n) * 0.4, `בונה את ${st.name} מרחוק…`);
@@ -247,6 +248,19 @@ export class World {
     if (ribbon) lod.add(ribbon);
     lod.add(...this._trees(st));
     if (st.city) lod.add(this._blocks(st));
+    if (this.pad && this.pad.id === st.id) {
+      const rocket = mergeGeometries([
+        new THREE.CylinderGeometry(4.5, 4.5, 84, 12).translate(0, 42 + 5, 0),
+        new THREE.ConeGeometry(4.5, 10, 12).translate(0, 94, 0),
+        new THREE.CylinderGeometry(28, 30, 5, 20).translate(0, 2.5, 0),
+      ]).toNonIndexed();
+      rocket.deleteAttribute('uv');
+      rocket.setAttribute('color', new THREE.BufferAttribute(new Float32Array(rocket.attributes.position.count * 3).fill(0.85), 3));
+      const m = new THREE.Mesh(rocket, this.mat);
+      m.position.set(this.pad.x, this._lodH(this.pad.h), this.pad.z);
+      m.name = 'חללית (מרחוק)';
+      lod.add(m);
+    }
     for (const V of st.island.volcanoes || (st.island.volcano ? [st.island.volcano] : [])) lod.add(this._crater(st, V));
     const [cx, cz] = this.pos(st.id);
     lod.position.set(cx, 0, cz);
@@ -444,6 +458,36 @@ export class World {
       if (Math.hypot(x - s.ax - dx * u, z - s.az - dz * u) < s.w) return true;
     }
     return false;
+  }
+
+  /**
+   * The spaceport: a launch pad inside the city (the hub island), on flat
+   * open ground away from the circuit and the bridges. Kept free of houses.
+   */
+  _pad() {
+    const st = this.stages.find((s) => s.id === WORLD.hub);
+    if (!st) return;
+    const t = this.terrains[st.id];
+    const R = st.island.radius;
+    const rng = new Random(st.seed * 5 + 1);
+    let best = null;
+    for (let k = 0; k < 900; k++) {
+      const a = rng.range(0, 6.28);
+      const r = R * rng.range(0.3, 0.78);
+      const x = Math.cos(a) * r;
+      const z = Math.sin(a) * r;
+      const h = t.height(x, z);
+      if (h < 2.5 || h > 20) continue;
+      const clear = this.trackDistance(st.id, x, z);
+      if (clear < 115 || this.keepOut(st.id, x, z)) continue;
+      let rough = 0;
+      for (let q = 0; q < 8; q++) rough = Math.max(rough, Math.abs(t.height(x + Math.cos(q) * 45, z + Math.sin(q) * 45) - h));
+      const score = clear * 0.02 - rough * 2;
+      if (rough < 6 && (!best || score > best.score)) best = { x, z, h, score };
+    }
+    if (!best) return;
+    this.pad = { id: st.id, x: best.x, z: best.z, h: best.h };
+    (this.landings[st.id] = this.landings[st.id] || []).push({ ax: best.x, az: best.z, bx: best.x + 0.1, bz: best.z, w: 100 });
   }
 
   /** Where a bridge coming from direction `dir` touches down on an island: clear of its circuit. */
