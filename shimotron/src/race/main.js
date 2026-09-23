@@ -20,6 +20,7 @@ import { CarAudio } from './CarAudio.js';
 import { RaceUI } from './ui.js';
 import { ITEMS } from './Pickups.js';
 import { Podium } from './Podium.js';
+import { World, WORLD } from './World.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -127,17 +128,17 @@ class Game {
     // Systems, in order.
     engine.addSystem({ update: () => materials.update(engine.atmosphere.exposure, engine.time.elapsed) });
     engine.addSystem({ update: (dt, simDt) => this.water && this.water.update(dt, simDt) });
-    engine.addSystem({ update: (dt) => this.island && this.island.flora && this.island.flora.update(dt) });
+    engine.addSystem({ update: (dt) => this.island && this.state !== 'menu' && this.island.flora && this.island.flora.update(dt) });
     engine.addSystem({ update: (dt, simDt) => this.race && this.race.update(simDt) });
     engine.addSystem({ update: (dt, simDt) => engine.particles.update(simDt) });
-    engine.addSystem({ update: (dt) => this.island && this.island.update(dt) });
+    engine.addSystem({ update: (dt) => this.island && this.state !== 'menu' && this.island.update(dt) });
     engine.addSystem({ update: (dt) => this.podium && this.podium.update(dt) });
     engine.addSystem({ update: () => this.skid.update() });
     engine.addSystem({ update: (dt) => engine.audio.update(dt) });
     engine.addSystem({ update: (dt) => this.carAudio && this.carAudio.update(dt) });
     engine.addSystem({ update: (dt) => this._frame(dt) });
     engine.audio.coastFactor = (p) => {
-      if (!this.island) return 0;
+      if (!this.island || this.state === 'menu') return 0;
       const t = this.island.terrain;
       let wet = 0;
       for (const [dx, dz] of [[70, 0], [-70, 0], [0, 70], [0, -70], [0, 0]]) wet += t.heightAt(p.x + dx, p.z + dz) < 0.3 ? 1 : 0;
@@ -154,8 +155,17 @@ class Game {
     window.addEventListener('pointerdown', first);
     window.addEventListener('keydown', first);
 
-    await this.loadIsland(this.selected, (p, t) => progress(0.2 + p * 0.72, t));
-    await progress(0.94, 'מקמפל שיידרים…');
+    // The whole archipelago, seen from above: the first thing on screen.
+    this.world = new World(engine, materials, STAGES);
+    await this.world.build(this.plans, (p, t) => progress(0.2 + p * 0.66, t));
+    this.water = new Water(engine, { heightTexture: this.world.depthTexture, size: 1 }, materials);
+    const wu = this.water.uniforms;
+    wu.tWorld.value = this.world.depthTexture;
+    wu.uWorldSize.value = WORLD.span;
+    this._showMap(true);
+    engine.cameraRig = this._worldView();
+    engine.cameraRig.update(10);
+    await progress(0.9, 'מקמפל שיידרים…');
     try {
       await Promise.race([engine.renderer.compileAsync(engine.scene, engine.camera), wait(12000)]);
     } catch {
@@ -202,13 +212,12 @@ class Game {
         this.island = null;
       }
       this.skid.clear();
-      const island = new Island(eng, this.materials, this.water, st, { plan: this.plans[st.id], cache: this.bakeCache });
+      const island = new Island(eng, this.materials, this.water, st, { plan: this.plans[st.id], cache: this.bakeCache, keepOut: (x, z) => this.world.keepOut(st.id, x, z) });
       await island.build(progress);
-      if (!this.water) {
-        this.water = new Water(eng, island.terrain, this.materials);
-        island.applyWater(this.water);
-      }
       this.island = island;
+      // The world shifts so this island sits at the origin; its stand-in steps aside.
+      this.world.setOrigin(st.id);
+      this.water.uniforms.uWorldOffset.value.set(...this.world.origin);
       this.islandDirty = false;
       if (island.planGenerated) this._savePlan(st, island.plan);
       this.plans[st.id] = island.plan;
@@ -235,6 +244,7 @@ class Game {
         if (!plan) continue;
         this.plans[st.id] = plan;
         this._savePlan(st, plan);
+        if (this.world) this.world.setPlan(st.id, plan);
       }
       this.previews[st.id] = await this._preview(terrain, plan, st);
       if (this.state === 'menu') this.ui.refreshPreviews();
@@ -312,17 +322,117 @@ class Game {
     this.engine.paused = false;
     this.state = 'menu';
     this.camera.target = null;
-    this.engine.cameraRig = this._flyover();
+    this._showMap(true);
+    this.mapFocus = null;
+    this.engine.cameraRig = this._worldView();
     this.ui.showMenu({ selected: this.selected, champ: this.champ });
     if (this.carAudio) this.carAudio.mute(false);
   }
 
   selectStage(i) {
+    const again = this.selected === i && this.mapFocus === i;
     this.selected = i;
+    this.mapFocus = again ? null : i; // a second click zooms back out to the whole world
     this._audioReady();
     this.engine.audio.ui('click');
-    // The island itself is built when the race starts; the card's map shows it meanwhile.
+    // The island itself is built when the race starts; the world map shows it meanwhile.
     this.ui.showMenu({ selected: this.selected, champ: this.champ });
+  }
+
+  /** World map on (every island from afar) or off (the loaded island in full). */
+  _showMap(on) {
+    const eng = this.engine;
+    const cam = eng.camera;
+    this.world.showLocal(!on && !!this.island);
+    if (this.island) this.island.group.visible = !on;
+    this.water.uniforms.uLocal.value = on || !this.island ? 0 : 1;
+    if (on) {
+      this._worldSky();
+      cam.near = 6;
+      cam.far = 42000;
+      // Open-ocean colours for the map (each island tints its own waters when played).
+      this.water.uniforms.uShallow.value.setRGB(0.05, 0.5, 0.52);
+      this.water.uniforms.uDeep.value.setRGB(0.012, 0.08, 0.15);
+      this.water.uniforms.uClarity.value = 0.14;
+    } else {
+      if (this.island) {
+        this.island._sky();
+        this.island.applyWater(this.water);
+      }
+      cam.clearViewOffset();
+      cam.near = 0.25;
+      cam.far = 12000;
+    }
+    cam.updateProjectionMatrix();
+    this.mapOn = on;
+  }
+
+  /** Sky for the world map: a clear afternoon, little haze, so every island shows. */
+  _worldSky() {
+    const atm = this.engine.atmosphere;
+    atm.sunAzimuth = 0.4;
+    atm.setTime(15.6, true);
+    atm.daySpeed = 0;
+    atm.model.turbidity = 2.4;
+    atm.model.rayleigh = 1.15;
+    atm.cloudCoverage = 0.3;
+    atm.cloudDensity = 0.5;
+    atm.fogDensity = 0.00035;
+    atm.wind.strength = 1;
+    atm._envDirty = true;
+  }
+
+  /** Camera over the archipelago: a slow circle around the whole world, or around the chosen island. */
+  _worldView() {
+    const game = this;
+    const cam = this.engine.camera;
+    const look = new THREE.Vector3();
+    const want = new THREE.Vector3();
+    const focus = new THREE.Vector3();
+    let angle = 0.6;
+    let dist = 9800;
+    return {
+      focusPoint: () => focus.copy(look),
+      update(dt) {
+        const W = game.world;
+        const f = game.mapFocus;
+        const id = f !== null && f !== undefined ? STAGES[f].id : null;
+        const [wx, wz] = id ? W.pos(id) : [0, 150];
+        const [lx, lz] = W.toLocal(wx, wz);
+        const d = game.mapDive ? 1500 : id ? 3300 : 9800;
+        dist += (d - dist) * (1 - Math.exp(-dt * (game.mapDive ? 2.2 : 1.1)));
+        angle += dt * (id ? 0.045 : 0.018);
+        want.set(lx + Math.sin(angle) * dist * 0.6, dist * 0.78, lz + Math.cos(angle) * dist * 0.6);
+        const k = 1 - Math.exp(-dt * 1.6);
+        cam.position.lerp(want, k);
+        look.lerp(focus.set(lx, 0, lz), k);
+        cam.lookAt(look);
+        // Keep the islands clear of the menu panel: to the left of it on wide screens, above it on narrow ones.
+        const w = game.engine.renderer.domElement.width;
+        const h = game.engine.renderer.domElement.height;
+        const narrow = innerWidth <= 760;
+        cam.fov = 50;
+        cam.setViewOffset(w, h, narrow ? 0 : w * 0.19, narrow ? h * 0.2 : 0, w, h);
+      },
+    };
+  }
+
+  /** Island labels on the world map follow their islands on screen. */
+  _mapLabels() {
+    if (this.state !== 'menu' || !this.ui.mapLabels) return;
+    const cam = this.engine.camera;
+    const v = new THREE.Vector3();
+    const w = innerWidth;
+    const h = innerHeight;
+    STAGES.forEach((st, i) => {
+      const el = this.ui.mapLabels[i];
+      if (!el) return;
+      const [x, z] = this.world.toLocal(...this.world.pos(st.id));
+      v.set(x, 120, z).project(cam);
+      const vis = v.z < 1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1;
+      el.style.display = vis ? '' : 'none';
+      if (vis) el.style.transform = `translate(${((v.x + 1) / 2) * w}px, ${((1 - v.y) / 2) * h}px) translate(-50%, -100%)`;
+    });
   }
 
   setSetting(key, value) {
@@ -457,7 +567,8 @@ class Game {
     this.state = 'garage';
     this.engine.paused = false;
     this.camera.target = null;
-    this.engine.cameraRig = this._flyover();
+    this._showMap(!this.island);
+    this.engine.cameraRig = this.island ? this._flyover() : this._worldView();
     const next = STAGES[C.stage];
     const again = () => this._garage(true);
     this.ui.showGarage(C, {
@@ -609,6 +720,14 @@ class Game {
     this.selected = index;
     const st = STAGES[index];
     this.stage = st;
+    if (this.mapOn) {
+      // From the world map: swoop down onto the island first.
+      this.mapFocus = index;
+      this.mapDive = true;
+      this.engine.cameraRig = this._worldView();
+      await wait(1300);
+      this.mapDive = false;
+    }
     if (!this.island || this.island.stage !== st || this.islandDirty) {
       await this.loadIsland(index, (p, t) => this.ui.showLoader(t, p));
       this.ui.showLoader('מקמפל שיידרים…', 0.96);
@@ -616,6 +735,7 @@ class Game {
     }
     this._endRace();
     this._endPodium();
+    this._showMap(false);
     this.skid.clear();
     this.wheels.reset();
     const career = this.mode === 'career' && this.career;
@@ -820,7 +940,7 @@ class Game {
   _musicFrame() {
     const M = this.music;
     if (!M) return;
-    const want = this.state === 'race' || this.state === 'podium' ? (this.stage ? this.stage.id : 'menu') : 'menu';
+    const want = this.state === 'race' || this.state === 'podium' ? (this.stage ? this.stage.id : 'menu') : this.state === 'menu' ? 'world' : 'menu';
     M.setStyle(want);
     const r = this.race;
     if (this.state === 'podium') M.drive(0.9, 0.6);
@@ -841,6 +961,7 @@ class Game {
 
   _frame(dt) {
     this._musicFrame();
+    this._mapLabels();
     const r = this.race;
     if (!r || this.state !== 'race') return;
     const I = this.engine.input;

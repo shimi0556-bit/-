@@ -72,7 +72,9 @@ export class Island {
     terrain.clearance = track.clearance;
     if (st.city) {
       // The city is laid out before the ground is baked, so its blocks can be painted as paving.
-      this.city = new City(eng, terrain, track, st, this.materials).plan();
+      this.city = new City(eng, terrain, track, st, this.materials);
+      this.city.keepOut = this.opts.keepOut || null;
+      this.city.plan();
       terrain.splatModifier = (x, z, w, h) => this.city.splat(track.splatModifier(x, z, w, h), x, z);
     }
 
@@ -114,7 +116,10 @@ export class Island {
     }
 
     await progress(0.62, 'שותל צמחייה…');
-    const flora = new IslandFlora(eng, terrain, this.materials, st, track, this.city ? (x, z, kind) => this.city.blocked(x, z, kind) : null, this.city ? () => this.city.treeSpots() : null);
+    // Bridge landings stay clear of trees, grass and houses.
+    const keep = this.opts.keepOut;
+    const blocked = this.city ? (x, z, kind) => (keep && keep(x, z)) || this.city.blocked(x, z, kind) : keep ? (x, z) => keep(x, z) : null;
+    const flora = new IslandFlora(eng, terrain, this.materials, st, track, blocked, this.city ? () => this.city.treeSpots() : null);
     this.flora = flora;
     this.group.add(flora.build());
     for (const b of eng.physics.world.bodies) if (!before.has(b)) this.bodies.push(b);

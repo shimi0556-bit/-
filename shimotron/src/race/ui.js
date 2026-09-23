@@ -133,13 +133,18 @@ export class RaceUI {
     this.cards = cards;
     const segBtn = (key, value, label) =>
       h('button', { type: 'button', 'aria-pressed': String(s[key] === value), onclick: () => g.setSetting(key, value) }, label);
+    // Island names float over the world map; clicking one picks it.
+    this.mapLabels = STAGES.map((st, i) =>
+      h('button', { class: 'maplabel', type: 'button', style: `--c:${st.color}`, 'aria-pressed': String(state.selected === i), onclick: () => g.selectStage(i) }, h('span', { class: 'n' }, i + 1), st.name),
+    );
     const menu = h(
       'div',
-      { class: 'screen', role: 'dialog', 'aria-label': 'תפריט ראשי' },
+      { class: 'screen map', role: 'dialog', 'aria-label': 'תפריט ראשי' },
+      h('div', { class: 'maplabels', 'aria-hidden': 'true' }, this.mapLabels),
       h(
         'div',
         { class: 'menu-grid' },
-        h('div', { class: 'brand' }, h('div', { class: 'kicker' }, 'SHIMOTRON RALLY'), h('h1', {}, 'שימוטרון ראלי'), h('p', {}, `${ISLANDS} איים — מיערות ודיונות ועד עיר סואנת וקניון הרי געש — מסלולים של יותר משלושה קילומטרים, שישה סוגי רכבים, הפתעות על המסלול, אליפות וקריירה. כל אי נבנה בזמן אמת.`)),
+        h('div', { class: 'brand' }, h('div', { class: 'kicker' }, 'SHIMOTRON RALLY'), h('h1', {}, 'שימוטרון ראלי'), h('p', {}, `עולם שלם של ${ISLANDS} איים בים אחד, מחוברים בגשרים לעיר שבמרכז — מיערות ודיונות ועד קניון הרי געש. בחרו אי במפה או ברשימה, רכב, וצאו לדרך.`)),
         h(
           'div',
           { class: 'row' },

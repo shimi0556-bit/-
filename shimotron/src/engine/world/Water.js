@@ -32,6 +32,20 @@ export function waveAt(x, z, time, amp = 1, out = { y: 0, dx: 0, dz: 0 }) {
   return out;
 }
 
+const DEEP = new THREE.DataTexture(new Float32Array([-40]), 1, 1, THREE.RedFormat, THREE.FloatType);
+DEEP.needsUpdate = true;
+
+/** Sea floor height under a point: the island's own height map, else the world map, else deep sea. */
+const FLOOR = /* glsl */ `
+uniform sampler2D tHeight; uniform sampler2D tWorld; uniform float uTerrainSize; uniform vec2 uWorldOffset; uniform float uWorldSize; uniform float uLocal;
+float seaFloor(vec2 p) {
+  vec2 huv = p / uTerrainSize + 0.5;
+  if (uLocal > 0.5 && huv.x > 0.0 && huv.x < 1.0 && huv.y > 0.0 && huv.y < 1.0) return texture2D(tHeight, huv).r;
+  vec2 wuv = (p + uWorldOffset) / uWorldSize + 0.5;
+  if (wuv.x > 0.0 && wuv.x < 1.0 && wuv.y > 0.0 && wuv.y < 1.0) return texture2D(tWorld, wuv).r;
+  return -40.0;
+}`;
+
 const GERSTNER = /* glsl */ `
 uniform float uTime;
 uniform vec4 uWaves[4];
@@ -78,6 +92,11 @@ export class Water {
       uShallow: { value: new THREE.Color(0.05, 0.42, 0.42) },
       uDeep: { value: new THREE.Color(0.004, 0.028, 0.055) },
       uClarity: { value: 0.9 }, // how fast the water turns opaque with depth (lower = clearer)
+      // Beyond the island in play: a coarse depth map of the whole world (1×1 "deep sea" until one is set).
+      tWorld: { value: DEEP },
+      uWorldOffset: { value: new THREE.Vector2() },
+      uWorldSize: { value: 1 },
+      uLocal: { value: 1 },
     };
     this.mesh = new THREE.Mesh(this._geometry(engine.quality.settings.waterDetail), this._material());
     this.mesh.name = 'Ocean';
@@ -147,15 +166,14 @@ export class Water {
           '#include <common>',
           `#include <common>
           ${GERSTNER}
-          uniform sampler2D tHeight; uniform float uTerrainSize;
+          ${FLOOR}
           varying vec3 vWPos; varying float vDepth; varying float vCrest;`,
         )
         .replace(
           '#include <begin_vertex>',
           `vec3 transformed = vec3(position);
           vec3 wp0 = (modelMatrix * vec4(position, 1.0)).xyz;
-          vec2 huv = wp0.xz / uTerrainSize + 0.5;
-          float th = (huv.x > 0.0 && huv.x < 1.0 && huv.y > 0.0 && huv.y < 1.0) ? texture2D(tHeight, huv).r : -40.0;
+          float th = seaFloor(wp0.xz);
           float depth = max(0.0, -th);
           float damp = smoothstep(0.0, 5.0, depth) * 0.85 + 0.15;
           float fade = 1.0 - smoothstep(600.0, 2200.0, length(wp0.xz - cameraPosition.xz));
@@ -172,7 +190,8 @@ export class Water {
           '#include <common>',
           `#include <common>
           ${GERSTNER}
-          uniform sampler2D tHeight; uniform sampler2D tNormal; uniform float uTerrainSize;
+          ${FLOOR}
+          uniform sampler2D tNormal;
           uniform vec3 uSunDir; uniform vec3 uSunColor; uniform vec3 uShallow; uniform vec3 uDeep; uniform float uClarity;
           varying vec3 vWPos; varying float vDepth; varying float vCrest;
           float wFoam; float wDepth; vec3 wN;`,
@@ -180,8 +199,7 @@ export class Water {
         .replace(
           '#include <map_fragment>',
           `{
-            vec2 huv = vWPos.xz / uTerrainSize + 0.5;
-            float th = (huv.x > 0.0 && huv.x < 1.0 && huv.y > 0.0 && huv.y < 1.0) ? texture2D(tHeight, huv).r : -40.0;
+            float th = seaFloor(vWPos.xz);
             wDepth = max(0.0, vWPos.y - th);
             float dist = length(vWPos - cameraPosition);
             float damp = smoothstep(0.0, 5.0, wDepth) * 0.85 + 0.15;
@@ -248,12 +266,15 @@ export class Water {
     this.uniforms.uWaveAmp.value = this.waveAmp * (0.65 + eng.atmosphere.wind.strength * 0.35);
     this.uniforms.uSunDir.value.copy(eng.atmosphere.lightDir);
     this.uniforms.uSunColor.value.copy(eng.atmosphere.keyLight.color).multiplyScalar(eng.atmosphere.keyLight.intensity);
-    if (this.terrain.uniforms) {
+    if (this.terrain && this.terrain.uniforms) {
       this.terrain.uniforms.uTime.value = eng.time.elapsed;
       this.terrain.uniforms.uCaustic.value.copy(eng.atmosphere.keyLight.color).multiplyScalar(Math.min(1.2, eng.atmosphere.dayFactor * 1.2));
     }
     const cam = eng.camera.position;
-    const snap = 4;
+    // Seen from high above (the world map) the sea must reach the horizon: stretch the grid.
+    const grow = Math.max(1, cam.y / 250);
+    this.mesh.scale.set(grow, 1, grow);
+    const snap = 4 * grow;
     this.mesh.position.set(Math.round(cam.x / snap) * snap, this.level, Math.round(cam.z / snap) * snap);
 
     if (simDt <= 0) return;

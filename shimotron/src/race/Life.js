@@ -969,10 +969,11 @@ export class Life {
         // A little herd around this spot.
         const size = kind === 'sheep' ? 6 + Math.floor(rng.random() * 12) : 3 + Math.floor(rng.random() * 6);
         const spread = kind === 'sheep' ? 9 : 14;
+        const keep = this.island.opts && this.island.opts.keepOut;
         for (let k = 0; k < size && placed < want[kind]; k++) {
           const ax = x + rng.range(-spread, spread);
           const az = z + rng.range(-spread, spread);
-          if (tr.clearance(ax, az) < 26) continue;
+          if (tr.clearance(ax, az) < 26 || (keep && keep(ax, az))) continue;
           const ah = t.heightAt(ax, az);
           _q.setFromAxisAngle(UP, rng.range(0, 6.28));
           const s = rng.range(0.9, 1.1);

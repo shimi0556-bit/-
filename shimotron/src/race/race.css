@@ -88,6 +88,22 @@ button { font: inherit; color: inherit; }
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field > span { color: var(--faint); font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
 
+/* World map: the menu is a panel on one side, the archipelago shows on the other. */
+.screen.map { pointer-events: none; background: linear-gradient(270deg, rgba(6, 8, 12, 0.93) 0%, rgba(6, 8, 12, 0.8) 440px, rgba(6, 8, 12, 0) 640px); }
+.screen.map > .menu-grid { pointer-events: auto; max-width: 480px; }
+.screen.map .islands { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.screen.map .island p { display: none; }
+.maplabels { position: fixed; inset: 0; pointer-events: none; z-index: -1; }
+.maplabel {
+  position: absolute; left: 0; top: 0; pointer-events: auto; cursor: pointer; white-space: nowrap;
+  display: flex; align-items: center; gap: 7px; padding: 6px 12px 6px 8px; border-radius: 999px;
+  background: rgba(8, 11, 16, 0.72); color: #fff; border: 1px solid rgba(255, 255, 255, 0.22);
+  font: 600 14px/1 'IBM Plex Sans Hebrew', system-ui, sans-serif; backdrop-filter: blur(6px);
+  transition: background 0.15s, border-color 0.15s;
+}
+.maplabel::after { content: ''; position: absolute; left: 50%; bottom: -7px; width: 2px; height: 7px; background: rgba(255, 255, 255, 0.5); }
+.maplabel .n { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--c); color: #111; font-size: 12px; }
+.maplabel:hover, .maplabel[aria-pressed='true'] { background: rgba(8, 11, 16, 0.9); border-color: var(--c); box-shadow: 0 0 0 1px var(--c); }
 .menu-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; max-width: 1180px; width: 100%; }
 .islands { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
 .island {
@@ -194,6 +210,9 @@ body.is-touch .minimap { width: 130px; height: 130px; }
 
 @media (max-width: 760px) {
   .screen { background: rgba(6, 8, 12, 0.86); padding: calc(16px + var(--safe-t)) 16px calc(16px + var(--safe-b)); }
+  .screen.map { background: linear-gradient(0deg, rgba(6, 8, 12, 0.94) 0%, rgba(6, 8, 12, 0.86) 58%, rgba(6, 8, 12, 0) 72%); padding-top: 34vh; }
+  .screen.map > .menu-grid { max-width: none; }
+  .maplabel { font-size: 12px; padding: 4px 9px 4px 6px; }
   .islands { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
   .island p { display: none; }
   .board { display: none; }

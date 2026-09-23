@@ -319,6 +319,7 @@ export class Atmosphere {
   update(dt) {
     const eng = this.engine;
     const t = eng.time.elapsed;
+    this.sky.position.copy(eng.camera.position); // the dome travels with the eye (it may fly kilometres up)
     this.timeOfDay = (this.timeOfDay + dt * this.daySpeed) % 24;
     this.computeSunDirection(this.timeOfDay, this.sunDir);
     this.moonDir.copy(this.sunDir).negate();

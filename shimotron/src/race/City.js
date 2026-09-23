@@ -160,6 +160,7 @@ export class City {
   /** Room a building needs: behind the sidewalk, away from the grandstand, the tunnel and the footbridge. */
   _lotOk(x, z) {
     if (this.terrain.height(x, z) <= 1.8) return false;
+    if (this.keepOut && this.keepOut(x, z)) return false; // a bridge lands here
     const q = this._near(x, z);
     if (q) {
       const c = q.dist - this.track.W;
