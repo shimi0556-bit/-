@@ -119,9 +119,24 @@ export class RaceCamera {
       this._spring(this.tvPos, p, dt, 6);
       const d = cam.position.distanceTo(p);
       fovTarget = THREE.MathUtils.clamp(2400 / Math.max(d, 10), 12, 60);
+    } else if (view.distance > 0 && car.chase3d) {
+      // Aircraft: behind along the flight path (climbs and dives included), a bit further back.
+      _fwd.copy(car.forward);
+      if (this.lookBack) _fwd.negate();
+      this.heading3 = this.heading3 || _fwd.clone();
+      this.heading3.lerp(_fwd, this.snap ? 1 : 1 - Math.exp(-dt * 3)).normalize();
+      const dist = view.distance * 1.7;
+      _t.copy(p).addScaledVector(this.heading3, -dist).add(_d.set(0, view.height * 1.2, 0));
+      const lookAt = _look.copy(p).addScaledVector(this.heading3, view.lookAhead * 2);
+      this._spring(_t, lookAt, dt, 6, p);
+      if (this.groundHeight) {
+        const gh = Math.max(0, this.groundHeight(cam.position.x, cam.position.z)) + 1.5;
+        if (cam.position.y < gh) cam.position.y = gh;
+      }
     } else if (view.distance > 0) {
-      // Chase: behind and above, looking ahead of the car.
-      _t.copy(p).addScaledVector(this.heading, -view.distance).add(_d.set(0, view.height, 0));
+      // Chase: behind and above, looking ahead of the car (boats and submarines a little further back).
+      const far = car.kind ? 1.45 : 1;
+      _t.copy(p).addScaledVector(this.heading, -view.distance * far).add(_d.set(0, view.height * far, 0));
       const lookAt = _look.copy(p).addScaledVector(this.heading, view.lookAhead);
       lookAt.y += 0.9;
       this._spring(_t, lookAt, dt, 7, p);
@@ -129,6 +144,9 @@ export class RaceCamera {
         const gh = this.groundHeight(cam.position.x, cam.position.z) + 0.8;
         if (cam.position.y < gh) cam.position.y = gh;
       }
+      // Submarines: the camera stays under the surface with them.
+      if (car.kind === 'sub' && cam.position.y > -1.2) cam.position.y = -1.2;
+      if (car.kind === 'boat' && cam.position.y < 1.2) cam.position.y = 1.2;
     } else {
       // Hood / bumper: rigidly attached to the chassis (interpolated), slight lag in pitch.
       const m = car.object.matrixWorld;

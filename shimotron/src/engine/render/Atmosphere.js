@@ -393,6 +393,28 @@ export class Atmosphere {
     if (f) {
       f.density = this.fogDensity;
       f.color.setRGB(hz.average[0] + nightAmb[0] * 0.5, hz.average[1] + nightAmb[1] * 0.5, hz.average[2] + nightAmb[2] * 0.5);
+      // Under the sea: thick blue-green water instead of air, no sky.
+      const uw = this.underwater;
+      const sh = fogParams.shape;
+      if (uw) {
+        const depth = Math.max(0, -eng.camera.position.y);
+        const k = Math.exp(-depth * 0.035);
+        f.density = 0.032 * (this.waterMurk || 1);
+        f.color.setRGB(hz.average[0] * 0.05 * k + 0.0005, hz.average[1] * 0.3 * k + 0.001, hz.average[2] * 0.36 * k + 0.0015);
+        sh.x = 0.00001;
+        sh.z = 0;
+        sh.w = 1;
+        if (!this._uwBg) this._uwBg = new THREE.Color();
+        this._uwBg.copy(f.color);
+        eng.scene.background = this._uwBg;
+      } else if (this._wasUnder) {
+        sh.x = 0.022;
+        sh.z = 0.75;
+        sh.w = 0.98;
+        eng.scene.background = null;
+      }
+      this.sky.visible = !uw;
+      this._wasUnder = uw;
     }
     fogParams.sunDir.x = this.sunDir.x;
     fogParams.sunDir.y = this.sunDir.y;

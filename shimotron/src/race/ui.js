@@ -59,6 +59,9 @@ const ordinal = (n) => `${n}`;
  * leaderboard, speedometer, minimap, messages), pause, results and the
  * championship table, plus the touch pad. Pure view: the Game calls in.
  */
+/** Race kinds for the single race. */
+const KIND_LABEL = { car: 'מכוניות', boat: 'סירות', sub: 'צוללות', plane: 'מטוסים', glider: 'מצנחי רחיפה' };
+
 export class RaceUI {
   constructor(root, game) {
     this.root = root;
@@ -150,9 +153,19 @@ export class RaceUI {
           { class: 'row' },
           h('button', { class: 'btn primary big', type: 'button', onclick: () => g.startChampionship() }, icon('trophy'), state.champ ? `המשך אליפות · שלב ${state.champ.stage + 1}/${STAGES.length}` : `אליפות (${STAGES.length} איים)`),
           h('button', { class: 'btn big career-btn', type: 'button', onclick: () => g.startCareer() }, icon('coins'), g.career ? `המשך קריירה · ${money(g.career.money)} · ${STAGES[g.career.stage].name}` : 'קריירה · מצב מתמשך'),
-          h('button', { class: 'btn big', type: 'button', onclick: () => g.startSingle() }, icon('flag'), `מירוץ בודד · ${STAGES[state.selected].name}`),
+          h('button', { class: 'btn big', type: 'button', onclick: () => g.startSingle() }, icon('flag'), `מירוץ ${KIND_LABEL[s.kind] || KIND_LABEL.car} · ${STAGES[state.selected].name}`),
           state.champ ? h('button', { class: 'btn', type: 'button', onclick: () => g.resetChampionship() }, 'אליפות חדשה') : null,
           g.career ? h('button', { class: 'btn', type: 'button', onclick: () => g.resetCareer() }, 'קריירה חדשה') : null,
+        ),
+        h(
+          'div',
+          { class: 'field kinds' },
+          h('span', {}, 'סוג מירוץ (במירוץ בודד)'),
+          h(
+            'div',
+            { class: 'seg' },
+            Object.entries(KIND_LABEL).map(([k, label]) => h('button', { type: 'button', 'aria-pressed': String((s.kind || 'car') === k), onclick: () => g.selectKind(k) }, label)),
+          ),
         ),
         h('div', { class: 'islands', role: 'group', 'aria-label': 'בחירת אי' }, cards),
         h('h2', { class: 'section-title' }, 'הרכב שלך'),
@@ -327,7 +340,7 @@ export class RaceUI {
     );
     this.topEl = top;
     this.root.append(top);
-    this.stageEl = h('div', { class: 'stagename' }, h('h2', { style: `color:${stage.color}` }, stage.name), h('p', {}, `${stage.tagline} · ${(race.track.length / 1000).toFixed(2)} ק״מ · ${race.laps} הקפות`));
+    this.stageEl = h('div', { class: 'stagename' }, h('h2', { style: `color:${stage.color}` }, stage.name), h('p', {}, `${race.title ? `${race.title} · ` : `${stage.tagline} · `}${(race.track.length / 1000).toFixed(2)} ק״מ · ${race.laps === 1 ? 'מקצה אחד' : `${race.laps} הקפות`}`));
     this.root.append(this.stageEl);
     this.msgEl = this.msgEl || h('div', { class: 'msg', role: 'status', 'aria-live': 'assertive' });
     this.root.append(this.msgEl);
@@ -532,7 +545,8 @@ export class RaceUI {
     g.font = '700 40px "JetBrains Mono", monospace';
     g.fillStyle = veh.rpm > E.redline * 0.92 ? '#ff4a2a' : '#ffb020';
     g.fillText(veh.reversing ? 'R' : String(veh.gear), cx + R * 0.78, cy + 34);
-    // Nitro bar.
+    // Nitro bar (not every craft has one).
+    if (veh.nitro === null || veh.nitro === undefined) return;
     const bw = R * 1.2;
     const bx = cx - bw / 2 - 30;
     const by = cy + 34;

@@ -157,6 +157,7 @@ export class Water {
       transparent: true,
       depthWrite: true,
       envMapIntensity: 1.0,
+      side: THREE.DoubleSide, // submarines see the surface from below
     });
     const U = this.uniforms;
     mat.onBeforeCompile = (shader) => {
@@ -234,10 +235,16 @@ export class Water {
             diffuseColor.a = clamp(1.0 - exp(-wDepth * uClarity / max(cosR, 0.2)), 0.0, 1.0);
             diffuseColor.a = max(diffuseColor.a, max(fres, wFoam));
             diffuseColor.a = mix(diffuseColor.a, 1.0, smoothstep(40.0 + 1400.0 * (1.0 - uClarity), 160.0 + 2600.0 * (1.0 - uClarity), dist));
+            if (!gl_FrontFacing) {
+              // Seen from below: a bright, rippling ceiling.
+              diffuseColor.rgb = uShallow * 0.55;
+              diffuseColor.a = 0.9;
+              wFoam = 0.0;
+            }
           }`,
         )
         .replace('#include <roughnessmap_fragment>', `float roughnessFactor = mix(roughness, 0.6, wFoam);`)
-        .replace('#include <normal_fragment_maps>', `normal = normalize((viewMatrix * vec4(wN, 0.0)).xyz);`)
+        .replace('#include <normal_fragment_maps>', `normal = normalize((viewMatrix * vec4(gl_FrontFacing ? wN : -wN, 0.0)).xyz);`)
         .replace(
           '#include <emissivemap_fragment>',
           `#include <emissivemap_fragment>
@@ -247,6 +254,8 @@ export class Water {
             float sss = pow(clamp(dot(V, -uSunDir) * 0.5 + 0.5, 0.0, 1.0), 4.0);
             float h = clamp(vCrest * 1.6 + 0.35, 0.0, 1.0);
             totalEmissiveRadiance += uSunColor * uShallow * sss * h * 0.05 * (1.0 - wFoam);
+            // From below, sunlight comes through the surface (strongest looking straight up).
+            if (!gl_FrontFacing) totalEmissiveRadiance += uSunColor * uShallow * 0.035 * pow(clamp(-V.y, 0.0, 1.0), 2.0);
           }`,
         );
       mat.userData.shader = shader;

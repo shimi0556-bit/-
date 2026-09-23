@@ -525,11 +525,14 @@ export class World {
     const group = new THREE.Group();
     group.name = `גשר ל${sb.name}`;
     group.add(this._deck(samples));
-    group.add(this._piers(samples));
+    const piers = [];
+    group.add(this._piers(samples, piers));
     group.add(...this._pylon(samples));
     group.traverse((o) => (o.userData.noPick = true));
     this.group.add(group);
-    this.bridges.push({ from: sa.id, to: sb.id, samples, length: S, group });
+    const mid = samples[Math.floor(samples.length / 2)];
+    for (const side of [-1, 1]) piers.push({ x: mid.p.x + mid.r.x * side * 9, z: mid.p.z + mid.r.z * side * 9, r: 2, s: mid.s, pylon: true });
+    this.bridges.push({ from: sa.id, to: sb.id, samples, length: S, group, piers, pylon: mid });
   }
 
   _deck(samples) {
@@ -584,7 +587,7 @@ export class World {
     return m;
   }
 
-  _piers(samples) {
+  _piers(samples, out) {
     const list = [];
     let next = 0;
     for (const S of samples) {
@@ -593,6 +596,7 @@ export class World {
       const top = S.p.y - 1.9;
       if (top - bottom < 3) continue;
       next = S.s + 46;
+      for (const side of [-1, 1]) out.push({ x: S.p.x + S.r.x * side * 3.2, z: S.p.z + S.r.z * side * 3.2, r: 1.9, s: S.s });
       const m = new THREE.Matrix4().compose(new THREE.Vector3(S.p.x, bottom, S.p.z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(S.t.x, S.t.z)), new THREE.Vector3(1, top - bottom, 1));
       list.push(m);
     }
@@ -690,6 +694,27 @@ export class World {
   showLocal(local) {
     for (const [id, lod] of Object.entries(this.lods)) lod.visible = !(local && id === this.originId);
     this.local = local;
+  }
+
+  /** Bridge obstacles near the origin island, in its local coordinates: pier and pylon circles, deck segments. */
+  obstacles(range = 2600) {
+    const piers = [];
+    const decks = [];
+    for (const B of this.bridges) {
+      for (const P of B.piers) {
+        const [x, z] = this.toLocal(P.x, P.z);
+        if (Math.hypot(x, z) < range) piers.push({ x, z, r: P.r, s: P.s, pylon: !!P.pylon, bridge: B });
+      }
+      const S = B.samples;
+      for (let i = 0; i < S.length - 1; i += 3) {
+        const a = S[i];
+        const b = S[Math.min(i + 3, S.length - 1)];
+        const [ax, az] = this.toLocal(a.p.x, a.p.z);
+        const [bx, bz] = this.toLocal(b.p.x, b.p.z);
+        if (Math.hypot(ax, az) < range) decks.push({ ax, az, ay: a.p.y, bx, bz, by: b.p.y, bridge: B });
+      }
+    }
+    return { piers, decks };
   }
 
   /** World position → local (origin island) coordinates, and back. */

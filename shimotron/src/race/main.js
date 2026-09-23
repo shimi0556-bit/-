@@ -13,6 +13,9 @@ import { generateTrack, planSignature, packPlan, unpackPlan } from './TrackGener
 import BAKED_PLANS from './plans.json';
 import { Island } from './Island.js';
 import { Race } from './Race.js';
+import { CraftRace } from './CraftRace.js';
+import { KINDS } from './Craft.js';
+import { waveAt } from '../engine/world/Water.js';
 import { RaceCamera } from './RaceCamera.js';
 import { WheelBatch } from './CarModel.js';
 import { SkidMarks } from './Effects.js';
@@ -48,7 +51,7 @@ const store = {
  */
 class Game {
   constructor() {
-    this.settings = { difficulty: 'normal', laps: RACE.laps, quality: null, sound: true, color: '#e0262b', camera: 0, car: 'gt', items: true, podium: true, ...store.get('settings', {}) };
+    this.settings = { difficulty: 'normal', laps: RACE.laps, quality: null, sound: true, color: '#e0262b', camera: 0, car: 'gt', items: true, podium: true, kind: 'car', ...store.get('settings', {}) };
     this.settings.audio = { engine: true, music: true, sfx: true, ambience: true, ...(this.settings.audio || {}) };
     this.records = store.get('records', {});
     this.champ = store.get('champ', null);
@@ -446,6 +449,15 @@ class Game {
     this.ui.showMenu({ selected: this.selected, champ: this.champ });
   }
 
+  /** What to race: cars, boats, submarines, planes or paragliders. */
+  selectKind(kind) {
+    this.settings.kind = kind;
+    store.set('settings', this.settings);
+    this._audioReady();
+    this.engine.audio.ui('click');
+    this.ui.showMenu({ selected: this.selected, champ: this.champ });
+  }
+
   settingsLabel() {
     return `${AI.difficulty[this.settings.difficulty].label} · ${this.settings.laps} הקפות`;
   }
@@ -739,7 +751,15 @@ class Game {
     this.skid.clear();
     this.wheels.reset();
     const career = this.mode === 'career' && this.career;
-    const race = new Race(this, this.island, { laps: this.settings.laps, difficulty: this._difficulty(), roster: this._gridOrder(this.roster()), items: career ? true : this.settings.items, startItem: career ? this.career.item : null });
+    // Boats, submarines, planes and paragliders: single races only (championship and career are on wheels).
+    const kind = this.mode === 'single' && KINDS[this.settings.kind] ? this.settings.kind : 'car';
+    this.kind = kind;
+    let race;
+    if (kind === 'car') race = new Race(this, this.island, { laps: this.settings.laps, difficulty: this._difficulty(), roster: this._gridOrder(this.roster()), items: career ? true : this.settings.items, startItem: career ? this.career.item : null });
+    else {
+      if (!this.carAudio && eng.audio.ctx) this.carAudio = new CarAudio(eng.audio);
+      race = new CraftRace(this, this.island, { kind, laps: this.settings.laps, difficulty: this._difficulty(), roster: this._gridOrder(this.roster()) });
+    }
     this.race = race;
     try {
       await Promise.race([eng.renderer.compileAsync(eng.scene, eng.camera), wait(6000)]);
@@ -878,6 +898,21 @@ class Game {
       this.ui.message(place === 1 ? 'ניצחון!' : `מקום ${place}`, place === 1 ? 'gold' : '', 'קו הסיום', 2400);
     });
     ev.on('race:respawn', () => this.ui.flash());
+    ev.on('race:gate', ({ missed, under }) => {
+      const a = this.engine.audio.enabled ? this.engine.audio : null;
+      if (missed) {
+        this.ui.message('פספסת שער!', 'warn', '‎+2 שניות', 1000);
+        if (a) a._tone(a.sfx, { freq: 220, dur: 0.25, gain: 0.08, type: 'square' });
+      } else {
+        if (under) this.ui.message('מתחת לגשר!', 'gold', '', 900);
+        if (a) [988, 1319].forEach((f, i) => a._tone(a.sfx, { freq: f, dur: 0.1, gain: 0.06, type: 'triangle', when: i * 0.07 }));
+      }
+    });
+    ev.on('race:crash', () => {
+      this.ui.message('התרסקות!', 'warn', '‎+2 שניות', 1200);
+      this.engine.events.emit('shake', { strength: 0.9 });
+      if (this.engine.audio.enabled) this.engine.audio.ui('boom');
+    });
     // Surprises: sounds for everyone nearby, messages for the player.
     const au = () => (this.engine.audio.enabled ? this.engine.audio : null);
     ev.on('item:get', ({ entry, kind }) => {
@@ -940,14 +975,15 @@ class Game {
   _musicFrame() {
     const M = this.music;
     if (!M) return;
-    const want = this.state === 'race' || this.state === 'podium' ? (this.stage ? this.stage.id : 'menu') : this.state === 'menu' ? 'world' : 'menu';
+    const raceStyle = this.race && this.race.kind ? KINDS[this.race.kind].music : this.stage ? this.stage.id : 'menu';
+    const want = this.state === 'race' || this.state === 'podium' ? raceStyle : this.state === 'menu' ? 'world' : 'menu';
     M.setStyle(want);
     const r = this.race;
     if (this.state === 'podium') M.drive(0.9, 0.6);
     else if (r && this.state === 'race') {
       const P = r.player;
       const car = P.car;
-      const top = car.spec.engine.topSpeed * 3.6;
+      const top = (car.spec.engine ? car.spec.engine.topSpeed : car.spec.top || car.spec.fast || 30) * 3.6;
       const pace = Math.min(1, car.kmh / top);
       const last = P.lap >= r.laps - 1 ? 0.14 : 0;
       const nitro = car.vehicle.nitroActive ? 0.14 : 0;
@@ -962,6 +998,11 @@ class Game {
   _frame(dt) {
     this._musicFrame();
     this._mapLabels();
+    // Under the waves: water fog instead of air.
+    const cam = this.engine.camera.position;
+    const w = this.water;
+    const surf = w && this.state !== 'menu' ? waveAt(cam.x, cam.z, this.engine.time.elapsed, w.uniforms.uWaveAmp.value).y : -1e9;
+    this.engine.atmosphere.underwater = cam.y < surf - 0.05;
     const r = this.race;
     if (!r || this.state !== 'race') return;
     const I = this.engine.input;
@@ -988,8 +1029,9 @@ class Game {
     const P = r.player;
     const st = this.stage;
     let newRecord = false;
-    if (isFinite(P.bestLap) && (!this.records[st.id] || P.bestLap < this.records[st.id])) {
-      this.records[st.id] = P.bestLap;
+    const rk = this.kind && this.kind !== 'car' ? `${st.id}:${this.kind}` : st.id;
+    if (isFinite(P.bestLap) && (!this.records[rk] || P.bestLap < this.records[rk])) {
+      this.records[rk] = P.bestLap;
       store.set('records', this.records);
       newRecord = true;
     }
