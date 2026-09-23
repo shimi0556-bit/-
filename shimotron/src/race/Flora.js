@@ -202,7 +202,7 @@ export function deadTreeGeometry(seed = 1) {
  * where the camera actually is.
  */
 export class IslandFlora extends Vegetation {
-  constructor(engine, terrain, materials, stage, track, blocked = null) {
+  constructor(engine, terrain, materials, stage, track, blocked = null, treeSpots = null) {
     const W = track.W;
     const n = track.n;
     super(engine, terrain, materials, {
@@ -213,10 +213,11 @@ export class IslandFlora extends Vegetation {
         const off = side * (W + 3 + Math.pow(rng.random(), 1.6) * 55);
         const x = track.x[i] - track.tz[i] * off;
         const z = track.z[i] + track.tx[i] * off;
-        if (blocked && blocked(x, z)) return null;
+        if (blocked && blocked(x, z, 'grass')) return null;
         return { x, z };
       },
       blocked,
+      treeSpots,
       colliderFilter: () => false, // rails enclose the circuit; scenery is visual only
     });
     this.stage = stage;
@@ -228,7 +229,7 @@ export class IslandFlora extends Vegetation {
     const q = this.engine.quality.settings;
     const F = this.stage.flora;
     this._trees(q.treeDensity);
-    this._rocks();
+    if (F.rocks !== 0) this._rocks();
     if (F.grass > 0) this._grass(q.grassDensity * F.grass * 1.4);
     if (F.flowers > 0) this._flowers(q.grassDensity * F.flowers);
     // Biome tints on the shared foliage/grass materials.
@@ -278,15 +279,21 @@ export class IslandFlora extends Vegetation {
     }
     if (!species.length) return;
     const total = species.reduce((s, x) => s + x.w, 0);
-    const target = Math.round(F.trees * density);
+    // Fixed spots first (e.g. street trees the city lines its sidewalks with), then the random scatter.
+    const spots = this.options.treeSpots ? this.options.treeSpots() : [];
+    const target = Math.round(F.trees * density) + spots.length;
     const lists = species.map((s) => (s.variants ? s.variants.map(() => []) : [[]]));
     const half = t.size / 2 - 30;
     let placed = 0;
     let guard = 0;
+    let spot = 0;
     while (placed < target && guard++ < target * 40) {
       let x;
       let z;
-      if (this.rng.random() < 0.72) {
+      const fixed = spot < spots.length;
+      if (fixed) {
+        ({ x, z } = spots[spot++]);
+      } else if (this.rng.random() < 0.72) {
         // Near the circuit: 12–260 m from the road edge, denser close in.
         const i = Math.floor(this.rng.random() * tr.n);
         const side = this.rng.random() < 0.5 ? -1 : 1;
@@ -298,8 +305,8 @@ export class IslandFlora extends Vegetation {
         z = this.rng.range(-half, half);
       }
       const forest = this.noise.noise(x * 0.005, z * 0.005) * 0.5 + 0.5;
-      if (this.rng.random() > smoothstep(0.2, 0.7, forest) + 0.15) continue;
-      const h = this._canPlace(x, z, { minH: 1.4, maxH: 150, maxSlope: 0.32, clearPlaza: 0, clearPath: 5 });
+      if (!fixed && this.rng.random() > smoothstep(0.2, 0.7, forest) + 0.15) continue;
+      const h = this._canPlace(x, z, { minH: 1.4, maxH: 150, maxSlope: 0.32, clearPlaza: 0, clearPath: fixed ? 2 : 5 });
       if (h === null) continue;
       const w = t.weightsAt(x, z);
       // Pick a species by weight, filtered by local conditions.

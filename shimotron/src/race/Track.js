@@ -734,6 +734,7 @@ export class Track {
       rail.name = 'מעקה בטיחות';
       this.group.add(rail);
     }
+    if (concrete) this._catchFence(materials, off);
     if (posts.length) {
     const postMesh = new THREE.InstancedMesh(postGeo, materials.lib.darkMetal, posts.length);
     posts.forEach((m, k) => postMesh.setMatrixAt(k, m));
@@ -757,6 +758,80 @@ export class Track {
     rm.computeBoundingSphere();
     rm.name = 'מחזירי אור';
     this.group.add(rm);
+  }
+
+  /**
+   * Street-circuit catch fence on top of the concrete barriers: chain-link
+   * mesh (an alpha texture whose mipmaps fade the wires to a light haze at
+   * distance, so it never shimmers), posts every 4 m and a top cable.
+   */
+  _catchFence(materials, off) {
+    const n = this.n;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 64;
+    const g = cv.getContext('2d');
+    g.fillStyle = '#000';
+    g.fillRect(0, 0, 64, 64);
+    g.strokeStyle = '#fff';
+    g.lineWidth = 3;
+    g.beginPath();
+    for (const k of [-64, 0, 64]) {
+      g.moveTo(k, 0);
+      g.lineTo(k + 64, 64);
+      g.moveTo(k + 64, 0);
+      g.lineTo(k, 64);
+    }
+    g.stroke();
+    const alpha = new THREE.CanvasTexture(cv);
+    alpha.wrapS = alpha.wrapT = THREE.RepeatWrapping;
+    alpha.anisotropy = 8;
+    const mat = new THREE.MeshStandardMaterial({ name: 'גדר רשת', color: 0xb8bec6, metalness: 0.7, roughness: 0.45, alphaMap: alpha, transparent: true, depthWrite: false, side: THREE.DoubleSide });
+    const bottom = 0.86;
+    const top = 3.9;
+    const posts = [];
+    for (const side of [-1, 1]) {
+      const pos = [];
+      const uv = [];
+      const idx = [];
+      let dist = 0;
+      let rows = 0;
+      for (let i = 0; i <= n; i += 2) {
+        const k = i % n;
+        if (i) dist += this.ds * 2;
+        const rx = -this.tz[k] * side;
+        const rz = this.tx[k] * side;
+        const x = this.x[k] + rx * (off - 0.02);
+        const z = this.z[k] + rz * (off - 0.02);
+        const gy = this._groundY(x, z);
+        pos.push(x, gy + bottom, z, x, gy + top, z);
+        uv.push(dist / 0.42, 0, dist / 0.42, (top - bottom) / 0.42);
+        if (rows) {
+          const a = (rows - 1) * 2;
+          idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
+        }
+        rows++;
+        posts.push(new THREE.Matrix4().setPosition(x, gy + bottom, z)); // one post per row, ~4 m apart
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      geo.setIndex(idx);
+      geo.computeVertexNormals();
+      geo.computeBoundingSphere();
+      const fence = new THREE.Mesh(geo, mat);
+      fence.renderOrder = 3;
+      fence.name = 'גדר רשת';
+      this.group.add(fence);
+    }
+    const postGeo = new THREE.CylinderGeometry(0.05, 0.05, top - bottom + 0.1, 6);
+    postGeo.translate(0, (top - bottom) / 2, 0);
+    const pm = new THREE.InstancedMesh(postGeo, materials.lib.darkMetal || materials.lib.iron, posts.length);
+    posts.forEach((m, k) => pm.setMatrixAt(k, m));
+    pm.instanceMatrix.needsUpdate = true;
+    pm.computeBoundingSphere();
+    pm.castShadow = true;
+    pm.name = 'עמודי גדר';
+    this.group.add(pm);
   }
 
   /** Concrete barrier paint: red/white blocks along a grey base with grime at the foot. */
@@ -1139,6 +1214,7 @@ export class Track {
     const poles = [];
     const heads = [];
     for (let i = 0; i < n; i += every) {
+      if (this.covered && this.covered[i]) continue; // under a tunnel roof or a bridge
       const side = (i / every) % 2 ? 1 : -1;
       const p = this.pose(i / n, side * (this.W + 8.2));
       const gy = this._groundY(p.position.x, p.position.z);

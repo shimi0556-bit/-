@@ -68,6 +68,11 @@ export class Island {
     terrain.heightModifier = track.heightModifier;
     terrain.splatModifier = track.splatModifier;
     terrain.clearance = track.clearance;
+    if (st.city) {
+      // The city is laid out before the ground is baked, so its blocks can be painted as paving.
+      this.city = new City(eng, terrain, track, st, this.materials).plan();
+      terrain.splatModifier = (x, z, w, h) => this.city.splat(track.splatModifier(x, z, w, h), x, z);
+    }
 
     await progress(0.32, 'חוצב את הכביש בשטח…');
     // Heights and ground maps: from the cache when this island was built before, else baked in slices.
@@ -95,9 +100,8 @@ export class Island {
     track.buildPhysics(eng.physics);
     await nextFrame();
 
-    if (st.city) {
+    if (this.city) {
       await progress(0.56, 'בונה את העיר…');
-      this.city = new City(eng, terrain, track, st, this.materials);
       this.group.add(this.city.build());
       await nextFrame();
     }
@@ -108,7 +112,7 @@ export class Island {
     }
 
     await progress(0.62, 'שותל צמחייה…');
-    const flora = new IslandFlora(eng, terrain, this.materials, st, track, this.city ? (x, z) => this.city.blocked(x, z) : null);
+    const flora = new IslandFlora(eng, terrain, this.materials, st, track, this.city ? (x, z, kind) => this.city.blocked(x, z, kind) : null, this.city ? () => this.city.treeSpots() : null);
     this.flora = flora;
     this.group.add(flora.build());
     for (const b of eng.physics.world.bodies) if (!before.has(b)) this.bodies.push(b);
@@ -245,6 +249,7 @@ export class Island {
       const a = Math.abs(q.lat);
       if (a < tr.W - 0.05) return 'asphalt';
       if (a < tr.W + 1.25 && tr.curbMark && tr.curbMark[q.i]) return 'curb';
+      if (this.city && a < tr.W + 6.6) return 'asphalt'; // street circuit: tarmac run-off, no gravel
       if (a < tr.W + 4.6) return 'gravel';
     }
     const h = this.terrain.heightAt(x, z);

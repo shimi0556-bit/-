@@ -228,7 +228,7 @@ export class Canyon {
     const rng = this.rng;
     const W = tr.W;
     const variants = [0, 1, 2, 3].map((k) => {
-      const g = new THREE.IcosahedronGeometry(1, 3);
+      const g = new THREE.IcosahedronGeometry(1, 2);
       this._roughen(g, 0.3, 0.9, k * 7.3);
       g.scale(1, 0.72 + k * 0.06, 1);
       return g;
