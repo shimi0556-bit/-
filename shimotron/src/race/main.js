@@ -25,6 +25,7 @@ import { ITEMS } from './Pickups.js';
 import { Podium } from './Podium.js';
 import { World, WORLD } from './World.js';
 import { SpaceScene } from './Space.js';
+import { Explore, ROAM } from './Explore.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -134,6 +135,7 @@ class Game {
     engine.addSystem({ update: (dt, simDt) => this.water && this.water.update(dt, simDt) });
     engine.addSystem({ update: (dt) => this.island && this.state !== 'menu' && !this.inSpace && this.island.flora && this.island.flora.update(dt) });
     engine.addSystem({ update: (dt, simDt) => this.race && this.race.update(simDt) });
+    engine.addSystem({ update: (dt, simDt) => this.explore && this.state === 'explore' && this.explore.update(simDt) });
     engine.addSystem({ update: (dt, simDt) => engine.particles.update(simDt) });
     engine.addSystem({ update: (dt) => this.island && this.state !== 'menu' && !this.inSpace && this.island.update(dt) });
     engine.addSystem({ update: (dt) => this.space && this.space.update(dt) });
@@ -841,8 +843,91 @@ class Game {
     this.engine.canvas.focus({ preventScroll: true });
   }
 
+  /** Engine sound starts over (new vehicle, new race). */
+  resetCarAudio() {
+    if (this.carAudio) this.carAudio.dispose();
+    this.carAudio = this.engine.audio.ctx ? new CarAudio(this.engine.audio) : null;
+  }
+
+  // ------------------------------------------------------------- free roam
+
+  startExplore() {
+    this.mode = 'explore';
+    this._roam(this.selected);
+  }
+
+  /** Free roam on an island (from the map, or arriving from another island at `at`). */
+  async _roam(index, at = null) {
+    const eng = this.engine;
+    const fromMap = this.mapOn;
+    this._endPodium();
+    this._exitSpace();
+    this.state = 'loading';
+    this._audioReady();
+    if (!this.carAudio && eng.audio.ctx) this.carAudio = new CarAudio(eng.audio);
+    this.ui.clear();
+    this.selected = index;
+    const st = STAGES[index];
+    this.stage = st;
+    if (fromMap) {
+      this.mapFocus = index;
+      this.mapDive = true;
+      eng.cameraRig = this._worldView();
+      await wait(1300);
+      this.mapDive = false;
+    }
+    if (!this.island || this.island.stage !== st || this.islandDirty) {
+      await this.loadIsland(index, (p, t) => this.ui.showLoader(t, p));
+      this.ui.showLoader('מקמפל שיידרים…', 0.96);
+      await nextFrame();
+    }
+    this._endRace();
+    this._showMap(false);
+    this.skid.clear();
+    const ex = new Explore(this, this.island);
+    this.explore = ex;
+    this.kind = null;
+    if (at) {
+      const [x, z] = this.world.toLocal(at.wx, at.wz);
+      ex.spawn(at.kind, { x, y: at.y, z, yaw: at.yaw, speed: at.speed, onDeck: at.onDeck });
+    } else ex.spawn(this.roamKind || 'car');
+    try {
+      await Promise.race([eng.renderer.compileAsync(eng.scene, eng.camera), wait(5000)]);
+    } catch {
+      /* optional */
+    }
+    this.ui.hideLoader();
+    this.ui.fade(0);
+    this.state = 'explore';
+    eng.paused = false;
+    eng.cameraRig = this.camera;
+    this.ui.showExplore(ex, st);
+    this.engine.canvas.focus({ preventScroll: true });
+  }
+
+  roamVehicle(kind) {
+    if (!this.explore || this.state !== 'explore') return;
+    this.roamKind = kind;
+    this.explore.spawn(kind);
+    this.ui.showExplore(this.explore, this.stage);
+    this.ui.message(ROAM[kind].name, '', ROAM[kind].hint, 1100);
+  }
+
+  /** Crossing into another island's waters (or over its bridge): build it and carry on from the same spot. */
+  roamTravel(st, at) {
+    const i = STAGES.indexOf(st);
+    if (i < 0) return;
+    this.ui.showLoader(`בדרך אל ${st.name}…`, 0.02);
+    this._roam(i, at);
+  }
+
   restart() {
     this.ui.showPause(false);
+    if (this.state === 'explore' && this.explore) {
+      this.pause(false);
+      this.explore.spawn(this.explore.kind);
+      return;
+    }
     this._launch(this.selected);
   }
 
@@ -850,6 +935,10 @@ class Game {
     if (this.race) {
       this.race.dispose();
       this.race = null;
+    }
+    if (this.explore) {
+      this.explore.dispose();
+      this.explore = null;
     }
     if (this.carAudio) {
       this.carAudio.dispose();
@@ -859,7 +948,8 @@ class Game {
   }
 
   pause(on) {
-    if (this.state !== 'race' || !this.race || this.race.state === 'done') return;
+    const roaming = this.state === 'explore' && this.explore;
+    if (!roaming && (this.state !== 'race' || !this.race || this.race.state === 'done')) return;
     this.paused = on;
     this.engine.paused = on;
     this.ui.showPause(on);
@@ -1020,9 +1110,9 @@ class Game {
   _keys() {
     const block = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'];
     window.addEventListener('keydown', (e) => {
-      if (this.state === 'race' && block.includes(e.code)) e.preventDefault();
+      if ((this.state === 'race' || this.state === 'explore') && block.includes(e.code)) e.preventDefault();
       if (e.repeat) return;
-      if (this.state !== 'race') return;
+      if (this.state !== 'race' && this.state !== 'explore') return;
       if (e.code === 'Escape' || e.code === 'KeyP') this.pause(!this.paused);
       else if (e.code === 'KeyC') this.cycleCamera();
       else if (e.code === 'KeyM') {
@@ -1040,7 +1130,7 @@ class Game {
     const M = this.music;
     if (!M) return;
     const raceStyle = this.race && this.race.kind ? KINDS[this.race.kind].music : this.stage ? this.stage.id : 'menu';
-    const want = this.state === 'race' || this.state === 'podium' ? raceStyle : this.state === 'menu' ? 'world' : 'menu';
+    const want = this.state === 'race' || this.state === 'podium' ? raceStyle : this.state === 'explore' ? (this.stage ? this.stage.id : 'world') : this.state === 'menu' ? 'world' : 'menu';
     M.setStyle(want);
     const r = this.race;
     if (this.state === 'podium') M.drive(0.9, 0.6);
@@ -1056,12 +1146,16 @@ class Game {
       if (r.state === 'countdown' || r.state === 'intro') M.drive(0.3, 0.1);
       else if (r.state === 'done' || P.finished) M.drive(0.5, 0.3);
       else M.drive(0.42 + pace * 0.34 + last + nitro, pace * 0.85 + last);
+    } else if (this.state === 'explore' && this.explore && this.explore.obj) {
+      const v = Math.abs(this.explore.speed);
+      M.drive(0.3 + Math.min(0.3, v / 150), Math.min(1, v / 60));
     } else M.drive(this.state === 'garage' ? 0.42 : 0.3, 0.1);
   }
 
   _frame(dt) {
     this._musicFrame();
     this._mapLabels();
+    if (this.state === 'explore' && this.explore) this.ui.updateExplore(this.explore, dt);
     // Under the waves: water fog instead of air.
     const cam = this.engine.camera.position;
     const w = this.water;

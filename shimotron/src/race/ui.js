@@ -2,6 +2,8 @@ import { STAGES, AI, RACE, CAR, CAR_TYPES, CAREER, PODIUM, carRatings } from './
 import { Race } from './Race.js';
 import { drawCarProfile } from './CarModel.js';
 import { ITEMS } from './Pickups.js';
+import { ROAM } from './Explore.js';
+import { WORLD } from './World.js';
 
 /** The island count in words (masculine, for 'איים'). */
 const ISLANDS = ['', 'אחד', 'שניים', 'שלושה', 'ארבעה', 'חמישה', 'שישה', 'שבעה', 'שמונה', 'תשעה', 'עשרה'][STAGES.length] || String(STAGES.length);
@@ -154,6 +156,7 @@ export class RaceUI {
           h('button', { class: 'btn primary big', type: 'button', onclick: () => g.startChampionship() }, icon('trophy'), state.champ ? `המשך אליפות · שלב ${state.champ.stage + 1}/${STAGES.length}` : `אליפות (${STAGES.length} איים)`),
           h('button', { class: 'btn big career-btn', type: 'button', onclick: () => g.startCareer() }, icon('coins'), g.career ? `המשך קריירה · ${money(g.career.money)} · ${STAGES[g.career.stage].name}` : 'קריירה · מצב מתמשך'),
           h('button', { class: 'btn big', type: 'button', onclick: () => g.startSingle() }, icon('flag'), `מירוץ ${KIND_LABEL[s.kind] || KIND_LABEL.car} · ${STAGES[state.selected].name}`),
+          h('button', { class: 'btn big roam-btn', type: 'button', onclick: () => g.startExplore() }, `סיור חופשי בעולם · מ${STAGES[state.selected].name}`),
           state.champ ? h('button', { class: 'btn', type: 'button', onclick: () => g.resetChampionship() }, 'אליפות חדשה') : null,
           g.career ? h('button', { class: 'btn', type: 'button', onclick: () => g.resetCareer() }, 'קריירה חדשה') : null,
         ),
@@ -348,6 +351,131 @@ export class RaceUI {
     this.root.append(this.flashEl);
     if (g.isTouch) this._touchPad();
     this._mapCache = null;
+  }
+
+  // ---------------------------------------------------------- free roam
+
+  /** HUD for free roam: where you are, speed, the world map with you on it, vehicle switcher. */
+  showExplore(ex, stage) {
+    this.clear();
+    const g = this.game;
+    const speedo = h('canvas', { width: 460, height: 300 });
+    const map = h('canvas', { class: 'minimap pill worldmap', width: 320, height: 320 });
+    const place = h('b', {}, stage.name);
+    const what = h('span', { class: 'lbl' }, `${ROAM[ex.kind].name} · ${ROAM[ex.kind].hint}`);
+    const kinds = h(
+      'div',
+      { class: 'roambar pill' },
+      Object.entries(ROAM).map(([k, v]) => h('button', { type: 'button', 'aria-pressed': String(ex.kind === k), onclick: () => g.roamVehicle(k) }, v.name)),
+      h('span', { class: 'key' }, g.isTouch ? '' : 'V'),
+    );
+    this.exploreEls = { speedo, map, place };
+    const hud = h(
+      'div',
+      { class: 'hud roam', 'aria-hidden': 'true' },
+      h('div', { class: 'tr' }, h('div', { class: 'pill roamwhere' }, h('span', { class: 'lbl' }, 'סיור חופשי'), place, what)),
+      h('div', { class: 'bl' }, h('div', { class: 'speedo' }, speedo)),
+      h('div', { class: 'br' }, map),
+      kinds,
+    );
+    this.hudEl = hud;
+    this.root.append(hud);
+    const top = h(
+      'div',
+      { class: 'topbtns' },
+      h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'עצירה', onclick: () => g.pause(true), html: ICON.pause }),
+      h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'החלפת מצלמה', onclick: () => g.cycleCamera(), html: ICON.camera }),
+      h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'חזרה', onclick: () => (g.touch.reset = true), html: ICON.reset }),
+    );
+    this.topEl = top;
+    this.root.append(top);
+    this.msgEl = this.msgEl || h('div', { class: 'msg', role: 'status', 'aria-live': 'assertive' });
+    this.root.append(this.msgEl);
+    if (g.isTouch) this._touchPad();
+    this._hudT = 0;
+  }
+
+  updateExplore(ex, dt) {
+    const els = this.exploreEls;
+    if (!els || !ex.obj) return;
+    this._drawSpeedo(els.speedo, ex.obj);
+    this._hudT -= dt;
+    if (this._hudT > 0) return;
+    this._hudT = 0.1;
+    const W = this.game.world;
+    const cv = els.map;
+    const g = cv.getContext('2d');
+    const S = cv.width;
+    if (!this._worldMap) this._worldMap = this._paintWorld(W, S);
+    g.clearRect(0, 0, S, S);
+    g.drawImage(this._worldMap, 0, 0);
+    const [wx, wz] = W.toWorld(ex.position.x, ex.position.z);
+    const k = S / WORLD.span;
+    const px = (wx + WORLD.span / 2) * k;
+    const pz = (wz + WORLD.span / 2) * k;
+    const f = ex.obj.forward;
+    g.save();
+    g.translate(px, pz);
+    g.rotate(Math.atan2(f.x, -f.z));
+    g.beginPath();
+    g.moveTo(0, -11);
+    g.lineTo(7, 8);
+    g.lineTo(0, 4);
+    g.lineTo(-7, 8);
+    g.closePath();
+    g.fillStyle = '#ffb020';
+    g.fill();
+    g.lineWidth = 2;
+    g.strokeStyle = '#111';
+    g.stroke();
+    g.restore();
+  }
+
+  /** The whole archipelago as a little chart (from the world depth map). */
+  _paintWorld(W, S) {
+    const cv = document.createElement('canvas');
+    cv.width = S;
+    cv.height = S;
+    const g = cv.getContext('2d');
+    const img = g.createImageData(S, S);
+    const tex = W.depthTexture.image;
+    const N = tex.width;
+    for (let y = 0; y < S; y++) {
+      for (let x = 0; x < S; x++) {
+        const h = tex.data[Math.floor((y / S) * N) * N + Math.floor((x / S) * N)];
+        const o = (y * S + x) * 4;
+        let c;
+        if (h < 0) {
+          const d = Math.min(1, -h / 30);
+          c = [20 + 40 * (1 - d), 70 + 90 * (1 - d), 110 + 80 * (1 - d)];
+        } else if (h < 2) c = [214, 196, 150];
+        else c = [70 + h, 120 + h * 0.5, 60];
+        img.data[o] = c[0];
+        img.data[o + 1] = c[1];
+        img.data[o + 2] = c[2];
+        img.data[o + 3] = 235;
+      }
+    }
+    g.putImageData(img, 0, 0);
+    const k = S / WORLD.span;
+    // Bridges and island names.
+    g.strokeStyle = 'rgba(40,40,40,0.9)';
+    g.lineWidth = 2;
+    for (const B of W.bridges) {
+      g.beginPath();
+      B.samples.forEach((p, i) => (i ? g.lineTo : g.moveTo).call(g, (p.p.x + WORLD.span / 2) * k, (p.p.z + WORLD.span / 2) * k));
+      g.stroke();
+    }
+    g.font = '600 12px "IBM Plex Sans Hebrew", sans-serif';
+    g.textAlign = 'center';
+    for (const st of STAGES) {
+      const [cx, cz] = W.pos(st.id);
+      g.fillStyle = 'rgba(0,0,0,0.55)';
+      g.fillText(st.name, (cx + WORLD.span / 2) * k + 1, (cz + WORLD.span / 2) * k + 1);
+      g.fillStyle = '#fff';
+      g.fillText(st.name, (cx + WORLD.span / 2) * k, (cz + WORLD.span / 2) * k);
+    }
+    return cv;
   }
 
   /** White-out between scenes (0 clear .. 1 white). */
@@ -654,12 +782,12 @@ export class RaceUI {
         'div',
         { class: 'results', style: 'max-width:420px;text-align:center' },
         h('h2', {}, 'עצירה'),
-        h('p', { class: 'sub' }, `${g.stage.name} · ${g.settingsLabel()}`),
+        h('p', { class: 'sub' }, g.state === 'explore' ? `סיור חופשי · ${g.stage.name}` : `${g.stage.name} · ${g.settingsLabel()}`),
         h(
           'div',
           { style: 'display:flex;flex-direction:column;gap:10px' },
           h('button', { class: 'btn primary big', type: 'button', onclick: () => g.pause(false) }, 'המשך'),
-          h('button', { class: 'btn', type: 'button', onclick: () => g.restart() }, 'התחלה מחדש'),
+          h('button', { class: 'btn', type: 'button', onclick: () => g.restart() }, g.state === 'explore' ? 'חזרה למקום בטוח' : 'התחלה מחדש'),
           h('button', { class: 'btn', type: 'button', onclick: () => g.cycleCamera() }, 'החלפת מצלמה (C)'),
           h('button', { class: 'btn', type: 'button', onclick: () => g.toggleSound() }, g.settings.sound ? 'השתקת הכול' : 'הפעלת קול'),
           this.mixer(),

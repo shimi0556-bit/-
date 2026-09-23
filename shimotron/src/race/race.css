@@ -360,3 +360,14 @@ body.is-touch .minimap { width: 130px; height: 130px; }
 .launchcap { position: fixed; left: 0; right: 0; bottom: calc(28px + var(--safe-b)); text-align: center; z-index: 30; pointer-events: none; text-shadow: 0 2px 18px rgba(0, 0, 0, 0.7); }
 .launchcap h2 { margin: 0; font: 700 44px/1.1 'Karantina', 'IBM Plex Sans Hebrew', sans-serif; color: #fff; }
 .launchcap p { margin: 6px 0 0; color: rgba(255, 255, 255, 0.75); font-size: 14px; }
+
+/* Free roam. */
+.roamwhere { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; min-width: 190px; }
+.roamwhere b { font: 700 26px/1.1 'Karantina', 'IBM Plex Sans Hebrew', sans-serif; }
+.roambar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + var(--safe-b)); display: flex; gap: 6px; padding: 6px; z-index: 12; pointer-events: auto; align-items: center; }
+.roambar button { appearance: none; border: 1px solid var(--line); background: rgba(255,255,255,0.04); color: inherit; border-radius: 10px; padding: 8px 12px; font: 600 14px 'IBM Plex Sans Hebrew', sans-serif; cursor: pointer; }
+.roambar button[aria-pressed='true'] { background: var(--accent); color: #111; border-color: var(--accent); }
+.roambar .key { opacity: 0.6; font-size: 12px; padding: 0 6px; }
+.hud.roam .worldmap { image-rendering: auto; }
+.roam-btn { border-color: rgba(57, 217, 255, 0.5); }
+@media (max-width: 760px) { .roambar { bottom: calc(150px + var(--safe-b)); flex-wrap: wrap; justify-content: center; max-width: 92vw; } .roambar button { padding: 6px 8px; font-size: 12px; } }
