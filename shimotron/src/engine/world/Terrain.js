@@ -413,6 +413,12 @@ export class Terrain {
       const path = this.paths.length ? smoothstep(3.2 + nz2 * 0.8, 1.2, this.distanceToPath(x, z)) * (this.plaza ? smoothstep(this.plaza.radius - 1, this.plaza.radius + 2, pd) : 1) : 0;
       const patches = smoothstep(0.45, 0.75, this.noise.noise(x * 0.012 - 4, z * 0.012 + 9)) * 0.55;
       let dirt = Math.max(path, patches * (1 - sand)) * (1 - rock);
+      // Desert biomes: bare sand and dirt instead of grass away from the rock.
+      const desert = this.biome.desert || 0;
+      if (desert > 0) {
+        sand = Math.max(sand, desert * (0.7 + 0.3 * nz));
+        dirt = Math.max(dirt, desert * patches * 1.2);
+      }
       sand *= 1 - rock;
       if (this.splatModifier) ({ sand, dirt, rock } = this.splatModifier(x, z, { sand, dirt, rock }, h));
       const sum = sand + dirt + rock;

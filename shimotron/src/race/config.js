@@ -336,7 +336,7 @@ export const STAGES = [
   {
     id: 'canyon',
     name: 'קניון הגעש',
-    tagline: 'צוקי אבן אדומה, קניונים צרים ושלושה הרי געש בוערים במדבר',
+    tagline: 'נקיקים צרים בין קירות אבן אדומה, קשתות סלע, גשר חבלים ושלושה הרי געש בוערים',
     color: '#e0582a',
     seed: 97,
     size: 2400,
@@ -356,12 +356,13 @@ export const STAGES = [
         { x: -520, z: 400, radius: 180, height: 220, craterRadius: 0.24, craterDepth: 30 },
       ],
     },
-    biome: { grassTint: [2.3, 1.15, 0.95], sandTint: [1.32, 0.94, 0.66], dirtTint: [1.28, 0.8, 0.56], rockTint: [1.3, 0.74, 0.52], strata: 1 },
+    biome: { grassTint: [2.3, 1.15, 0.95], sandTint: [1.38, 0.9, 0.62], dirtTint: [1.28, 0.78, 0.54], rockTint: [1.3, 0.74, 0.52], strata: 1, desert: 0.85 },
     flora: { pine: 0, oak: 0, palm: 0.12, cactus: 0.9, deadTree: 0.6, trees: 700, grass: 0.2, flowers: 0, foliageTint: '#d8c890' },
     water: { shallow: [0.1, 0.4, 0.38], deep: [0.01, 0.04, 0.06] },
     sky: { time: 17.1, azimuth: 1.8, turbidity: 4.2, rayleigh: 1.5, clouds: 0.15, cloudDensity: 0.35, fog: 0.0009, wind: 1.2 },
     weather: 'dust',
     cut: 0.3, // steep canyon walls where the road is carved through rock
+    gorge: { count: 3, length: 400, height: 36, ledge: 6.5 }, // the twistiest stretches run between sheer walls
     lavaLake: true,
     lavaGain: 0.3, // daylight: keep the lakes orange instead of blown out
     roadGrip: 0.97,

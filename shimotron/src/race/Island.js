@@ -5,6 +5,7 @@ import { generateTrack } from './TrackGenerator.js';
 import { Track } from './Track.js';
 import { IslandFlora } from './Flora.js';
 import { City } from './City.js';
+import { Canyon } from './Canyon.js';
 import { Weather } from './Effects.js';
 import { RACE } from './config.js';
 import { GROUP } from './Vehicle.js';
@@ -98,6 +99,11 @@ export class Island {
       await progress(0.56, 'בונה את העיר…');
       this.city = new City(eng, terrain, track, st, this.materials);
       this.group.add(this.city.build());
+      await nextFrame();
+    }
+    if (st.gorge) {
+      await progress(0.56, 'מפסל קשתות סלע ונקיקים…');
+      this.group.add(new Canyon(eng, terrain, track, st, this.materials).build());
       await nextFrame();
     }
 

@@ -29,6 +29,7 @@ export class Track {
     this._buildProfile();
     this._buildField();
     this._racingLine();
+    if (stage.gorge) this._gorges(stage.gorge);
     this.heightModifier = (x, z, h) => this._heightModifier(x, z, h);
     this.splatModifier = (x, z, w, h) => this._splatModifier(x, z, w, h);
     this.clearance = (x, z) => {
@@ -319,6 +320,46 @@ export class Track {
     return { position: new THREE.Vector3(x + r.x * lat, y, z + r.z * lat), tangent: t, right: r, index: i };
   }
 
+  /**
+   * Gorge windows: the twistiest stretches of the lap (away from the start)
+   * get sheer rock walls a few metres past the barriers. `this.gorge[i]` is
+   * 0..1 per sample, eased in and out over 70 m.
+   */
+  _gorges({ count = 3, length = 380 }) {
+    const n = this.n;
+    const ds = this.ds;
+    const win = Math.round(length / ds);
+    const twist = new Float32Array(n);
+    let acc = 0;
+    for (let i = 0; i < win; i++) acc += Math.abs(this.kappa[i]);
+    for (let i = 0; i < n; i++) {
+      twist[(i + (win >> 1)) % n] = acc;
+      acc += Math.abs(this.kappa[(i + win) % n]) - Math.abs(this.kappa[i]);
+    }
+    const centres = [];
+    const startGap = 280 / ds + win / 2;
+    const gap = Math.max(win * 1.6, n / (count + 1.5));
+    const order = [...twist.keys()].sort((a, b) => twist[b] - twist[a]);
+    for (const c of order) {
+      if (centres.length >= count) break;
+      const fromStart = Math.min(c, n - c);
+      if (fromStart < startGap) continue;
+      if (centres.some((o) => Math.min(Math.abs(o - c), n - Math.abs(o - c)) < gap)) continue;
+      centres.push(c);
+    }
+    const g = new Float32Array(n);
+    const ease = 70 / ds;
+    for (const c of centres) {
+      for (let k = -win / 2 - ease; k <= win / 2 + ease; k++) {
+        const i = (Math.round(c + k) + n) % n;
+        const edge = win / 2 - Math.abs(k);
+        g[i] = Math.max(g[i], smoothstep(-ease, 0, edge));
+      }
+    }
+    this.gorge = g;
+    this.gorgeCentres = centres.sort((a, b) => a - b);
+  }
+
   _heightModifier(x, z, h) {
     const q = this.nearest(x, z, this._q);
     if (!q || q.dist > this.W + 70) return h;
@@ -332,7 +373,29 @@ export class Track {
     const inner = W + ((this.stage.cut ?? 1.35) < 1 ? 9 : 4.5);
     const diff = Math.abs(h - target);
     const k = smoothstep(inner, inner + 5 + diff * (this.stage.cut ?? 1.35), q.dist);
-    return target + (h - target) * k;
+    let out = target + (h - target) * k;
+    const g = this.gorge ? this.gorge[q.i] : 0;
+    if (g > 0.001) out = Math.max(out, this._gorgeWall(x, z, q, roadY, g));
+    return out;
+  }
+
+  /** Height of a gorge wall at (x, z): a sheer, ledged sandstone face that starts ~11 m past the edge. */
+  _gorgeWall(x, z, q, roadY, g) {
+    const G = this.stage.gorge;
+    const N = this.terrain.noise;
+    const W = this.W;
+    const n1 = N.noise(x * 0.011, z * 0.011);
+    const n2 = N.noise(x * 0.035 + 5.1, z * 0.035 - 2.3);
+    const inner = W + 10.5 + (n2 * 0.5 + 0.5) * 3;
+    const rise = smoothstep(inner, inner + 4.5, q.dist);
+    if (rise <= 0) return -Infinity;
+    const fall = 1 - smoothstep(W + 44, W + 69, q.dist);
+    let hw = (G.height || 34) * g * (0.72 + 0.4 * n1) * rise * fall;
+    // Ledges: the face climbs in sandstone steps.
+    const step = G.ledge || 6.5;
+    const f = hw / step;
+    hw = (Math.floor(f) + smoothstep(0.55, 1, f - Math.floor(f))) * step;
+    return roadY - 0.1 + hw;
   }
 
   _splatModifier(x, z, w) {
