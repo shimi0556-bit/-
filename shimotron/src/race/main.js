@@ -5,6 +5,7 @@ import { Materials } from '../engine/render/Materials.js';
 import { Water } from '../engine/world/Water.js';
 import { Particles } from '../engine/fx/Particles.js';
 import { AudioEngine } from '../engine/audio/AudioEngine.js';
+import { Music } from '../engine/audio/Music.js';
 import { Terrain } from '../engine/world/Terrain.js';
 import { smoothstep } from '../engine/core/Random.js';
 import { STAGES, AI, RACE, CAREER, PODIUM, CAR_TYPES } from './config.js';
@@ -47,6 +48,7 @@ const store = {
 class Game {
   constructor() {
     this.settings = { difficulty: 'normal', laps: RACE.laps, quality: null, sound: true, color: '#e0262b', camera: 0, car: 'gt', items: true, podium: true, ...store.get('settings', {}) };
+    this.settings.audio = { engine: true, music: true, sfx: true, ambience: true, ...(this.settings.audio || {}) };
     this.records = store.get('records', {});
     this.champ = store.get('champ', null);
     this.career = store.get('career', null);
@@ -143,6 +145,14 @@ class Game {
     };
     this._events();
     this._keys();
+    // Sound can only start after a gesture: the first click or key anywhere.
+    const first = () => {
+      this._audioReady();
+      window.removeEventListener('pointerdown', first);
+      window.removeEventListener('keydown', first);
+    };
+    window.addEventListener('pointerdown', first);
+    window.addEventListener('keydown', first);
 
     await this.loadIsland(this.selected, (p, t) => progress(0.2 + p * 0.72, t));
     await progress(0.94, 'מקמפל שיידרים…');
@@ -309,7 +319,7 @@ class Game {
 
   selectStage(i) {
     this.selected = i;
-    this.engine.audio.unlock();
+    this._audioReady();
     this.engine.audio.ui('click');
     // The island itself is built when the race starts; the card's map shows it meanwhile.
     this.ui.showMenu({ selected: this.selected, champ: this.champ });
@@ -416,7 +426,7 @@ class Game {
   /** Career ("מצב מתמשך"): money, a garage, surprises that carry over, islands that follow on by themselves. */
   startCareer() {
     this.mode = 'career';
-    this.engine.audio.unlock();
+    this._audioReady();
     if (!this.career) {
       this.career = { money: CAREER.startMoney, owned: ['gt'], car: 'gt', item: null, stage: 0, cycle: 0, races: 0, wins: 0, podiums: 0, earned: 0, series: { count: 0, points: {} } };
       store.set('career', this.career);
@@ -593,7 +603,7 @@ class Game {
     const eng = this.engine;
     this._endPodium();
     this.state = 'loading';
-    eng.audio.unlock();
+    this._audioReady();
     if (!this.carAudio && eng.audio.ctx) this.carAudio = new CarAudio(eng.audio);
     this.ui.clear();
     this.selected = index;
@@ -666,6 +676,35 @@ class Game {
     this.ui.showPause(true);
   }
 
+  /** Starts audio on the first gesture: mixer channels from the settings, and the music. */
+  _audioReady() {
+    const A = this.engine.audio;
+    A.unlock();
+    if (!A.ctx) return;
+    for (const [k, on] of Object.entries(this.settings.audio)) A.setBus(k, on);
+    if (!this.settings.sound) A.setEnabled(false);
+    if (!this.music) {
+      this.music = new Music(A);
+      this.music.play(this._musicStyle());
+    }
+  }
+
+  /** Which piece fits the moment: the island's own style in a race, a calm one elsewhere. */
+  _musicStyle() {
+    if (this.state === 'race' && this.stage) return this.stage.id;
+    return 'menu';
+  }
+
+  /** Mixer: turn one channel (engine, music, sfx, ambience) on or off. */
+  setAudio(name, on) {
+    this.settings.audio[name] = on;
+    store.set('settings', this.settings);
+    this._audioReady();
+    this.engine.audio.setBus(name, on);
+    if (this.state === 'menu') this.ui.showMenu({ selected: this.selected, champ: this.champ });
+    else if (this.paused) this.ui.showPause(true);
+  }
+
   /** Everything a Car needs from the world. */
   carContext(island) {
     const rg = island.stage.roadGrip || 1;
@@ -709,6 +748,7 @@ class Game {
     ev.on('race:lap', ({ lap, time, best }) => {
       const r = this.race;
       if (!r) return;
+      if (lap === r.laps - 1 && this.music) this.music.riser();
       const isBest = time <= best + 1e-6 && r.player.lapTimes.length > 1;
       const last = lap === r.laps - 1;
       this.ui.message(last ? 'הקפה אחרונה!' : `הקפה ${lap + 1}`, isBest ? 'gold' : '', `${Race.fmt(time)}${isBest ? ' · הקפה מהירה' : ''}`, 1600);
@@ -723,17 +763,17 @@ class Game {
     ev.on('item:get', ({ entry, kind }) => {
       if (!entry.isPlayer) return;
       const a = au();
-      if (a) [880, 1175, 1568].forEach((f, i) => a._tone(a.master, { freq: f, dur: 0.12, gain: 0.07, type: 'triangle', when: i * 0.06 }));
+      if (a) [880, 1175, 1568].forEach((f, i) => a._tone(a.sfx, { freq: f, dur: 0.12, gain: 0.07, type: 'triangle', when: i * 0.06 }));
       this.ui.toast(`קיבלת ${ITEMS[kind].name}!`, ITEMS[kind].color);
     });
     ev.on('item:use', ({ entry, kind }) => {
       const a = au();
       const near = entry.car.position.distanceTo(this.engine.camera.position) < 60;
       if (!a || !near) return;
-      if (kind === 'shots') a._burst(a.master, { dur: 0.18, freq: 700, q: 0.8, gain: 0.3 });
-      else if (kind === 'turbo') a._tone(a.master, { freq: 220, dur: 0.6, gain: 0.12, slide: 3, type: 'sawtooth' });
-      else if (kind === 'shield') a._tone(a.master, { freq: 520, dur: 0.5, gain: 0.08, slide: 2 });
-      else if (kind === 'mine') a._tone(a.master, { freq: 330, dur: 0.15, gain: 0.08, type: 'square' });
+      if (kind === 'shots') a._burst(a.sfx, { dur: 0.18, freq: 700, q: 0.8, gain: 0.3 });
+      else if (kind === 'turbo') a._tone(a.sfx, { freq: 220, dur: 0.6, gain: 0.12, slide: 3, type: 'sawtooth' });
+      else if (kind === 'shield') a._tone(a.sfx, { freq: 520, dur: 0.5, gain: 0.08, slide: 2 });
+      else if (kind === 'mine') a._tone(a.sfx, { freq: 330, dur: 0.15, gain: 0.08, type: 'square' });
       if (entry.isPlayer && kind === 'turbo') this.engine.events.emit('shake', { strength: 0.25 });
     });
     ev.on('item:hit', ({ entry, by, point }) => {
@@ -746,7 +786,7 @@ class Game {
     });
     ev.on('item:blocked', ({ entry, point }) => {
       const a = au();
-      if (a && point && point.distanceTo(this.engine.camera.position) < 80) a._tone(a.master, { freq: 1400, dur: 0.3, gain: 0.08, slide: 0.5 });
+      if (a && point && point.distanceTo(this.engine.camera.position) < 80) a._tone(a.sfx, { freq: 1400, dur: 0.3, gain: 0.08, slide: 0.5 });
       if (entry.isPlayer) this.ui.toast('המגן ספג את הפגיעה', ITEMS.shield.color);
     });
     ev.on('race:auto-respawn', () => this.ui.message('חוזרים למסלול', 'warn', 'המכונית נתקעה', 900));
@@ -776,7 +816,31 @@ class Game {
     });
   }
 
+  /** Keeps the music on the right piece and, in a race, running with the player's pace. */
+  _musicFrame() {
+    const M = this.music;
+    if (!M) return;
+    const want = this.state === 'race' || this.state === 'podium' ? (this.stage ? this.stage.id : 'menu') : 'menu';
+    M.setStyle(want);
+    const r = this.race;
+    if (this.state === 'podium') M.drive(0.9, 0.6);
+    else if (r && this.state === 'race') {
+      const P = r.player;
+      const car = P.car;
+      const top = car.spec.engine.topSpeed * 3.6;
+      const pace = Math.min(1, car.kmh / top);
+      const last = P.lap >= r.laps - 1 ? 0.14 : 0;
+      const nitro = car.vehicle.nitroActive ? 0.14 : 0;
+      if (car.vehicle.nitroActive && !this._nitroRiser) M.riser();
+      this._nitroRiser = car.vehicle.nitroActive;
+      if (r.state === 'countdown' || r.state === 'intro') M.drive(0.3, 0.1);
+      else if (r.state === 'done' || P.finished) M.drive(0.5, 0.3);
+      else M.drive(0.42 + pace * 0.34 + last + nitro, pace * 0.85 + last);
+    } else M.drive(this.state === 'garage' ? 0.42 : 0.3, 0.1);
+  }
+
   _frame(dt) {
+    this._musicFrame();
     const r = this.race;
     if (!r || this.state !== 'race') return;
     const I = this.engine.input;

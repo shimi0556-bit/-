@@ -15,7 +15,7 @@ export class CarAudio {
     const ctx = this.ctx;
     this.bus = ctx.createGain();
     this.bus.gain.value = 0.9;
-    this.bus.connect(audio.master);
+    this.bus.connect(audio.buses ? audio.buses.engine : audio.master);
   }
 
   _shaper(amount) {

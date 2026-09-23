@@ -1410,7 +1410,7 @@ export class City {
       f.frequency.value = 260;
       const g = ctx.createGain();
       g.gain.value = 0.07;
-      src.connect(f).connect(g).connect(A.master);
+      src.connect(f).connect(g).connect(A.buses.ambience);
       src.start();
       this.hum = { src, g };
       this.hornT = 2;
@@ -1422,7 +1422,7 @@ export class City {
       const pos = this.engine.camera.position.clone().add(new THREE.Vector3((Math.random() - 0.5) * 160, 0, (Math.random() - 0.5) * 160));
       const out = ctx.createGain();
       out.gain.value = 0.05;
-      out.connect(A._panner(pos, 10, 220)).connect(A.master);
+      out.connect(A._panner(pos, 10, 220)).connect(A.buses.ambience);
       const f0 = 330 + Math.random() * 120;
       const dur = 0.15 + Math.random() * 0.45;
       A._tone(out, { freq: f0, dur, gain: 0.5, type: 'square' });
@@ -1433,7 +1433,7 @@ export class City {
       this.sirenT = 18 + Math.random() * 25;
       const out = ctx.createGain();
       out.gain.value = 0.025;
-      out.connect(A.master);
+      out.connect(A.buses.ambience);
       for (let i = 0; i < 4; i++) A._tone(out, { freq: 620, dur: 0.7, gain: 1, type: 'sine', when: i * 0.75, slide: 1.4 });
     }
   }

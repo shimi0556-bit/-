@@ -15,6 +15,14 @@ export class AudioEngine {
     this._birdTimer = 2;
     this._lastImpact = 0;
     this.sources = []; // positional loops: { panner, gain, position }
+    this.busOn = { engine: true, music: true, sfx: true, ambience: true };
+  }
+
+  /** Turns one mixer channel on or off ('engine' | 'music' | 'sfx' | 'ambience'). */
+  setBus(name, on) {
+    this.busOn[name] = on;
+    const b = this.buses && this.buses[name];
+    if (b) b.gain.setTargetAtTime(on ? 1 : 0, this.ctx.currentTime, 0.08);
   }
 
   /** Must be called from a user gesture. */
@@ -38,6 +46,15 @@ export class AudioEngine {
     this.reverbSend = ctx.createGain();
     this.reverbSend.gain.value = 0.28;
     this.reverbSend.connect(this.reverb).connect(this.master);
+    // Mixer channels, each switchable on its own: engine, music, effects, ambience.
+    this.buses = {};
+    for (const name of ['engine', 'music', 'sfx', 'ambience']) {
+      const g = ctx.createGain();
+      g.gain.value = this.busOn[name] === false ? 0 : 1;
+      g.connect(this.master);
+      this.buses[name] = g;
+    }
+    this.sfx = this.buses.sfx;
     this.noise = this._noiseBuffer(4, 'pink');
     this.brown = this._noiseBuffer(4, 'brown');
     this._ambience();
@@ -110,7 +127,7 @@ export class AudioEngine {
     this.windFilter.Q.value = 0.6;
     this.windGain = ctx.createGain();
     this.windGain.gain.value = 0;
-    wind.connect(this.windFilter).connect(this.windGain).connect(this.master);
+    wind.connect(this.windFilter).connect(this.windGain).connect(this.buses.ambience);
     this.windGain.connect(this.reverbSend);
     // Surf: brown noise low-passed with a slow swell.
     const surf = this._loop(this.brown);
@@ -119,7 +136,7 @@ export class AudioEngine {
     this.surfFilter.frequency.value = 700;
     this.surfGain = ctx.createGain();
     this.surfGain.gain.value = 0;
-    surf.connect(this.surfFilter).connect(this.surfGain).connect(this.master);
+    surf.connect(this.surfFilter).connect(this.surfGain).connect(this.buses.ambience);
     // Crickets: amplitude-pulsed high sine pair.
     const osc = ctx.createOscillator();
     osc.frequency.value = 4400;
@@ -136,7 +153,7 @@ export class AudioEngine {
     am.connect(amGain).connect(cricketMix.gain);
     osc.connect(cricketMix);
     osc2.connect(cricketMix);
-    cricketMix.connect(this.cricketGain).connect(this.master);
+    cricketMix.connect(this.cricketGain).connect(this.buses.ambience);
     this.cricketGain.connect(this.reverbSend);
     osc.start();
     osc2.start();
@@ -157,7 +174,7 @@ export class AudioEngine {
     const roarGain = ctx.createGain();
     roarGain.gain.value = 0.5;
     roar.connect(lp).connect(roarGain).connect(g);
-    g.connect(panner).connect(this.master);
+    g.connect(panner).connect(this.buses.ambience);
     const handle = { panner, gain: g, position: position.clone(), crackle: 0 };
     this.sources.push(handle);
     return handle;
@@ -219,7 +236,7 @@ export class AudioEngine {
     const panner = this._panner(point, 3, 90);
     const out = this.ctx.createGain();
     out.gain.value = 0.25 + v * 0.9;
-    out.connect(panner).connect(this.master);
+    out.connect(panner).connect(this.sfx);
     out.connect(this.reverbSend);
     if (material === 'metal') {
       for (const f of [523, 1307, 2310, 3389]) this._tone(out, { freq: f * (0.95 + Math.random() * 0.1), dur: 0.9, gain: 0.06, type: 'sine' });
@@ -241,29 +258,29 @@ export class AudioEngine {
     if (!this.enabled || !this.ctx) return;
     const g = 0.12 + Math.min(speed, 9) * 0.015;
     const f = { grass: 900, stone: 1900, wood: 700, sand: 1200, water: 600 }[surface] || 1000;
-    this._burst(this.master, { dur: surface === 'water' ? 0.22 : 0.07, freq: f * (0.85 + Math.random() * 0.3), q: surface === 'stone' ? 2.5 : 0.9, gain: g });
-    if (surface === 'wood' || surface === 'stone') this._tone(this.master, { freq: surface === 'wood' ? 160 : 240, dur: 0.06, gain: g * 0.5, type: 'triangle' });
+    this._burst(this.sfx, { dur: surface === 'water' ? 0.22 : 0.07, freq: f * (0.85 + Math.random() * 0.3), q: surface === 'stone' ? 2.5 : 0.9, gain: g });
+    if (surface === 'wood' || surface === 'stone') this._tone(this.sfx, { freq: surface === 'wood' ? 160 : 240, dur: 0.06, gain: g * 0.5, type: 'triangle' });
   }
 
   ui(kind = 'click') {
     if (!this.enabled || !this.ctx) return;
-    if (kind === 'click') this._tone(this.master, { freq: 1800, dur: 0.05, gain: 0.05, type: 'triangle' });
+    if (kind === 'click') this._tone(this.sfx, { freq: 1800, dur: 0.05, gain: 0.05, type: 'triangle' });
     else if (kind === 'spawn') {
-      this._tone(this.master, { freq: 420, dur: 0.18, gain: 0.08, slide: 2.2 });
-      this._tone(this.master, { freq: 840, dur: 0.14, gain: 0.04, slide: 1.8, when: 0.03 });
+      this._tone(this.sfx, { freq: 420, dur: 0.18, gain: 0.08, slide: 2.2 });
+      this._tone(this.sfx, { freq: 840, dur: 0.14, gain: 0.04, slide: 1.8, when: 0.03 });
     } else if (kind === 'shoot') {
-      this._burst(this.master, { dur: 0.22, freq: 900, q: 0.7, gain: 0.35 });
-      this._tone(this.master, { freq: 220, dur: 0.2, gain: 0.15, slide: 0.4 });
-    } else if (kind === 'delete') this._tone(this.master, { freq: 600, dur: 0.16, gain: 0.07, slide: 0.4 });
+      this._burst(this.sfx, { dur: 0.22, freq: 900, q: 0.7, gain: 0.35 });
+      this._tone(this.sfx, { freq: 220, dur: 0.2, gain: 0.15, slide: 0.4 });
+    } else if (kind === 'delete') this._tone(this.sfx, { freq: 600, dur: 0.16, gain: 0.07, slide: 0.4 });
     else if (kind === 'buy') {
       // Cash register: two bright pings over a short rattle.
-      this._burst(this.master, { dur: 0.12, freq: 3200, q: 1.5, gain: 0.12 });
-      this._tone(this.master, { freq: 1320, dur: 0.12, gain: 0.07, type: 'triangle', when: 0.05 });
-      this._tone(this.master, { freq: 1980, dur: 0.3, gain: 0.07, type: 'triangle', when: 0.14 });
+      this._burst(this.sfx, { dur: 0.12, freq: 3200, q: 1.5, gain: 0.12 });
+      this._tone(this.sfx, { freq: 1320, dur: 0.12, gain: 0.07, type: 'triangle', when: 0.05 });
+      this._tone(this.sfx, { freq: 1980, dur: 0.3, gain: 0.07, type: 'triangle', when: 0.14 });
     }
     else if (kind === 'boom') {
-      this._burst(this.master, { dur: 1.2, freq: 180, q: 0.5, gain: 1, type: 'lowpass' });
-      this._tone(this.master, { freq: 70, dur: 1.0, gain: 0.5, slide: 0.35 });
+      this._burst(this.sfx, { dur: 1.2, freq: 180, q: 0.5, gain: 1, type: 'lowpass' });
+      this._tone(this.sfx, { freq: 70, dur: 1.0, gain: 0.5, slide: 0.35 });
     }
   }
 
@@ -273,7 +290,7 @@ export class AudioEngine {
     const panner = this._panner(pos, 6, 120);
     const g = ctx.createGain();
     g.gain.value = 0.12 * this.engine.atmosphere.dayFactor;
-    g.connect(panner).connect(this.master);
+    g.connect(panner).connect(this.buses.ambience);
     g.connect(this.reverbSend);
     const base = 2200 + Math.random() * 1800;
     const n = 2 + Math.floor(Math.random() * 4);

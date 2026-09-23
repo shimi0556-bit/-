@@ -478,8 +478,8 @@ export class Podium {
     if (a && a.enabled && a.ctx) {
       const d = at.distanceTo(this.engine.camera.position);
       const when = Math.min(0.6, d / 340);
-      a._burst(a.master, { dur: 0.9, freq: 150, q: 0.5, gain: 0.3, type: 'lowpass', when });
-      for (let i = 0; i < 5; i++) a._burst(a.master, { dur: 0.05, freq: 2500 + Math.random() * 2000, q: 1.2, gain: 0.05, when: when + 0.25 + i * 0.07 });
+      a._burst(a.sfx, { dur: 0.9, freq: 150, q: 0.5, gain: 0.3, type: 'lowpass', when });
+      for (let i = 0; i < 5; i++) a._burst(a.sfx, { dur: 0.05, freq: 2500 + Math.random() * 2000, q: 1.2, gain: 0.05, when: when + 0.25 + i * 0.07 });
     }
   }
 
@@ -488,7 +488,7 @@ export class Podium {
     if (!a || !a.enabled || !a.ctx) return;
     const out = a.ctx.createGain();
     out.gain.value = 0.9;
-    out.connect(a.master);
+    out.connect(a.buses.music);
     const notes = [
       [0, 392, 0.16],
       [0.18, 392, 0.16],
@@ -505,8 +505,8 @@ export class Podium {
     }
     for (const f of [262, 330, 392]) a._tone(out, { freq: f, dur: 1.4, gain: 0.035, type: 'triangle', when: 1.94 });
     // The crowd.
-    a._burst(a.master, { dur: 3.8, freq: 1300, q: 0.35, gain: 0.22, when: 0.3 });
-    a._burst(a.master, { dur: 3.2, freq: 700, q: 0.4, gain: 0.16, when: 1.6 });
+    a._burst(a.buses.ambience, { dur: 3.8, freq: 1300, q: 0.35, gain: 0.22, when: 0.3 });
+    a._burst(a.buses.ambience, { dur: 3.2, freq: 700, q: 0.4, gain: 0.16, when: 1.6 });
   }
 
   // ------------------------------------------------------------ run

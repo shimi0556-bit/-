@@ -159,6 +159,7 @@ export class RaceUI {
           h('label', { class: 'field' }, h('span', {}, 'הפתעות על המסלול'), h('div', { class: 'seg' }, [[true, 'כן'], [false, 'לא']].map(([v, l]) => segBtn('items', v, l)))),
           h('label', { class: 'field' }, h('span', {}, `במת מנצחים כל ${PODIUM.every} מירוצים`), h('div', { class: 'seg' }, [[true, 'כן'], [false, 'לא']].map(([v, l]) => segBtn('podium', v, l)))),
           h('label', { class: 'field' }, h('span', {}, 'הקפות'), h('div', { class: 'seg' }, [1, 2, 3, 5].map((n) => segBtn('laps', n, String(n))))),
+          this.mixer(),
           h('label', { class: 'field' }, h('span', {}, 'גרפיקה'), h('div', { class: 'seg' }, [['low', 'נמוכה'], ['medium', 'בינונית'], ['high', 'גבוהה'], ['ultra', 'אולטרה']].map(([k, l]) => segBtn('quality', k, l)))),
           h('label', { class: 'field' }, h('span', {}, 'צבע המכונית שלך'), h('div', { class: 'seg' }, ['#e0262b', '#ff7a1a', '#f2f2f2', '#141414', '#2f6bff'].map((c) => h('button', { type: 'button', 'aria-pressed': String(s.color === c), 'aria-label': c, onclick: () => g.setSetting('color', c), style: `width:40px` }, h('span', { style: `display:block;width:18px;height:18px;border-radius:50%;margin:auto;background:${c};border:1px solid rgba(255,255,255,.35)` }))))),
         ),
@@ -182,6 +183,28 @@ export class RaceUI {
     this.refreshPreviews();
     const first = cards[state.selected];
     if (first) first.focus({ preventScroll: true });
+  }
+
+  /** Sound mixer: each channel on or off. */
+  mixer() {
+    const g = this.game;
+    const a = g.settings.audio;
+    const chan = [
+      ['engine', 'מנוע'],
+      ['music', 'מוזיקה'],
+      ['sfx', 'אפקטים'],
+      ['ambience', 'סביבה'],
+    ];
+    return h(
+      'div',
+      { class: 'field' },
+      h('span', {}, 'קול'),
+      h(
+        'div',
+        { class: 'seg mixer', role: 'group', 'aria-label': 'ערוצי קול' },
+        chan.map(([k, l]) => h('button', { type: 'button', 'aria-pressed': String(a[k] !== false), onclick: () => g.setAudio(k, a[k] === false) }, a[k] === false ? `${l} ✕` : l)),
+      ),
+    );
   }
 
   /**
@@ -596,7 +619,8 @@ export class RaceUI {
           h('button', { class: 'btn primary big', type: 'button', onclick: () => g.pause(false) }, 'המשך'),
           h('button', { class: 'btn', type: 'button', onclick: () => g.restart() }, 'התחלה מחדש'),
           h('button', { class: 'btn', type: 'button', onclick: () => g.cycleCamera() }, 'החלפת מצלמה (C)'),
-          h('button', { class: 'btn', type: 'button', onclick: () => g.toggleSound() }, g.settings.sound ? 'השתקה' : 'הפעלת קול'),
+          h('button', { class: 'btn', type: 'button', onclick: () => g.toggleSound() }, g.settings.sound ? 'השתקת הכול' : 'הפעלת קול'),
+          this.mixer(),
           h('button', { class: 'btn', type: 'button', onclick: () => g.toMenu() }, 'לתפריט הראשי'),
         ),
       ),
