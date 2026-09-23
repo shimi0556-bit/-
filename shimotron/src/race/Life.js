@@ -797,7 +797,7 @@ export class Life {
       b.loop.curve.getTangentAt(b.u, tan).multiplyScalar(b.dir);
       const x = _p.x - tan.z * b.lat;
       const z = _p.z + tan.x * b.lat;
-      waveAt(x, z, t, amp, _w);
+      waveAt(x, z, t, amp, _w, -this.terrain.heightAt(x, z));
       const yaw = Math.atan2(tan.x, tan.z);
       for (const S of b.parts) {
         S.x = x + tan.x * S.off;

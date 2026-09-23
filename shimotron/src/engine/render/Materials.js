@@ -82,6 +82,7 @@ export class Materials {
       return this.textures;
     };
     t('smoke', { size: 128, kind: 'data', alpha: true });
+    t('spray', { size: 128, kind: 'data', alpha: true, seed: 4 });
     t('flame', { size: 128, kind: 'data', alpha: true });
     t('spark', { size: 64, kind: 'data', alpha: true });
 

@@ -8,7 +8,8 @@ import { fogUniforms } from '../render/HeightFog.js';
  * turbulence and optional velocity stretching (sparks).
  */
 export class ParticleSystem {
-  constructor(engine, { name, texture, max = 2000, additive = true, lit = false, stretch = 0, softness = 1 }) {
+  constructor(engine, { name, texture, max = 2000, additive = true, lit = false, stretch = 0, softness = 1, gain = 1 }) {
+    this.gain = gain; // brightness under the sky (white water is brighter than smoke)
     this.engine = engine;
     this.max = max;
     this.count = 0;
@@ -303,6 +304,10 @@ export class Particles {
       sparks: new ParticleSystem(engine, { name: 'ניצוצות', texture: T.spark, max: Math.round(1600 * q), additive: true, stretch: 0.045 }),
       glow: new ParticleSystem(engine, { name: 'זוהר', texture: T.softDot, max: Math.round(1400 * q), additive: true }),
       dust: new ParticleSystem(engine, { name: 'אבק', texture: T.smoke, max: Math.round(600 * q), additive: false, lit: true }),
+      // White water: bow spray, rooster tails and splashes.
+      spray: new ParticleSystem(engine, { name: 'רסס', texture: T.spray || T.smoke, max: Math.round(2400 * q), additive: false, lit: true, gain: 2.3 }),
+      // Rocket exhaust: the billowing clouds of a launch.
+      plume: new ParticleSystem(engine, { name: 'ענן שיגור', texture: T.smoke, max: Math.round(1800 * q), additive: false, lit: true }),
     };
     this.emitters = [];
     this.materials = materials;
@@ -367,7 +372,7 @@ export class Particles {
     lit.multiplyScalar(1 / Math.PI);
     const emissive = this.materials.emissiveScale || 1;
     for (const s of Object.values(this.systems)) {
-      if (s.lit) s.uniforms.uLight.value.copy(lit);
+      if (s.lit) s.uniforms.uLight.value.copy(lit).multiplyScalar(s.gain);
       else s.uniforms.uLight.value.setScalar(emissive * 0.25);
       s.update(dt, t);
     }

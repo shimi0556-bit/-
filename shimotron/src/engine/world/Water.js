@@ -12,11 +12,14 @@ const WAVES = [
  * The same Gerstner sum on the CPU: water height and surface slope at
  * (x, z), so boats, buoys and swimmers ride the waves the shader draws.
  */
-export function waveAt(x, z, time, amp = 1, out = { y: 0, dx: 0, dz: 0 }) {
+export function waveAt(x, z, time, amp = 1, out = { y: 0, dx: 0, dz: 0 }, depth = 40) {
   out.y = 0;
   out.dx = 0;
   out.dz = 0;
-  for (const [deg, len, steep, scale] of WAVES) {
+  const swell = deepSwell(depth);
+  for (let i = 0; i < WAVES.length; i++) {
+    const [deg, len, steep, scale0] = WAVES[i];
+    const scale = scale0 * (1 + swell * SWELL[i]) * shallowDamp(depth);
     const a0 = (deg * Math.PI) / 180;
     const k = (2 * Math.PI) / len;
     const c = Math.sqrt(9.81 / k);
@@ -30,6 +33,19 @@ export function waveAt(x, z, time, amp = 1, out = { y: 0, dx: 0, dz: 0 }) {
     out.dz += dz * slope;
   }
   return out;
+}
+
+/** How much each wave grows over deep water (the long swell most, the chop hardly). */
+const SWELL = [1.7, 1.1, 0.45, 0.15];
+/** 0 in the shallows → 1 over open, deep water (sea floor more than ~40 m down). */
+function deepSwell(depth) {
+  const t = Math.min(1, Math.max(0, (depth - 10) / 32));
+  return t * t * (3 - 2 * t);
+}
+/** Waves die down over the shallows (same curve as the shader). */
+function shallowDamp(depth) {
+  const t = Math.min(1, Math.max(0, depth / 5));
+  return t * t * (3 - 2 * t) * 0.85 + 0.15;
 }
 
 const DEEP = new THREE.DataTexture(new Float32Array([-40]), 1, 1, THREE.RedFormat, THREE.FloatType);
@@ -50,8 +66,9 @@ const GERSTNER = /* glsl */ `
 uniform float uTime;
 uniform vec4 uWaves[4];
 uniform float uWaveAmp;
-// Returns displacement; accumulates the analytic normal terms.
-vec3 gerstner(vec2 p, float damp, inout vec3 tang, inout vec3 bin) {
+uniform vec4 uSwell;
+// Returns displacement; accumulates the analytic normal terms. deep: 0..1 open-water swell.
+vec3 gerstner(vec2 p, float damp, float deep, inout vec3 tang, inout vec3 bin) {
   vec3 d = vec3(0.0);
   for (int i = 0; i < 4; i++) {
     vec4 w = uWaves[i];
@@ -59,7 +76,7 @@ vec3 gerstner(vec2 p, float damp, inout vec3 tang, inout vec3 bin) {
     float c = sqrt(9.81 / k);
     vec2 dir = vec2(cos(w.x), sin(w.x));
     float f = k * (dot(dir, p) - c * uTime);
-    float a = (w.z / k) * w.w * uWaveAmp * damp;
+    float a = (w.z / k) * w.w * uWaveAmp * damp * (1.0 + deep * uSwell[i]);
     float s = sin(f); float co = cos(f);
     d += vec3(dir.x * a * co, a * s, dir.y * a * co);
     tang += vec3(-dir.x * dir.x * a * k * s, dir.x * a * k * co, -dir.x * dir.y * a * k * s);
@@ -84,6 +101,7 @@ export class Water {
       uTime: { value: 0 },
       uWaves: { value: WAVES.map(([deg, len, steep, amp]) => new THREE.Vector4(THREE.MathUtils.degToRad(deg), len, steep, amp)) },
       uWaveAmp: { value: 1 },
+      uSwell: { value: new THREE.Vector4(...SWELL) },
       tHeight: { value: terrain.heightTexture },
       tNormal: { value: materials.textures.waterNormal },
       uTerrainSize: { value: terrain.size },
@@ -179,7 +197,7 @@ export class Water {
           float damp = smoothstep(0.0, 5.0, depth) * 0.85 + 0.15;
           float fade = 1.0 - smoothstep(600.0, 2200.0, length(wp0.xz - cameraPosition.xz));
           vec3 tg = vec3(1.0, 0.0, 0.0); vec3 bn = vec3(0.0, 0.0, 1.0);
-          vec3 disp = gerstner(wp0.xz, damp * fade, tg, bn);
+          vec3 disp = gerstner(wp0.xz, damp * fade, smoothstep(10.0, 42.0, depth), tg, bn);
           transformed += disp;
           vDepth = depth;
           vCrest = disp.y;`,
@@ -206,7 +224,7 @@ export class Water {
             float damp = smoothstep(0.0, 5.0, wDepth) * 0.85 + 0.15;
             float fade = 1.0 - smoothstep(300.0, 1600.0, dist);
             vec3 tg = vec3(1.0, 0.0, 0.0); vec3 bn = vec3(0.0, 0.0, 1.0);
-            gerstner(vWPos.xz, damp * fade, tg, bn);
+            gerstner(vWPos.xz, damp * fade, smoothstep(10.0, 42.0, max(0.0, -th)), tg, bn);
             vec3 n = normalize(cross(bn, tg));
             vec2 uv1 = vWPos.xz * 0.045 + vec2(uTime * 0.018, uTime * 0.011);
             vec2 uv2 = vWPos.xz * 0.11 + vec2(-uTime * 0.021, uTime * 0.027);

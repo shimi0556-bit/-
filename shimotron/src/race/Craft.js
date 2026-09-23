@@ -1,6 +1,5 @@
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { humanMerged, paintHuman, SKINS, HAIRS } from './Humans.js';
+import { buildCraft, designFor } from './CraftModels.js';
 
 /**
  * Racing craft for the races that are not on wheels: powerboats on the
@@ -28,234 +27,70 @@ const _v = new THREE.Vector3();
 const _n = new THREE.Vector3();
 const _edge = { lat: 0, lim: 0, rx: 0, rz: 0 };
 const _w = { y: 0, dx: 0, dz: 0 };
-const GEAR = 1.42; // plane: centre height above the wheels' contact
 const UP = new THREE.Vector3(0, 1, 0);
 
-/** Flat-coloured, non-indexed copy (so many parts merge into one mesh). */
-function paint(g, hex) {
-  g = g.index ? g.toNonIndexed() : g;
-  if (g.attributes.uv) g.deleteAttribute('uv');
-  const c = new THREE.Color(hex);
-  const a = new Float32Array(g.attributes.position.count * 3);
-  for (let i = 0; i < a.length; i += 3) c.toArray(a, i);
-  g.setAttribute('color', new THREE.BufferAttribute(a, 3));
-  return g;
-}
-
-function pilot(suit, seed, { helmet = 0xf2f2f2 } = {}) {
-  const g = paintHuman(humanMerged({ hair: 'cap' }), { skin: SKINS[seed % SKINS.length], shirt: suit, pants: suit, hair: helmet, shoes: 0x1b1b1e });
-  g.deleteAttribute('aPart');
-  g.deleteAttribute('aLimb');
-  return g;
-}
-
-// ------------------------------------------------------------------ models
-
-function boatModel(color, stripe, seed) {
-  // Lofted deep-V hull: cross-sections from the transom to a sharp, raised bow.
-  const stations = [
-    // z, half-beam at the deck, deck height, chine half-width, chine height, keel depth
-    [-4.2, 1.2, 0.55, 1.1, -0.1, -0.45],
-    [-2.5, 1.26, 0.55, 1.12, -0.12, -0.5],
-    [-0.5, 1.26, 0.58, 1.08, -0.12, -0.52],
-    [1.5, 1.12, 0.64, 0.88, -0.08, -0.48],
-    [3.0, 0.8, 0.74, 0.55, 0.02, -0.35],
-    [4.0, 0.42, 0.84, 0.22, 0.2, -0.1],
-    [4.6, 0.04, 0.95, 0.02, 0.5, 0.35],
-  ];
-  const ring = ([z, bw, dh, cw, ch, kd]) => [
-    [bw, dh],
-    [cw, ch],
-    [0, kd],
-    [-cw, ch],
-    [-bw, dh],
-  ].map(([x, y]) => new THREE.Vector3(x, y, z));
-  const rings = stations.map(ring);
-  const pos = [];
-  const col = [];
-  const cTop = new THREE.Color(color);
-  const cBand = new THREE.Color(stripe);
-  const cBottom = new THREE.Color(0xf0f0ee);
-  const quad = (a, b, c, d, cc) => {
-    pos.push(a.x, a.y, a.z, c.x, c.y, c.z, b.x, b.y, b.z, b.x, b.y, b.z, c.x, c.y, c.z, d.x, d.y, d.z);
-    for (let k = 0; k < 6; k++) col.push(cc.r, cc.g, cc.b);
+/** Materials shared by every craft (vertex colours carry the liveries). */
+const MATS = new WeakMap();
+function craftMaterials(engine) {
+  if (MATS.has(engine)) return MATS.get(engine);
+  const body = new THREE.MeshPhysicalMaterial({ name: 'צבע', vertexColors: true, roughness: 0.3, metalness: 0.25, clearcoat: 0.9, clearcoatRoughness: 0.12 });
+  const matte = new THREE.MeshStandardMaterial({ name: 'גומי ובד', vertexColors: true, roughness: 0.78, metalness: 0.02 });
+  const metal = new THREE.MeshStandardMaterial({ name: 'מתכת', vertexColors: true, roughness: 0.28, metalness: 0.85 });
+  const glass = new THREE.MeshPhysicalMaterial({ name: 'זכוכית', color: 0xa8c8dc, transparent: true, opacity: 0.24, roughness: 0.03, metalness: 0.1, side: THREE.DoubleSide, depthWrite: false, envMapIntensity: 1.6 });
+  const pilot = new THREE.MeshStandardMaterial({ name: 'טייס', vertexColors: true, roughness: 0.6, metalness: 0.05 });
+  // Lit instruments and lamps: the vertex colour is the light they give.
+  const glow = new THREE.MeshStandardMaterial({ name: 'מכשירים', color: 0x050505, emissive: 0xffffff, emissiveIntensity: 1, vertexColors: true, roughness: 0.4 });
+  glow.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n  totalEmissiveRadiance *= vColor.rgb;');
   };
-  for (let i = 0; i < rings.length - 1; i++) {
-    const A = rings[i];
-    const B = rings[i + 1];
-    for (let k = 0; k < 4; k++) quad(A[k], A[k + 1], B[k], B[k + 1], k === 0 || k === 3 ? (i < 3 ? cBand : cTop) : cBottom);
-    // Deck.
-    quad(A[4], A[0], B[4], B[0], cTop);
-  }
-  // Transom.
-  const T = rings[0];
-  for (const [a, b, c] of [[0, 1, 2], [0, 2, 4], [2, 3, 4]]) {
-    pos.push(T[a].x, T[a].y, T[a].z, T[b].x, T[b].y, T[b].z, T[c].x, T[c].y, T[c].z);
-    for (let k = 0; k < 3; k++) col.push(cBand.r, cBand.g, cBand.b);
-  }
-  const hull = new THREE.BufferGeometry();
-  hull.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  hull.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  hull.computeVertexNormals();
-  const parts = [
-    hull,
-    paint(new THREE.BoxGeometry(1.7, 0.12, 2.3).translate(0, 0.52, -1.3), 0x3a3f47), // cockpit floor
-    paint(new THREE.BoxGeometry(1.9, 0.3, 0.12).translate(0, 0.72, -2.45), 0xe8e6e0), // seat back bench
-    paint(new THREE.BoxGeometry(1.8, 0.42, 0.06).rotateX(-0.6).translate(0, 0.86, 0.1), 0xa8d8ff), // windscreen
-    paint(new THREE.CapsuleGeometry(0.24, 0.3, 4, 8).scale(1, 1, 1.4).translate(0, 0.85, -4.4), 0x33383f), // outboard cowling
-    paint(new THREE.BoxGeometry(0.12, 0.8, 0.2).translate(0, 0.25, -4.45), 0x33383f), // leg
-    pilot(color, seed).scale(0.9, 0.9, 0.9).translate(0, -0.05, -1.6),
-  ];
-  return mergeGeometries(parts);
-}
-
-function subModel(color, stripe, seed) {
-  const body = new THREE.CapsuleGeometry(1.05, 4.6, 6, 14).rotateX(Math.PI / 2);
-  const g = paint(body, color);
-  // Darker belly band.
-  const pos = g.attributes.position;
-  const col = g.attributes.color;
-  const band = new THREE.Color(stripe);
-  for (let i = 0; i < pos.count; i++) if (pos.getY(i) < -0.35) band.toArray(col.array, i * 3);
-  const parts = [
-    g,
-    paint(new THREE.CapsuleGeometry(0.45, 1.2, 4, 10).rotateX(Math.PI / 2).scale(1, 1.4, 1).translate(0, 1.05, 0.4), color), // sail
-    paint(new THREE.SphereGeometry(0.62, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2).rotateX(Math.PI / 2).translate(0, 0.1, 3.25), 0x9fe6ff), // dome window
-    paint(new THREE.BoxGeometry(3.2, 0.08, 0.7).translate(0, 0.9, 0.5), color), // sail planes
-    paint(new THREE.BoxGeometry(2.8, 0.1, 0.8).translate(0, 0, -2.8), stripe), // stern planes
-    paint(new THREE.BoxGeometry(0.1, 2.0, 0.8).translate(0, 0, -2.8), stripe), // rudder
-    paint(new THREE.CylinderGeometry(0.34, 0.2, 0.5, 10).rotateX(Math.PI / 2).translate(0, 0, -3.6), 0x2a2d33), // shroud
-    paint(new THREE.CylinderGeometry(0.15, 0.15, 0.14, 8).rotateX(Math.PI / 2).translate(0.55, -0.55, 2.7), 0xfff4c8), // lamps
-    paint(new THREE.CylinderGeometry(0.15, 0.15, 0.14, 8).rotateX(Math.PI / 2).translate(-0.55, -0.55, 2.7), 0xfff4c8),
-    pilot(stripe, seed).scale(0.6, 0.6, 0.6).translate(0, -0.55, 2.55),
-  ];
-  return mergeGeometries(parts);
-}
-
-function planeModel(color, stripe, seed) {
-  const prof = [
-    [0.02, 3.6],
-    [0.35, 3.4],
-    [0.55, 2.8],
-    [0.62, 1.6],
-    [0.58, 0.0],
-    [0.42, -2.0],
-    [0.2, -3.8],
-    [0.05, -4.3],
-  ].map(([r, z]) => new THREE.Vector2(r, z));
-  const fus = new THREE.LatheGeometry(prof, 12).rotateX(Math.PI / 2).rotateX(Math.PI);
-  const wing = new THREE.BoxGeometry(8.6, 0.16, 1.5);
-  const wp = wing.attributes.position;
-  for (let i = 0; i < wp.count; i++) {
-    const x = wp.getX(i);
-    const t = Math.abs(x) / 4.3;
-    wp.setZ(i, wp.getZ(i) * (1 - t * 0.45) - t * 0.25);
-    wp.setY(i, wp.getY(i) + t * 0.25);
-  }
-  wing.computeVertexNormals();
-  const tipL = new THREE.BoxGeometry(0.9, 0.17, 0.9).translate(3.9, 0.25, 0.1);
-  const tipR = new THREE.BoxGeometry(0.9, 0.17, 0.9).translate(-3.9, 0.25, 0.1);
-  const parts = [
-    paint(fus, color),
-    paint(wing.translate(0, -0.2, 0.9), color),
-    paint(tipL, stripe),
-    paint(tipR, stripe),
-    paint(new THREE.BoxGeometry(3.0, 0.12, 0.9).translate(0, 0.25, -3.6), color), // tailplane
-    paint(new THREE.BoxGeometry(0.12, 1.4, 1.1).translate(0, 0.9, -3.7), stripe), // fin
-    paint(new THREE.SphereGeometry(0.5, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2).scale(0.9, 0.9, 1.9).translate(0, 0.45, 0.4), 0x243447), // canopy
-    paint(new THREE.ConeGeometry(0.28, 0.6, 10).rotateX(Math.PI / 2).translate(0, 0, 3.9), 0xdddddd), // spinner
-    paint(new THREE.BoxGeometry(0.15, 0.7, 0.15).translate(0.9, -0.75, 1.5), 0x333333), // gear legs
-    paint(new THREE.BoxGeometry(0.15, 0.7, 0.15).translate(-0.9, -0.75, 1.5), 0x333333),
-    paint(new THREE.CylinderGeometry(0.28, 0.28, 0.18, 10).rotateZ(Math.PI / 2).translate(0.9, -1.1, 1.5), 0x151515),
-    paint(new THREE.CylinderGeometry(0.28, 0.28, 0.18, 10).rotateZ(Math.PI / 2).translate(-0.9, -1.1, 1.5), 0x151515),
-    pilot(stripe, seed).scale(0.55, 0.55, 0.55).translate(0, -0.3, 0.35),
-  ];
-  return mergeGeometries(parts);
-}
-
-function gliderModel(color, stripe, seed) {
-  // Canopy: an arc of cells, alternating colours, a few metres above the pilot.
-  const parts = [];
-  const cells = 13;
-  const span = 10.5;
-  const R = span / 2 / Math.sin(0.95);
-  for (let k = 0; k < cells; k++) {
-    const t = (k + 0.5) / cells - 0.5;
-    const a = t * 1.9;
-    const w = (span / cells) * 1.08;
-    const chord = 2.6 * (1 - Math.abs(t) * 0.7);
-    const cell = new THREE.BoxGeometry(w, 0.32, chord, 1, 1, 2);
-    const cp = cell.attributes.position;
-    for (let i = 0; i < cp.count; i++) cp.setY(i, cp.getY(i) + (cp.getZ(i) > 0 ? 0.1 : -0.05) * (1 - Math.abs(cp.getZ(i)) / chord));
-    cell.computeVertexNormals();
-    cell.rotateZ(-a);
-    cell.translate(Math.sin(a) * R, 7.4 - (1 - Math.cos(a)) * R, 0);
-    parts.push(paint(cell, k % 3 === 1 ? stripe : k % 3 === 2 ? 0xf2f2f2 : color));
-  }
-  // Harness pod and pilot sitting in it, legs forward.
-  parts.push(paint(new THREE.CapsuleGeometry(0.3, 1.0, 4, 8).rotateX(Math.PI / 2 - 0.3).translate(0, -0.1, 0.25), 0x1d2229));
-  const p = pilot(color, seed);
-  p.rotateX(-0.5);
-  parts.push(p.translate(0, -0.55, -0.1));
-  return mergeGeometries(parts);
-}
-
-function shipModel(color, stripe, seed) {
-  const prof = [
-    [0.02, 5.2],
-    [0.45, 4.6],
-    [0.9, 3.0],
-    [1.15, 0.8],
-    [1.2, -1.5],
-    [1.05, -3.6],
-    [0.85, -4.4],
-  ].map(([r, z]) => new THREE.Vector2(r, z));
-  const body = new THREE.LatheGeometry(prof, 14).rotateX(Math.PI / 2).rotateX(Math.PI);
-  body.scale(1, 0.62, 1);
-  const tri = (pts, c) => {
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-    g.computeVertexNormals();
-    return paint(g, c);
+  glow.customProgramCacheKey = () => 'craft-glow';
+  engine.materials.trackEmissive(glow, 1.4);
+  // Sail cloth: ripstop weave, darker seams between the cells, a glow of light through it.
+  const fabric = new THREE.MeshStandardMaterial({ name: 'בד מצנח', vertexColors: true, roughness: 0.62, side: THREE.DoubleSide });
+  fabric.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 aFab; varying vec2 vFab;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvFab = aFab;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying vec2 vFab;')
+      .replace(
+        '#include <color_fragment>',
+        `#include <color_fragment>
+        float seam = smoothstep(0.0, 0.05, vFab.x) * smoothstep(1.0, 0.95, vFab.x);
+        diffuseColor.rgb *= 0.72 + 0.28 * seam;
+        vec2 rip = fract(vFab * vec2(9.0, 70.0));
+        diffuseColor.rgb *= 1.0 - 0.07 * step(0.9, max(rip.x, rip.y));
+        diffuseColor.rgb *= 0.9 + 0.1 * smoothstep(0.0, 0.3, vFab.y);`,
+      )
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n  totalEmissiveRadiance += diffuseColor.rgb * 0.16;');
   };
-  const wing = (s) => {
-    // Swept delta: root chord along the body, tip well back and out; top and bottom faces.
-    const a = [s * 0.9, 0, 2.2];
-    const b = [s * 5.6, -0.25, -3.2];
-    const c = [s * 0.9, 0, -3.8];
-    const top = s > 0 ? [...a, ...c, ...b] : [...a, ...b, ...c];
-    const bot = s > 0 ? [...a, ...b, ...c] : [...a, ...c, ...b];
-    return [tri(top.map((v, i) => (i % 3 === 1 ? v + 0.08 : v)), color), tri(bot.map((v, i) => (i % 3 === 1 ? v - 0.08 : v)), stripe)];
-  };
-  const parts = [
-    paint(body, color),
-    ...wing(1),
-    ...wing(-1),
-    paint(new THREE.BoxGeometry(0.12, 1.6, 1.8).rotateZ(0.35).translate(0.9, 0.9, -3.2), stripe), // twin fins
-    paint(new THREE.BoxGeometry(0.12, 1.6, 1.8).rotateZ(-0.35).translate(-0.9, 0.9, -3.2), stripe),
-    paint(new THREE.CylinderGeometry(0.62, 0.7, 3.4, 12).rotateX(Math.PI / 2).translate(1.5, -0.1, -2.6), 0x3a3e45), // nacelles
-    paint(new THREE.CylinderGeometry(0.62, 0.7, 3.4, 12).rotateX(Math.PI / 2).translate(-1.5, -0.1, -2.6), 0x3a3e45),
-    paint(new THREE.SphereGeometry(0.62, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2).scale(0.9, 0.8, 2.2).translate(0, 0.52, 1.6), 0x16283a), // canopy
-    paint(new THREE.BoxGeometry(2.2, 0.06, 0.4).translate(0, 0.45, -0.6), stripe),
-  ];
-  return mergeGeometries(parts);
-}
-
-function gliderLines() {
-  const pts = [];
-  const cells = 7;
-  const span = 10.5;
-  const R = span / 2 / Math.sin(0.95);
-  for (let k = 0; k <= cells; k++) {
-    const t = k / cells - 0.5;
-    const a = t * 1.9;
-    const x = Math.sin(a) * R;
-    const y = 7.4 - (1 - Math.cos(a)) * R - 0.2;
-    for (const z of [0.7, -0.6]) pts.push(Math.sign(x) * 0.25, 0.9, 0, x, y, z);
-  }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-  return g;
+  fabric.customProgramCacheKey = () => 'craft-fabric';
+  const lines = new THREE.LineBasicMaterial({ color: 0x2a2a2a, transparent: true, opacity: 0.8 });
+  const wakeGeo = new THREE.BufferGeometry();
+  wakeGeo.setAttribute('position', new THREE.Float32BufferAttribute([-1, 0, 0, 1, 0, 0, -7, 0, -30, 1, 0, 0, 7, 0, -30, -7, 0, -30, -1, 0, 0, 1, 0, 0, 0, 0, -26, -1.2, 0, 0.8, 1.2, 0, 0.8, -1, 0, 0, 1.2, 0, 0.8, 1, 0, 0, -1, 0, 0], 3));
+  wakeGeo.setAttribute('uv', new THREE.Float32BufferAttribute([0.4, 0, 0.6, 0, 0, 1, 0.6, 0, 1, 1, 0, 1, 0.45, 0, 0.55, 0, 0.5, 0.9, 0.4, 0, 0.6, 0, 0.4, 0, 0.6, 0, 0.6, 0, 0.4, 0], 2));
+  const wake = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    uniforms: { uTime: { value: 0 } },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: `uniform float uTime; varying vec2 vUv;
+      float h(vec2 p){ return fract(sin(dot(p, vec2(12.9, 78.2))) * 43758.5); }
+      float n(vec2 p){ vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + vec2(1, 1)), f.x), f.y); }
+      void main(){
+        float edge = 1.0 - smoothstep(0.0, 0.2, min(abs(vUv.x - 0.06), abs(vUv.x - 0.94)));
+        float mid = 1.0 - smoothstep(0.0, 0.12, abs(vUv.x - 0.5));
+        float foam = smoothstep(0.35, 0.8, n(vUv * vec2(26.0, 40.0) + vec2(0.0, uTime * 3.0)));
+        float a = (1.0 - vUv.y) * (0.3 + 0.6 * foam) * max(0.4 * edge, mid * 0.9 + 0.25);
+        gl_FragColor = vec4(vec3(0.96), a * 0.75);
+      }`,
+  });
+  // Seen from inside, a canopy is barely there: a faint, clear version for the cockpit view.
+  const glassInside = new THREE.MeshPhysicalMaterial({ name: 'זכוכית מבפנים', color: 0xd8e8f0, transparent: true, opacity: 0.07, roughness: 0.02, metalness: 0, side: THREE.DoubleSide, depthWrite: false, envMapIntensity: 0.4 });
+  const m = { body, matte, metal, glass, glassInside, pilot, glow, fabric, lines, wake, wakeGeo };
+  // Keep the foam moving.
+  engine.events.on('frame', () => (wake.uniforms.uTime.value = engine.time.elapsed));
+  MATS.set(engine, m);
+  return m;
 }
 
 /**
@@ -323,36 +158,58 @@ export class Craft {
       upsideDown: 0,
     };
     const seed = opts.seed || 1;
-    const geo = { boat: boatModel, sub: subModel, plane: planeModel, glider: gliderModel, space: shipModel }[this.kind](opts.color, opts.stripe || '#111111', seed);
-    this.mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.42, metalness: 0.15, side: this.kind === 'glider' ? THREE.DoubleSide : THREE.FrontSide });
+    this.design = opts.design || designFor(this.kind, seed);
+    const parts = buildCraft(this.design, opts.color, opts.stripe || '#111111', seed);
+    this.parts = parts;
+    const M = craftMaterials(env.engine);
+    this.mats = M;
     this.object = new THREE.Group();
     this.object.name = `${this.spec.short}: ${opts.name}`;
-    const mesh = new THREE.Mesh(geo, this.mat);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    this.object.add(mesh);
-    if (this.kind === 'glider') this.object.add(new THREE.LineSegments(gliderLines(), new THREE.LineBasicMaterial({ color: 0x333333 })));
-    if (this.kind === 'plane') {
-      // Propeller disc: a faint blur that spins.
-      const disc = new THREE.Mesh(new THREE.CircleGeometry(1.25, 20), new THREE.MeshBasicMaterial({ color: 0x222222, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false }));
-      disc.position.z = 4.15;
-      this.prop = disc;
-      this.object.add(disc);
+    for (const key of ['body', 'matte', 'metal', 'pilot', 'fabric', 'glow', 'glass']) {
+      if (!parts[key]) continue;
+      const mesh = new THREE.Mesh(parts[key], M[key]);
+      mesh.castShadow = key !== 'glass' && key !== 'glow';
+      mesh.receiveShadow = key !== 'glass';
+      if (key === 'glass') mesh.renderOrder = 8;
+      this.object.add(mesh);
+      if (key === 'pilot') this.pilotMesh = mesh;
+      if (key === 'glass') this.glassMesh = mesh;
     }
-    if (this.kind === 'space') {
-      // Engine glow: two hot discs and flame cones that grow with thrust.
-      const glow = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0x7fb8ff, emissiveIntensity: 1 });
+    if (parts.lines) this.object.add(new THREE.LineSegments(parts.lines, M.lines));
+    this.cockpit = { eye: new THREE.Vector3(...parts.eye), nose: new THREE.Vector3(...parts.nose) };
+    this.gear = parts.gear || 1.42;
+    this.tailSit = parts.tailSit || 0;
+    // Propeller discs: faint blurs that spin.
+    this.props = (parts.props || []).map((P) => {
+      const disc = new THREE.Mesh(new THREE.CircleGeometry(P.r, 24), new THREE.MeshBasicMaterial({ color: 0x222222, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false }));
+      disc.position.set(...P.pos);
+      this.object.add(disc);
+      return disc;
+    });
+    this.prop = this.props[0] || null;
+    if (this.kind === 'boat') {
+      // A V of foam trailing on the water (not part of the hull: it stays flat).
+      this.wake = new THREE.Mesh(M.wakeGeo, M.wake);
+      this.wake.renderOrder = 6;
+      this.wake.frustumCulled = false;
+      this.wake.userData.noPick = true;
+      env.engine.scene.add(this.wake);
+    }
+    if (parts.jets) {
+      // Engine glow: hot discs and flame cones that grow with thrust.
+      const hot = parts.jets[0].color || 0x7fb8ff;
+      const glow = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: hot, emissiveIntensity: 1 });
       env.engine.materials.trackEmissive(glow, 8);
       this.glowMat = glow;
-      const cone = new THREE.MeshBasicMaterial({ color: 0x6fa8ff, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false });
+      const cone = new THREE.MeshBasicMaterial({ color: hot === 0x7fb8ff ? 0x6fa8ff : 0xff9a50, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false });
       this.coneMat = cone;
       this.flames = [];
-      for (const x of [1.5, -1.5]) {
-        const disc = new THREE.Mesh(new THREE.CircleGeometry(0.55, 14), glow);
-        disc.position.set(x, -0.1, -4.32);
+      for (const J of parts.jets) {
+        const disc = new THREE.Mesh(new THREE.CircleGeometry(J.r * 1.05, 16), glow);
+        disc.position.set(J.pos[0], J.pos[1], J.pos[2] + 0.02);
         disc.rotation.y = Math.PI;
-        const f = new THREE.Mesh(new THREE.ConeGeometry(0.5, 3, 12, 1, true).rotateX(-Math.PI / 2).translate(0, 0, -1.5), cone);
-        f.position.set(x, -0.1, -4.35);
+        const f = new THREE.Mesh(new THREE.ConeGeometry(J.r * 0.9, J.r * 6, 12, 1, true).rotateX(-Math.PI / 2).translate(0, 0, -J.r * 3), cone);
+        f.position.set(...J.pos);
         this.object.add(disc, f);
         this.flames.push(f);
       }
@@ -360,6 +217,13 @@ export class Craft {
     this.object.traverse((o) => (o.userData.noPick = true));
     env.engine.scene.add(this.object);
     this.place(opts.position, opts.heading || 0);
+  }
+
+  /** Camera view changed: in the cockpit the driver is you, so their figure goes. */
+  setView(id) {
+    const inside = id === 'hood';
+    if (this.pilotMesh) this.pilotMesh.visible = !inside;
+    if (this.glassMesh) this.glassMesh.material = inside ? this.mats.glassInside : this.mats.glass;
   }
 
   get kmh() {
@@ -385,7 +249,7 @@ export class Craft {
   /** Parked on the road with the engine running (planes): throttle to roll, Space to lift off. */
   park(road) {
     this.grounded = true;
-    this.position.y = road + GEAR;
+    this.position.y = road + this.gear;
     this.speed = 0;
     this.velocity.set(0, 0, 0);
     this.pitch = 0;
@@ -461,15 +325,24 @@ export class Craft {
     this.velocity.z += (this.forward.z * this.speed - this.velocity.z) * k;
     this.position.x += this.velocity.x * dt;
     this.position.z += this.velocity.z * dt;
-    // Riding the swell: a spring towards the wave surface lets it skip off crests.
+    // Riding the swell: buoyancy only while the hull is in the water, so a
+    // fast boat meeting a rising crest is thrown up and flies off the top.
     this.env.wave(this.position.x, this.position.z, _w);
     const rest = _w.y + 0.05 + Math.min(0.35, Math.abs(this.speed) * 0.012);
-    this.vy += ((rest - this.position.y) * 38 - this.vy * 7) * dt;
-    if (this.position.y > rest + 0.05) this.vy -= 9.81 * dt * 0.6;
+    const sub = rest - this.position.y;
+    const wet = sub > -0.08;
+    if (wet) this.vy += (sub * 40 - this.vy * 6.5) * dt;
+    this.vy -= 9.81 * dt * (wet ? 0.3 : 1);
     this.position.y += this.vy * dt;
-    if (this.position.y < rest - 0.4) {
-      this.position.y = rest - 0.4;
+    if (this.position.y < rest - 0.45) {
+      this.position.y = rest - 0.45;
       this.vy = Math.max(0, this.vy);
+    }
+    // Airborne time, and the slam when the hull comes back down.
+    if (!wet) this.airT = (this.airT || 0) + dt;
+    else {
+      if ((this.airT || 0) > 0.18 && this.vy < -1.5) this.landing = Math.max(this.landing || 0, Math.min(1.5, -this.vy / 7 + this.airT * 0.6));
+      this.airT = 0;
     }
     this.wave = { dx: _w.dx, dz: _w.dz };
     this.bankTarget = C.steer * eff * 0.2 * clamp(this.speed / 12, 0, 1);
@@ -538,7 +411,7 @@ export class Craft {
     const g = Math.max(0, this.env.ground(this.position.x, this.position.z));
     const road = this.env.road ? this.env.road(this.position.x, this.position.z) : null;
     // Over the asphalt: a gentle, wings-level descent touches down instead of crashing.
-    if (road !== null && this.position.y < road + GEAR + 0.4 && this.position.y > road - 1.5) {
+    if (road !== null && this.position.y < road + this.gear + 0.4 && this.position.y > road - 1.5) {
       if (this.pitch > -0.45 && Math.abs(this.bank) < 0.55) return this._touchDown(road);
       return this._crash();
     }
@@ -550,7 +423,7 @@ export class Craft {
   _touchDown(road) {
     const hard = Math.max(0, -this.forward.y * this.speed);
     this.grounded = true;
-    this.position.y = road + GEAR;
+    this.position.y = road + this.gear;
     this.pitch = 0;
     this.bank = 0;
     this.hit = Math.min(1, 0.15 + hard / 14);
@@ -583,7 +456,9 @@ export class Craft {
     const fz = Math.cos(this.yaw);
     const ahead = this.env.road ? this.env.road(x0 + fx * 3, z0 + fz * 3) : null;
     const lift = (C.up || 0) > 0.3 && this.speed > K.min * 0.85;
-    this.pitch = lift ? 0.2 : ahead !== null && road !== null ? Math.atan2(ahead - road, 3) : 0;
+    // Taildraggers sit nose-high until the tail lifts with speed.
+    const sit = this.tailSit * (1 - clamp(this.speed / (K.min * 0.65), 0, 1));
+    this.pitch = lift ? 0.2 : (ahead !== null && road !== null ? Math.atan2(ahead - road, 3) : 0) + sit;
     this._fwd();
     this.velocity.copy(this.forward).multiplyScalar(this.speed);
     this.position.x += this.velocity.x * dt;
@@ -592,11 +467,11 @@ export class Craft {
     if (lift) {
       // Rotate and climb away.
       this.grounded = false;
-      this.position.y = surf + GEAR + 0.6;
+      this.position.y = surf + this.gear + 0.6;
       this.speed = Math.max(this.speed, K.min);
       return;
     }
-    const y = Math.max(surf, road === null ? 0 : -Infinity) + GEAR;
+    const y = Math.max(surf, road === null ? 0 : -Infinity) + this.gear;
     if (road === null && g < 0.2) return this._crash(); // rolled off into the sea
     if (y < this.position.y - 2.5 && this.speed > K.min * 0.8) {
       // Ran off a drop fast enough: airborne again.
@@ -851,15 +726,128 @@ export class Craft {
       const fz = Math.cos(this.yaw);
       const along = this.wave.dx * fx + this.wave.dz * fz;
       const across = this.wave.dx * -fz + this.wave.dz * fx;
-      _e.set(-(Math.atan(along) + Math.min(0.09, Math.abs(this.speed) * 0.004)), this.yaw, -Math.atan(across) + this.bank, 'YXZ');
+      // In the air the bow rises on the way up and drops on the way down.
+      const air = clamp((this.airT || 0) / 0.25, 0, 1);
+      this.airPitch = (this.airPitch || 0) + (clamp(this.vy * 0.06, -0.3, 0.32) * air - (this.airPitch || 0)) * 0.2;
+      _e.set(-(Math.atan(along) * (1 - air) + Math.min(0.09, Math.abs(this.speed) * 0.004) + this.airPitch), this.yaw, -Math.atan(across) * (1 - air * 0.7) + this.bank, 'YXZ');
       o.quaternion.setFromEuler(_e);
+    }
+  }
+
+  /**
+   * White water: sheets of spray peeling off the bow, a rooster tail
+   * behind the engines, more of both the faster you go, spray off the
+   * outside of a hard turn, and a burst when the hull slams down after a
+   * jump (the higher the jump, the bigger the splash).
+   */
+  _boatSpray(dt, P, f, r) {
+    const S = P.systems.spray;
+    const sp = this.parts.spray || { bow: 1.8, beam: 1.3, stern: -4.4, props: [0] };
+    const v = Math.abs(this.speed);
+    const k = clamp(v / this.spec.top, 0, 1.35);
+    const x0 = this.position.x;
+    const z0 = this.position.z;
+    const air = (this.airT || 0) > 0.05;
+    const C = this.vehicle.controls;
+    this._sprayAcc = (this._sprayAcc || 0) + dt;
+    const water = this.position.y - 0.3;
+    const white = [0.96, 0.98, 1, 0.75];
+    const fade = [0.92, 0.96, 1, 0];
+    if (!air && v > 3) {
+      const rate = 90 * k * k + 8;
+      let n = Math.floor(this._sprayAcc * rate);
+      if (n > 0) this._sprayAcc -= n / rate;
+      n = Math.min(n, 12);
+      for (let i = 0; i < n; i++) {
+        const s = i % 2 ? 1 : -1;
+        const turn = 1 + Math.max(0, C.steer * -s) * 1.2;
+        const along = sp.bow - Math.random() * 1.6;
+        S.emit({
+          x: x0 + f.x * along + r.x * s * sp.beam * 0.75,
+          y: water + 0.1,
+          z: z0 + f.z * along + r.z * s * sp.beam * 0.75,
+          vx: r.x * s * (2.5 + 7 * k) * turn + this.velocity.x * 0.35 + (Math.random() - 0.5),
+          vy: 1.5 + 5.5 * k * Math.random() * turn,
+          vz: r.z * s * (2.5 + 7 * k) * turn + this.velocity.z * 0.35 + (Math.random() - 0.5),
+          life: 0.55 + Math.random() * 0.5,
+          size0: 0.25 + 0.3 * k,
+          size1: 1.2 + 2.4 * k,
+          color0: white,
+          color1: fade,
+          gravity: 9.5,
+          drag: 0.5,
+        });
+      }
+      // Rooster tail: a plume thrown up and back by the props.
+      const tail = C.throttle * k;
+      if (tail > 0.15) {
+        for (const px of sp.props) {
+          if (Math.random() > 0.35 + tail * 0.6) continue;
+          S.emit({
+            x: x0 + f.x * sp.stern + r.x * px,
+            y: water + 0.2,
+            z: z0 + f.z * sp.stern + r.z * px,
+            vx: -f.x * (3 + v * 0.25) + (Math.random() - 0.5) * 2,
+            vy: 3 + 7 * tail * (0.6 + Math.random() * 0.5),
+            vz: -f.z * (3 + v * 0.25) + (Math.random() - 0.5) * 2,
+            life: 0.9 + Math.random() * 0.6,
+            size0: 0.4,
+            size1: 2.2 + 2.5 * tail,
+            color0: [0.95, 0.97, 1, 0.6],
+            color1: fade,
+            gravity: 9.8,
+            drag: 0.35,
+          });
+        }
+      }
+    } else if (air && Math.random() < 0.5) {
+      // Water streaming off the hull in the air.
+      S.emit({ x: x0 - f.x * 2 + (Math.random() - 0.5) * 2, y: this.position.y - 0.3, z: z0 - f.z * 2 + (Math.random() - 0.5) * 2, vx: this.velocity.x * 0.6, vy: this.vy * 0.5, vz: this.velocity.z * 0.6, life: 0.6, size0: 0.2, size1: 0.7, color0: [0.95, 0.97, 1, 0.5], color1: fade, gravity: 9.8, drag: 0.3 });
+    }
+    // Landing after a jump: a sheet of water all round, taller the harder it hit.
+    if (this.landing) {
+      const L = this.landing;
+      this.landing = 0;
+      this.hit = Math.max(this.hit || 0, Math.min(1, 0.25 + L * 0.4));
+      this.speed *= 1 - Math.min(0.25, L * 0.12);
+      const n = Math.round(30 + 70 * Math.min(1.5, L));
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2;
+        const out = 3 + Math.random() * 6 * L;
+        S.emit({
+          x: x0 + Math.cos(a) * 1.4 + f.x * (Math.random() * 3 - 1),
+          y: water + 0.1,
+          z: z0 + Math.sin(a) * 1.4 + f.z * (Math.random() * 3 - 1),
+          vx: Math.cos(a) * out + this.velocity.x * 0.4,
+          vy: 3 + Math.random() * (5 + 9 * L),
+          vz: Math.sin(a) * out + this.velocity.z * 0.4,
+          life: 0.9 + Math.random() * 0.8,
+          size0: 0.5,
+          size1: 2.5 + 2.5 * L,
+          color0: [0.97, 0.99, 1, 0.8],
+          color1: fade,
+          gravity: 9.8,
+          drag: 0.4,
+        });
+      }
+      if (this.env.engine.events) this.env.engine.events.emit('splash', { strength: L, position: this.position });
+    }
+    // Foam wake on the water behind.
+    if (this.wake) {
+      const w = this.wake;
+      w.visible = !air && v > 2;
+      if (w.visible) {
+        w.position.set(x0 - f.x * (sp.stern * -1 - 0.3), this.position.y - 0.2, z0 - f.z * (sp.stern * -1 - 0.3));
+        w.rotation.set(0, Math.atan2(f.x, f.z), 0);
+        w.scale.set(0.7 + k * 0.6, 1, 0.4 + k * 0.9);
+      }
     }
   }
 
   /** Per frame: pose, spinning bits, spray, bubbles, smoke. */
   update(dt) {
     this._pose();
-    if (this.prop) this.prop.rotation.z += dt * 60;
+    for (const d of this.props) d.rotation.z += dt * 60;
     if (this.flames) {
       const C = this.vehicle.controls;
       const k = 0.6 + C.throttle * 1.2 - C.brake * 0.4 + Math.random() * 0.15;
@@ -873,13 +861,8 @@ export class Craft {
     const f = this.forward;
     const r = _v.set(-f.z, 0, f.x).normalize();
     this._fx = (this._fx || 0) + dt;
-    if (this.kind === 'boat' && Math.abs(this.speed) > 6 && this._fx > 0.03) {
-      this._fx = 0;
-      const smoke = P.systems.smoke;
-      for (const s of [-1, 1]) {
-        smoke.emit({ x: this.position.x + f.x * 1.8 + r.x * s * 1.1, y: this.position.y + 0.1, z: this.position.z + f.z * 1.8 + r.z * s * 1.1, vx: r.x * s * 3 + this.velocity.x * 0.2, vy: 1.5 + Math.random() * 2, vz: r.z * s * 3 + this.velocity.z * 0.2, life: 0.7, size0: 0.4, size1: 1.8, color0: [0.95, 0.97, 1, 0.55], color1: [0.95, 0.97, 1, 0], gravity: 5, drag: 1.2 });
-      }
-      smoke.emit({ x: this.position.x - f.x * 4.4, y: this.position.y, z: this.position.z - f.z * 4.4, vx: -f.x * 2, vy: 0.8, vz: -f.z * 2, life: 1.4, size0: 0.8, size1: 3.2, color0: [0.95, 0.97, 1, 0.45], color1: [0.95, 0.97, 1, 0], gravity: 1, drag: 1 });
+    if (this.kind === 'boat') {
+      this._boatSpray(dt, P, f, r);
     } else if (this.kind === 'sub' && Math.abs(this.speed) > 1 && this._fx > 0.06) {
       this._fx = 0;
       P.systems.smoke.emit({ x: this.position.x - f.x * 3.8, y: this.position.y, z: this.position.z - f.z * 3.8, vx: (Math.random() - 0.5) * 0.6, vy: 1.2 + Math.random(), vz: (Math.random() - 0.5) * 0.6, life: 2.5, size0: 0.15, size1: 0.45, color0: [0.8, 0.95, 1, 0.7], color1: [0.8, 0.95, 1, 0], drag: 0.3 });
@@ -894,10 +877,17 @@ export class Craft {
   dispose() {
     if (this.glowMat) this.env.engine.materials.untrackEmissive(this.glowMat);
     this.object.removeFromParent();
+    if (this.wake) this.wake.removeFromParent();
+    // Model geometry and the part materials are shared (cached per design); only this craft's own bits go.
+    const own = new Set([...this.props, ...(this.flames || [])]);
     this.object.traverse((o) => {
-      if (o.geometry) o.geometry.dispose();
-      if (o.material) o.material.dispose();
+      if (own.has(o) || (o.material && (o.material === this.glowMat || o.material === this.coneMat))) {
+        o.geometry.dispose();
+        if (o.material !== this.glowMat && o.material !== this.coneMat) o.material.dispose();
+      }
     });
+    if (this.glowMat) this.glowMat.dispose();
+    if (this.coneMat) this.coneMat.dispose();
   }
 }
 

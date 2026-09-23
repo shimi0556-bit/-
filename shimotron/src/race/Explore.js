@@ -40,7 +40,7 @@ export class Explore {
       engine: this.engine,
       particles: this.engine.particles,
       ground: (x, z) => this.ground(x, z),
-      wave: (x, z, out) => waveAt(x, z, this.engine.time.elapsed, game.water ? game.water.uniforms.uWaveAmp.value : 1, out),
+      wave: (x, z, out) => waveAt(x, z, this.engine.time.elapsed, game.water ? game.water.uniforms.uWaveAmp.value : 1, out, -this.ground(x, z)),
       piers: obs.piers,
       decks: obs.decks,
       thermals: this._thermals(),
@@ -156,7 +156,8 @@ export class Explore {
       this.driver = new PlayerDriver(car, this.engine.input, g.touch);
       g.carAudio?.attachPlayer(car);
     } else {
-      const craft = new Craft(this.env, { kind, color, stripe: '#111111', name: 'את/ה', number: 7, isPlayer: true, position: new THREE.Vector3(spot.x, spot.y, spot.z), heading: spot.yaw, seed: 3 });
+      const design = (g.settings.designs || {})[kind];
+      const craft = new Craft(this.env, { kind, color, stripe: '#111111', name: 'את/ה', number: 7, isPlayer: true, position: new THREE.Vector3(spot.x, spot.y, spot.z), heading: spot.yaw, seed: 3, design });
       if (kind === 'plane' || kind === 'glider') craft.chase3d = true;
       if (spot.park !== undefined) craft.park(spot.park);
       if (spot.speed && kind !== 'plane' && kind !== 'glider') craft.speed = Math.min(spot.speed, 12);
@@ -263,6 +264,7 @@ export class Explore {
     // Keys: V cycles vehicles, AltGr puts you back somewhere sensible.
     const order = Object.keys(ROAM);
     if (I.wasPressed('KeyV')) this.game.roamVehicle(order[(order.indexOf(this.kind) + 1) % order.length]);
+    if (I.wasPressed('KeyB')) this.game.roamDesign();
     if (actionKeys(I).reset || this.game.touch.reset) {
       this.game.touch.reset = false;
       this.spawn(this.kind);

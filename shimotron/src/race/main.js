@@ -1,4 +1,5 @@
 import './race.css';
+import { DESIGNS, DESIGN_NAMES } from './CraftModels.js';
 import * as THREE from 'three';
 import { Engine, VERSION } from '../engine/Engine.js';
 import { Materials } from '../engine/render/Materials.js';
@@ -492,6 +493,27 @@ class Game {
   }
 
   /** What to race: cars, boats, submarines, planes or paragliders. */
+  /** The player's own design for a craft race kind. */
+  setDesign(kind, design) {
+    this.settings.designs = { ...(this.settings.designs || {}), [kind]: design };
+    store.set('settings', this.settings);
+    this.engine.audio.ui('click');
+    this.ui.showMenu({ selected: this.selected, champ: this.champ });
+  }
+
+  /** Free roam: the next design of the current craft (key B). */
+  roamDesign() {
+    const ex = this.explore;
+    if (!ex || this.state !== 'explore' || !DESIGNS[ex.kind]) return;
+    const list = DESIGNS[ex.kind];
+    const cur = (this.settings.designs || {})[ex.kind] || list[0];
+    const next = list[(list.indexOf(cur) + 1) % list.length];
+    this.settings.designs = { ...(this.settings.designs || {}), [ex.kind]: next };
+    store.set('settings', this.settings);
+    ex.spawn(ex.kind);
+    this.ui.message(DESIGN_NAMES[next], '', 'B — הדגם הבא', 900);
+  }
+
   selectKind(kind) {
     this.settings.kind = kind;
     store.set('settings', this.settings);
@@ -905,6 +927,16 @@ class Game {
     this.engine.canvas.focus({ preventScroll: true });
   }
 
+  /** Ground or sea floor height at a local point: the island's own terrain, else the world map. */
+  floorAt(x, z) {
+    const t = this.island && this.island.terrain;
+    if (t) {
+      const half = t.size / 2;
+      if (Math.abs(x) < half - 2 && Math.abs(z) < half - 2) return t.heightAt(x, z);
+    }
+    return this.world ? this.world.groundAt(...this.world.toWorld(x, z)) : -40;
+  }
+
   roamVehicle(kind) {
     if (!this.explore || this.state !== 'explore') return;
     this.roamKind = kind;
@@ -1168,7 +1200,7 @@ class Game {
     // Under the waves: water fog instead of air.
     const cam = this.engine.camera.position;
     const w = this.water;
-    const surf = w && this.state !== 'menu' ? waveAt(cam.x, cam.z, this.engine.time.elapsed, w.uniforms.uWaveAmp.value).y : -1e9;
+    const surf = w && this.state !== 'menu' ? waveAt(cam.x, cam.z, this.engine.time.elapsed, w.uniforms.uWaveAmp.value, undefined, -this.floorAt(cam.x, cam.z)).y : -1e9;
     this.engine.atmosphere.underwater = cam.y < surf - 0.05;
     const r = this.race;
     if (!r || this.state !== 'race') return;

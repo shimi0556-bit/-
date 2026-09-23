@@ -86,6 +86,7 @@ export class RaceCamera {
     if (!car) return;
     dt = Math.min(dt, 0.1);
     const view = this.view;
+    if (car.setView) car.setView(this.mode === 'chase' ? view.id : 'chase');
     const p = car.position;
     const fwd = car.forward;
     const v = Math.abs(car.vehicle.speed);
@@ -147,6 +148,19 @@ export class RaceCamera {
       // Submarines: the camera stays under the surface with them.
       if (car.kind === 'sub' && cam.position.y > -1.2) cam.position.y = -1.2;
       if (car.kind === 'boat' && cam.position.y < 1.2) cam.position.y = 1.2;
+    } else if (car.cockpit) {
+      // Craft: in the cockpit (the driver's eye) or on the nose, riding every roll and pitch.
+      car.object.updateMatrixWorld(true);
+      const m = car.object.matrixWorld;
+      cam.position.copy(_t.copy(view.id === 'bumper' ? car.cockpit.nose : car.cockpit.eye).applyMatrix4(m));
+      const dir = _d.set(0, view.id === 'bumper' ? -0.03 : car.kind === 'boat' ? -0.16 : -0.1, 1).normalize().transformDirection(m);
+      if (this.lookBack) dir.negate();
+      _t.copy(cam.position).addScaledVector(dir, 30);
+      _m.lookAt(cam.position, _t, _up.clone().applyQuaternion(car.object.quaternion).lerp(_up, car.kind === 'boat' ? 0.3 : 0.05).normalize());
+      _q.setFromRotationMatrix(_m);
+      cam.quaternion.copy(_q);
+      this.look.copy(_t);
+      this.snap = false;
     } else {
       // Hood / bumper: rigidly attached to the chassis (interpolated), slight lag in pitch.
       const m = car.object.matrixWorld;

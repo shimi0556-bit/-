@@ -3,6 +3,7 @@ import { Race } from './Race.js';
 import { drawCarProfile } from './CarModel.js';
 import { ITEMS } from './Pickups.js';
 import { ROAM } from './Explore.js';
+import { DESIGNS, DESIGN_NAMES } from './CraftModels.js';
 import { WORLD } from './World.js';
 
 /** The island count in words (masculine, for 'איים'). */
@@ -170,6 +171,18 @@ export class RaceUI {
             Object.entries(KIND_LABEL).map(([k, label]) => h('button', { type: 'button', 'aria-pressed': String((s.kind || 'car') === k), onclick: () => g.selectKind(k) }, label)),
           ),
         ),
+        s.kind && DESIGNS[s.kind]
+          ? h(
+              'div',
+              { class: 'field kinds' },
+              h('span', {}, 'הדגם שלך (היריבים בדגמים האחרים)'),
+              h(
+                'div',
+                { class: 'seg' },
+                DESIGNS[s.kind].map((d) => h('button', { type: 'button', 'aria-pressed': String(((s.designs || {})[s.kind] || DESIGNS[s.kind][0]) === d), onclick: () => g.setDesign(s.kind, d) }, DESIGN_NAMES[d])),
+              ),
+            )
+          : null,
         h('div', { class: 'islands', role: 'group', 'aria-label': 'בחירת אי' }, cards),
         h('h2', { class: 'section-title' }, 'הרכב שלך'),
         this.carPicker({ selected: s.car || 'gt', color: s.color, onPick: (id) => g.setSetting('car', id) }),

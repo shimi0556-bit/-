@@ -440,6 +440,24 @@ export const RECIPES = {
       a *= smoothstep(0.1, 0.6, n + 0.2);
       return vec4(vec3(0.75 + n * 0.25), clamp(a, 0.0, 1.0));
     }`,
+  // Water spray: a little mist and a scatter of droplets.
+  spray: /* glsl */ `
+    vec4 bake(vec2 uv) {
+      vec2 p = uv - 0.5; float d = length(p) * 2.0;
+      float mist = pow(clamp(1.0 - d, 0.0, 1.0), 1.6) * 0.4;
+      float drops = 0.0;
+      for (int i = 0; i < 3; i++) {
+        float sc = 9.0 + float(i) * 8.0;
+        vec2 g = uv * sc + uSeed * float(i + 1);
+        vec2 id = floor(g); vec2 f = fract(g) - 0.5;
+        float h = fract(sin(dot(id, vec2(12.9898, 78.233)) + float(i) * 7.1) * 43758.5453);
+        vec2 o = vec2(fract(h * 13.1), fract(h * 71.7)) - 0.5;
+        float r = 0.14 + 0.22 * fract(h * 3.3);
+        drops = max(drops, smoothstep(r, r * 0.35, length(f - o * 0.5)) * step(0.4, h));
+      }
+      drops *= smoothstep(1.0, 0.45, d);
+      return vec4(vec3(0.92 + drops * 0.08), clamp(mist + drops * 0.95, 0.0, 1.0));
+    }`,
   flame: /* glsl */ `
     vec4 bake(vec2 uv) {
       vec2 p = uv - 0.5; p.y *= 0.8;
