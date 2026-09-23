@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { buildLandmarks } from './CityLandmarks.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Random, smoothstep } from '../engine/core/Random.js';
 import { createCrowd } from './Humans.js';
@@ -154,7 +155,53 @@ export class City {
         this.cells.set(`${i},${j}`, cell);
       }
     }
+    this._landmarkPlan();
     return this;
+  }
+
+  /**
+   * Landmarks, chosen with the lots (the ground under them is painted from
+   * this): an arena on a whole block, a Ferris wheel in a park by the sea,
+   * domed halls, building sites with cranes.
+   */
+  _landmarkPlan() {
+    const rng = new Random(this.stage.seed * 7 + 19);
+    const R = this.stage.island.radius;
+    this.landmarks = { stadium: null, ferris: null, domes: [], cranes: [] };
+    // Arena: a block of four building lots, mid-town, away from the circuit.
+    let best = null;
+    for (const cell of this.cells.values()) {
+      if (cell.lots.length !== 4 || !cell.lots.every((l) => l.kind === 'building')) continue;
+      if (cell.d < R * 0.3 || cell.d > R * 0.8) continue;
+      const q = this._near(cell.c.x, cell.c.z);
+      const clear = q ? q.dist : 999;
+      if (clear < 60) continue;
+      const score = clear + rng.random() * 40;
+      if (!best || score > best.score) best = { cell, score };
+    }
+    if (best) {
+      for (const l of best.cell.lots) l.kind = 'plaza';
+      this.landmarks.stadium = best.cell;
+    }
+    // Ferris wheel: a park lot near the shore (or a building lot turned into one).
+    const shore = this.lots.filter((l) => l.d > R * 0.7 && (l.kind === 'park' || l.kind === 'building') && l.cell !== best?.cell).sort((a, b) => b.d - a.d);
+    if (shore.length) {
+      const l = shore[Math.floor(rng.random() * Math.min(6, shore.length))];
+      l.kind = 'park';
+      this.landmarks.ferris = l;
+    }
+    // Domed halls and building sites.
+    const pool = this.lots.filter((l) => l.kind === 'building' && l.d > R * 0.2 && l.d < R * 0.85);
+    for (let k = 0; k < 3 && pool.length; k++) {
+      const l = pool.splice(Math.floor(rng.random() * pool.length), 1)[0];
+      l.landmark = 'dome';
+      this.landmarks.domes.push(l);
+    }
+    for (let k = 0; k < 4 && pool.length; k++) {
+      const l = pool.splice(Math.floor(rng.random() * pool.length), 1)[0];
+      l.landmark = 'crane';
+      this.landmarks.cranes.push(l);
+    }
   }
 
   /** Room a building needs: behind the sidewalk, away from the grandstand, the tunnel and the footbridge. */
@@ -232,6 +279,7 @@ export class City {
   blocked(x, z, kind) {
     const hit = this._lotAt(x, z);
     if (!hit) return false;
+    if (hit.lot && this.landmarks && (hit.lot === this.landmarks.ferris || hit.lot.cell === this.landmarks.stadium) && kind !== 'grass') return true;
     if (hit.lot && (hit.lot.kind === 'park' || (hit.lot.kind === 'plaza' && kind !== 'grass'))) return false;
     if (kind === 'grass') return true;
     const c = this._clear(x, z);
@@ -270,6 +318,7 @@ export class City {
     this._trackside();
     this._lotSlabs();
     this._buildings();
+    this.landmarkFx = buildLandmarks(this);
     this._billboards();
     this._lamps();
     this._trafficLights();
@@ -502,8 +551,11 @@ export class City {
     };
     this.towers = [];
     this.residential = [];
+    this.roundTowers = [];
+    this.tileRoofs = [];
+    const pastel = [0xf2c6c2, 0xf5e0a3, 0xbfe0cf, 0xbcd6ec, 0xe8b894, 0xf0d4e6, 0xd7e8a8, 0xf7efe0];
     for (const lot of this.lots) {
-      if (lot.kind !== 'building') continue;
+      if (lot.kind !== 'building' || lot.landmark) continue;
       const down = 1 - smoothstep(0, R * 0.75, lot.d);
       const baseY = lot.y + 0.2;
       const r = rng.random();
@@ -519,6 +571,13 @@ export class City {
         const tw = w * rng.range(0.7, 0.92);
         const td = d * rng.range(0.7, 0.92);
         const col = pick(style);
+        if (rng.random() < 0.35) {
+          // A round glass tower instead of a box.
+          const h = floors * 3.9 + 1.2;
+          this.roundTowers.push({ x: lot.p.x, y: baseY + pod.h, z: lot.p.z, r: Math.min(tw, td) / 2, h, col: new THREE.Color(rng.pick([0x5f8aa6, 0x6f9fb0, 0x4f7896, 0x7fa0a8, 0x8a9aa6])), twist: rng.random() < 0.5 });
+          this.towers.push({ x: lot.p.x, z: lot.p.z, top: baseY + pod.h + h });
+          continue;
+        }
         const tower = add({ x: lot.p.x, y: baseY + pod.h, z: lot.p.z, w: tw, d: td, h: floors * FLOOR[style] + 1.2, style, col });
         const crown = add({ x: lot.p.x, y: tower.y + tower.h, z: lot.p.z, w: tw * 0.72, d: td * 0.72, h: FLOOR[style] * rng.range(2, 4) + 1, style, col });
         this.towers.push({ x: crown.x, z: crown.z, top: crown.y + crown.h });
@@ -541,9 +600,13 @@ export class City {
           const d = L - rng.range(1.5, 3.2);
           const floors = Math.round(rng.range(4, 8) + down * rng.range(0, 5));
           _v.set(k * (w / 2 + 0.4), 0, 0).applyAxisAngle(UP, this.angle);
-          const b = add({ x: lot.p.x + _v.x, y: baseY, z: lot.p.z + _v.z, w, d, h: floors * FLOOR[st] + 1.1, style: st, col: pick(st), floors });
+          // Some homes painted in soft colours; low ones often under red tiles.
+          const col = st !== S.brick && rng.random() < 0.34 ? new THREE.Color(rng.pick(pastel)) : pick(st);
+          const low = floors <= 6 && rng.random() < 0.45;
+          const b = add({ x: lot.p.x + _v.x, y: baseY, z: lot.p.z + _v.z, w, d, h: (low ? Math.min(floors, 4) : floors) * FLOOR[st] + 1.1, style: st, col, floors });
           this.residential.push(b);
-          this._roofKit(b, true);
+          if (low) this.tileRoofs.push(b);
+          else this._roofKit(b, true);
         }
       }
     }
@@ -1341,6 +1404,7 @@ export class City {
     this.uniforms.uLit.value = lit;
     this.uniforms.uGlow.value = (eng.materials.emissiveScale || 1) * 0.22;
     this.uniforms.uTime.value = this.time;
+    if (this.landmarkFx) this.landmarkFx.update(dt);
     const M = eng.materials;
     if (this.lampMat) M.setEmissiveBase(this.lampMat, lit * 3);
     if (this.beaconMat) M.setEmissiveBase(this.beaconMat, Math.sin(this.time * 3) > 0.3 ? 2.5 : 0);
