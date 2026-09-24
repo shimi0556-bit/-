@@ -1024,7 +1024,15 @@ export class CraftAI {
       C.brake = pace < 0.5 ? 0.5 : 0;
     }
     if (c.kind === 'sub' || c.kind === 'plane' || c.kind === 'space') {
-      const dy = target.position.y - c.position.y - c.velocity.y * 0.6;
+      // Under a bridge: hold the pass height from well before it until clear of the deck.
+      let ty = target.position.y;
+      for (const g of course.gates) {
+        if (!g.under) continue;
+        let ds = (g.s - q.s) * course.length;
+        if (course.closed && ds < -course.length / 2) ds += course.length;
+        if (ds > -45 && ds < 90) ty = Math.min(ty, g.pos.y);
+      }
+      const dy = ty - c.position.y - c.velocity.y * 0.6;
       C.up = clamp(dy * 0.2, 0, 1);
       C.down = clamp(-dy * 0.2, 0, 1);
     }

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Random } from '../engine/core/Random.js';
 import { CORAL_COLORS, ZONES, pickWeighted } from './Sealife.js';
+import { waveAt } from '../engine/world/Water.js';
 
 const _q = new THREE.Quaternion();
 const _e = new THREE.Euler();
@@ -10,15 +11,18 @@ const CANYON_TOP = { branch: 3, brain: 1.5, table: 1.4, plate: 1.2, soft: 1.4, a
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
 /**
- * A gate course around the island in play, for the craft races:
+ * A course around the island in play, for the craft races — no hoops to
+ * thread: the line runs where it is easiest to travel, and checkpoints
+ * along it are invisible and generous (only a big shortcut costs time).
+ * Real race marks show the way:
  *   boat    a lap of the island over open water, clear of the shallows,
- *           threading between bridge piers, through inflatable arches;
- *   sub     a lap along the reef shelf a few metres off the sea floor,
- *           through glowing rings, dipping into the trenches;
- *   plane   a lap around and over the island through air gates, low over
- *           the sea and under every bridge it crosses;
- *   glider  one descent from high over the island, around it through
- *           gates, past thermals, down to a landing target by the shore.
+ *           between bridge piers, round orange racing buoys;
+ *   sub     a lap down a reef canyon a few metres off the sea floor,
+ *           past blinking beacon posts on the bottom;
+ *   plane   a lap around and over the island, low over the sea and under
+ *           every bridge it crosses, turning at tethered marker balloons;
+ *   glider  one descent from high over the island, round marker balloons
+ *           and past thermals, down to a landing target by the shore.
  * The course offers the same queries the HUD and drivers use on a Track:
  * nearest(), pose(), outline(), length, x/z samples.
  */
@@ -34,7 +38,7 @@ export class Course {
     this.rng = new Random(this.stage.seed * 17 + kind.length * 101);
     this.closed = kind !== 'glider';
     this.group = new THREE.Group();
-    this.group.name = 'מסלול שערים';
+    this.group.name = 'מסלול';
     this.thermals = [];
     this.space = space;
     const obs = kind === 'space' ? { piers: [], decks: [] } : world.obstacles();
@@ -423,6 +427,7 @@ export class Course {
     const curve = new THREE.CatmullRomCurve3(pts, true, 'centripetal', 0.5);
     const S = curve.getSpacedPoints(400);
     for (const D of this.decks) {
+      if (this.under.some((u) => u.bridge === D.bridge)) continue; // one pass per bridge
       for (let i = 0; i < S.length - 1; i++) {
         const p = S[i];
         const q = S[i + 1];
@@ -468,7 +473,7 @@ export class Course {
           const c = pts[(best + k + N) % N];
           c.y = Math.min(c.y, 22);
         }
-        this.under.push({ x: lx, y, z: lz });
+        this.under.push({ x: lx, y, z: lz, bridge: D.bridge });
         break;
       }
     }
@@ -690,7 +695,13 @@ export class Course {
     const tangent = new THREE.Vector3(this.tx[i], this.kind === 'boat' ? 0 : this.ty[i], this.tz[i]).normalize();
     const pos = p.position.clone();
     if (this.kind === 'boat') pos.y = 0;
-    return { s, pos, tangent, radius };
+    // How far off the line still counts as keeping to the course here.
+    const corridor = { boat: 60, sub: 30, plane: 90, glider: 110, space: 110 }[this.kind];
+    // Which side the mark stands: the inside of the bend (turning marks), else alternating.
+    const j = Math.min(this.m - 1, i + 3);
+    const cross = this.tx[i] * this.tz[j] - this.tz[i] * this.tx[j];
+    const side = Math.abs(cross) > 0.002 ? (cross > 0 ? 1 : -1) : (Math.round(s * 1000) % 2 ? 1 : -1);
+    return { s, pos, tangent, radius, corridor, side };
   }
 
   // ------------------------------------------------------------ visuals
@@ -703,29 +714,148 @@ export class Course {
       mats.trackEmissive(m, base);
       return m;
     };
-    const stripeMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55 });
-    this.gateMat = kind === 'sub' ? glow(0x3de0ff, 1.2) : kind === 'space' ? glow(0xff3df0, 2.2) : stripeMat;
-    this.nextMat = glow(kind === 'sub' ? 0x9ff6ff : kind === 'space' ? 0x7ff6ff : 0xffc23a, kind === 'sub' ? 4 : kind === 'space' ? 7 : 2.5);
-    this.mats = [this.gateMat, this.nextMat, stripeMat];
-    this.gateMeshes = [];
+    const paintMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55 });
+    this.lightMat = glow(kind === 'sub' ? 0x3de0ff : kind === 'space' ? 0xff3df0 : 0xffc23a, kind === 'sub' ? 3 : kind === 'space' ? 5 : 2);
+    this.mats = [paintMat, this.lightMat];
+    this.markers = [];
     for (const g of this.gates) {
-      const geo = this._gateGeometry(g);
-      const mesh = new THREE.Mesh(geo, g.index === 0 || g.final ? stripeMat : this.gateMat);
-      mesh.position.copy(g.pos);
-      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), g.tangent);
-      mesh.userData.noPick = true;
-      mesh.name = g.index === 0 ? 'שער זינוק' : 'שער';
-      this.group.add(mesh);
-      this.gateMeshes.push(mesh);
+      const m = this._marker(g, paintMat);
+      if (!m) {
+        this.markers.push(null);
+        continue;
+      }
+      m.obj.userData.noPick = true;
+      m.obj.traverse((o) => (o.userData.noPick = true));
+      m.obj.name = g.index === 0 ? 'סימון זינוק' : 'סימון מסלול';
+      this.group.add(m.obj);
+      this.markers.push(m);
     }
-    // The next gate for the player is marked by a bright copy.
-    this.marker = new THREE.Mesh(this.gateMeshes[0].geometry, this.nextMat);
-    this.marker.scale.setScalar(1.04);
-    this.marker.userData.noPick = true;
-    this.group.add(this.marker);
+    // The next mark for the player glows and pulses.
+    const haloMat = new THREE.MeshBasicMaterial({ color: kind === 'sub' ? 0x9ff6ff : 0xffd26a, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false });
+    this.mats.push(haloMat);
+    this.halo = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 12), haloMat);
+    this.halo.userData.noPick = true;
+    this.halo.renderOrder = 6;
+    this.group.add(this.halo);
     if (this.landing) this.group.add(this._target());
     if (this.thermals.length) this._thermalVisuals();
     this._guides();
+  }
+
+  /**
+   * The mark at a checkpoint, standing off to one side of the line:
+   * a racing buoy on the water, a beacon post on the sea floor, a marker
+   * balloon on its tether in the air, a navigation beacon in space. The
+   * start and finish get a pair, one each side, with chequered flags.
+   * Under-bridge passes need none: the bridge is the mark.
+   */
+  _marker(g, paintMat) {
+    if (g.under) return null;
+    const kind = this.kind;
+    const pair = g.index === 0 || g.final;
+    const right = new THREE.Vector3(-g.tangent.z, 0, g.tangent.x).normalize();
+    const off = { boat: 24, sub: 11, plane: 34, glider: 40, space: 45 }[kind];
+    const obj = new THREE.Group();
+    const heads = [];
+    const sides = pair ? [1, -1] : [g.side];
+    for (const side of sides) {
+      const p = g.pos.clone().addScaledVector(right, side * off);
+      let head;
+      let m;
+      if (kind === 'boat') {
+        m = new THREE.Mesh(this._buoyGeo(pair), paintMat);
+        m.position.set(p.x, 0, p.z);
+        head = new THREE.Vector3(0, 4.2, 0);
+      } else if (kind === 'sub') {
+        const floor = this.ground(p.x, p.z);
+        m = new THREE.Group();
+        const post = new THREE.Mesh(this._beaconGeo(pair), paintMat);
+        const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.35, 12, 8).translate(0, 3.7, 0), this.lightMat);
+        m.add(post, lamp);
+        m.position.set(p.x, floor - 0.2, p.z);
+        head = new THREE.Vector3(0, 3.7, 0);
+      } else {
+        // A marker balloon at the course's height, tethered to the ground (or a float at sea).
+        const R = kind === 'space' ? 5 : kind === 'glider' ? 5.5 : 4.5;
+        m = new THREE.Group();
+        m.add(new THREE.Mesh(kind === 'space' ? new THREE.OctahedronGeometry(R * 0.7, 1) : this._balloonGeo(R, pair), kind === 'space' ? this.lightMat : paintMat));
+        if (kind !== 'space') {
+          const gy = Math.max(0, this.ground(p.x, p.z));
+          const len = Math.max(1, p.y - R - gy);
+          m.add(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, len, 4).translate(0, -R - len / 2, 0), new THREE.MeshStandardMaterial({ color: 0x333333 })));
+          m.add(new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.1, 0.8, 10).translate(0, -R - len, 0), paintMat));
+        }
+        m.position.copy(p);
+        head = new THREE.Vector3(0, 0, 0);
+      }
+      obj.add(m);
+      heads.push({ m, head });
+    }
+    return { obj, heads, g };
+  }
+
+  /** An inflatable racing buoy: a tall orange cylinder, white band, conical top; pairs carry chequered flags. */
+  _buoyGeo(flag) {
+    if (this._buoy && this._buoy[flag ? 1 : 0]) return this._buoy[flag ? 1 : 0];
+    const parts = [];
+    const col = (g, hex) => {
+      g = g.toNonIndexed();
+      const c = new THREE.Color(hex);
+      const a = new Float32Array(g.attributes.position.count * 3);
+      for (let i = 0; i < a.length; i += 3) c.toArray(a, i);
+      g.setAttribute('color', new THREE.BufferAttribute(a, 3));
+      if (g.attributes.uv) g.deleteAttribute('uv');
+      return g;
+    };
+    parts.push(col(new THREE.CylinderGeometry(1.35, 1.45, 2.2, 24).translate(0, 0.6, 0), 0xff6a1a));
+    parts.push(col(new THREE.CylinderGeometry(1.36, 1.36, 0.5, 24).translate(0, 1.2, 0), 0xf4f4f0));
+    parts.push(col(new THREE.ConeGeometry(1.35, 2.2, 24).translate(0, 2.8, 0), 0xff6a1a));
+    parts.push(col(new THREE.TorusGeometry(1.45, 0.14, 6, 24).rotateX(Math.PI / 2).translate(0, -0.4, 0), 0x222222));
+    if (flag) {
+      parts.push(col(new THREE.CylinderGeometry(0.05, 0.05, 3.5, 6).translate(0, 5.5, 0), 0xdddddd));
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) parts.push(col(new THREE.PlaneGeometry(0.45, 0.45).translate(0.25 + i * 0.45, 6.75 - j * 0.45, 0), (i + j) % 2 ? 0x111111 : 0xf4f4f4));
+    }
+    const geo = mergeAll(parts);
+    this._buoy = this._buoy || [];
+    this._buoy[flag ? 1 : 0] = geo;
+    return geo;
+  }
+
+  /** A beacon post on the sea floor: weighted base, striped pole (the lamp is separate). */
+  _beaconGeo(pair) {
+    const col = (g, hex) => {
+      g = g.toNonIndexed();
+      const c = new THREE.Color(hex);
+      const a = new Float32Array(g.attributes.position.count * 3);
+      for (let i = 0; i < a.length; i += 3) c.toArray(a, i);
+      g.setAttribute('color', new THREE.BufferAttribute(a, 3));
+      if (g.attributes.uv) g.deleteAttribute('uv');
+      return g;
+    };
+    const parts = [col(new THREE.CylinderGeometry(0.7, 0.9, 0.5, 10).translate(0, 0.25, 0), 0x3a3a3a)];
+    for (let k = 0; k < 6; k++) parts.push(col(new THREE.CylinderGeometry(0.09, 0.09, 0.55, 8).translate(0, 0.75 + k * 0.55, 0), k % 2 ? 0xf4f4f0 : pair ? 0x111111 : 0xffc21a));
+    return mergeAll(parts);
+  }
+
+  /** A marker balloon: orange and white gores (chequered for start and finish). */
+  _balloonGeo(R, pair) {
+    const g = new THREE.SphereGeometry(R, 24, 16).toNonIndexed();
+    g.deleteAttribute('uv');
+    const pos = g.attributes.position;
+    const a = new Float32Array(pos.count * 3);
+    const A = new THREE.Color(pair ? 0x111111 : 0xff6a1a);
+    const B = new THREE.Color(0xf4f4f4);
+    for (let i = 0; i < pos.count; i += 3) {
+      const x = (pos.getX(i) + pos.getX(i + 1) + pos.getX(i + 2)) / 3;
+      const y = (pos.getY(i) + pos.getY(i + 1) + pos.getY(i + 2)) / 3;
+      const z = (pos.getZ(i) + pos.getZ(i + 1) + pos.getZ(i + 2)) / 3;
+      const gore = Math.floor(((Math.atan2(z, x) + Math.PI) / (Math.PI * 2)) * 8);
+      const band = pair ? Math.floor((y / R + 1) * 3) : 0;
+      const c = (gore + band) % 2 ? A : B;
+      for (let v = 0; v < 3; v++) c.toArray(a, (i + v) * 3);
+    }
+    g.setAttribute('color', new THREE.BufferAttribute(a, 3));
+    return g;
   }
 
   /** Arrows showing the way: chevrons along the line ahead of the player, a big one over the next gate. */
@@ -736,8 +866,8 @@ export class Course {
     for (const p of pts.slice(1)) shape.lineTo(...p);
     shape.closePath();
     const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.35, bevelEnabled: false }).rotateX(Math.PI / 2);
-    const mat = new THREE.MeshStandardMaterial({ color: 0x221a00, emissive: 0xffd23a, emissiveIntensity: 1, transparent: true, opacity: 0.9, depthWrite: false });
-    this.materials.trackEmissive(mat, 3);
+    const mat = new THREE.MeshStandardMaterial({ color: 0x221a00, emissive: 0xffd23a, emissiveIntensity: 1, transparent: true, opacity: 0.72, depthWrite: false });
+    this.materials.trackEmissive(mat, 1.1);
     this.mats.push(mat);
     this.arrowMat = mat;
     const size = { boat: 2.2, sub: 1.3, plane: 3, glider: 2.6, space: 4 }[this.kind];
@@ -762,26 +892,6 @@ export class Course {
     m.position.copy(pos);
     m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
     if (tilt) m.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -tilt));
-  }
-
-  _gateGeometry(g) {
-    const r = g.radius;
-    const checker = g.index === 0 || g.final;
-    let geo;
-    if (this.kind === 'boat') geo = new THREE.TorusGeometry(r, 1.2, 10, 36, Math.PI);
-    else geo = new THREE.TorusGeometry(r, this.kind === 'sub' ? 0.5 : this.kind === 'glider' ? 1.0 : this.kind === 'space' ? 1.8 : 1.3, 10, 48);
-    geo = geo.toNonIndexed();
-    const pos = geo.attributes.position;
-    const col = new Float32Array(pos.count * 3);
-    const A = new THREE.Color(checker ? 0x111111 : this.kind === 'boat' ? 0xff6a1a : this.kind === 'glider' ? 0xffc21a : 0xe0262b);
-    const B = new THREE.Color(0xf4f4f4);
-    for (let i = 0; i < pos.count; i += 3) {
-      const a = Math.atan2(pos.getY(i) + pos.getY(i + 1) + pos.getY(i + 2), pos.getX(i) + pos.getX(i + 1) + pos.getX(i + 2));
-      const c = Math.floor(((a + Math.PI) / (Math.PI * 2)) * (checker ? 24 : 12)) % 2 ? A : B;
-      for (let v = 0; v < 3; v++) c.toArray(col, (i + v) * 3);
-    }
-    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    return geo;
   }
 
   _target() {
@@ -872,25 +982,45 @@ export class Course {
         m.scale.setScalar(this.arrowSize * (0.8 + wave * 0.35));
       });
     }
+    // Buoys ride the waves.
+    if (this.kind === 'boat') {
+      const w = this.island.water;
+      const amp = w ? w.uniforms.uWaveAmp.value : 1;
+      const time = this.engine.time.elapsed;
+      for (const M of this.markers) {
+        if (!M) continue;
+        for (const H of M.heads) {
+          const q = waveAt(H.m.position.x, H.m.position.z, time, amp, this._wv || (this._wv = {}), 30);
+          H.m.position.y = q.y - 0.3;
+          H.m.rotation.set(q.dz * 0.6, 0, -q.dx * 0.6);
+        }
+      }
+    }
+    // The next mark: a pulsing glow round it, and the big arrow over it.
+    const M = g ? this.markers[next] : null;
+    const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.006);
+    if (M) {
+      const H = M.heads[0];
+      const p = H.m.position.clone().add(H.head);
+      const r = { boat: 4.5, sub: 1.6, plane: 7, glider: 8, space: 8 }[this.kind];
+      this.halo.position.copy(p);
+      this.halo.scale.setScalar(r * (1 + pulse * 0.25));
+      this.halo.material.opacity = 0.18 + pulse * 0.22;
+      this.halo.visible = true;
+    } else this.halo.visible = false;
     if (this.gateArrow) {
       if (g) {
-        const up = new THREE.Vector3(0, 1, 0);
-        const p = g.pos.clone().addScaledVector(up, g.radius + 4 + Math.sin(performance.now() * 0.004) * 1.2);
+        const base = M ? M.heads[0].m.position.clone().add(M.heads[0].head) : g.pos.clone();
+        const p = base.add(new THREE.Vector3(0, { boat: 7, sub: 3.5, plane: 12, glider: 13, space: 12 }[this.kind] + Math.sin(performance.now() * 0.004) * 1.2, 0));
         if (this.kind === 'sub') p.y = Math.min(p.y, -2);
         const d = g.tangent.clone();
-        d.y -= 0.35; // tilted down towards the opening
+        d.y -= 0.35;
         this._placeArrow(this.gateArrow, p, d.normalize(), 0.5);
         this.gateArrow.visible = true;
       } else this.gateArrow.visible = false;
     }
-    if (g) {
-      this.marker.visible = true;
-      this.marker.geometry = this.gateMeshes[next].geometry;
-      this.marker.position.copy(g.pos);
-      this.marker.quaternion.copy(this.gateMeshes[next].quaternion);
-      const pulse = 1.03 + Math.sin(performance.now() * 0.008) * 0.02;
-      this.marker.scale.setScalar(pulse);
-    } else this.marker.visible = false;
+    // Sea-floor beacons blink, the next one fastest.
+    if (this.kind === 'sub') this.materials.setEmissiveBase(this.lightMat, 1.5 + 2.5 * (Math.sin(performance.now() * 0.005) > 0 ? 1 : 0.2));
     if (this.thermalMat) this.thermalMat.uniforms.uTime.value += dt;
     for (const b of this.birds || []) {
       const U = b.userData;
@@ -914,6 +1044,27 @@ export class Course {
       m.dispose();
     }
   }
+}
+
+/** Merges coloured parts (all non-indexed, position/normal/color). */
+function mergeAll(parts) {
+  let n = 0;
+  for (const p of parts) n += p.attributes.position.count;
+  const pos = new Float32Array(n * 3);
+  const nor = new Float32Array(n * 3);
+  const col = new Float32Array(n * 3);
+  let o = 0;
+  for (const p of parts) {
+    pos.set(p.attributes.position.array, o * 3);
+    nor.set(p.attributes.normal.array, o * 3);
+    col.set(p.attributes.color.array, o * 3);
+    o += p.attributes.position.count;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  return g;
 }
 
 /** Where segment p→q crosses segment a→b (u along p→q, v along a→b), or null. */

@@ -62,12 +62,14 @@ export class ParticleSystem {
       vertexShader: /* glsl */ `
         attribute vec3 aOffset; attribute vec4 aColor; attribute vec2 aSizeRot; attribute vec3 aVel;
         uniform float uStretch;
-        varying vec2 vUv; varying vec4 vColor;
+        varying vec2 vUv; varying vec4 vColor; varying float vNear;
         #include <fog_pars_vertex>
         void main() {
           vUv = uv;
           vColor = aColor;
           vec4 mvPosition = modelViewMatrix * vec4(aOffset, 1.0);
+          // Fade out right in front of the lens (spray and dust would otherwise plaster the screen).
+          vNear = smoothstep(0.9, 4.0, -mvPosition.z);
           vec2 corner = position.xy * aSizeRot.x;
           if (uStretch > 0.0) {
             vec3 vv = (modelViewMatrix * vec4(aVel, 0.0)).xyz;
@@ -85,11 +87,11 @@ export class ParticleSystem {
         }`,
       fragmentShader: /* glsl */ `
         uniform sampler2D tMap; uniform vec3 uLight;
-        varying vec2 vUv; varying vec4 vColor;
+        varying vec2 vUv; varying vec4 vColor; varying float vNear;
         #include <fog_pars_fragment>
         void main() {
           vec4 t = texture2D(tMap, vUv);
-          vec4 c = vec4(vColor.rgb * t.rgb * uLight, vColor.a * t.a);
+          vec4 c = vec4(vColor.rgb * t.rgb * uLight, vColor.a * t.a * vNear);
           if (c.a < 0.003) discard;
           gl_FragColor = c;
           ${additive ? '#ifdef USE_FOG\n float fogA = shimoFogAmount(cameraPosition, vFogWorldPos); gl_FragColor.rgb *= 1.0 - fogA;\n#endif' : '#include <fog_fragment>'}

@@ -1169,7 +1169,7 @@ class Game {
     ev.on('race:gate', ({ missed, under }) => {
       const a = this.engine.audio.enabled ? this.engine.audio : null;
       if (missed) {
-        this.ui.message('פספסת שער!', 'warn', '‎+2 שניות', 1000);
+        this.ui.message('קיצור דרך מחוץ למסלול!', 'warn', '‎+2 שניות', 1000);
         if (a) a._tone(a.sfx, { freq: 220, dur: 0.25, gain: 0.08, type: 'square' });
       } else {
         if (under) this.ui.message('מתחת לגשר!', 'gold', '', 900);

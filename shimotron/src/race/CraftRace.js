@@ -9,10 +9,10 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const STEP = 1 / 60;
 
 /**
- * A race of boats, submarines, planes or paragliders through a gate
+ * A race of boats, submarines, planes or paragliders round a marked
  * course. Same shape as the car Race (entries, order, laps, clock,
  * events), so the HUD, results and ceremonies work unchanged; timing
- * adds a 2 s penalty for every missed gate.
+ * adds a 2 s penalty for every checkpoint cut far off the course.
  */
 export class CraftRace {
   constructor(game, island, opts) {
@@ -334,7 +334,11 @@ export class CraftRace {
       if (!g) break;
       const U = (c.closed ? e.gateL : 0) + g.s;
       if (e.progress < U) break;
-      const inside = craft.position.distanceTo(g.pos) <= g.radius * 1.15 + (this.kind === 'boat' ? 2 : 0);
+      // No hoops: keeping roughly to the course is enough (under a bridge you must go under it).
+      const dx = craft.position.x - g.pos.x;
+      const dz = craft.position.z - g.pos.z;
+      const dy = craft.position.y - g.pos.y;
+      const inside = g.under ? Math.hypot(dx, dz) <= 18 && dy < 4 : Math.hypot(dx, dz) <= g.corridor && (this.kind === 'boat' || Math.abs(dy) <= g.corridor * 0.8);
       if (!inside && !(c.closed && e.gateK === 0)) {
         e.penalty += 2;
         if (e.isPlayer) this.events.emit('race:gate', { entry: e, missed: true });

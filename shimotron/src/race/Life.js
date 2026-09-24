@@ -182,7 +182,7 @@ export class Life {
    * chunks with the reef's own models and materials. The caller owns the
    * returned group (remove it and call `.dispose()` on its meshes when done).
    */
-  coralSet(items, cell = 90) {
+  coralSet(items, cell = 40) {
     const group = new THREE.Group();
     group.name = 'שונית';
     const { geos } = this.coralKit();
@@ -199,21 +199,42 @@ export class Life {
         cells.get(key).push(it);
       }
       for (const chunk of cells.values()) {
-        const mesh = new THREE.InstancedMesh(geos[kind], this._coralMat(kind), chunk.length);
-        chunk.forEach((it, i) => {
-          mesh.setMatrixAt(i, it.m);
-          mesh.setColorAt(i, it.c);
+        // Full detail close up, the light models further off (switched in _updateSets).
+        const pair = [geos[kind], this.coralKit().lo[kind]].map((geo, lod) => {
+          const mesh = new THREE.InstancedMesh(geo, this._coralMat(kind), chunk.length);
+          chunk.forEach((it, i) => {
+            mesh.setMatrixAt(i, it.m);
+            mesh.setColorAt(i, it.c);
+          });
+          mesh.instanceMatrix.needsUpdate = true;
+          mesh.instanceColor.needsUpdate = true;
+          mesh.computeBoundingSphere();
+          mesh.receiveShadow = true;
+          mesh.name = 'שונית';
+          mesh.userData.noPick = true;
+          mesh.visible = lod === 1;
+          group.add(mesh);
+          return mesh;
         });
-        mesh.instanceMatrix.needsUpdate = true;
-        mesh.instanceColor.needsUpdate = true;
-        mesh.computeBoundingSphere();
-        mesh.receiveShadow = true;
-        mesh.name = 'שונית';
-        mesh.userData.noPick = true;
-        group.add(mesh);
+        this._sets = this._sets || [];
+        const S = { hi: pair[0], lo: pair[1], c: pair[0].boundingSphere.center, r: pair[0].boundingSphere.radius, dead: false };
+        pair[0].addEventListener('dispose', () => (S.dead = true));
+        this._sets.push(S);
       }
     }
     return group;
+  }
+
+  /** Fixed coral sets (a course's reef canyon, the wrecks): full detail only for chunks near the camera. */
+  _updateSets() {
+    if (!this._sets) return;
+    const cam = this.engine.camera.position;
+    for (const S of this._sets) {
+      const near = cam.distanceTo(S.c) - S.r < 25;
+      S.hi.visible = near;
+      S.lo.visible = !near;
+    }
+    if (this._sets.some((S) => S.dead)) this._sets = this._sets.filter((S) => !S.dead);
   }
 
   /** One coral of `kind` at (x, floor y, z): random size (never breaking the surface), turn and colour. */
@@ -1220,6 +1241,7 @@ export class Life {
     this._updateBoats(dt);
     this._updateBalloons(dt);
     this._updateHerds(dt);
+    this._updateSets();
     if (this.giants) this.giants.update(dt);
   }
 }
