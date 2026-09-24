@@ -151,7 +151,9 @@ export class Explore {
     const color = g.settings.color;
     if (kind === 'car') {
       const ctx = g.carContext(this.island);
-      const car = new Car(ctx, { color, stripe: '#111111', number: 7, name: 'את/ה', isPlayer: true, position: new THREE.Vector3(spot.x, spot.y + 0.7, spot.z), heading: spot.yaw, type: g.settings.car || 'gt' });
+      const car = new Car(ctx, { color, stripe: '#111111', number: 7, name: 'את/ה', isPlayer: true, position: new THREE.Vector3(spot.x, spot.y + (spot.exact ? 0 : 0.7), spot.z), heading: spot.yaw, type: g.settings.car || 'gt' });
+      // Carrying on from another island: same speed, same direction.
+      if (spot.exact && spot.speed) car.body.velocity.set(Math.sin(spot.yaw) * spot.speed, spot.vy || 0, Math.cos(spot.yaw) * spot.speed);
       this.obj = car;
       this.driver = new PlayerDriver(car, this.engine.input, g.touch);
       g.carAudio?.attachPlayer(car);
@@ -160,7 +162,14 @@ export class Explore {
       const craft = new Craft(this.env, { kind, color, stripe: '#111111', name: 'את/ה', number: 7, isPlayer: true, position: new THREE.Vector3(spot.x, spot.y, spot.z), heading: spot.yaw, seed: 3, design });
       if (kind === 'plane' || kind === 'glider') craft.chase3d = true;
       if (spot.park !== undefined) craft.park(spot.park);
-      if (spot.speed && kind !== 'plane' && kind !== 'glider') craft.speed = Math.min(spot.speed, 12);
+      if (spot.exact) {
+        // Carrying on from another island exactly as it was.
+        if (spot.speed) craft.speed = spot.speed;
+        craft.pitch = spot.pitch || 0;
+        craft.vy = spot.vy || 0;
+        craft._fwd();
+        craft.velocity.copy(craft.forward).multiplyScalar(craft.speed);
+      } else if (spot.speed && kind !== 'plane' && kind !== 'glider') craft.speed = Math.min(spot.speed, 12);
       craft.vehicle.controls.hold = false;
       this.obj = craft;
       this.driver = new CraftPlayer(craft, this.engine.input, g.touch);
@@ -182,6 +191,7 @@ export class Explore {
   /** A good place for this vehicle near `here`: land for the car, open water for boats, sky for aircraft. */
   _spot(kind, here) {
     const tr = this.island.track;
+    if (here && here.exact) return { ...here };
     const base = here || (() => {
       const p = tr.pose(0.02, 0);
       return { x: p.position.x, y: p.position.y, z: p.position.z, yaw: Math.atan2(p.tangent.x, p.tangent.z), speed: 0 };
@@ -281,7 +291,8 @@ export class Explore {
         this.travelling = true;
         const p = this.position;
         const onDeck = this.kind === 'car' && this.ground(p.x, p.z) < p.y - 3;
-        this.game.roamTravel(st, { wx, wz, y: p.y, yaw: this.heading, speed: this.speed, kind: this.kind, onDeck });
+        const o = this.obj;
+        this.game.roamTravel(st, { wx, wz, y: p.y, yaw: this.heading, speed: this.speed, kind: this.kind, onDeck, pitch: o.pitch, vy: this.kind === 'car' ? o.body.velocity.y : o.vy });
       }
     }
   }

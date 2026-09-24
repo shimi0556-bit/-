@@ -68,6 +68,7 @@ class Game {
       if (p) this.plans[st.id] = p;
     }
     this.bakeCache = new Map(); // terrain grids of recently built islands
+    this.islands = new Map(); // every island, built once and kept (stage id → Island)
     this.previews = {};
     this.island = null;
     this.race = null;
@@ -165,11 +166,13 @@ class Game {
 
     // The whole archipelago, seen from above: the first thing on screen.
     this.world = new World(engine, materials, STAGES);
-    await this.world.build(this.plans, (p, t) => progress(0.2 + p * 0.66, t));
+    await this.world.build(this.plans, (p, t) => progress(0.2 + p * 0.1, t));
     this.water = new Water(engine, { heightTexture: this.world.depthTexture, size: 1 }, materials);
     const wu = this.water.uniforms;
     wu.tWorld.value = this.world.depthTexture;
     wu.uWorldSize.value = WORLD.span;
+    // All the islands, built now so the whole world is there from the start.
+    await this._preloadIslands((p, t) => progress(0.3 + p * 0.58, `בונה את כל האיים · ${t}`));
     this._showMap(true);
     engine.cameraRig = this._worldView();
     engine.cameraRig.update(10);
@@ -205,37 +208,73 @@ class Game {
     store.set('plans', all);
   }
 
+  /**
+   * Makes stage `index` the island in play. Every island is built once and
+   * kept (see _preloadIslands): switching is just taking one off stage and
+   * putting the other on, with the world shifted so it sits at the origin.
+   */
   async loadIsland(index, progress) {
     const st = STAGES[index];
-    if (this.island && this.island.stage === st && !this.islandDirty) return this.island;
+    if (this.islandDirty) this._clearIslands();
+    if (this.island && this.island.stage === st) return this.island;
+    this._endRace();
+    this._endPodium();
+    this.skid.clear();
+    const island = this.islands.get(st.id) || (await this._buildIsland(index, progress));
+    this._activate(island);
+    return island;
+  }
+
+  /** Builds one island (off stage when it is not the one wanted now). */
+  async _buildIsland(index, progress) {
+    const st = STAGES[index];
     const eng = this.engine;
-    // Nothing to see behind the loading screen: stop drawing the old island while the new one is built.
+    // Nothing to see behind the loading screen: stop drawing while it is built.
     const running = eng._running;
     if (running) eng.stop();
     try {
-      this._endRace();
-      this._endPodium();
-      if (this.island) {
-        this.island.dispose();
-        this.island = null;
-      }
-      this.skid.clear();
+      if (this.island) this.island.suspend();
       const pad = this.world.pad && this.world.pad.id === st.id ? this.world.pad : null;
-      const island = new Island(eng, this.materials, this.water, st, { plan: this.plans[st.id], cache: this.bakeCache, keepOut: (x, z) => this.world.keepOut(st.id, x, z), pad });
+      const island = new Island(eng, this.materials, this.water, st, { plan: this.plans[st.id], cache: this.bakeCache, keepOut: (x, z) => this.world.keepOut(st.id, x, z), pad, bridgeEnds: this.world.bridgeEnds(st.id) });
       await island.build(progress);
-      this.island = island;
-      // The world shifts so this island sits at the origin; its stand-in steps aside.
-      this.world.setOrigin(st.id);
-      this.water.uniforms.uWorldOffset.value.set(...this.world.origin);
-      this.islandDirty = false;
+      island.suspend();
+      if (this.island) this.island.resume();
+      this.islands.set(st.id, island);
       if (island.planGenerated) this._savePlan(st, island.plan);
       this.plans[st.id] = island.plan;
-      this.camera.groundHeight = (x, z) => island.terrain.heightAt(x, z);
-      this._flyT = 0;
       return island;
     } finally {
       if (running) eng.start();
     }
+  }
+
+  /** Puts a built island in play: the world shifts so it sits at the origin, its stand-in steps aside. */
+  _activate(island) {
+    if (this.island && this.island !== island) this.island.suspend();
+    island.resume();
+    this.island = island;
+    this.world.setOrigin(island.stage.id);
+    this.water.uniforms.uWorldOffset.value.set(...this.world.origin);
+    this.camera.groundHeight = (x, z) => island.terrain.heightAt(x, z);
+    this._flyT = 0;
+  }
+
+  /** Builds every island not built yet, so travelling between them never waits. */
+  async _preloadIslands(progress) {
+    const todo = STAGES.map((st, i) => i).filter((i) => !this.islands.has(STAGES[i].id));
+    for (let k = 0; k < todo.length; k++) {
+      const i = todo[k];
+      await this._buildIsland(i, (p, t) => progress((k + p) / todo.length, `${STAGES[i].name}: ${t}`));
+    }
+  }
+
+  /** Graphics quality changed: every island is rebuilt at the new detail. */
+  _clearIslands() {
+    this._endRace();
+    for (const isl of this.islands.values()) isl.dispose();
+    this.islands.clear();
+    this.island = null;
+    this.islandDirty = false;
   }
 
   /** Draws every island's menu map in the background (and plans any circuit that is not stored yet). */
@@ -899,8 +938,13 @@ class Game {
       this.mapDive = false;
     }
     if (!this.island || this.island.stage !== st || this.islandDirty) {
+      const ready = this.islands.has(st.id) && !this.islandDirty;
+      if (!ready) {
+        // After a graphics change: build them all again, once, so travel stays seamless.
+        if (this.islandDirty) this._clearIslands();
+        await this._preloadIslands((p, t) => this.ui.showLoader(`בונה את כל האיים · ${t}`, p));
+      }
       await this.loadIsland(index, (p, t) => this.ui.showLoader(t, p));
-      this.ui.showLoader('מקמפל שיידרים…', 0.96);
       await nextFrame();
     }
     this._endRace();
@@ -949,8 +993,45 @@ class Game {
   roamTravel(st, at) {
     const i = STAGES.indexOf(st);
     if (i < 0) return;
+    if (this.islands.has(st.id) && !this.islandDirty) return this._hop(i, at);
     this.ui.showLoader(`בדרך אל ${st.name}…`, 0.02);
     this._roam(i, at);
+  }
+
+  /**
+   * Crossing into another island's square: it is already built, so the
+   * world just shifts under you — no loading, no fade. The vehicle carries
+   * on from the same spot at the same speed; the camera and the particles
+   * in the air move with the shift.
+   */
+  _hop(index, at) {
+    const st = STAGES[index];
+    const island = this.islands.get(st.id);
+    const eng = this.engine;
+    const from = this.world.origin.slice();
+    const kind = at.kind;
+    if (this.explore) {
+      this.explore.dispose();
+      this.explore = null;
+    }
+    this.skid.clear();
+    this._activate(island);
+    this.world.showLocal(true);
+    this.selected = index;
+    this.stage = st;
+    // Everything in local coordinates moves by the difference between the two origins.
+    const dx = from[0] - this.world.origin[0];
+    const dz = from[1] - this.world.origin[1];
+    eng.camera.position.x += dx;
+    eng.camera.position.z += dz;
+    for (const sys of Object.values(eng.particles.systems)) sys.shift?.(dx, 0, dz);
+    const ex = new Explore(this, island);
+    this.explore = ex;
+    const [x, z] = this.world.toLocal(at.wx, at.wz);
+    ex.spawn(kind, { x, y: at.y, z, yaw: at.yaw, speed: at.speed, onDeck: at.onDeck, exact: true, pitch: at.pitch, vy: at.vy });
+    this.camera.snap = false;
+    this.ui.showExplore(ex, st);
+    this.ui.message(st.name, '', 'הגעתם', 1100);
   }
 
   restart() {

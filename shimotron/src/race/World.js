@@ -566,6 +566,10 @@ export class World {
       if (ground > 0) y = Math.max(y, ground + 0.35);
       samples.push({ p: new THREE.Vector3(p.x, y, p.z), t: tg, r: new THREE.Vector3(-tg.z, 0, tg.x).normalize(), s, ground });
     }
+    // No dips: from each end the deck only climbs (a raised end must not sag into the ground).
+    const half = Math.floor(samples.length / 2);
+    for (let i = 1; i <= half; i++) samples[i].p.y = Math.max(samples[i].p.y, samples[i - 1].p.y);
+    for (let i = samples.length - 2; i >= half; i--) samples[i].p.y = Math.max(samples[i].p.y, samples[i + 1].p.y);
     const group = new THREE.Group();
     group.name = `גשר ל${sb.name}`;
     group.add(this._deck(samples));
@@ -732,6 +736,28 @@ export class World {
     this.origin = id ? this.pos(id) : [0, 0];
     this.group.position.set(-this.origin[0], 0, -this.origin[1]);
     this.group.updateMatrixWorld(true);
+  }
+
+  /**
+   * Where the bridges touch down on island `id`, in that island's own
+   * coordinates: the deck's first point, its height, and the direction
+   * inland (the access road starts there).
+   */
+  bridgeEnds(id) {
+    const [cx, cz] = this.pos(id);
+    const out = [];
+    for (const B of this.bridges) {
+      if (B.from !== id && B.to !== id) continue;
+      const S = B.samples;
+      const first = B.from === id;
+      const e = first ? S[0] : S[S.length - 1];
+      const n = first ? S[2] : S[S.length - 3];
+      const ix = e.p.x - n.p.x;
+      const iz = e.p.z - n.p.z;
+      const l = Math.hypot(ix, iz) || 1;
+      out.push({ x: e.p.x - cx, z: e.p.z - cz, y: e.p.y, ix: ix / l, iz: iz / l });
+    }
+    return out;
   }
 
   /** Show the stand-in of the origin island (world map) or the real one (playing). */

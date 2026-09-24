@@ -11,6 +11,7 @@ import { Spaceport } from './Launch.js';
 import { Weather } from './Effects.js';
 import { RACE } from './config.js';
 import { GROUP } from './Vehicle.js';
+import { AccessRoads } from './AccessRoads.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 const SEGMENTS = { low: 420, medium: 520, high: 600, ultra: 640 };
@@ -71,12 +72,26 @@ export class Island {
     terrain.heightModifier = track.heightModifier;
     terrain.splatModifier = track.splatModifier;
     terrain.clearance = track.clearance;
+    // Roads from the bridges to the circuit (levelled into the ground, kept clear of trees and houses).
+    const ends = this.opts.bridgeEnds || [];
+    if (ends.length) {
+      const roads = new AccessRoads(track, ends);
+      this.roads = roads;
+      const th = track.heightModifier;
+      terrain.heightModifier = (x, z, h) => roads.height(x, z, th(x, z, h));
+    }
+    const keepBridge = this.opts.keepOut;
+    this.keepOut = (x, z) => (keepBridge && keepBridge(x, z)) || (this.roads && this.roads.dist(x, z) < 14);
     if (st.city) {
       // The city is laid out before the ground is baked, so its blocks can be painted as paving.
       this.city = new City(eng, terrain, track, st, this.materials);
-      this.city.keepOut = this.opts.keepOut || null;
+      this.city.keepOut = this.keepOut;
       this.city.plan();
       terrain.splatModifier = (x, z, w, h) => this.city.splat(track.splatModifier(x, z, w, h), x, z);
+    }
+    if (this.roads) {
+      const s0 = terrain.splatModifier;
+      terrain.splatModifier = (x, z, w, h) => this.roads.splat(x, z, s0(x, z, w, h));
     }
 
     await progress(0.32, 'חוצב את הכביש בשטח…');
@@ -103,6 +118,7 @@ export class Island {
     await progress(0.48, 'סולל אספלט, שפות ומעקות…');
     this.group.add(track.build(this.materials));
     track.buildPhysics(eng.physics);
+    if (this.roads) this.group.add(this.roads.build(this.materials));
     await nextFrame();
 
     if (this.city) {
@@ -123,8 +139,8 @@ export class Island {
 
     await progress(0.62, 'שותל צמחייה…');
     // Bridge landings stay clear of trees, grass and houses.
-    const keep = this.opts.keepOut;
-    const blocked = this.city ? (x, z, kind) => (keep && keep(x, z)) || this.city.blocked(x, z, kind) : keep ? (x, z) => keep(x, z) : null;
+    const keep = this.keepOut;
+    const blocked = this.city ? (x, z, kind) => keep(x, z) || this.city.blocked(x, z, kind) : (x, z) => keep(x, z);
     const flora = new IslandFlora(eng, terrain, this.materials, st, track, blocked, this.city ? () => this.city.treeSpots() : null);
     this.flora = flora;
     this.group.add(flora.build());
@@ -263,6 +279,7 @@ export class Island {
   /** What a wheel rolls on at (x, z). */
   surface(x, z) {
     const tr = this.track;
+    if (this.roads && this.roads.dist(x, z) < 6.8) return 'asphalt';
     const q = tr.nearest(x, z, this._sq || (this._sq = {}));
     if (q) {
       const a = Math.abs(q.lat);
@@ -291,6 +308,29 @@ export class Island {
       this.lava.uniforms.uGain.value = (eng.materials.emissiveScale || 1) * 0.6 * (this.stage.lavaGain ?? 1);
     }
     for (const l of this.lights) l.light.intensity = l.base * (0.85 + 0.15 * Math.sin(eng.time.elapsed * 3.1) * Math.sin(eng.time.elapsed * 1.7));
+  }
+
+  /** Off stage: out of the scene and the physics world, kept whole so coming back is instant. */
+  suspend() {
+    if (this.suspended) return;
+    this.suspended = true;
+    const eng = this.engine;
+    for (const b of this.bodies) eng.physics.world.removeBody(b);
+    for (const e of this.emitters) eng.particles.remove(e);
+    this.group.removeFromParent();
+  }
+
+  /** Back on stage: its ground, circuit and bodies in the physics world, its sky and sea colours. */
+  resume() {
+    if (!this.suspended) return;
+    this.suspended = false;
+    const eng = this.engine;
+    for (const b of this.bodies) eng.physics.world.addBody(b);
+    for (const e of this.emitters) eng.particles.add(e);
+    this.group.visible = true;
+    eng.scene.add(this.group);
+    if (this.water) this.applyWater(this.water);
+    this._sky();
   }
 
   dispose() {

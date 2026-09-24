@@ -660,6 +660,17 @@ export class Track {
     return this.terrain.height(x, z);
   }
 
+  /** Is sample i on `side` inside an opening in the barriers (where a side road joins)? */
+  inGap(i, side) {
+    for (const g of this.gaps || []) {
+      if (g.side !== side) continue;
+      let d = Math.abs(i - g.i);
+      d = Math.min(d, this.n - d);
+      if (d <= g.half) return true;
+    }
+    return false;
+  }
+
   _rails(materials) {
     const n = this.n;
     const W = this.W;
@@ -710,6 +721,7 @@ export class Track {
           nrm.push(-rx, 0, -rz);
           uv.push(dist / 6, c / (prof.length - 1));
         }
+        if (this.inGap(i, side)) continue;
         if (!concrete && r % 2 === 0 && r < rows - 1) {
           posts.push(new THREE.Matrix4().makeRotationY(Math.atan2(this.tx[i], this.tz[i])).setPosition(x + rx * 0.12, gy - 0.05, z + rz * 0.12));
           if (r % 6 === 0) reflect.push({ m: new THREE.Matrix4().makeRotationY(Math.atan2(this.tx[i], this.tz[i])).setPosition(x - rx * 0.03, gy + 0.9, z - rz * 0.03), side });
@@ -717,6 +729,7 @@ export class Track {
         if (concrete && r % 6 === 0 && r < rows - 1) reflect.push({ m: new THREE.Matrix4().makeRotationY(Math.atan2(this.tx[i], this.tz[i])).setPosition(x - rx * 0.1, gy + 0.72, z - rz * 0.1), side });
       }
       for (let r = 0; r < rows - 1; r++) {
+        if (this.inGap((r * step) % n, side) || this.inGap(((r + 1) * step) % n, side)) continue;
         for (let c = 0; c < prof.length - 1; c++) {
           const a = r * prof.length + c;
           idx.push(a, a + 1, a + prof.length, a + 1, a + prof.length + 1, a + prof.length);
@@ -806,12 +819,13 @@ export class Track {
         const gy = this._groundY(x, z);
         pos.push(x, gy + bottom, z, x, gy + top, z);
         uv.push(dist / 0.42, 0, dist / 0.42, (top - bottom) / 0.42);
-        if (rows) {
+        const open = this.inGap(k, side) || (i && this.inGap((i - 2) % n, side));
+        if (rows && !open) {
           const a = (rows - 1) * 2;
           idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
         }
         rows++;
-        posts.push(new THREE.Matrix4().setPosition(x, gy + bottom, z)); // one post per row, ~4 m apart
+        if (!this.inGap(k, side)) posts.push(new THREE.Matrix4().setPosition(x, gy + bottom, z)); // one post per row, ~4 m apart
       }
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
@@ -875,6 +889,7 @@ export class Track {
     for (const side of [-1, 1]) {
       for (let i = 0; i < n; i += every) {
         const j = (i + every) % n;
+        if (this.inGap(i, side) || this.inGap(j, side)) continue;
         const x = this.x[i] - this.tz[i] * side * off;
         const z = this.z[i] + this.tx[i] * side * off;
         const x2 = this.x[j] - this.tz[j] * side * off;

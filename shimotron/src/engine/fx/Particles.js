@@ -103,6 +103,15 @@ export class ParticleSystem {
     engine.scene.add(this.mesh);
   }
 
+  /** Moves every live particle (the world's origin moved under them). */
+  shift(dx, dy, dz) {
+    for (let i = 0; i < this.count; i++) {
+      this.pos[i * 3] += dx;
+      this.pos[i * 3 + 1] += dy;
+      this.pos[i * 3 + 2] += dz;
+    }
+  }
+
   /** Spawns one particle; returns false when the pool is full. */
   emit(p) {
     if (this.count >= this.max) return false;
