@@ -197,10 +197,18 @@ export class Water {
           float damp = smoothstep(0.0, 5.0, depth) * 0.85 + 0.15;
           float fade = 1.0 - smoothstep(600.0, 2200.0, length(wp0.xz - cameraPosition.xz));
           vec3 tg = vec3(1.0, 0.0, 0.0); vec3 bn = vec3(0.0, 0.0, 1.0);
-          vec3 disp = gerstner(wp0.xz, damp * fade, smoothstep(10.0, 42.0, depth), tg, bn);
+          float deepK = smoothstep(10.0, 42.0, depth);
+          vec3 disp = gerstner(wp0.xz, damp * fade, deepK, tg, bn);
           transformed += disp;
           vDepth = depth;
-          vCrest = disp.y;`,
+          // Crest height as a share of the tallest the waves can stack up here (-1..1).
+          float maxA = 0.0;
+          for (int i = 0; i < 4; i++) {
+            vec4 w = uWaves[i];
+            float k = 6.2831853 / w.y;
+            maxA += (w.z / k) * w.w * uWaveAmp * damp * fade * (1.0 + deepK * uSwell[i]);
+          }
+          vCrest = disp.y / max(maxA, 0.05);`,
         )
         .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>\n vWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;`);
 
@@ -242,9 +250,11 @@ export class Water {
             // Breaking band right at the waterline, pulsing with the swell.
             float swash = 0.5 + 0.5 * sin(t * 0.9 + vWPos.x * 0.05 + vWPos.z * 0.03);
             float shore = smoothstep(0.45 + swash * 0.25, 0.0, wDepth) * smoothstep(0.45, 0.8, fn + 0.18 * sin(wDepth * 14.0 - t * 2.2));
-            // Whitecaps only on the steepest crests.
-            float crest = smoothstep(0.62, 0.9, vCrest / max(uWaveAmp, 0.3)) * smoothstep(0.55, 0.85, fn);
-            wFoam = clamp(shore * 0.85 + crest * 0.45, 0.0, 1.0) * (1.0 - smoothstep(150.0, 500.0, dist));
+            // Whitecaps: only where the waves stack up highest, in scattered, broken patches, more in a strong wind.
+            float patchF = smoothstep(0.58, 0.8, texture2D(tNormal, vWPos.xz * 0.0045 + vec2(t * 0.002, t * 0.0013)).b);
+            float streak = smoothstep(0.5, 0.85, texture2D(tNormal, vWPos.xz * vec2(0.05, 0.16) + vec2(t * 0.02, 0.0)).g);
+            float crest = smoothstep(0.78, 0.97, vCrest) * patchF * mix(0.5, 1.0, streak) * smoothstep(0.55, 0.85, fn) * smoothstep(0.6, 1.1, uWaveAmp);
+            wFoam = clamp(shore * 0.85 + crest * 0.5, 0.0, 1.0) * (1.0 - smoothstep(150.0, 500.0, dist));
             diffuseColor.rgb = mix(body, vec3(0.9), wFoam);
             float fres = pow(1.0 - clamp(dot(wN, normalize(cameraPosition - vWPos)), 0.0, 1.0), 4.0);
             // Light path through the water: longer when looking in at a slant (refracted ray).
@@ -270,7 +280,7 @@ export class Water {
             // Light passing through wave crests toward the viewer.
             vec3 V = normalize(cameraPosition - vWPos);
             float sss = pow(clamp(dot(V, -uSunDir) * 0.5 + 0.5, 0.0, 1.0), 4.0);
-            float h = clamp(vCrest * 1.6 + 0.35, 0.0, 1.0);
+            float h = clamp(vCrest * 0.6 + 0.4, 0.0, 1.0);
             totalEmissiveRadiance += uSunColor * uShallow * sss * h * 0.05 * (1.0 - wFoam);
             // From below, sunlight comes through the surface (strongest looking straight up).
             if (!gl_FrontFacing) totalEmissiveRadiance += uSunColor * uShallow * 0.035 * pow(clamp(-V.y, 0.0, 1.0), 2.0);

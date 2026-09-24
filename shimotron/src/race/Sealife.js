@@ -54,333 +54,97 @@ function roundBlob(r) {
   return g;
 }
 
-/** Height of each coral model at scale 1 (metres): corals are scaled so none breaks the surface. */
-export const CORAL_HEIGHT = {
-  branch: 0.95,
-  brain: 0.4,
-  table: 0.56,
-  fan: 1.45,
-  tubes: 0.95,
-  kelp: 4.3,
-  barrel: 1.25,
-  anemone: 0.42,
-  pillar: 1.7,
-  plate: 0.75,
-  soft: 1.05,
-  whip: 2.1,
-  grass: 0.6,
-  urchin: 0.32,
-  star: 0.08,
-  clam: 0.34,
-  rock: 1.1,
-};
+/** Height of each coral model at scale 1 (metres), measured from the models when they are built. */
+export const CORAL_HEIGHT = {};
 
-/** Which material each kind uses: rigid (polyp shading), sway (fronds), lace (sea fans). */
-export const CORAL_MAT = { fan: 'lace', kelp: 'sway', anemone: 'sway', soft: 'sway', whip: 'sway', grass: 'sway' };
-
-/** Colour palettes per kind (instance colours, multiplied with the vertex colours). */
-export const CORAL_COLORS = {
-  branch: [0xff6f91, 0xff9a3c, 0xffd23a, 0xb266ff, 0x3de0c8, 0xc9a27a, 0x9fbf6a, 0xf5f0e0, 0x7ad0ff],
-  brain: [0x9fbf6a, 0xc9a27a, 0xffd23a, 0x3de0c8, 0xe8a0ff, 0xff9a3c],
-  table: [0xc9a27a, 0x9fbf6a, 0xffd23a, 0xff8fb0, 0x7ad0ff, 0xb28a5a],
-  fan: [0xb266ff, 0xff4a5a, 0xff9a3c, 0xffd23a, 0xe8a0ff, 0xff6f91],
-  tubes: [0xb266ff, 0xff9a3c, 0xffd23a, 0x3de0c8, 0xff4a5a],
-  barrel: [0xa0522d, 0xd07040, 0x8a4a8a, 0xc98a5a, 0xb03a3a],
-  anemone: [0xff8fb0, 0xb266ff, 0x9fe07a, 0xffd0a0, 0x3de0c8, 0xff6a5a],
-  pillar: [0xc9a27a, 0xd8c8a0, 0x9fbf6a, 0xb8a080],
-  plate: [0x9fbf6a, 0xc9a27a, 0xb266ff, 0x7ad0ff, 0xffd23a, 0x8a6bbf],
-  soft: [0xff6f91, 0xffa3c4, 0xe8a0ff, 0xff9a3c, 0xf5f0e0, 0xffd23a, 0xff4a5a],
-  whip: [0xffd23a, 0xff5a3a, 0xd9d0c0, 0x9a3aaa, 0xff8a2a],
-  urchin: [0x2a1a3a, 0x3a1020, 0x151515, 0x4a2a5a],
-  star: [0xff6a1a, 0xe0262b, 0x2f6bff, 0xffd23a, 0xff8fb0],
-  clam: [0x3de0c8, 0x2f6bff, 0x8a4dff, 0x3de07a, 0x19b0ff],
-  rock: [0xffffff, 0xf2e8e0, 0xe8f0e8, 0xf0e4f4],
-};
-
-/** Build every coral / sponge / anemone model. `rng` gives each island its own growth. */
-export function coralGeometries(rng, noise) {
-  const white = 0xffffff;
-  // Branching (staghorn): forks of thin tapering cylinders.
-  const branch = [];
-  const grow = (x, y, z, dir, len, r, depth) => {
-    const a = new THREE.Vector3(x, y, z);
-    const b = a.clone().addScaledVector(dir, len);
-    branch.push(paint(limb(a, b, r, r * 0.6, 5, depth === 0), white, 0));
-    if (depth > 0) {
-      for (let k = 0; k < 2; k++) {
-        const d = dir.clone().add(new THREE.Vector3(rng.range(-0.7, 0.7), rng.range(0.1, 0.5), rng.range(-0.7, 0.7))).normalize();
-        grow(b.x, b.y, b.z, d, len * 0.72, r * 0.7, depth - 1);
-      }
-    }
-  };
-  for (let k = 0; k < 6; k++) grow(0, 0, 0, new THREE.Vector3(Math.cos(k * 1.1) * 0.6, 1, Math.sin(k * 1.1) * 0.6).normalize(), 0.5, 0.08, 1);
-  // Brain coral: a squashed dome with meandering grooves.
-  let brain = new THREE.IcosahedronGeometry(0.6, 3);
-  brain.deleteAttribute('uv');
-  brain.deleteAttribute('normal');
-  brain = mergeVertices(brain);
-  const bp = brain.attributes.position;
-  for (let i = 0; i < bp.count; i++) {
-    _v.fromBufferAttribute(bp, i);
-    const groove = 1 + Math.sin(_v.x * 14 + Math.sin(_v.z * 9) * 2) * 0.04;
-    _v.multiplyScalar(groove);
-    _v.y = Math.max(_v.y, -0.1) * 0.62;
-    bp.setXYZ(i, _v.x, _v.y, _v.z);
-  }
-  brain.computeVertexNormals();
-  // Table coral: stem and a wide plate.
-  const table = mergeGeometries([paint(new THREE.CylinderGeometry(0.07, 0.12, 0.5, 6).translate(0, 0.25, 0), white), paint(new THREE.CylinderGeometry(0.9, 0.75, 0.07, 14).translate(0, 0.52, 0), white)]);
-  // Sea fan: a vertical disc cut into lace by its shader.
-  const fan = paint(new THREE.CircleGeometry(0.7, 12).translate(0, 0.75, 0), white, (x, y) => y / 1.4);
-  // Tube sponges.
-  const tubes = mergeGeometries(
-    [0, 1, 2, 3].map((k) => {
-      const h = 0.4 + k * 0.18;
-      return paint(new THREE.CylinderGeometry(0.1 + (k % 2) * 0.03, 0.12, h, 7, 1, true).translate(Math.cos(k * 1.7) * 0.16, h / 2, Math.sin(k * 1.7) * 0.16), white);
-    }),
-  );
-  // Kelp: tall stipes hung with leaf blades and gas bladders, waving from the tips.
-  const kelp = [];
-  for (let k = 0; k < 5; k++) {
-    const h = 3.2 + (k % 3) * 0.5;
-    const bx = Math.cos(k * 2.4) * 0.25;
-    const bz = Math.sin(k * 2.4) * 0.25;
-    const sway = (x, y) => (y / 4.3) ** 1.4;
-    kelp.push(paint(limb(new THREE.Vector3(bx, 0, bz), new THREE.Vector3(bx, h, bz), 0.018, 0.01, 3), white, sway));
-    const leaves = [];
-    for (let j = 0; j < 9; j++) {
-      const y = 0.4 + (j / 9) * (h - 0.4);
-      const a = j * 2.2 + k;
-      const len = 0.42 + Math.sin(j * 1.7 + k) * 0.1;
-      const w = 0.07;
-      // A long diamond leaf, angled up and out from the stipe.
-      const dx = Math.cos(a);
-      const dz = Math.sin(a);
-      const b0 = [bx, y, bz];
-      const tip = [bx + dx * len * 0.8, y + len * 0.6, bz + dz * len * 0.8];
-      const mid = [bx + dx * len * 0.4, y + len * 0.3, bz + dz * len * 0.4];
-      const px = -dz * w;
-      const pz = dx * w;
-      leaves.push(...b0, mid[0] + px, mid[1], mid[2] + pz, ...tip, ...b0, ...tip, mid[0] - px, mid[1], mid[2] - pz);
-    }
-    const lg = new THREE.BufferGeometry();
-    lg.setAttribute('position', new THREE.Float32BufferAttribute(leaves, 3));
-    lg.computeVertexNormals();
-    kelp.push(paint(lg, white, sway));
-    const bulbs = roundBlob(0.035);
-    kelp.push(paint(bulbs.translate(bx, h, bz), 0xd8c070, sway));
-  }
-  // Barrel sponge: a ridged vase, open at the top.
-  const barrelProf = [
-    [0.22, 0],
-    [0.42, 0.25],
-    [0.56, 0.7],
-    [0.6, 1.15],
-    [0.56, 1.25],
-    [0.46, 1.2],
-    [0.36, 0.55],
-    [0.1, 0.45],
-  ].map(([r, y]) => new THREE.Vector2(r, y));
-  const barrelG = new THREE.LatheGeometry(barrelProf, 16);
-  const brp = barrelG.attributes.position;
-  for (let i = 0; i < brp.count; i++) {
-    const x = brp.getX(i);
-    const z = brp.getZ(i);
-    const a = Math.atan2(z, x);
-    const k = 1 + Math.sin(a * 9) * 0.06;
-    brp.setX(i, x * k);
-    brp.setZ(i, z * k);
-  }
-  barrelG.computeVertexNormals();
-  const barrel = paint(barrelG, white);
-  // Anemone: a column and a crown of tentacles that wave.
-  const anemone = [paint(new THREE.CylinderGeometry(0.2, 0.24, 0.16, 10).translate(0, 0.08, 0), 0xd8c8c0, 0)];
-  for (let k = 0; k < 22; k++) {
-    const a = k * 2.399;
-    const r = 0.05 + (k / 22) * 0.16;
-    const base = new THREE.Vector3(Math.cos(a) * r, 0.16, Math.sin(a) * r);
-    const tip = base.clone().add(new THREE.Vector3(Math.cos(a) * (0.12 + r), 0.24 - r * 0.4, Math.sin(a) * (0.12 + r)));
-    anemone.push(paint(limb(base, tip, 0.03, 0.012, 3), white, (x, y) => Math.max(0, (y - 0.14) * 3.5)));
-  }
-  // Pillar coral: a cluster of upright fingers.
-  const pillar = [];
-  for (let k = 0; k < 7; k++) {
-    const a = k * 2.2;
-    const r = k === 0 ? 0 : 0.18 + (k % 3) * 0.08;
-    const h = 0.7 + ((k * 37) % 9) * 0.11;
-    pillar.push(paint(new THREE.CapsuleGeometry(0.1 + (k % 2) * 0.03, h, 1, 6).translate(Math.cos(a) * r, h / 2 + 0.08, Math.sin(a) * r), white));
-  }
-  // Plate (lettuce) coral: stacked wavy whorls.
-  const plate = [];
-  for (let k = 0; k < 4; k++) {
-    const g = new THREE.CircleGeometry(0.55 - k * 0.08, 18);
-    g.rotateX(-Math.PI / 2);
-    const p = g.attributes.position;
-    for (let i = 0; i < p.count; i++) {
-      const x = p.getX(i);
-      const z = p.getZ(i);
-      const d = Math.hypot(x, z);
-      p.setY(i, Math.sin(Math.atan2(z, x) * 5 + k) * 0.07 * d * 2 + d * 0.35);
-    }
-    g.computeVertexNormals();
-    g.rotateZ(rng.range(-0.25, 0.25));
-    g.translate(rng.range(-0.15, 0.15), 0.1 + k * 0.16, rng.range(-0.15, 0.15));
-    plate.push(paint(g, white));
-  }
-  plate.push(paint(new THREE.CylinderGeometry(0.08, 0.14, 0.6, 6).translate(0, 0.3, 0), 0xc0b0a0));
-  // Soft coral: a trunk that splits into branches tipped with puffs of polyps; sways gently.
-  const soft = [];
-  const trunkTop = new THREE.Vector3(0, 0.45, 0);
-  soft.push(paint(limb(new THREE.Vector3(0, 0, 0), trunkTop, 0.1, 0.07, 6), 0xf0e8e0, 0));
-  for (let k = 0; k < 6; k++) {
-    const a = k * 1.05 + rng.range(-0.2, 0.2);
-    const tip = new THREE.Vector3(Math.cos(a) * 0.38, 0.75 + rng.range(-0.1, 0.2), Math.sin(a) * 0.38);
-    soft.push(paint(limb(trunkTop, tip, 0.05, 0.03, 4), 0xf0e8e0, (x, y) => Math.max(0, (y - 0.4) * 1.4)));
-    for (let j = 0; j < 2; j++) {
-      const puff = roundBlob(0.14 + rng.range(0, 0.06));
-      puff.translate(tip.x + rng.range(-0.08, 0.08), tip.y + rng.range(-0.05, 0.12), tip.z + rng.range(-0.08, 0.08));
-      soft.push(paint(puff, white, (x, y) => Math.max(0, (y - 0.4) * 1.4)));
-    }
-  }
-  // Sea whips: long thin rods that bend with the current.
-  const whip = [];
-  for (let k = 0; k < 8; k++) {
-    const a = k * 0.8;
-    const h = 1.2 + ((k * 13) % 7) * 0.14;
-    let prev = new THREE.Vector3(Math.cos(a) * 0.06, 0, Math.sin(a) * 0.06);
-    for (let s = 1; s <= 4; s++) {
-      const f = s / 4;
-      const next = new THREE.Vector3(Math.cos(a) * (0.06 + f * f * 0.5), h * f, Math.sin(a) * (0.06 + f * f * 0.5));
-      whip.push(paint(limb(prev, next, 0.028 * (1 - f * 0.5 + 0.12), 0.028 * (1 - f * 0.5), 3), white, (x, y) => (y / 2.2) ** 1.3));
-      prev = next;
-    }
-  }
-  // Sea grass: a tuft of blades.
-  const grass = [];
-  for (let k = 0; k < 18; k++) {
-    const h = 0.32 + ((k * 7) % 5) * 0.07;
-    const g = new THREE.PlaneGeometry(0.04, h, 1, 2);
-    g.translate(0, h / 2, 0);
-    g.rotateY(k * 1.3);
-    g.rotateZ(Math.sin(k * 2.1) * 0.25);
-    g.translate(Math.cos(k * 2.4) * 0.22 * ((k % 3) / 2 + 0.3), 0, Math.sin(k * 2.4) * 0.22 * ((k % 3) / 2 + 0.3));
-    grass.push(paint(g, white, (x, y) => (y / 0.6) ** 1.2));
-  }
-  // Sea urchin: a dark ball of spines.
-  const urchin = [paint(roundBlob(0.11).scale(1, 0.8, 1).translate(0, 0.08, 0), white)];
-  const ico = new THREE.IcosahedronGeometry(1, 0).toNonIndexed().attributes.position;
-  for (let i = 0; i < ico.count; i += 3) {
-    const d = new THREE.Vector3(ico.getX(i) + ico.getX(i + 1) + ico.getX(i + 2), ico.getY(i) + ico.getY(i + 1) + ico.getY(i + 2), ico.getZ(i) + ico.getZ(i + 1) + ico.getZ(i + 2)).normalize();
-    if (d.y < -0.3) continue;
-    const a = d.clone().multiplyScalar(0.09).add(new THREE.Vector3(0, 0.08, 0));
-    urchin.push(paint(limb(a, a.clone().addScaledVector(d, 0.22), 0.016, 0.002, 3), white));
-  }
-  // Starfish: five arms, flat on the sand.
-  const starShape = new THREE.Shape();
-  for (let k = 0; k <= 10; k++) {
-    const a = (k / 10) * Math.PI * 2;
-    const r = k % 2 ? 0.08 : 0.24;
-    if (k === 0) starShape.moveTo(Math.cos(a) * r, Math.sin(a) * r);
-    else starShape.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-  }
-  const star = paint(new THREE.ExtrudeGeometry(starShape, { depth: 0.02, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 1 }).rotateX(-Math.PI / 2), white);
-  // Giant clam: a fluted shell, open, with a bright mantle between the lips.
-  const shell = (s) => {
-    const g = new THREE.SphereGeometry(0.3, 14, 5, 0, Math.PI * 2, 0, Math.PI / 2);
-    const p = g.attributes.position;
-    for (let i = 0; i < p.count; i++) {
-      const x = p.getX(i);
-      const z = p.getZ(i);
-      const k = 1 + Math.sin(Math.atan2(z, x) * 5) * 0.08;
-      p.setXYZ(i, x * k * 1.3, p.getY(i) * 0.5, z * k * 0.8);
-    }
-    g.rotateX((s * Math.PI) / 2 - (s > 0 ? 0.35 : -0.35));
-    g.translate(0, 0.14, 0);
-    g.computeVertexNormals();
-    return paint(g, 0x8a8a84);
-  };
-  const clam = mergeGeometries([shell(1), shell(-1), paint(new THREE.SphereGeometry(0.3, 12, 4).scale(1.25, 0.25, 0.25).translate(0, 0.3, 0), white)]);
-  // Reef rock: a knobbly, flattened boulder, smooth-shaded, mottled with coralline algae and weed.
-  let rockG = new THREE.IcosahedronGeometry(1, 2);
-  rockG.deleteAttribute('uv');
-  rockG.deleteAttribute('normal');
-  rockG = mergeVertices(rockG);
-  const rp = rockG.attributes.position;
-  for (let i = 0; i < rp.count; i++) {
-    _v.fromBufferAttribute(rp, i);
-    const n = noise ? noise.noise(_v.x * 1.7 + 3, _v.z * 1.7 + _v.y * 1.3) + noise.noise(_v.x * 4.1 - 2, _v.z * 4.1 + _v.y * 3.7) * 0.35 : 0;
-    _v.multiplyScalar(1 + n * 0.26);
-    _v.y = _v.y * 0.62 + 0.45;
-    rp.setXYZ(i, _v.x, _v.y, _v.z);
-  }
-  rockG.computeVertexNormals();
-  const rc = new Float32Array(rp.count * 3);
-  const stone = new THREE.Color(0x7d7266);
-  const pink = new THREE.Color(0xb27f8c);
-  const weed = new THREE.Color(0x6c7a48);
-  const sand = new THREE.Color(0xb8a888);
-  const c = new THREE.Color();
-  for (let i = 0; i < rp.count; i++) {
-    _v.fromBufferAttribute(rp, i);
-    const m = noise ? noise.noise(_v.x * 2.3 + 11, _v.z * 2.3 - _v.y * 1.9) : 0;
-    c.copy(stone).lerp(pink, THREE.MathUtils.smoothstep(m, 0.05, 0.4)).lerp(weed, THREE.MathUtils.smoothstep(-m, 0.15, 0.45));
-    c.lerp(sand, THREE.MathUtils.smoothstep(_v.y, 0.85, 1.2) * 0.5);
-    c.toArray(rc, i * 3);
-  }
-  rockG.setAttribute('color', new THREE.BufferAttribute(rc, 3));
-  rockG.setAttribute('aMask', new THREE.BufferAttribute(new Float32Array(rp.count), 1));
-  const rock = rockG.toNonIndexed();
-  return {
-    branch: mergeGeometries(branch),
-    brain: paint(brain, white),
-    table,
-    fan,
-    tubes,
-    kelp: mergeGeometries(kelp),
-    barrel,
-    anemone: mergeGeometries(anemone),
-    pillar: mergeGeometries(pillar),
-    plate: mergeGeometries(plate),
-    soft: mergeGeometries(soft),
-    whip: mergeGeometries(whip),
-    grass: mergeGeometries(grass),
-    urchin: mergeGeometries(urchin),
-    star,
-    clam,
-    rock,
-  };
-}
+/** Which material each kind uses: rigid (bumped coral surfaces), sway (soft, in the current), lace (sea fans). */
+export const CORAL_MAT = { fan: 'lace', kelp: 'sway', anemone: 'sway', soft: 'sway', leather: 'sway', whip: 'sway', grass: 'sway', crinoid: 'sway', eel: 'sway', octopus: 'sway', gardeneels: 'sway', seahorse: 'sway' };
 
 /**
- * Which kinds grow where, with weights: the shallow reef, bare sand in the
- * shallows (sea grass and a few heads), and the deep slopes beyond.
+ * Colours per kind (instance tints over the shader's surface). Living reef
+ * builders are mostly tan, brown, olive and cream from their algae, with
+ * the odd blue or purple Acropora; the colour comes from soft corals, sea
+ * fans, sponges, anemones, clams, feather stars and the fish.
+ */
+export const CORAL_COLORS = {
+  branch: [0xc8a878, 0xb89868, 0xa89060, 0xd8c8a0, 0x9aa070, 0xc0b088, 0xa888b8, 0x8aa8c8],
+  elkhorn: [0xc89860, 0xb88850, 0xd0a870, 0xc0a068],
+  brain: [0xb8a060, 0x9a9a68, 0xa88860, 0x8a9a70, 0xc8b080, 0x7a8a6a, 0xb0a888],
+  boulder: [0xc8b078, 0xb89868, 0xa8a070, 0x9a8aa0, 0xd0c090, 0xb8b088],
+  table: [0xb8a070, 0xa89868, 0x9aa878, 0xc8b890, 0x8898a8, 0xb0a078],
+  plate: [0x9a9868, 0xa89070, 0x8a8a78, 0xb8a888, 0x6a8a70, 0xa09a80],
+  pillar: [0xd8c8a0, 0xc8b890, 0xb8a888, 0xd0c098],
+  mushroom: [0xd8c8a8, 0xb8a888, 0xc0b0d0, 0xa8b890],
+  fan: [0x8a3a8a, 0xb03040, 0xd07030, 0xd0b040, 0x6a3070, 0xc85060],
+  soft: [0xe86a9a, 0xc050a0, 0xe04040, 0xf08a40, 0xe8d8e8, 0xa060d0, 0xf0b0c8],
+  leather: [0xd8c8a0, 0xc8b888, 0xa8a878, 0xb8c0a0, 0xd0c8b0],
+  tubes: [0x8a4a9a, 0xd8b040, 0x6a7a9a, 0xd07040, 0xa04a6a, 0x9a8ac0],
+  barrel: [0x9a5040, 0x8a4a3a, 0xa86048, 0x7a4050, 0x8a6a58],
+  vase: [0x70a0d0, 0xd090b0, 0xa888c8, 0x90b8d8],
+  anemone: [0xd8b8a0, 0xa8d070, 0xe8a0b0, 0xd0d0a0, 0xb070d0, 0xe0c080],
+  clam: [0x3ab0c0, 0x2a70d0, 0x6a4ad0, 0x40c080, 0x1a90d0, 0x8a6a40],
+  crinoid: [0xe0b030, 0xd06020, 0x902020, 0x303030, 0xe8e8e0, 0x3a9a50],
+  cucumber: [0x2a2420, 0x6a5040, 0xa08860, 0x3a3020, 0xc0a070],
+  urchin: [0x151518, 0x2a1a2a, 0x201010],
+  star: [0x3a6ad8, 0xd84a2a, 0xe0a030, 0x8a3a8a, 0x4a7ae0],
+  whip: [0xe0a030, 0xd05030, 0xd8d0c0, 0x9a3a9a, 0xe07a30],
+  rock: [0xa09488, 0x988c84, 0xa8a090, 0x948a8a, 0xa89c8c],
+  eel: [0x5a6a2a, 0x6a5a3a, 0x8a8a4a, 0x3a3a2a],
+  octopus: [0xb86a4a, 0xa0503a, 0x8a6a5a, 0xc88a6a],
+  crab: [0xc0401a, 0xd06a2a, 0x8a4a3a, 0xe0b080],
+  lobster: [0x8a4a3a, 0xa05a3a, 0x6a4a5a],
+  seahorse: [0xe0b040, 0xd07030, 0x9a8a60],
+  gardeneels: [0xd8d0b8, 0xc8c0a0, 0xe0d8c0],
+};
+
+// Build every model (both levels of detail) from the dedicated module.
+export { buildCorals as coralGeometries } from './Corals.js';
+
+/**
+ * Which kinds grow where, with weights: the shallow reef (thickets, tables,
+ * brain and boulder corals), bare sand in the shallows (mushroom corals,
+ * sea stars, cucumbers, a few heads), sea grass meadows, and the deep
+ * slopes beyond (sea fans, whips, barrel and vase sponges, soft corals).
  */
 export const ZONES = {
-  reef: { branch: 3, brain: 2, table: 1.4, fan: 1.2, tubes: 1, barrel: 0.6, anemone: 1.3, pillar: 0.8, plate: 1, soft: 1.1, clam: 0.4, rock: 0.9, urchin: 0.5 },
-  sand: { star: 0.6, urchin: 0.5, rock: 0.9, brain: 0.8, anemone: 0.45, soft: 0.5, tubes: 0.35, branch: 0.6, barrel: 0.3, clam: 0.2, table: 0.3 },
-  meadow: { grass: 10, star: 0.3, urchin: 0.2 },
-  deep: { whip: 2.4, fan: 2, barrel: 1.5, soft: 1.4, rock: 1.1, tubes: 0.8, plate: 0.6, table: 0.3, star: 0.15, anemone: 0.3 },
+  reef: { branch: 3, elkhorn: 1.1, table: 1.6, brain: 1.4, boulder: 1.6, plate: 0.8, pillar: 0.4, soft: 0.8, leather: 0.9, anemone: 0.8, clam: 0.4, tubes: 0.5, fan: 0.4, rock: 1.2, urchin: 0.5, crinoid: 0.3, mushroom: 0.3, vase: 0.2, star: 0.25 },
+  sand: { mushroom: 0.6, star: 0.6, cucumber: 0.8, urchin: 0.4, rock: 0.7, brain: 0.6, boulder: 0.6, anemone: 0.4, grass: 0.5, clam: 0.2, tubes: 0.25, leather: 0.3, gardeneels: 0.5, crab: 0.3 },
+  meadow: { grass: 10, star: 0.3, cucumber: 0.35, urchin: 0.2, seahorse: 0.25, crab: 0.1 },
+  deep: { fan: 2.4, whip: 2, barrel: 1.6, soft: 1.6, plate: 1.2, tubes: 1, vase: 0.8, crinoid: 0.8, rock: 1, boulder: 0.6, leather: 0.4, table: 0.2, star: 0.15 },
 };
 
 /** Scale range per kind. */
 export const CORAL_SCALE = {
-  branch: [0.8, 2.4],
-  brain: [0.8, 2.8],
-  table: [0.9, 2.2],
-  fan: [0.8, 2.2],
-  tubes: [0.8, 2],
-  kelp: [0.8, 2],
-  barrel: [0.7, 2],
-  anemone: [0.8, 1.8],
-  pillar: [0.7, 1.6],
-  plate: [0.8, 2.2],
-  soft: [0.8, 2],
-  whip: [0.8, 1.6],
+  branch: [0.8, 2.2],
+  elkhorn: [0.8, 1.8],
+  brain: [0.6, 2.5],
+  boulder: [0.8, 3.4],
+  table: [0.8, 2.4],
+  plate: [0.7, 1.8],
+  pillar: [0.6, 1.3],
+  mushroom: [0.7, 1.3],
+  fan: [0.8, 2],
+  soft: [0.7, 1.8],
+  leather: [0.7, 1.6],
+  tubes: [0.8, 1.6],
+  barrel: [0.6, 1.8],
+  vase: [0.8, 1.5],
+  anemone: [0.8, 1.6],
+  clam: [0.7, 1.5],
+  crinoid: [0.8, 1.5],
+  cucumber: [0.8, 1.4],
+  urchin: [0.8, 1.3],
+  star: [0.8, 1.3],
+  whip: [0.8, 1.5],
   grass: [1.1, 2.2],
-  urchin: [0.8, 1.4],
-  star: [0.8, 1.4],
-  clam: [0.8, 1.6],
+  kelp: [0.8, 2],
   rock: [0.8, 2.6],
+  eel: [0.9, 1.5],
+  octopus: [0.8, 1.6],
+  crab: [0.9, 1.5],
+  lobster: [0.9, 1.3],
+  seahorse: [0.9, 1.3],
+  gardeneels: [1, 1.6],
 };
 
 export function pickWeighted(rng, table) {

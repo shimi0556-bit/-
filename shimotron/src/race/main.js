@@ -1,3 +1,4 @@
+import { Underwater } from './Underwater.js';
 import './race.css';
 import { DESIGNS, DESIGN_NAMES } from './CraftModels.js';
 import * as THREE from 'three';
@@ -1283,6 +1284,9 @@ class Game {
     const w = this.water;
     const surf = w && this.state !== 'menu' ? waveAt(cam.x, cam.z, this.engine.time.elapsed, w.uniforms.uWaveAmp.value, undefined, -this.floorAt(cam.x, cam.z)).y : -1e9;
     this.engine.atmosphere.underwater = cam.y < surf - 0.05;
+    // Sun shafts and marine snow while under the surface.
+    if (!this.underwaterFx) this.underwaterFx = new Underwater(this.engine);
+    this.underwaterFx.update(dt, this.engine.atmosphere.underwater && this.state !== 'menu');
     const r = this.race;
     if (!r || this.state !== 'race') return;
     const I = this.engine.input;

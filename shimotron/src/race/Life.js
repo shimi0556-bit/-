@@ -2,6 +2,9 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Random } from '../engine/core/Random.js';
 import { waveAt } from '../engine/world/Water.js';
+import { coralShader } from './Corals.js';
+import { Megafauna } from './Megafauna.js';
+import { Wrecks } from './Wrecks.js';
 import { paint, coralGeometries, CORAL_HEIGHT, CORAL_MAT, CORAL_COLORS, CORAL_SCALE, ZONES, pickWeighted, SPECIES, fishGeometry, FISH_PATTERN_GLSL } from './Sealife.js';
 
 const _m = new THREE.Matrix4();
@@ -49,11 +52,23 @@ export class Life {
   build() {
     const c = this.cfg;
     if (c.reef > 0) this._reefs();
+    // Wrecks on the sea floor; reef fish gather round them too.
+    if (c.fish > 0) {
+      this.wrecks = new Wrecks(this.engine, this);
+      this.group.add(this.wrecks.build());
+      if (this.reefSpots) for (const w of this.wrecks.spots) for (let k = 0; k < 8; k++) this.reefSpots.push({ x: w.x + this.rng.range(-12, 12), z: w.z + this.rng.range(-12, 12) });
+    }
     if (c.fish > 0) this._fish();
     if (c.dolphins > 0) this._dolphins();
     if (c.boats > 0) this._boats();
     if (c.balloons > 0) this._balloons();
     if (c.cows + c.sheep + c.camels > 0) this._herds();
+    // Whales, whale sharks, mantas, hammerheads, bait balls and jellyfish.
+    if (c.fish > 0) {
+      this.giants = new Megafauna(this.engine, this);
+      this.group.add(this.giants.build());
+      this.solids.push(...this.giants.solids);
+    }
     return this.group;
   }
 
@@ -109,47 +124,52 @@ export class Life {
 
   // ---------------------------------------------------------------- reefs
 
-  /** Coral models and their three materials (shared with the submarine course's reef canyon). */
+  /**
+   * Coral models (near and far detail) and their three materials, shared
+   * with the submarine course's reef canyon: rigid corals with the coral
+   * surface shader, swaying soft growth, and gorgonian nets.
+   */
   coralKit() {
     if (this._kit) return this._kit;
-    const geos = coralGeometries(this.rng, this.terrain.noise);
-    const rigid = new THREE.MeshStandardMaterial({ name: 'אלמוגים', vertexColors: true, roughness: 0.72, side: THREE.DoubleSide });
-    rigid.onBeforeCompile = (shader) => {
-      shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vCoral;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvCoral = position;');
-      shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vCoral;').replace(
-        '#include <color_fragment>',
-        `#include <color_fragment>
-        vec3 q = vCoral * 11.0;
-        float polyp = sin(q.x + sin(q.z * 1.3) * 2.0) * sin(q.z * 1.1 + sin(q.y * 1.7)) * sin(q.y * 1.4 + q.x * 0.5);
-        diffuseColor.rgb *= 0.72 + 0.34 * smoothstep(-0.6, 0.6, polyp);
-        diffuseColor.rgb *= mix(0.7, 1.08, smoothstep(-0.1, 0.5, vCoral.y));`,
-      );
-    };
-    rigid.customProgramCacheKey = () => 'life-coral-2';
+    const seed = this.stage.seed * 13 + 5;
+    const geos = coralGeometries(seed, 0);
+    const lo = coralGeometries(seed, 1);
+    const heights = {};
+    for (const k in geos) heights[k] = geos[k].boundingBox.max.y;
+    Object.assign(CORAL_HEIGHT, heights);
+    const rigid = new THREE.MeshStandardMaterial({ name: 'אלמוגים', vertexColors: true, roughness: 0.8, side: THREE.DoubleSide });
+    rigid.onBeforeCompile = (shader) => coralShader(shader, true);
+    rigid.customProgramCacheKey = () => 'life-coral-3';
     const swayBody = 'transformed.x += sin(uTime * 1.2 + ph + transformed.y * 1.3) * 0.22 * aMask; transformed.z += cos(uTime * 0.9 + ph * 1.7) * 0.18 * aMask;';
-    const sway = this._animated({ name: 'אלמוגים נעים', vertexColors: true, roughness: 0.75, side: THREE.DoubleSide }, 'life-sway', swayBody);
-    // Sea fans: a lace of fine branches, not a solid disc.
-    const lace = this._animated({ name: 'מניפות ים', vertexColors: true, roughness: 0.8, side: THREE.DoubleSide }, 'life-sway', swayBody);
+    const sway = this._animated({ name: 'אלמוגים נעים', vertexColors: true, roughness: 0.75, side: THREE.DoubleSide }, 'life-sway-3', swayBody);
+    const swayCompile = sway.onBeforeCompile;
+    sway.onBeforeCompile = (shader, r) => {
+      swayCompile(shader, r);
+      coralShader(shader, false);
+      // Soft tissue lets light through a little.
+      shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += diffuseColor.rgb * 0.06;');
+    };
+    // Sea fans: a gorgonian net of fine branches round thicker ones fanning from the stem.
+    const lace = this._animated({ name: 'מניפות ים', vertexColors: true, roughness: 0.8, side: THREE.DoubleSide }, 'life-fan-3', swayBody);
     const laceCompile = lace.onBeforeCompile;
     lace.onBeforeCompile = (shader, r) => {
       laceCompile(shader, r);
-      shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vLace;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvLace = position.xy;');
-      shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec2 vLace;').replace(
+      coralShader(shader, false);
+      shader.fragmentShader = shader.fragmentShader.replace(
         '#include <alphatest_fragment>',
-        `vec2 lp = vLace * 12.0;
-        lp += vec2(sin(lp.y * 1.3 + 1.7), sin(lp.x * 1.1 - 0.4)) * 0.45;
-        float la = abs(fract(lp.x * 0.9 + lp.y * 0.35) - 0.5);
-        float lb = abs(fract(lp.y * 1.1 - lp.x * 0.3) - 0.5);
-        float lc = abs(fract((lp.x + lp.y) * 0.6 + sin(lp.x * 2.3) * 0.2) - 0.5);
-        float web = min(min(la, lb), lc * 1.2);
-        // Main veins fanning out from the stem.
-        float vein = abs(fract(atan(vLace.x, vLace.y) * 2.6) - 0.5);
-        float rim = smoothstep(0.66, 0.7, length(vLace - vec2(0.0, 0.75)));
-        if (web > 0.1 && vein > 0.05 && rim < 0.5) discard;`,
+        `if (vCP.y > 0.13) {
+          vec2 lp = vCP.xy;
+          vec2 c = cCells(vec3(lp * 21.0, 0.5));
+          float net = 1.0 - smoothstep(0.05, 0.09, c.y - c.x);
+          vec2 d = lp - vec2(0.0, 0.1);
+          float ang = atan(d.x, d.y) / 3.14159;
+          float vein = abs(fract(ang * 5.0 + cNoise(vec3(lp * 3.0, 1.0)) * 0.7) - 0.5);
+          float main = 1.0 - smoothstep(0.02, 0.04 + 0.03 * (1.0 - clamp(length(d), 0.0, 1.0)), vein);
+          if (max(net, main) < 0.5) discard;
+        }`,
       );
     };
-    lace.customProgramCacheKey = () => 'life-fan-2';
-    this._kit = { geos, mats: { rigid, sway, lace } };
+    this._kit = { geos, lo, heights, mats: { rigid, sway, lace } };
     return this._kit;
   }
 
@@ -198,9 +218,10 @@ export class Life {
 
   /** One coral of `kind` at (x, floor y, z): random size (never breaking the surface), turn and colour. */
   coralItem(kind, x, y, z, rng, scale = 1) {
+    const H = this.coralKit().heights;
     const [s0, s1] = CORAL_SCALE[kind];
     let s = rng.range(s0, s1) * scale;
-    s = Math.min(s, (-y - 0.45) / CORAL_HEIGHT[kind]);
+    s = Math.min(s, (-y - 0.45) / H[kind]);
     if (s < 0.3) return null;
     const lean = kind === 'rock' ? 0.3 : 0.15;
     _q.setFromEuler(_e.set(rng.range(-lean, lean), rng.range(0, 6.28), rng.range(-lean, lean)));
@@ -223,26 +244,33 @@ export class Life {
   _reefs() {
     const t = this.terrain;
     const low = this.engine.quality.presetName === 'low';
-    const { geos } = this.coralKit();
+    const { geos, lo } = this.coralKit();
     this.reefCellSize = 34;
     this.reefRange = low ? 2 : 3;
-    this.reefPerCell = Math.round(150 * Math.min(1.4, 0.55 + this.cfg.reef * 0.6) * (low ? 0.55 : 1));
+    this.reefPerCell = Math.round(190 * Math.min(1.4, 0.55 + this.cfg.reef * 0.6) * (low ? 0.55 : 1));
     this.reefCache = new Map();
     const cells = (this.reefRange * 2 + 1) ** 2;
     const cap = cells * this.reefPerCell;
+    // Two sets of meshes: full detail close to the camera, lighter models further out.
     this.reefMeshes = {};
+    this.reefMeshesLo = {};
     for (const kind of Object.keys(geos)) {
       const share = kind === 'grass' || kind === 'kelp' ? 0.6 : 0.35;
-      const mesh = new THREE.InstancedMesh(geos[kind], this._coralMat(kind), Math.ceil(cap * share));
-      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-      mesh.setColorAt(0, new THREE.Color());
-      mesh.count = 0;
-      mesh.frustumCulled = false;
-      mesh.receiveShadow = true;
-      mesh.name = 'שונית';
-      mesh.userData.noPick = true;
-      this.reefMeshes[kind] = mesh;
-      this.group.add(mesh);
+      for (const [set, geo, k] of [
+        [this.reefMeshes, geos[kind], 0.3],
+        [this.reefMeshesLo, lo[kind], 1],
+      ]) {
+        const mesh = new THREE.InstancedMesh(geo, this._coralMat(kind), Math.ceil(cap * share * k));
+        mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        mesh.setColorAt(0, new THREE.Color());
+        mesh.count = 0;
+        mesh.frustumCulled = false;
+        mesh.receiveShadow = true;
+        mesh.name = 'שונית';
+        mesh.userData.noPick = true;
+        set[kind] = mesh;
+        this.group.add(mesh);
+      }
     }
     // Where the reef fish live: points of dense cover.
     const rng = this.rng;
@@ -269,10 +297,73 @@ export class Life {
     if (Math.abs((cx + 0.5) * S) < half && Math.abs((cz + 0.5) * S) < half) {
       const rng = new Random(((cx * 73856093) ^ (cz * 19349663) ^ (this.stage.seed * 83492791)) >>> 0 || 1);
       const N = t.noise;
-      // Garden centres inside the cell; corals crowd around them.
+      const cap = this.reefPerCell;
+      const H = this.coralKit().heights;
+      // A colony: a few of the same kind side by side, as corals settle and spread.
+      // Wrecks keep their own ground: nothing grows through them.
+      const W = this.wrecks ? this.wrecks.spots : [];
+      const onWreck = (px, pz) => W.some((w) => Math.abs(px - w.x) < (w.kind === 'freighter' ? 30 : 20) && Math.abs(pz - w.z) < (w.kind === 'freighter' ? 30 : 20));
+      const colony = (kind, x, y, z, scale, n, spread, onTop = null) => {
+        for (let j = 0; j < n && cell.length < cap; j++) {
+          const px = x + (j ? rng.range(-spread, spread) : 0);
+          const pz = z + (j ? rng.range(-spread, spread) : 0);
+          if (W.length && onWreck(px, pz)) continue;
+          const py = onTop ? onTop(px, pz) : t.heightAt(px, pz);
+          if (py === null || py > -0.8) continue;
+          const it = this.coralItem(kind, px, py, pz, rng, scale * (j ? rng.range(0.6, 1) : 1));
+          if (it) cell.push(it);
+        }
+      };
+      // 1. Bommies: mounds of reef rock crowded with coral, the frame of every reef.
+      const TOP = { table: 1.6, branch: 2.4, brain: 1.3, boulder: 1.2, plate: 1, soft: 0.9, leather: 0.9, anemone: 0.8, crinoid: 0.6, tubes: 0.5, clam: 0.4, pillar: 0.3, elkhorn: 0.8, fan: 0.4, octopus: 0.15 };
+      const SIDE = { plate: 1.4, fan: 1, tubes: 1, soft: 1, barrel: 0.6, vase: 0.5, anemone: 0.6, boulder: 0.8, brain: 0.8, urchin: 0.6, star: 0.3, eel: 0.5, lobster: 0.35, crab: 0.3, octopus: 0.2 };
+      for (let k = 0; k < 10 && cell.length < cap * 0.75; k++) {
+        const x = (cx + rng.random()) * S;
+        const z = (cz + rng.random()) * S;
+        const h = t.heightAt(x, z);
+        if (h > -2 || h < -40) continue;
+        if (W.length && onWreck(x, z)) continue;
+        const cover = t.reefAt ? t.reefAt(x, z, h) : 0;
+        if (cover < 0.12 && rng.random() > 0.15) continue;
+        const rs = Math.min(rng.range(1.4, 3.6), (-h - 1.2) / H.rock);
+        if (rs < 0.9) continue;
+        const rock = this.coralItem('rock', x, h, z, rng, rs / 1.7);
+        if (!rock) continue;
+        // Nearly level, so what grows on top sits on it.
+        rock.m.decompose(_p, _q, _s);
+        _q.setFromEuler(_e.set(rng.range(-0.06, 0.06), rng.range(0, 6.28), rng.range(-0.06, 0.06)));
+        rock.m.compose(_p, _q, _s);
+        cell.push(rock);
+        const e = rock.m.elements;
+        const sx = Math.hypot(e[0], e[1], e[2]);
+        const sy = Math.hypot(e[4], e[5], e[6]);
+        const R = sx * 1.05;
+        const baseY = e[13];
+        const top = (px, pz) => {
+          const d = Math.hypot(px - x, pz - z) / R;
+          if (d > 0.9) return null;
+          return baseY + (0.45 + 0.62 * Math.sqrt(1 - d * d)) * sy - 0.12;
+        };
+        // Its top: tables, thickets, heads, soft corals, crowding each other.
+        const nTop = Math.round(6 + rs * 6);
+        for (let j = 0; j < nTop && cell.length < cap; j++) {
+          const a = rng.range(0, Math.PI * 2);
+          const d = Math.sqrt(rng.random()) * 0.8 * R;
+          const kind = pickWeighted(rng, TOP);
+          colony(kind, x + Math.cos(a) * d, 0, z + Math.sin(a) * d, 0.6 + rng.random() * 0.45, 1 + Math.floor(rng.random() * 2), 0.5, top);
+        }
+        // Its flanks and foot: plates, fans, sponges, heads.
+        const nSide = Math.round(3 + rs * 2);
+        for (let j = 0; j < nSide && cell.length < cap; j++) {
+          const a = rng.range(0, Math.PI * 2);
+          const d = R * rng.range(0.9, 1.3);
+          colony(pickWeighted(rng, SIDE), x + Math.cos(a) * d, 0, z + Math.sin(a) * d, 0.7, 1 + Math.floor(rng.random() * 2), 0.6);
+        }
+      }
+      // 2. Gardens between them: colonies by zone (reef, sand, sea grass, deep slope), and kelp forests.
       let gx = 0;
       let gz = 0;
-      for (let k = 0; k < this.reefPerCell * 3 && cell.length < this.reefPerCell; k++) {
+      for (let k = 0; k < cap * 3 && cell.length < cap; k++) {
         if (k % 8 === 0) {
           gx = (cx + rng.random()) * S;
           gz = (cz + rng.random()) * S;
@@ -282,7 +373,6 @@ export class Life {
         const h = t.heightAt(x, z);
         if (h > -0.8 || h < -70) continue;
         const cover = t.reefAt ? t.reefAt(x, z, h) : 0;
-        // Patchiness: dense gardens and thinner stretches between them, everywhere.
         const patch = 0.55 + 0.45 * N.noise(x * 0.03 + 17, z * 0.03 - 4);
         const kelp = h < -6 && h > -30 && N.noise(x * 0.02 - 30, z * 0.02 + 8) > 0.25;
         let zone;
@@ -292,20 +382,19 @@ export class Life {
           keep = 0.5;
         } else if (cover > 0.05) {
           zone = ZONES.reef;
-          keep = 0.4 + 0.6 * cover;
+          keep = 0.45 + 0.55 * cover;
         } else if (h > -16) {
-          // Sea grass meadows in swathes, coral heads and sponges scattered between them.
           const meadow = N.noise(x * 0.045 - 3, z * 0.045 + 12) > -0.05;
           zone = meadow ? ZONES.meadow : ZONES.sand;
-          keep = (meadow ? 0.85 : 0.55) * patch;
+          keep = (meadow ? 0.85 : 0.5) * patch;
         } else {
           zone = ZONES.deep;
           keep = 0.6 * patch * (0.55 + 0.45 * THREE.MathUtils.smoothstep(-h, 16, 30));
         }
         if (rng.random() > keep) continue;
         const kind = kelp ? 'kelp' : pickWeighted(rng, zone);
-        const it = this.coralItem(kind, x, h, z, rng, kind === 'rock' ? 1 : 0.75 + cover * 0.45);
-        if (it) cell.push(it);
+        const n = kind === 'grass' || kind === 'kelp' ? 1 : kind === 'branch' || kind === 'elkhorn' ? 2 + Math.floor(rng.random() * 3) : 1 + Math.floor(rng.random() * 2);
+        colony(kind, x, 0, z, kind === 'rock' ? 1 : 0.75 + cover * 0.45, n, kind === 'branch' ? 1.1 : 0.9);
       }
     }
     this.reefCache.set(key, cell);
@@ -317,9 +406,11 @@ export class Life {
     if (!this.reefMeshes) return;
     const cam = this.engine.camera.position;
     const M = this.reefMeshes;
+    const Lo = this.reefMeshesLo;
+    const all = this._reefAll || (this._reefAll = [...Object.values(M), ...Object.values(Lo)]);
     // From high up the reef reads through the painted sea floor alone.
     if (cam.y > 120) {
-      if (this.reefShown) for (const m of Object.values(M)) m.count = 0;
+      if (this.reefShown) for (const m of all) m.count = 0;
       this.reefShown = false;
       return;
     }
@@ -330,20 +421,27 @@ export class Life {
     this.engine.camera.getWorldDirection(_p);
     const look = Math.atan2(_p.x, _p.z);
     const turned = Math.abs(Math.atan2(Math.sin(look - (this.reefLook || 0)), Math.cos(look - (this.reefLook || 0)))) > 0.5;
-    if (this.reefShown && cx === this.reefCx && cz === this.reefCz && !turned) return;
+    const moved = this.reefAt ? Math.hypot(cam.x - this.reefAt.x, cam.z - this.reefAt.z) > 6 : true;
+    if (this.reefShown && cx === this.reefCx && cz === this.reefCz && !turned && !moved) return;
     this.reefShown = true;
     this.reefCx = cx;
     this.reefCz = cz;
     this.reefLook = look;
+    this.reefAt = { x: cam.x, z: cam.z };
+    const near2 = 26 * 26;
     const fx = Math.sin(look);
     const fz = Math.cos(look);
-    for (const m of Object.values(M)) m.count = 0;
+    for (const m of all) m.count = 0;
     const R = this.reefRange;
     for (let dz = -R; dz <= R; dz++) {
       for (let dx = -R; dx <= R; dx++) {
         if ((dx * fx + dz * fz) < -1.6 && Math.abs(_p.y) < 0.85) continue;
         for (const it of this._reefCell(cx + dx, cz + dz)) {
-          const m = M[it.kind];
+          const e = it.m.elements;
+          const ex = e[12] - cam.x;
+          const ez = e[14] - cam.z;
+          let m = ex * ex + ez * ez < near2 ? M[it.kind] : Lo[it.kind];
+          if (m.count >= m.instanceMatrix.count) m = Lo[it.kind];
           if (m.count >= m.instanceMatrix.count) continue;
           m.setMatrixAt(m.count, it.m);
           m.setColorAt(m.count, it.c);
@@ -351,7 +449,7 @@ export class Life {
         }
       }
     }
-    for (const m of Object.values(M)) {
+    for (const m of all) {
       m.instanceMatrix.needsUpdate = true;
       m.instanceColor.needsUpdate = true;
     }
@@ -1122,6 +1220,7 @@ export class Life {
     this._updateBoats(dt);
     this._updateBalloons(dt);
     this._updateHerds(dt);
+    if (this.giants) this.giants.update(dt);
   }
 }
 
