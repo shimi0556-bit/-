@@ -501,7 +501,7 @@ class Game {
     this.ui.showMenu({ selected: this.selected, champ: this.champ });
   }
 
-  /** Free roam: the next design of the current craft (key B). */
+  /** Free roam: the next design of the current craft (key G). */
   roamDesign() {
     const ex = this.explore;
     if (!ex || this.state !== 'explore' || !DESIGNS[ex.kind]) return;
@@ -511,7 +511,7 @@ class Game {
     this.settings.designs = { ...(this.settings.designs || {}), [ex.kind]: next };
     store.set('settings', this.settings);
     ex.spawn(ex.kind);
-    this.ui.message(DESIGN_NAMES[next], '', 'B — הדגם הבא', 900);
+    this.ui.message(DESIGN_NAMES[next], '', 'G — הדגם הבא', 900);
   }
 
   selectKind(kind) {

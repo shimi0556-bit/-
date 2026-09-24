@@ -264,7 +264,7 @@ export class Explore {
     // Keys: V cycles vehicles, AltGr puts you back somewhere sensible.
     const order = Object.keys(ROAM);
     if (I.wasPressed('KeyV')) this.game.roamVehicle(order[(order.indexOf(this.kind) + 1) % order.length]);
-    if (I.wasPressed('KeyB')) this.game.roamDesign();
+    if (I.wasPressed('KeyG')) this.game.roamDesign();
     if (actionKeys(I).reset || this.game.touch.reset) {
       this.game.touch.reset = false;
       this.spawn(this.kind);
