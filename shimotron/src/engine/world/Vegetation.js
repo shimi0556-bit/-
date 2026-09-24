@@ -289,8 +289,9 @@ export class Vegetation {
       [1.0, 8.6, 1.9, 1.8, 14],
     ];
     const v = new THREE.Vector3();
-    for (const [cx, cy, cz, R, n] of centers) {
+    for (const [cx, cy, cz, R, n0] of centers) {
       const c = new THREE.Vector3(cx, cy, cz);
+      const n = Math.round(n0 * 1.7); // many smaller sprays: a full crown, not a few big feathers
       for (let i = 0; i < n; i++) {
         v.randomDirection();
         v.y *= 0.8;
@@ -303,7 +304,7 @@ export class Vegetation {
         const rot = rng.range(0, Math.PI * 2);
         const u = t1.clone().multiplyScalar(Math.cos(rot)).addScaledVector(t2, Math.sin(rot));
         const w = t1.clone().multiplyScalar(-Math.sin(rot)).addScaledVector(t2, Math.cos(rot));
-        const size = rng.range(1.5, 2.3) * (R / 2.6);
+        const size = rng.range(1.0, 1.55) * (R / 2.6);
         const corners = [
           p.clone().addScaledVector(u, -size / 2).addScaledVector(w, -size / 2),
           p.clone().addScaledVector(u, size / 2).addScaledVector(w, -size / 2),

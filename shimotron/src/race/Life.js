@@ -1076,52 +1076,190 @@ export class Life {
   // ---------------------------------------------------------------- herds
 
   _animalGeos() {
-    const leg = (x, z, h, r, c) => paint(new THREE.CylinderGeometry(r, r * 0.85, h, 5).translate(x, h / 2, z), c, 0);
-    // Cow (Holstein, patches painted per vertex).
-    const cowBody = new THREE.CapsuleGeometry(0.42, 1.1, 4, 8).rotateX(Math.PI / 2).translate(0, 1.05, 0);
-    const cow = mergeGeometries([
-      paint(cowBody, 0xffffff, 0),
-      leg(0.25, 0.55, 0.75, 0.09, 0xf0ece4),
-      leg(-0.25, 0.55, 0.75, 0.09, 0x2a2420),
-      leg(0.25, -0.55, 0.75, 0.09, 0x2a2420),
-      leg(-0.25, -0.55, 0.75, 0.09, 0xf0ece4),
-      paint(new THREE.BoxGeometry(0.34, 0.36, 0.55).translate(0, 1.25, 1.15), 0x2a2420, 1),
-      paint(new THREE.BoxGeometry(0.28, 0.2, 0.2).translate(0, 1.15, 1.46), 0xd9a3a0, 1),
-      paint(new THREE.ConeGeometry(0.04, 0.18, 4).rotateZ(-1.2).translate(0.2, 1.45, 1.05), 0xe8e0c8, 1),
-      paint(new THREE.ConeGeometry(0.04, 0.18, 4).rotateZ(1.2).translate(-0.2, 1.45, 1.05), 0xe8e0c8, 1),
-      paint(new THREE.CylinderGeometry(0.03, 0.02, 0.7, 4).translate(0, 0.85, -0.95), 0x2a2420, 0),
+    const sm = (a, b, x) => {
+      const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+      return t * t * (3 - 2 * t);
+    };
+    /**
+     * A body lofted along z through sections { z, y, w (half width), top, bot (heights above/below y) },
+     * smooth-shaded, with end caps; `bump(x, y, z)` pushes the surface out (wool).
+     */
+    const body = (st, seg = 14, bump = null) => {
+      const pos = [];
+      const idx = [];
+      for (const S of st) {
+        for (let j = 0; j < seg; j++) {
+          const a = (j / seg) * Math.PI * 2;
+          const c = Math.cos(a);
+          const sn = Math.sin(a);
+          let x = c * S.w;
+          let y = S.y + (sn > 0 ? sn * S.top : sn * S.bot);
+          let z = S.z;
+          if (bump) {
+            const k = 1 + bump(x, y, z);
+            x *= k;
+            y = S.y + (y - S.y) * k;
+          }
+          pos.push(x, y, z);
+        }
+      }
+      const n = st.length;
+      for (let k = 0; k < n - 1; k++) {
+        for (let j = 0; j < seg; j++) {
+          const a0 = k * seg + j;
+          const b0 = k * seg + ((j + 1) % seg);
+          idx.push(a0, b0, a0 + seg, b0, b0 + seg, a0 + seg);
+        }
+      }
+      for (const [k, flip] of [[0, true], [n - 1, false]]) {
+        const c = pos.length / 3;
+        pos.push(0, st[k].y + (st[k].top - st[k].bot) * 0.5, st[k].z);
+        for (let j = 0; j < seg; j++) {
+          const a0 = k * seg + j;
+          const b0 = k * seg + ((j + 1) % seg);
+          if (flip) idx.push(c, b0, a0);
+          else idx.push(c, a0, b0);
+        }
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setIndex(idx);
+      g.computeVertexNormals();
+      return g;
+    };
+    const smooth = (g) => {
+      g.computeVertexNormals();
+      return g;
+    };
+    /** A leg: thigh/forearm, a knobbly joint, the slim cannon bone, a dark hoof. */
+    const leg = (x, z, top, r, c, hoof = 0x2a2420, knee = 0.45) => {
+      const kneeY = top * knee;
+      return [
+        paint(smooth(new THREE.CylinderGeometry(r * 0.72, r, top - kneeY, 8).translate(x, kneeY + (top - kneeY) / 2, z)), c, 0),
+        paint(new THREE.SphereGeometry(r * 0.72, 8, 6).translate(x, kneeY, z), c, 0),
+        paint(smooth(new THREE.CylinderGeometry(r * 0.55, r * 0.6, kneeY - 0.07, 7).translate(x, 0.07 + (kneeY - 0.07) / 2, z)), c, 0),
+        paint(new THREE.CylinderGeometry(r * 0.62, r * 0.72, 0.08, 8).translate(x, 0.04, z + r * 0.1), hoof, 0),
+      ];
+    };
+    const ear = (x, y, z, s, c, m = 1, yaw = 0) => paint(new THREE.SphereGeometry(s, 8, 6).scale(1, 0.35, 0.55).rotateZ(Math.sign(x) * 0.5).rotateY(yaw).translate(x, y, z), c, m);
+
+    // Cow (Holstein): deep barrel on square hips, a brisket, a heavy head on a short neck; udder, tail with a tuft.
+    const cowMask = (x, y, z) => sm(0.72, 1.08, z);
+    const cowTrunk = body([
+      { z: -1.02, y: 1.18, w: 0.16, top: 0.12, bot: 0.16 },
+      { z: -0.9, y: 1.13, w: 0.33, top: 0.22, bot: 0.34 },
+      { z: -0.62, y: 1.09, w: 0.4, top: 0.25, bot: 0.43 },
+      { z: -0.2, y: 1.04, w: 0.43, top: 0.27, bot: 0.47 },
+      { z: 0.2, y: 1.05, w: 0.42, top: 0.29, bot: 0.45 },
+      { z: 0.52, y: 1.1, w: 0.36, top: 0.3, bot: 0.44 },
+      { z: 0.72, y: 1.14, w: 0.27, top: 0.27, bot: 0.4 },
+      { z: 0.86, y: 1.22, w: 0.19, top: 0.22, bot: 0.26 },
     ]);
-    // Patches: darken body vertices by a hashed pattern.
+    const cowHead = body([
+      { z: 0.78, y: 1.24, w: 0.2, top: 0.22, bot: 0.28 },
+      { z: 0.94, y: 1.3, w: 0.17, top: 0.19, bot: 0.22 },
+      { z: 1.06, y: 1.35, w: 0.165, top: 0.15, bot: 0.17 },
+      { z: 1.24, y: 1.27, w: 0.15, top: 0.12, bot: 0.14 },
+      { z: 1.38, y: 1.15, w: 0.135, top: 0.1, bot: 0.11 },
+      { z: 1.46, y: 1.1, w: 0.12, top: 0.08, bot: 0.09 },
+    ], 12);
+    const cow = mergeGeometries([
+      paint(cowTrunk, 0xffffff, 0),
+      paint(cowHead, 0xf4f0ea, cowMask),
+      paint(new THREE.SphereGeometry(0.1, 10, 8).scale(1.25, 0.75, 0.6).translate(0, 1.09, 1.48), 0xd9a3a0, 1),
+      ear(0.22, 1.42, 1.04, 0.11, 0x2a2420, 1, 0.3),
+      ear(-0.22, 1.42, 1.04, 0.11, 0x2a2420, 1, -0.3),
+      paint(new THREE.ConeGeometry(0.03, 0.13, 5).rotateZ(-1.0).translate(0.15, 1.5, 1.02), 0xe8e0c8, 1),
+      paint(new THREE.ConeGeometry(0.03, 0.13, 5).rotateZ(1.0).translate(-0.15, 1.5, 1.02), 0xe8e0c8, 1),
+      ...leg(0.23, 0.55, 0.85, 0.1, 0xf0ece4),
+      ...leg(-0.23, 0.55, 0.85, 0.1, 0x2a2420),
+      ...leg(0.25, -0.72, 0.9, 0.11, 0x2a2420, 0x2a2420, 0.5),
+      ...leg(-0.25, -0.72, 0.9, 0.11, 0xf0ece4, 0x2a2420, 0.5),
+      paint(new THREE.SphereGeometry(0.17, 10, 8).scale(1.2, 0.8, 1.1).translate(0, 0.66, -0.5), 0xe6b4ac, 0),
+      paint(new THREE.CylinderGeometry(0.02, 0.028, 0.85, 5).translate(0, 0.84, -1.02), 0x2a2420, 0),
+      paint(new THREE.SphereGeometry(0.05, 6, 5).scale(1, 1.8, 1).translate(0, 0.4, -1.02), 0x1c1a18, 0),
+    ]);
+    // Patches: black, in big soft-edged blobs over body and head.
     const cp = cow.attributes.position;
     const cc = cow.attributes.color;
     for (let i = 0; i < cp.count; i += 3) {
-      const x = cp.getX(i);
-      const y = cp.getY(i);
-      const z = cp.getZ(i);
-      if (y > 0.7 && Math.abs(z) < 1.0 && Math.sin(x * 7 + z * 4.3) * Math.cos(z * 5.1 - y * 3) > 0.2) for (let v = 0; v < 3; v++) cc.setXYZ(i + v, 0.12, 0.1, 0.09);
+      const x = (cp.getX(i) + cp.getX(i + 1) + cp.getX(i + 2)) / 3;
+      const y = (cp.getY(i) + cp.getY(i + 1) + cp.getY(i + 2)) / 3;
+      const z = (cp.getZ(i) + cp.getZ(i + 1) + cp.getZ(i + 2)) / 3;
+      if (y > 0.62 && cc.getX(i) > 0.9) {
+        const f = Math.sin(x * 4.1 + z * 3.3 + 1.1) * Math.cos(z * 2.9 - y * 3.7) + Math.sin(x * 6.3 - y * 2.2) * 0.35;
+        if (f > 0.15) for (let v = 0; v < 3; v++) cc.setXYZ(i + v, 0.1, 0.09, 0.085);
+      }
     }
-    // Sheep: a cloud of wool on thin dark legs.
-    const wool = [];
-    for (let k = 0; k < 7; k++) wool.push(paint(new THREE.IcosahedronGeometry(0.32, 1).translate(Math.cos(k) * 0.18, 0.72 + (k % 3) * 0.08, (k - 3) * 0.13), 0xf2eee4, 0));
+    // Sheep: a woolly barrel on thin legs, black face and legs (Suffolk-type).
+    const woolBump = (x, y, z) => 0.1 * (Math.sin(x * 23 + z * 17) * Math.sin(y * 19 - z * 13) + Math.sin(z * 29 + x * 11) * 0.5);
+    const fleece = body([
+      { z: -0.52, y: 0.72, w: 0.14, top: 0.14, bot: 0.14 },
+      { z: -0.44, y: 0.72, w: 0.27, top: 0.24, bot: 0.25 },
+      { z: -0.15, y: 0.71, w: 0.32, top: 0.28, bot: 0.28 },
+      { z: 0.15, y: 0.72, w: 0.31, top: 0.28, bot: 0.27 },
+      { z: 0.38, y: 0.75, w: 0.25, top: 0.25, bot: 0.24 },
+      { z: 0.48, y: 0.8, w: 0.15, top: 0.17, bot: 0.14 },
+    ], 16, woolBump);
+    const sheepHead = body([
+      { z: 0.42, y: 0.84, w: 0.09, top: 0.1, bot: 0.1 },
+      { z: 0.56, y: 0.86, w: 0.085, top: 0.09, bot: 0.1 },
+      { z: 0.7, y: 0.78, w: 0.06, top: 0.06, bot: 0.07 },
+      { z: 0.76, y: 0.74, w: 0.04, top: 0.04, bot: 0.04 },
+    ], 10);
     const sheep = mergeGeometries([
-      ...wool,
-      leg(0.15, 0.3, 0.5, 0.045, 0x1c1a18),
-      leg(-0.15, 0.3, 0.5, 0.045, 0x1c1a18),
-      leg(0.15, -0.3, 0.5, 0.045, 0x1c1a18),
-      leg(-0.15, -0.3, 0.5, 0.045, 0x1c1a18),
-      paint(new THREE.BoxGeometry(0.2, 0.24, 0.32).translate(0, 0.85, 0.58), 0x1c1a18, 1),
-      paint(new THREE.BoxGeometry(0.2, 0.06, 0.1).translate(0, 0.95, 0.55), 0x1c1a18, 1),
+      paint(fleece, 0xefe9dc, 0),
+      paint(sheepHead, 0x1c1a18, (x, y, z) => sm(0.4, 0.62, z)),
+      ear(0.1, 0.9, 0.52, 0.07, 0x1c1a18, 1, 0.5),
+      ear(-0.1, 0.9, 0.52, 0.07, 0x1c1a18, 1, -0.5),
+      paint(new THREE.SphereGeometry(0.1, 8, 6).translate(0, 0.97, 0.44), 0xefe9dc, 1),
+      ...leg(0.13, 0.28, 0.5, 0.042, 0x1c1a18, 0x141210),
+      ...leg(-0.13, 0.28, 0.5, 0.042, 0x1c1a18, 0x141210),
+      ...leg(0.14, -0.3, 0.5, 0.045, 0x1c1a18, 0x141210, 0.55),
+      ...leg(-0.14, -0.3, 0.5, 0.045, 0x1c1a18, 0x141210, 0.55),
     ]);
-    // Camel: long legs, a hump, a long neck.
+    // Camel (dromedary): one hump, a long neck that dips then rises, a long head, long legs with knobbly knees.
+    const camelTrunk = body([
+      { z: -0.86, y: 1.66, w: 0.18, top: 0.12, bot: 0.18 },
+      { z: -0.72, y: 1.64, w: 0.3, top: 0.2, bot: 0.3 },
+      { z: -0.4, y: 1.62, w: 0.36, top: 0.38, bot: 0.36 },
+      { z: -0.08, y: 1.62, w: 0.38, top: 0.62, bot: 0.4 },
+      { z: 0.22, y: 1.62, w: 0.37, top: 0.42, bot: 0.42 },
+      { z: 0.52, y: 1.62, w: 0.3, top: 0.25, bot: 0.42 },
+      { z: 0.7, y: 1.64, w: 0.2, top: 0.2, bot: 0.3 },
+    ]);
+    const neckPts = [new THREE.Vector3(0, 1.72, 0.62), new THREE.Vector3(0, 1.62, 0.95), new THREE.Vector3(0, 1.7, 1.2), new THREE.Vector3(0, 2.02, 1.36), new THREE.Vector3(0, 2.2, 1.42)];
+    const neckCurve = new THREE.CatmullRomCurve3(neckPts);
+    const neck = new THREE.TubeGeometry(neckCurve, 16, 0.14, 10, false);
+    // Taper the neck toward the head.
+    const np = neck.attributes.position;
+    for (let i = 0; i < np.count; i++) {
+      const v = new THREE.Vector3(np.getX(i), np.getY(i), np.getZ(i));
+      const t = Math.min(1, Math.max(0, (v.z - 0.62) / 0.8));
+      const c = neckCurve.getPoint(t);
+      v.sub(c).multiplyScalar(1.15 - t * 0.45).add(c);
+      np.setXYZ(i, v.x, v.y, v.z);
+    }
+    neck.computeVertexNormals();
+    const camelHead = body([
+      { z: 1.34, y: 2.24, w: 0.1, top: 0.11, bot: 0.11 },
+      { z: 1.5, y: 2.24, w: 0.11, top: 0.11, bot: 0.12 },
+      { z: 1.68, y: 2.16, w: 0.08, top: 0.08, bot: 0.1 },
+      { z: 1.8, y: 2.1, w: 0.065, top: 0.06, bot: 0.08 },
+    ], 10);
+    const camelMask = (x, y, z) => sm(0.7, 1.35, z);
+    const tan = 0xc9a36a;
     const camel = mergeGeometries([
-      paint(new THREE.CapsuleGeometry(0.42, 1.0, 4, 8).rotateX(Math.PI / 2).translate(0, 1.7, 0), 0xc9a36a, 0),
-      paint(new THREE.SphereGeometry(0.42, 8, 6).scale(1, 0.9, 1.2).translate(0, 2.15, -0.05), 0xc09a60, 0),
-      leg(0.22, 0.5, 1.45, 0.08, 0xb89058),
-      leg(-0.22, 0.5, 1.45, 0.08, 0xb89058),
-      leg(0.22, -0.5, 1.45, 0.08, 0xb89058),
-      leg(-0.22, -0.5, 1.45, 0.08, 0xb89058),
-      paint(new THREE.CylinderGeometry(0.12, 0.17, 1.0, 6).rotateX(-0.6).translate(0, 2.15, 0.95), 0xc9a36a, 1),
-      paint(new THREE.BoxGeometry(0.22, 0.24, 0.55).translate(0, 2.55, 1.35), 0xc9a36a, 1),
+      paint(camelTrunk, tan, 0),
+      paint(neck, 0xc59e64, camelMask),
+      paint(camelHead, 0xc09a60, 1),
+      ear(0.08, 2.33, 1.38, 0.05, 0xb08a52, 1, 0.4),
+      ear(-0.08, 2.33, 1.38, 0.05, 0xb08a52, 1, -0.4),
+      ...leg(0.2, 0.46, 1.4, 0.075, 0xbf985e, 0x5a4a3a, 0.42),
+      ...leg(-0.2, 0.46, 1.4, 0.075, 0xbf985e, 0x5a4a3a, 0.42),
+      ...leg(0.21, -0.58, 1.4, 0.085, 0xbf985e, 0x5a4a3a, 0.4),
+      ...leg(-0.21, -0.58, 1.4, 0.085, 0xbf985e, 0x5a4a3a, 0.4),
+      paint(new THREE.CylinderGeometry(0.02, 0.03, 0.6, 5).translate(0, 1.4, -0.86), 0x8a6a42, 0),
     ]);
     return { cow, sheep, camel };
   }

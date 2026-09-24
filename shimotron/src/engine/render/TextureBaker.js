@@ -136,7 +136,8 @@ export const RECIPES = {
     vec4 bake(vec2 uv) {
       float n = fbm(uv, 4.0, 6);
       float m = fbm(uv + 3.7, 2.0, 4);
-      float blades = gnoise(vec2(uv.x * 160.0, uv.y * 40.0), vec2(160.0, 40.0)) * 0.5 + 0.5;
+      // Tufts and blades with no single direction (aligned streaks shimmer into stripes at a distance).
+      float blades = (gnoise(uv * 128.0, vec2(128.0)) * 0.45 + gnoise(uv * 56.0 + 2.3, vec2(56.0)) * 0.35 + gnoise(vec2(uv.x + uv.y, uv.x - uv.y) * 90.0, vec2(90.0)) * 0.2) * 0.5 + 0.5;
       vec3 a = vec3(0.10, 0.20, 0.045);
       vec3 b = vec3(0.21, 0.30, 0.07);
       vec3 dry = vec3(0.36, 0.33, 0.14);
@@ -149,7 +150,7 @@ export const RECIPES = {
     }`,
   grassNormal: /* glsl */ `
     float height(vec2 uv) {
-      return gnoise(vec2(uv.x * 160.0, uv.y * 40.0), vec2(160.0, 40.0)) * 0.3 + fbm(uv, 16.0, 4) * 0.7;
+      return gnoise(uv * 110.0, vec2(110.0)) * 0.16 + gnoise(uv * 48.0 + 1.9, vec2(48.0)) * 0.18 + fbm(uv, 16.0, 4) * 0.66;
     }`,
   rock: /* glsl */ `
     vec4 bake(vec2 uv) {
@@ -389,15 +390,17 @@ export const RECIPES = {
       float sx = 0.5 + sin(uv.y * 3.2) * 0.04;
       float twig = smoothstep(0.012, 0.004, abs(uv.x - sx)) * step(0.02, uv.y) * step(uv.y, 0.93);
       if (twig > 0.0) col = vec4(vec3(0.16, 0.11, 0.06), twig);
-      for (int i = 0; i < 26; i++) {
+      for (int i = 0; i < 44; i++) {
         float fi = float(i);
         float h = hash12(vec2(fi * 1.7, uSeed + 3.0));
         float h2 = hash12(vec2(fi * 3.1, uSeed + 9.0));
-        float t = 0.1 + fi / 26.0 * 0.82;
+        float t = 0.08 + fi / 44.0 * 0.86;
         float side = mod(fi, 2.0) < 1.0 ? -1.0 : 1.0;
-        vec2 base = vec2(0.5 + sin(t * 3.2) * 0.04, t);
-        float ang = side * (0.55 + h * 0.55) - 0.1;
-        vec2 size = vec2(0.062, 0.15) * (0.75 + h2 * 0.45) * (1.0 - t * 0.3);
+        // Leaves along the twig and on short side shoots.
+        float shoot = step(0.55, h2) * side * (0.06 + h * 0.1);
+        vec2 base = vec2(0.5 + sin(t * 3.2) * 0.04 + shoot, t + abs(shoot) * 0.4);
+        float ang = side * (0.5 + h * 0.7) - 0.1;
+        vec2 size = vec2(0.048, 0.11) * (0.75 + h2 * 0.45) * (1.0 - t * 0.3);
         vec2 q = rot(uv - base, ang);
         q.y -= size.y * 0.95;
         vec2 d = q / size;

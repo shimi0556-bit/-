@@ -152,7 +152,21 @@ export class Terrain {
       let inland = smoothstep(0.95, 0.7, Math.hypot(x / sx, z / sz) / R);
       // Keep volcano cones clean.
       for (const V of I.volcanoes || []) inland *= smoothstep(0.75, 1.15, Math.hypot(x - V.x, z - V.z) / V.radius);
-      h += (smoothstep(M.threshold, M.threshold + edge, m) * M.height + smoothstep(M.threshold + 0.18, M.threshold + 0.18 + edge, m) * M.height * 0.6) * inland;
+      const s1 = smoothstep(M.threshold, M.threshold + edge, m);
+      const s2 = smoothstep(M.threshold + 0.18, M.threshold + 0.18 + edge, m);
+      let mh = s1 * M.height + s2 * M.height * 0.6;
+      // Weathered walls: where the rock face is (not the tops, not the floor), gullies cut into it and
+      // harder beds stand out as ledges — no smooth cones where a small butte barely rises.
+      const face = Math.min(1, s1 * (1 - s1) * 4 + s2 * (1 - s2) * 4);
+      if (face > 0.01) {
+        const gully = this.noise.noise(x * 0.07 + 1.7, z * 0.07 - 4.2) * 0.6 + this.noise.noise(x * 0.19 - 3.3, z * 0.19 + 2.1) * 0.4;
+        mh += face * gully * M.height * 0.12;
+        const step = M.ledge || 5.5;
+        const f = Math.max(0, mh) / step;
+        const fl = Math.floor(f);
+        mh += ((fl + smoothstep(0.3, 1, f - fl)) * step - mh) * face * 0.55;
+      }
+      h += mh * inland;
     }
     for (const V of I.volcanoes || (I.volcano ? [I.volcano] : [])) {
       const dv = Math.hypot(x - V.x, z - V.z) / V.radius;
@@ -605,7 +619,7 @@ export class Terrain {
             rY = vec3(rY.xy + wn.xz, abs(rY.z) * wn.y);
             rZ = vec3(rZ.xy + wn.xy, abs(rZ.z) * wn.z);
             vec3 rockN = normalize(rX.zyx * tTriW.x + rY.xzy * tTriW.y + rZ.xyz * tTriW.z);
-            vec3 grassN = normalize(vec3(gN.x * 0.6 + wn.x, wn.y, gN.y * 0.6 + wn.z));
+            vec3 grassN = normalize(vec3(gN.x * 0.45 + wn.x, wn.y, gN.y * 0.45 + wn.z));
             vec3 sandN = normalize(vec3(sN.x * 0.4 + wn.x, wn.y, sN.y * 0.4 + wn.z));
             vec3 dN = texture2D(tDirtN, wuv * 0.1).xyz * 2.0 - 1.0;
             vec3 dirtN = normalize(vec3(dN.x * 0.45 + wn.x, wn.y, dN.y * 0.45 + wn.z));

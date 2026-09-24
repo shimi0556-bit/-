@@ -110,13 +110,16 @@ function blade(outline, thick, map) {
 
 /** Humpback whale, 1 unit long (nose +z): long knobbly flippers, small dorsal on a hump, broad serrated flukes. */
 export function humpbackGeometry() {
+  // Broad, flat rostrum over a jutting lower jaw; the pleated throat bulges below the head.
   const sec = [
-    [0.5, 0.0, 0.0, -0.01],
-    [0.47, 0.03, 0.04, -0.012],
-    [0.42, 0.048, 0.062, -0.016],
-    [0.35, 0.064, 0.08, -0.02],
-    [0.26, 0.078, 0.092, -0.024],
-    [0.15, 0.088, 0.097, -0.024],
+    [0.5, 0.01, 0.028, -0.022],
+    [0.49, 0.022, 0.05, -0.022],
+    [0.465, 0.034, 0.066, -0.024],
+    [0.43, 0.044, 0.076, -0.028],
+    [0.38, 0.054, 0.084, -0.032],
+    [0.32, 0.064, 0.09, -0.034],
+    [0.26, 0.074, 0.094, -0.032],
+    [0.15, 0.086, 0.097, -0.026],
     [0.04, 0.09, 0.094, -0.02],
     [-0.07, 0.085, 0.086, -0.014],
     [-0.18, 0.072, 0.07, -0.006],

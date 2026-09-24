@@ -1088,6 +1088,8 @@ export class City {
           {
             bGlass = 0.0; bLit = 0.0; bLight = vec3(0.0); bRough = 0.85; bMetal = 0.0; bSign = vec3(0.0);
             int S = int(vBStyle + 0.5);
+            // The per-building seed arrives interpolated; snap it, or the hashes below turn its rounding noise into static.
+            float bSeed = floor(vBSeed * 1024.0 + 0.5) / 1024.0;
             vec3 n = vBN;
             vec3 base = diffuseColor.rgb;
             if (abs(n.y) < 0.5) {
@@ -1105,7 +1107,7 @@ export class City {
               float bw = faceW / nb;
               vec2 cell = vec2(u / bw, v / fh);
               vec2 f = fract(cell);
-              vec2 id = floor(cell) + vec2(side ? 57.0 : 0.0, 0.0) + vBSeed * 97.0;
+              vec2 id = floor(cell) + vec2(side ? 57.0 : 0.0, 0.0) + bSeed * 97.0;
               float px = max(fwidth(u), fwidth(v)); // metres per pixel
               // Window opening, in metres from its edges (negative inside), with a 9 cm frame.
               float dx = (abs(f.x - 0.5) - ww * 0.5) * bw;
@@ -1137,7 +1139,7 @@ export class City {
                 wall = mix(vec3(0.05, 0.07, 0.09), base * 0.55, 0.3);
               }
               wall *= 0.8 + 0.2 * smoothstep(0.0, 3.0, v);
-              wall *= 1.0 - 0.1 * smoothstep(0.55, 0.95, bNoise(vec2(u * 0.9, v * 0.05 + vBSeed * 13.0)));
+              wall *= 1.0 - 0.1 * smoothstep(0.55, 0.95, bNoise(vec2(u * 0.9, v * 0.05 + bSeed * 13.0)));
               // Glass, blinds, lit rooms.
               float h1 = bHash(id);
               float h2 = bHash(id * 1.37 + 3.1);
@@ -1158,16 +1160,54 @@ export class City {
               if (v < groundH) {
                 float sb = S == 3 ? 3.0 : 5.0;
                 float sx = fract(u / sb);
-                float sid = bHash(vec2(floor(u / sb), vBSeed * 31.0));
-                float shopWin = (1.0 - smoothstep(0.44 - px / sb, 0.44, abs(sx - 0.5))) * step(0.35, v) * step(v, S == 3 ? 5.4 : 3.1);
+                float shopN = floor(u / sb);
+                float sid = bHash(vec2(shopN, bSeed * 31.0));
+                float top = S == 3 ? 5.4 : 3.1;
+                float shopWin = (1.0 - smoothstep(0.44 - px / sb, 0.44, abs(sx - 0.5))) * step(0.35, v) * step(v, top);
                 float sign = S == 3 ? 0.0 : step(3.3, v) * step(v, 4.0) * step(abs(sx - 0.5), 0.46);
-                vec3 signCol = 0.5 + 0.5 * cos(6.2831 * (sid + vec3(0.0, 0.33, 0.67)));
-                col = mix(col, vec3(0.07, 0.07, 0.075), shopWin);
-                col = mix(col, signCol * 0.85, sign);
-                bGlass = max(bGlass, shopWin);
-                bLit = max(bLit, shopWin * step(0.25, sid) * (0.3 + 0.7 * uLit));
+                // Sign boards in the colours shops use — white, black, red, blue, green, yellow — with lettering.
+                vec3 signCol = sid < 0.2 ? vec3(0.92) : sid < 0.36 ? vec3(0.08) : sid < 0.5 ? vec3(0.72, 0.1, 0.08) : sid < 0.64 ? vec3(0.08, 0.2, 0.52) : sid < 0.78 ? vec3(0.1, 0.4, 0.2) : vec3(0.9, 0.7, 0.12);
+                vec3 inkCol = dot(signCol, vec3(0.33)) > 0.5 ? vec3(0.06) : vec3(0.97, 0.95, 0.9);
+                float lx = (sx - 0.5) * sb;
+                float textHalf = 0.9 + fract(sid * 13.1) * 1.1;
+                float gx = lx / 0.34;
+                // Letters built like Hebrew print: a roof stroke, a right stem, and per letter a base,
+                // a left leg or a middle stroke; some cells are word gaps.
+                float gi = floor(gx);
+                float gh = bHash(vec2(gi, sid * 71.0));
+                float gh2 = bHash(vec2(gi * 1.7, sid * 13.0 + 4.0));
+                float lxg = fract(gx);
+                float ly = (v - 3.46) / 0.38;
+                float inCell = step(abs(lx), textHalf) * step(0.0, ly) * step(ly, 1.0) * step(0.14, gh);
+                float x0 = 0.16 + gh2 * 0.08;
+                float x1 = 0.84 - fract(gh * 5.3) * 0.08;
+                float w = 0.13;
+                float roof = step(1.0 - 0.2, ly) * step(x0, lxg) * step(lxg, x1);
+                float stem = step(x1 - w, lxg) * step(lxg, x1) * step(0.12 + step(0.8, gh2) * 0.3, ly);
+                float base = step(0.5, fract(gh * 3.1)) * step(ly, 0.18) * step(x0, lxg) * step(lxg, x1);
+                float leg = step(0.62, fract(gh * 7.7)) * step(x0, lxg) * step(lxg, x0 + w) * step(ly, 0.6 + fract(gh2 * 9.0) * 0.4);
+                float mid = step(0.8, fract(gh2 * 4.3)) * step(abs(lxg - 0.5), w * 0.5) * step(0.25, ly);
+                float glyph = inCell * max(max(roof, stem), max(base, max(leg, mid)));
+                vec3 signFace = mix(signCol, inkCol, glyph * (1.0 - smoothstep(0.02, 0.06, px)));
+                // Shop windows: aluminium frames, mullions every 1.25 m, a transom, a glass door in many,
+                // goods on shelves behind the glass.
+                float mx = fract(lx / 1.25 + 0.5);
+                float mull = 1.0 - smoothstep(0.03 - px, 0.03 + px, min(mx, 1.0 - mx) * 1.25);
+                float transom = 1.0 - smoothstep(0.03 - px, 0.03 + px, abs(v - 2.45));
+                float door = step(0.45, sid) * step(abs(lx), 0.55) * step(v, 2.45);
+                float doorFrame = door * (1.0 - smoothstep(0.04 - px, 0.04 + px, min(0.55 - abs(lx), 2.45 - v)));
+                float frameBar = max(max(mull, transom) * (1.0 - door), doorFrame) * shopWin;
+                vec2 gd = vec2(lx / 0.42, v / 0.32);
+                vec3 goods = mix(vec3(0.16, 0.14, 0.12), 0.5 + 0.5 * cos(6.2831 * (bHash(floor(gd) + sid * 9.0) + vec3(0.0, 0.33, 0.67))), 0.35) * 0.2;
+                float shelf = step(0.55, v) * step(v, 1.9) * (1.0 - door) * step(0.35, fract(gd.y)) * step(0.3, bHash(floor(gd) + 5.0));
+                vec3 inside = mix(vec3(0.07, 0.07, 0.075), goods, shelf * 0.6);
+                col = mix(col, mix(inside, vec3(0.55, 0.57, 0.6), frameBar), shopWin);
+                col = mix(col, signFace * 0.85, sign);
+                bGlass = max(bGlass, shopWin * (1.0 - frameBar));
+                // Lit inside: warm, softer toward the top, the goods standing dark against it.
+                bLit = max(bLit, shopWin * (1.0 - frameBar) * (1.0 - shelf * 0.65) * step(0.25, sid) * (0.2 + 0.4 * uLit) * (1.0 - 0.35 * smoothstep(0.5, 2.8, v)));
                 bLight = mix(bLight, vec3(1.0, 0.86, 0.66), shopWin);
-                bSign = signCol * sign * (0.25 + 0.75 * uLit);
+                bSign = signFace * sign * (0.25 + 0.75 * uLit);
               }
               // Sub-pixel window grid: settle on its average.
               float far = smoothstep(0.12, 0.3, px / min(bw, fh)) * band;
@@ -1188,7 +1228,7 @@ export class City {
         .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = bMetal;')
         .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += (bLight * bLit + bSign * 0.8) * uGlow;');
     };
-    mat.customProgramCacheKey = () => 'city-facade-v2';
+    mat.customProgramCacheKey = () => 'city-facade-v4';
     return mat;
   }
 
