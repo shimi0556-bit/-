@@ -479,7 +479,7 @@ export class City {
     if (!hit) return false;
     if (hit.lot && this.landmarks && (hit.lot === this.landmarks.ferris || hit.lot.cell === this.landmarks.stadium) && kind !== 'grass') return true;
     if (hit.lot && (hit.lot.kind === 'park' || (hit.lot.kind === 'plaza' && kind !== 'grass'))) return false;
-    if (kind === 'grass') return true;
+    if (kind === 'grass' || kind === 'bush') return true;
     if (this.inGate(x, z, 2)) return true;
     const c = this._clear(x, z);
     if (c > 8 && c < 13.6 && !this._covered(x, z)) return false;
@@ -510,7 +510,9 @@ export class City {
 
   build() {
     if (!this.cells) this.plan();
-    this.colliders = new Colliders(this.engine.physics);
+    // Solid things go to the island's shared set when there is one (it builds the bodies).
+    const own = !this.colliders;
+    if (own) this.colliders = new Colliders(this.engine.physics);
     const T = this.materials.textures;
     this.paving = new THREE.MeshStandardMaterial({ name: 'מדרכה', color: 0xc9c4ba, roughness: 0.86, metalness: 0 });
     this.materials.triplanar(this.paving, T.tiles, T.tilesNormal, 0.42, 0.6);
@@ -529,7 +531,7 @@ export class City {
     this._tunnel();
     this._footbridge();
     // Everything standing is solid: buildings, poles, parked cars.
-    this.colliders.build();
+    if (own) this.colliders.build();
     return this.group;
   }
 
@@ -775,7 +777,7 @@ export class City {
       if (lot.kind === 'park') continue;
       items.push({ m: new THREE.Matrix4().compose(_p.set(lot.p.x, lot.y - 0.15, lot.p.z), _q, _s.set(L + 0.3, 0.38, L + 0.3)) });
       // A kerb the wheels climb, as they would.
-      this.colliders.box(lot.p.x, lot.y + 0.04, lot.p.z, (L + 0.3) / 2, 0.19, (L + 0.3) / 2, this.angle);
+      this.colliders.box(lot.p.x, lot.y + 0.04, lot.p.z, (L + 0.3) / 2, 0.19, (L + 0.3) / 2, this.angle, 'default', { craft: false });
     }
     const geo = new THREE.BoxGeometry(1, 1, 1);
     geo.translate(0, 0.5, 0);

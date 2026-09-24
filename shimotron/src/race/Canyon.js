@@ -17,8 +17,9 @@ const _n = new THREE.Vector3();
  * plank-and-rope bridge slung between two rims.
  */
 export class Canyon {
-  constructor(engine, terrain, track, stage, materials) {
+  constructor(engine, terrain, track, stage, materials, colliders = null) {
     this.engine = engine;
+    this.colliders = colliders; // boulders, spires and arch feet are solid
     this.terrain = terrain;
     this.track = track;
     this.stage = stage;
@@ -138,6 +139,13 @@ export class Canyon {
     this.group.add(mesh);
     this._archFeet = this._archFeet || [];
     this._archFeet.push(pts[1], pts[pts.length - 2]);
+    // The feet are solid rock.
+    if (this.colliders) {
+      for (const q of [pts[0], pts[pts.length - 1]]) {
+        const gy = t.heightAt(q.x, q.z);
+        this.colliders.box(q.x, gy + 5, q.z, 5, 9, 9, Math.atan2(f.tx, f.tz));
+      }
+    }
   }
 
   /** Plank-and-rope bridge slung between the rims of a gorge. */
@@ -239,6 +247,7 @@ export class Canyon {
       _q.setFromEuler(_e.set(rng.range(-0.3, 0.3), rng.range(0, 6.28), rng.range(-0.3, 0.3)));
       _m.compose(_p.set(x, y - s * sink, z), _q, _s.set(s * rng.range(0.8, 1.3), s, s * rng.range(0.8, 1.3)));
       lists[Math.floor(rng.random() * lists.length)].push({ m: _m.clone(), c: new THREE.Color().setHSL(0.045 + rng.range(-0.015, 0.02), rng.range(0.35, 0.55), rng.range(0.42, 0.6)) });
+      if (this.colliders && s > 0.7) this.colliders.sphere(x, y - s * sink + s * 0.05, z, s * 0.82);
     };
     // Along the gorges, just past the barriers, both sides.
     if (tr.gorge) {
@@ -332,6 +341,7 @@ export class Canyon {
         const hh = H * (k ? rng.range(0.45, 0.8) : 1);
         _q.setFromEuler(_e.set(rng.range(-0.04, 0.04), rng.range(0, 6.28), rng.range(-0.04, 0.04)));
         _m.compose(_p.set(ox, t.heightAt(ox, oz) - 0.5, oz), _q, _s.set(hh * 0.55, hh, hh * 0.55));
+        if (this.colliders) this.colliders.post(ox, t.heightAt(ox, oz) - 0.5, oz, hh * 0.55 * 0.22, hh * 0.95);
         lists[Math.floor(rng.random() * lists.length)].push({ m: _m.clone(), c: new THREE.Color().setHSL(0.04 + rng.range(-0.01, 0.02), 0.5, rng.range(0.45, 0.58)) });
       }
       placed++;

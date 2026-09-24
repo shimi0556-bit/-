@@ -39,6 +39,11 @@ export function windMaterial(material, uniforms, mode, foliage = false) {
                bend += vec2(sin(uTime * 2.7 + wBase.x * 3.1), cos(uTime * 2.1 + wBase.z * 2.7)) * 0.05 * hf;
                transformed.xz += bend;
                transformed.y -= length(bend) * 0.35;`
+            : mode === 'bush'
+            ? `float hf = position.y * position.y * 0.05;
+               vec2 sway = uWindDir * (0.4 + gust * 0.6) * uWind * hf;
+               sway += vec2(sin(uTime * 3.1 + position.x * 4.0 + wBase.x), cos(uTime * 2.7 + position.z * 3.3 + wBase.z)) * 0.12 * uWind * hf;
+               transformed.xz += sway;`
             : `float hf = max(position.y - 2.0, 0.0) * 0.045;
                vec2 sway = uWindDir * (0.4 + gust * 0.6) * uWind * hf;
                float flutter = sin(uTime * 6.0 + position.x * 3.1 + position.z * 2.3 + wBase.x) * 0.035 * uWind * step(2.5, position.y);

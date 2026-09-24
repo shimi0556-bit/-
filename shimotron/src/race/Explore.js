@@ -44,7 +44,7 @@ export class Explore {
       piers: obs.piers,
       decks: obs.decks,
       thermals: this._thermals(),
-      obstacles: () => island.life?.solids,
+      obstacles: (p) => island.obstaclesNear(p),
       road: roadSurface(island.track),
       get wind() {
         const atm = game.engine.atmosphere;
@@ -252,6 +252,32 @@ export class Explore {
     if (dt <= 0 || !this.obj) return;
     const I = this.engine.input;
     this.driver.update(dt);
+    // Shrubs give way (and hold the car back a little).
+    const Bu = this.island.bushes;
+    if (Bu && Bu.items.length) {
+      const p = this.position;
+      let mover = null;
+      if (this.kind === 'car') {
+        const v = this.obj.body.velocity;
+        mover = { x: p.x, z: p.z, vx: v.x, vz: v.z, r: 1.25 };
+      } else if (p.y < this.ground(p.x, p.z) + 2.5) {
+        const v = this.obj.velocity;
+        mover = { x: p.x, z: p.z, vx: v.x, vz: v.z, r: 2 };
+      }
+      const drag = Bu.update(dt, mover ? [mover] : null);
+      if (drag && this.kind === 'car') {
+        const v = this.obj.body.velocity;
+        const k = 1 - Math.min(0.12, drag * dt * 0.55);
+        v.x *= k;
+        v.z *= k;
+      }
+    }
+    // Herds bolt from a vehicle on the ground.
+    if (this.island.life) {
+      const p = this.position;
+      const low = this.kind === 'car' || p.y < this.ground(p.x, p.z) + 6;
+      this.island.life.threat = low ? { x: p.x, z: p.z, speed: Math.abs(this.speed) } : null;
+    }
     // City traffic brakes for the explorer.
     if (this.island.city) this.island.city.avoid = this.kind === 'car' || this.position.y < this.ground(this.position.x, this.position.z) + 4 ? this.position : null;
     if (this.kind === 'car') {
@@ -302,6 +328,7 @@ export class Explore {
   dispose() {
     this._drop();
     if (this.island.city) this.island.city.avoid = null;
+    if (this.island.life) this.island.life.threat = null;
     const P = this.engine.physics;
     for (const b of this.bodies) P.world.removeBody(b);
     this.bodies = [];

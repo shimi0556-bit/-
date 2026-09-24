@@ -561,7 +561,37 @@ export class Craft {
       let nx;
       let ny = 0;
       let nz;
-      if (O.y0 !== undefined) {
+      if (O.box) {
+        // A building, a parked car: a turned box, left by the shallowest side (or the roof).
+        const top = O.y + O.hy;
+        if (py < O.y - O.hy - pad * 0.5 || py > top + pad * 0.5) continue;
+        const dx = p.x - O.x;
+        const dz = p.z - O.z;
+        const lx = dx * O.c - dz * O.s;
+        const lz = dx * O.s + dz * O.c;
+        const ex = O.hx + pad - Math.abs(lx);
+        const ez = O.hz + pad - Math.abs(lz);
+        if (ex <= 0 || ez <= 0) continue;
+        const ey = top + pad * 0.5 - py;
+        if (ey < ex && ey < ez) {
+          nx = 0;
+          ny = 1;
+          nz = 0;
+          p.y += ey;
+        } else if (ex < ez) {
+          const sx = Math.sign(lx) || 1;
+          nx = O.c * sx;
+          nz = -O.s * sx;
+          p.x += nx * ex;
+          p.z += nz * ex;
+        } else {
+          const sz = Math.sign(lz) || 1;
+          nx = O.s * sz;
+          nz = O.c * sz;
+          p.x += nx * ez;
+          p.z += nz * ez;
+        }
+      } else if (O.y0 !== undefined) {
         // Hull: a vertical cylinder.
         if (py < O.y0 - pad * 0.5 || py > O.y1 + pad * 0.5) continue;
         const dx = p.x - O.x;

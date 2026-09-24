@@ -278,6 +278,17 @@ export class IslandFlora extends Vegetation {
       species.push({ id: 'dead', w: F.deadTree, variants: variants.map((g) => [[g, greyBark, true]]), h: [2, 120], scale: [0.8, 1.3], collider: 0.3 });
     }
     if (!species.length) return;
+    // Each variant's height and crown reach (for what can hit it).
+    for (const sp of species) {
+      sp.dims = (sp.variants || [sp.parts]).map((parts) => {
+        const box = new THREE.Box3();
+        for (const [geo] of parts) {
+          geo.computeBoundingBox();
+          box.union(geo.boundingBox);
+        }
+        return { top: box.max.y, crownR: Math.max(-box.min.x, box.max.x, -box.min.z, box.max.z) * 0.7 };
+      });
+    }
     const total = species.reduce((s, x) => s + x.w, 0);
     // Fixed spots first (e.g. street trees the city lines its sidewalks with), then the random scatter.
     const spots = this.options.treeSpots ? this.options.treeSpots() : [];
@@ -331,6 +342,9 @@ export class IslandFlora extends Vegetation {
       _q.setFromEuler(_e.set(this.rng.range(-0.03, 0.03), it.r, this.rng.range(-0.03, 0.03)));
       it.matrix = new THREE.Matrix4().compose(new THREE.Vector3(it.x, it.y, it.z), _q.clone(), new THREE.Vector3(s, s * this.rng.range(0.92, 1.1), s));
       lists[si][vi].push(it);
+      // Solid: the trunk stops a car, the whole tree a low-flying craft.
+      const d = sp.dims[vi] || sp.dims[0];
+      this.colliders.push({ type: 'tree', x, y: it.y, z, r: sp.collider * s, h: Math.min(d.top * 0.7, 6) * s, crownR: d.crownR * s, top: d.top * s });
       placed++;
     }
     species.forEach((sp, si) => {

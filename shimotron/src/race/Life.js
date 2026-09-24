@@ -11,6 +11,7 @@ const _s = new THREE.Vector3();
 const _e = new THREE.Euler();
 const _w = { y: 0, dx: 0, dz: 0 };
 const UP = new THREE.Vector3(0, 1, 0);
+const _v = new THREE.Vector3();
 /**
  * Life around an island, above and below the water:
  *   reefs    the whole sea floor grows: coral gardens on the shelf
@@ -68,10 +69,13 @@ export class Life {
       list.forEach((it, i) => {
         mesh.setMatrixAt(i, it.m);
         if (it.c) mesh.setColorAt(i, it.c);
+        it.mesh = mesh;
+        it.slot = i;
       });
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
       mesh.computeBoundingSphere();
+      mesh.boundingSphere.radius += 40; // animals wander off a little
       mesh.castShadow = cast;
       mesh.receiveShadow = true;
       mesh.name = name;
@@ -1033,10 +1037,11 @@ export class Life {
           const az = z + rng.range(-spread, spread);
           if (tr.clearance(ax, az) < 26 || (keep && keep(ax, az))) continue;
           const ah = t.heightAt(ax, az);
-          _q.setFromAxisAngle(UP, rng.range(0, 6.28));
+          const yaw = rng.range(0, 6.28);
+          _q.setFromAxisAngle(UP, yaw);
           const s = rng.range(0.9, 1.1);
           const c = kind === 'cow' && rng.random() < 0.35 ? new THREE.Color(0x8a5a3a) : new THREE.Color(1, 1, 1);
-          lists[kind].push({ x: ax, z: az, m: new THREE.Matrix4().compose(new THREE.Vector3(ax, ah - 0.05, az), _q.clone(), new THREE.Vector3(s, s, s)), c });
+          lists[kind].push({ kind, x: ax, z: az, yaw, s, flee: 0, m: new THREE.Matrix4().compose(new THREE.Vector3(ax, ah - 0.05, az), _q.clone(), new THREE.Vector3(s, s, s)), c });
           placed++;
         }
       }
@@ -1044,6 +1049,66 @@ export class Life {
     // Heads go down to graze and come back up, each animal on its own clock.
     const mat = this._animated({ name: 'בעלי חיים', vertexColors: true, roughness: 0.85 }, 'life-graze', 'float graze = smoothstep(0.2, 0.8, sin(uTime * 0.35 + ph * 3.0) * 0.5 + 0.5); transformed.y -= graze * 0.55 * aMask; transformed.z += graze * 0.18 * aMask;');
     for (const [kind, list] of Object.entries(lists)) this._chunked(G[kind], mat, list, kind === 'cow' ? 'פרות' : kind === 'sheep' ? 'כבשים' : 'גמלים', { cast: true, cell: 260 });
+    this.animals = [...lists.cow, ...lists.sheep, ...lists.camel];
+  }
+
+  /**
+   * Animals bolt from an approaching vehicle (`this.threat`: { x, z, speed },
+   * set by free roam): they run away from it, round the circuit and the
+   * shore, for a few seconds, then settle and graze again.
+   */
+  _updateHerds(dt) {
+    const A = this.animals;
+    if (!A || !A.length) return;
+    const T = this.threat;
+    const t = this.terrain;
+    const tr = this.track;
+    const dirty = this._herdDirty || (this._herdDirty = new Set());
+    for (const a of A) {
+      if (T) {
+        const dx = a.x - T.x;
+        const dz = a.z - T.z;
+        const d = Math.hypot(dx, dz) || 0.01;
+        if (d < 12 + T.speed * 0.9) {
+          if (a.flee <= 0) a.run = { cow: 4.6, sheep: 5.4, camel: 6.2 }[a.kind] * (0.85 + ((a.slot * 7) % 10) * 0.03);
+          a.flee = 3 + ((a.slot * 13) % 10) * 0.15;
+          const side = ((a.slot % 2) * 2 - 1) * 0.35;
+          a.dx = dx / d + (-dz / d) * side;
+          a.dz = dz / d + (dx / d) * side;
+          if (d < 1.8) {
+            // Bumped: shoved aside.
+            a.x += (dx / d) * (1.8 - d);
+            a.z += (dz / d) * (1.8 - d);
+          }
+        }
+      }
+      if (a.flee <= 0) continue;
+      a.flee -= dt;
+      const run = a.run * Math.min(1, a.flee / 0.8);
+      let l = Math.hypot(a.dx, a.dz) || 1;
+      let ux = a.dx / l;
+      let uz = a.dz / l;
+      // Keep off the circuit and out of the sea: turn along the obstacle.
+      const nx = a.x + ux * 3;
+      const nz = a.z + uz * 3;
+      if (tr.clearance(nx, nz) < 24 || t.heightAt(nx, nz) < 2.5) {
+        [ux, uz] = [-uz, ux];
+        a.dx = ux;
+        a.dz = uz;
+      }
+      a.x += ux * run * dt;
+      a.z += uz * run * dt;
+      const want = Math.atan2(ux, uz);
+      a.yaw += Math.atan2(Math.sin(want - a.yaw), Math.cos(want - a.yaw)) * Math.min(1, dt * 6);
+      a.gait = (a.gait || 0) + dt * run * 2.2;
+      const bob = Math.abs(Math.sin(a.gait)) * 0.12 * Math.min(1, run / 3);
+      _q.setFromAxisAngle(UP, a.yaw);
+      a.m.compose(_v.set(a.x, t.heightAt(a.x, a.z) - 0.05 + bob, a.z), _q, _s.set(a.s, a.s, a.s));
+      a.mesh.setMatrixAt(a.slot, a.m);
+      dirty.add(a.mesh);
+    }
+    for (const m of dirty) m.instanceMatrix.needsUpdate = true;
+    dirty.clear();
   }
 
   // ---------------------------------------------------------------- per frame
@@ -1056,6 +1121,7 @@ export class Life {
     this._updateDolphins(dt);
     this._updateBoats(dt);
     this._updateBalloons(dt);
+    this._updateHerds(dt);
   }
 }
 

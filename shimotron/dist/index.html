@@ -6070,7 +6070,10 @@ uniform float uTime; uniform float uWind; uniform vec2 uWindDir;`).replace(`#inc
                vec2 bend = uWindDir * (0.35 + gust * 0.45) * uWind * hf;
                bend += vec2(sin(uTime * 2.7 + wBase.x * 3.1), cos(uTime * 2.1 + wBase.z * 2.7)) * 0.05 * hf;
                transformed.xz += bend;
-               transformed.y -= length(bend) * 0.35;`:`float hf = max(position.y - 2.0, 0.0) * 0.045;
+               transformed.y -= length(bend) * 0.35;`:n===`bush`?`float hf = position.y * position.y * 0.05;
+               vec2 sway = uWindDir * (0.4 + gust * 0.6) * uWind * hf;
+               sway += vec2(sin(uTime * 3.1 + position.x * 4.0 + wBase.x), cos(uTime * 2.7 + position.z * 3.3 + wBase.z)) * 0.12 * uWind * hf;
+               transformed.xz += sway;`:`float hf = max(position.y - 2.0, 0.0) * 0.045;
                vec2 sway = uWindDir * (0.4 + gust * 0.6) * uWind * hf;
                float flutter = sin(uTime * 6.0 + position.x * 3.1 + position.z * 2.3 + wBase.x) * 0.035 * uWind * step(2.5, position.y);
                sway += vec2(sin(uTime * 1.9 + position.y * 0.8 + wBase.x), cos(uTime * 1.6 + position.x * 1.3 + wBase.z)) * 0.04 * uWind * hf * 3.0;

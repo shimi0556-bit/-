@@ -76,8 +76,8 @@ export class CraftRace {
   _obstaclesNear(p) {
     const out = this._obs || (this._obs = []);
     out.length = 0;
-    const L = this.island.life?.solids;
-    if (L) for (let i = 0; i < L.length; i++) out.push(L[i]);
+    const L = this.island.obstaclesNear(p);
+    for (let i = 0; i < L.length; i++) out.push(L[i]);
     const R = this.course.rocksNear(p.x, p.z);
     if (R) for (let i = 0; i < R.length; i++) out.push(R[i]);
     return out;

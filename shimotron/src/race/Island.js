@@ -12,6 +12,8 @@ import { Weather } from './Effects.js';
 import { RACE } from './config.js';
 import { GROUP } from './Vehicle.js';
 import { AccessRoads } from './AccessRoads.js';
+import { Colliders } from './Colliders.js';
+import { Bushes } from './Bushes.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 const SEGMENTS = { low: 420, medium: 520, high: 600, ultra: 640 };
@@ -127,8 +129,11 @@ export class Island {
     if (this.roads) this.group.add(this.roads.build(this.materials));
     await nextFrame();
 
+    // Everything solid on the island (buildings, trunks, rocks) in one set: bodies for cars, shapes for craft.
+    this.colliders = new Colliders(eng.physics);
     if (this.city) {
       await progress(0.56, 'בונה את העיר…');
+      this.city.colliders = this.colliders;
       this.group.add(this.city.build());
       await nextFrame();
     }
@@ -139,7 +144,7 @@ export class Island {
     }
     if (st.gorge) {
       await progress(0.56, 'מפסל קשתות סלע ונקיקים…');
-      this.group.add(new Canyon(eng, terrain, track, st, this.materials).build());
+      this.group.add(new Canyon(eng, terrain, track, st, this.materials, this.colliders).build());
       await nextFrame();
     }
 
@@ -150,6 +155,14 @@ export class Island {
     const flora = new IslandFlora(eng, terrain, this.materials, st, track, blocked, this.city ? () => this.city.treeSpots() : null);
     this.flora = flora;
     this.group.add(flora.build());
+    for (const c of flora.colliders) {
+      if (c.type === 'tree') this.colliders.tree(c.x, c.y, c.z, c.r, c.h, c.crownR, c.top);
+      else if (c.type === 'sphere' && c.r > 0.7) this.colliders.sphere(c.x, c.y, c.z, c.r);
+    }
+    // Shrubs that give way: pushed aside, or flattened when driven over.
+    this.bushes = new Bushes(eng, terrain, this.materials, st, track, flora, blocked);
+    this.group.add(this.bushes.build());
+    this.colliders.build();
     for (const b of eng.physics.world.bodies) if (!before.has(b)) this.bodies.push(b);
     await nextFrame();
 
@@ -280,6 +293,17 @@ export class Island {
     });
     this.engine.particles.add(plume);
     this.emitters.push(plume);
+  }
+
+  /** What a craft at p can hit: ships and balloons, and the solid scenery around it (trees, buildings, rocks). */
+  obstaclesNear(p) {
+    const out = this._obs || (this._obs = []);
+    out.length = 0;
+    const L = this.life?.solids;
+    if (L) for (let i = 0; i < L.length; i++) out.push(L[i]);
+    const S = this.colliders?.near(p.x, p.z);
+    if (S) for (let i = 0; i < S.length; i++) out.push(S[i]);
+    return out;
   }
 
   /** Height of paving the wheels roll on (access roads, city streets) at (x, z), or null. */
