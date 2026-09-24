@@ -21,7 +21,7 @@ export class Track {
     this.engine = engine;
     this.terrain = terrain;
     this.stage = stage;
-    this.W = RACE.roadHalfWidth;
+    this.W = stage.halfWidth || RACE.roadHalfWidth;
     this.group = new THREE.Group();
     this.group.name = 'Track';
     this.bodies = [];
@@ -48,7 +48,7 @@ export class Track {
   _buildPath(controls) {
     const curve = new THREE.CatmullRomCurve3(controls, true, 'centripetal', 0.5);
     this.length = curve.getLength();
-    const n = Math.round(this.length / 2);
+    const n = Math.round(this.length / (this.stage.step || 2)); // samples every 2 m (finer for the dirt trail)
     const pts = curve.getSpacedPoints(n).slice(0, n);
     this.n = n;
     this.ds = this.length / n;
@@ -113,7 +113,7 @@ export class Track {
   /** Puts index 0 on the calmest straight so the grid and start line sit on it. */
   _chooseStart() {
     const n = this.n;
-    const win = Math.round(240 / this.ds);
+    const win = Math.round((this.stage.startWindow || 240) / this.ds);
     let best = 0;
     let bestCost = Infinity;
     let acc = 0;
@@ -125,7 +125,7 @@ export class Track {
       }
       acc += Math.abs(this.kappa[(i + win) % n]) - Math.abs(this.kappa[i]);
     }
-    const start = (best + Math.round(150 / this.ds)) % n;
+    const start = (best + Math.round((this.stage.startLead || 150) / this.ds)) % n;
     const rot = (arr) => {
       const out = new Float32Array(n);
       for (let i = 0; i < n; i++) out[i] = arr[(i + start) % n];

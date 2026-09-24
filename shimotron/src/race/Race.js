@@ -17,7 +17,7 @@ export class Race {
     this.game = game;
     this.engine = game.engine;
     this.island = island;
-    this.track = island.track;
+    this.track = opts.track || island.track; // the circuit, or another course on the island (the dirt trail)
     this.laps = opts.laps || RACE.laps;
     this.difficulty = AI.difficulty[opts.difficulty] || AI.difficulty.normal;
     this.events = game.engine.events;
@@ -41,8 +41,9 @@ export class Race {
     roster.forEach((r, k) => {
       const row = Math.floor(k / 2);
       const col = k % 2;
-      const back = 12 + row * 16 + col * 8;
-      const lat = col === 0 ? -3.4 : 3.4;
+      // A course may lay out its own start (the trail: a row of starting gates).
+      const slot = tr.gridSlot ? tr.gridSlot(k) : { back: 12 + row * 16 + col * 8, lat: col === 0 ? -3.4 : 3.4 };
+      const { back, lat } = slot;
       const s = 1 - back / L;
       const pose = tr.pose(s, lat);
       const heading = Math.atan2(pose.tangent.x, pose.tangent.z);
@@ -311,7 +312,8 @@ export class Race {
     // Pick the lateral slot furthest from nearby cars.
     let bestLat = 0;
     let bestScore = -Infinity;
-    for (const lat of [0, -3.5, 3.5, -1.8, 1.8]) {
+    for (const f of [0, -0.5, 0.5, -0.26, 0.26]) {
+      const lat = f * tr.W;
       const p = tr.pose(s, lat).position;
       let d = Infinity;
       for (const o of this.entries) if (o !== e) d = Math.min(d, o.car.position.distanceTo(p));

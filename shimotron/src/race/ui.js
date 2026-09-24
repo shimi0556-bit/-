@@ -63,7 +63,7 @@ const ordinal = (n) => `${n}`;
  * championship table, plus the touch pad. Pure view: the Game calls in.
  */
 /** Race kinds for the single race. */
-const KIND_LABEL = { car: 'מכוניות', boat: 'סירות', sub: 'צוללות', plane: 'מטוסים', glider: 'מצנחי רחיפה', space: 'חלל' };
+const KIND_LABEL = { car: 'מכוניות', moto: 'אופנועי שטח', boat: 'סירות', sub: 'צוללות', plane: 'מטוסים', glider: 'מצנחי רחיפה', space: 'חלל' };
 
 export class RaceUI {
   constructor(root, game) {
@@ -156,7 +156,7 @@ export class RaceUI {
           { class: 'row' },
           h('button', { class: 'btn primary big', type: 'button', onclick: () => g.startChampionship() }, icon('trophy'), state.champ ? `המשך אליפות · שלב ${state.champ.stage + 1}/${STAGES.length}` : `אליפות (${STAGES.length} איים)`),
           h('button', { class: 'btn big career-btn', type: 'button', onclick: () => g.startCareer() }, icon('coins'), g.career ? `המשך קריירה · ${money(g.career.money)} · ${STAGES[g.career.stage].name}` : 'קריירה · מצב מתמשך'),
-          h('button', { class: 'btn big', type: 'button', onclick: () => g.startSingle() }, icon('flag'), `מירוץ ${KIND_LABEL[s.kind] || KIND_LABEL.car} · ${STAGES[state.selected].name}`),
+          h('button', { class: 'btn big', type: 'button', onclick: () => g.startSingle() }, icon('flag'), `מירוץ ${KIND_LABEL[s.kind] || KIND_LABEL.car} · ${s.kind === 'moto' ? (STAGES.find((st) => st.trail) || STAGES[state.selected]).name : STAGES[state.selected].name}`),
           h('button', { class: 'btn big roam-btn', type: 'button', onclick: () => g.startExplore() }, `סיור חופשי בעולם · מ${STAGES[state.selected].name}`),
           state.champ ? h('button', { class: 'btn', type: 'button', onclick: () => g.resetChampionship() }, 'אליפות חדשה') : null,
           g.career ? h('button', { class: 'btn', type: 'button', onclick: () => g.resetCareer() }, 'קריירה חדשה') : null,
@@ -248,7 +248,7 @@ export class RaceUI {
    */
   carPicker({ selected, color, onPick, owned = null, money = 0, onBuy = null }) {
     const labels = { speed: 'מהירות', accel: 'תאוצה', grip: 'אחיזה', offroad: 'שטח' };
-    const cards = CAR_TYPES.map((t) => {
+    const cards = CAR_TYPES.filter((t) => !t.hidden).map((t) => {
       const cv = h('canvas', { width: 320, height: 120, 'aria-hidden': 'true' });
       drawCarProfile(cv, t.id, color);
       const r = carRatings(t.id);

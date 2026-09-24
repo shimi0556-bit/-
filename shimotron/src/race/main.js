@@ -835,8 +835,10 @@ class Game {
     this._endPodium();
     this._exitSpace();
     // The space race always lifts off from the city's spaceport.
-    const wantKind = this.mode === 'single' && KINDS[this.settings.kind] ? this.settings.kind : 'car';
+    const wantKind = this.mode === 'single' && (KINDS[this.settings.kind] || this.settings.kind === 'moto') ? this.settings.kind : 'car';
     if (wantKind === 'space') index = Math.max(0, STAGES.findIndex((s) => s.id === WORLD.hub));
+    // Motocross: on the dirt trail between the mesas of the volcano canyon.
+    if (wantKind === 'moto') index = Math.max(0, STAGES.findIndex((s) => s.trail));
     this.state = 'loading';
     this._audioReady();
     if (!this.carAudio && eng.audio.ctx) this.carAudio = new CarAudio(eng.audio);
@@ -883,6 +885,12 @@ class Game {
     }
     let race;
     if (kind === 'car') race = new Race(this, this.island, { laps: this.settings.laps, difficulty: this._difficulty(), roster: this._gridOrder(this.roster()), items: career ? true : this.settings.items, startItem: career ? this.career.item : null });
+    else if (kind === 'moto' && this.island.trail) {
+      const roster = this._gridOrder(this.roster()).map((r) => ({ ...r, type: 'moto' }));
+      race = new Race(this, this.island, { track: this.island.trail, laps: this.settings.laps, difficulty: this._difficulty(), roster, items: this.settings.items });
+      race.stageName = 'מוטוקרוס בקניון הגעש';
+      race.title = 'שביל עפר בין המסות והצוקים';
+    } else if (kind === 'moto') race = new Race(this, this.island, { laps: this.settings.laps, difficulty: this._difficulty(), roster: this._gridOrder(this.roster()).map((r) => ({ ...r, type: 'moto' })), items: this.settings.items });
     else {
       if (!this.carAudio && eng.audio.ctx) this.carAudio = new CarAudio(eng.audio);
       race = new CraftRace(this, this.island, { kind, laps: this.settings.laps, difficulty: this._difficulty(), roster: this._gridOrder(this.roster()), space: this.inSpace ? this.space : null });
@@ -1130,6 +1138,7 @@ class Game {
         curb: [rg * 0.94, 0.15],
         gravel: [0.72, 1.6],
         grass: [0.62, 2.0],
+        dirt: [0.84, 0.45], // packed trail dirt
         sand: [0.56, 2.8],
         snow: [0.55, 1.8],
         water: [0.3, 7],

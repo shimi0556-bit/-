@@ -329,6 +329,35 @@ export class Vehicle {
       b.torque.x += _f.x * rollT + _r.x * pitchT;
       b.torque.y += _f.y * rollT + _r.y * pitchT;
       b.torque.z += _f.z * rollT + _r.z * pitchT;
+      if (S.bike) {
+        // Two wheels: the rider balances the machine, so the chassis stays upright (the lean is drawn on the model).
+        const wr = av.dot(_f);
+        const I = b.inertia.z || m;
+        const tq = -(roll * 170 + wr * 24) * I;
+        b.torque.x += _f.x * tq;
+        b.torque.y += _f.y * tq;
+        b.torque.z += _f.z * tq;
+        if (grounded >= 1) {
+          // The rider's weight over the bars / over the back: cancels most of the wheelie from the drive and
+          // the stoppie from the brakes (both act at the tyres, well below the centre of mass), damps pitching,
+          // and puts a lifted wheel back down while the other is on the ground.
+          const h = S.wheel.restLength + S.wheel.radius - S.wheel.height;
+          const wp = av.dot(_r);
+          const Ip = b.inertia.x || m;
+          let tp = -wp * Ip * 5;
+          if (!C.hold) {
+            tp += F * h * 0.8;
+            if (Math.abs(vf) > 1) tp -= brake * S.brake.decel * m * Math.sign(vf) * h * 0.8;
+          }
+          const front = this.contact[0] || this.contact[1];
+          const back = this.contact[2] || this.contact[3];
+          if (back && !front) tp += Ip * 9;
+          else if (front && !back) tp -= Ip * 9;
+          b.torque.x += _r.x * tp;
+          b.torque.y += _r.y * tp;
+          b.torque.z += _r.z * tp;
+        }
+      }
       if (grounded === 0) {
         const wr = av.dot(_f);
         const wp = av.dot(_r);

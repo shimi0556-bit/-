@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Emitter } from '../engine/fx/Particles.js';
 import { Vehicle } from './Vehicle.js';
 import { createCarModel } from './CarModel.js';
+import { createMotoModel } from './MotoModel.js';
 import { carSpec } from './config.js';
 
 const _m = new THREE.Matrix4();
@@ -35,12 +36,13 @@ export class Car {
     this.vehicle = new Vehicle(ctx.physics, { position, heading, ground: ctx.ground, spec: this.spec });
     this.body = this.vehicle.body;
     this.body.userData = { car: this };
-    const model = createCarModel(ctx.materials, { color, number, stripe, type });
+    // Motorbikes draw their own two wheels (and lean); cars take four from the shared batch.
+    const model = this.spec.bike ? createMotoModel(ctx.materials, { color, number, stripe }) : createCarModel(ctx.materials, { color, number, stripe, type });
     this.model = model;
     this.object = model.group;
     this.object.name = `מכונית ${number}`;
     ctx.scene.add(this.object);
-    this.wheelBase = ctx.wheels.allocate();
+    this.wheelBase = this.spec.bike ? -1 : ctx.wheels.allocate();
     this.forward = new THREE.Vector3(0, 0, 1);
     this.right = new THREE.Vector3(-1, 0, 0);
     this.position = this.object.position;
@@ -129,7 +131,7 @@ export class Car {
   /** Two real spot lights for the player's car (they matter on the night island). */
   _headlights() {
     this.lamps = [];
-    for (const x of [0.62, -0.62]) {
+    for (const x of this.spec.bike ? [0] : [0.62, -0.62]) {
       const l = new THREE.SpotLight(0xfff1dc, 0, 140, 0.48, 0.55, 1.6);
       l.position.set(x, -0.05, 2.1);
       l.target.position.set(x * 3, -0.6, 24);
@@ -163,6 +165,10 @@ export class Car {
     this.forward.set(0, 0, 1).applyQuaternion(this.object.quaternion);
     this.right.set(-1, 0, 0).applyQuaternion(this.object.quaternion);
     const veh = this.vehicle;
+    if (this.model.pose) {
+      this.model.pose(this, dt);
+      return;
+    }
     const infos = veh.vehicle.wheelInfos;
     const W = this.ctx.wheels;
     for (let i = 0; i < 4; i++) {
@@ -215,13 +221,13 @@ export class Car {
       const lat = Math.abs(veh.lateralSpeed());
       const k = Math.max(veh.slip[i], Math.min(1, Math.max(0, (lat - 2.2) / 6)), i >= 2 && C.handbrake && v > 4 ? 0.8 : 0);
       if (i >= 2) slide = Math.max(slide, k);
-      const markable = !loose || s === 'snow' || s === 'sand';
+      const markable = !loose || s === 'snow' || s === 'sand' || s === 'dirt';
       if (k > 0.25 && v > 3 && markable) {
         const cur = _b.set(hp.x, hp.y + 0.025, hp.z);
         const last = this.lastMark[i];
         if (last && last.distanceToSquared(cur) > 0.36) {
           _side.subVectors(cur, last).cross(UP).normalize();
-          const tint = s === 'snow' ? [0.55, 0.6, 0.7] : s === 'sand' ? [0.55, 0.42, 0.3] : [1, 1, 1];
+          const tint = s === 'snow' ? [0.55, 0.6, 0.7] : s === 'sand' ? [0.55, 0.42, 0.3] : s === 'dirt' ? [0.6, 0.44, 0.32] : [1, 1, 1];
           this.ctx.skid.add(last, cur, _side, this.spec.wheel.width * 0.9, Math.min(0.75, k * 0.9), tint);
           last.copy(cur);
         } else if (!last) this.lastMark[i] = cur.clone();
@@ -244,7 +250,9 @@ export class Car {
 
     // Rear smoke on asphalt, dust on loose ground.
     const smokeRate = v > 4 ? Math.max(0, slide - 0.45) * 90 : 0;
-    const dustRate = v > 3 ? Math.min(1, v / 25) * 26 * this.offroad : 0;
+    // Dust off loose ground; a bike's rear tyre throws a roost of dirt, more on the throttle.
+    const bike = this.spec.bike;
+    const dustRate = v > 3 ? Math.min(1, v / 25) * 26 * this.offroad * (bike ? 1.3 + C.throttle : 1) : 0;
     for (let k = 0; k < 2; k++) {
       const x = k === 0 ? this.spec.wheel.track : -this.spec.wheel.track;
       this._local(x, -0.5, this.spec.wheel.rear - 0.25, this.smoke[k].position);
@@ -258,7 +266,9 @@ export class Car {
     }
     // Nitro flames out of both exhausts.
     for (let k = 0; k < 2; k++) {
-      this._local(k === 0 ? 0.34 : -0.34, -0.3, -(this.spec.body.half[2] + 0.14), this.flames[k].position);
+      const ex = this.spec.exhaust;
+      if (ex) this._local(ex[0], ex[1], ex[2], this.flames[k].position);
+      else this._local(k === 0 ? 0.34 : -0.34, -0.3, -(this.spec.body.half[2] + 0.14), this.flames[k].position);
       this.flames[k].o.dir.copy(this.forward).negate();
       this.flames[k].rate = veh.nitroActive ? 60 : 0;
     }

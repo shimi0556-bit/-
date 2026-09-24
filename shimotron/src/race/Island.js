@@ -14,6 +14,7 @@ import { GROUP } from './Vehicle.js';
 import { AccessRoads } from './AccessRoads.js';
 import { Colliders } from './Colliders.js';
 import { Bushes } from './Bushes.js';
+import { Trail, planTrail } from './Trail.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 const SEGMENTS = { low: 420, medium: 520, high: 600, ultra: 640 };
@@ -101,11 +102,28 @@ export class Island {
       const s0 = terrain.splatModifier;
       terrain.splatModifier = (x, z, w, h) => this.roads.splat(x, z, s0(x, z, w, h));
     }
+    if (st.trail) {
+      // A motocross trail through the open ground between the mesas, scraped into the valley floor.
+      await progress(0.26, 'מסמן שביל עפר בין המסות…');
+      const tp = planTrail(terrain, st, { circuit: track, roads: this.roads, keepOut: this.opts.keepOut });
+      if (tp) {
+        const trail = new Trail(eng, terrain, tp.controls, st);
+        this.trail = trail;
+        const h0 = terrain.heightModifier;
+        terrain.heightModifier = (x, z, h) => trail.heightModifier(x, z, h0(x, z, h));
+        const s0 = terrain.splatModifier;
+        terrain.splatModifier = (x, z, w, h) => trail.splatModifier(x, z, s0(x, z, w, h), h);
+        const c0 = track.clearance;
+        terrain.clearance = (x, z) => Math.min(c0(x, z), trail.clearance(x, z));
+        // Scrub, boulders and herds keep off the trail too — the verge only: the bush starts right after it.
+        track.clearance = (x, z) => Math.min(c0(x, z), trail.softClearance(x, z));
+      }
+    }
 
     await progress(0.32, 'חוצב את הכביש בשטח…');
     // Heights and ground maps: from the cache when this island was built before, else baked in slices.
     const cache = this.opts.cache;
-    const key = `${st.id}|${terrain.segments}|${plan.controls.length}|${Math.round(plan.length * 100)}`;
+    const key = `${st.id}|${terrain.segments}|${plan.controls.length}|${Math.round(plan.length * 100)}|${this.trail ? Math.round(this.trail.length * 10) : 0}`;
     const hit = cache && cache.get(key);
     if (hit) {
       terrain.heights = hit.heights;
@@ -127,10 +145,12 @@ export class Island {
     this.group.add(track.build(this.materials));
     track.buildPhysics(eng.physics);
     if (this.roads) this.group.add(this.roads.build(this.materials));
+    if (this.trail) this.group.add(this.trail.build(this.materials));
     await nextFrame();
 
     // Everything solid on the island (buildings, trunks, rocks) in one set: bodies for cars, shapes for craft.
     this.colliders = new Colliders(eng.physics);
+    for (const b of this.trail?.solids || []) this.colliders.box(b.x, b.y, b.z, b.hx, b.hy, b.hz, b.yaw, 'wood');
     if (this.city) {
       await progress(0.56, 'בונה את העיר…');
       this.city.colliders = this.colliders;
@@ -321,6 +341,7 @@ export class Island {
   groundRay(from, to, result) {
     const tr = this.track;
     if (tr.raycastRoad(from, to, result, tr.roadBody)) return true;
+    if (this.trail && this.trail.raycastRoad(from, to, result, tr.roadBody)) return true;
     if (!this.roads && !this.city) return false;
     const y = this.pavedY(from.x, from.z);
     if (y === null || from.y - y > 3 || from.y < y - 0.3) return false;
@@ -357,6 +378,7 @@ export class Island {
   /** What a wheel rolls on at (x, z). */
   surface(x, z) {
     const tr = this.track;
+    if (this.trail && this.trail.onDirt(x, z)) return 'dirt';
     if (this.roads && this.roads.dist(x, z) < 6.8) return 'asphalt';
     const q = tr.nearest(x, z, this._sq || (this._sq = {}));
     if (q) {
@@ -379,6 +401,7 @@ export class Island {
   update(dt) {
     const eng = this.engine;
     this.track.update(dt, eng);
+    if (this.trail) this.trail.update(dt, eng);
     if (this.city) this.city.update(dt);
     if (this.life) this.life.update(dt);
     if (this.weather) this.weather.update(dt);

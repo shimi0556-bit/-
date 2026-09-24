@@ -477,6 +477,7 @@ export class Terrain {
       tSand: { value: T.sand },
       tSandN: { value: T.sandNormal },
       tDirt: { value: T.dirt },
+      tDirtN: { value: T.dirtNormal },
       uSize: { value: this.size },
       uTime: { value: 0 },
       uCaustic: { value: new THREE.Color(1, 1, 1) },
@@ -503,7 +504,7 @@ export class Terrain {
           '#include <common>',
           `#include <common>
           varying vec3 vTPos; varying vec3 vTNrm;
-          uniform sampler2D tSplat, tGrass, tGrassN, tRock, tRockN, tSand, tSandN, tDirt;
+          uniform sampler2D tSplat, tGrass, tGrassN, tRock, tRockN, tSand, tSandN, tDirt, tDirtN;
           uniform float uSize; uniform float uTime; uniform vec3 uCaustic;
           uniform vec3 uTintGrass; uniform vec3 uTintSand; uniform vec3 uTintDirt; uniform vec3 uTintRock; uniform vec2 uSnow; uniform float uStrata;
           float tSnow;
@@ -605,8 +606,10 @@ export class Terrain {
             rZ = vec3(rZ.xy + wn.xy, abs(rZ.z) * wn.z);
             vec3 rockN = normalize(rX.zyx * tTriW.x + rY.xzy * tTriW.y + rZ.xyz * tTriW.z);
             vec3 grassN = normalize(vec3(gN.x * 0.6 + wn.x, wn.y, gN.y * 0.6 + wn.z));
-            vec3 sandN = normalize(vec3(sN.x * 0.5 + wn.x, wn.y, sN.y * 0.5 + wn.z));
-            vec3 wN = normalize(sandN * tW.x + grassN * (tW.y + tW.w) + rockN * tW.z * 1.2);
+            vec3 sandN = normalize(vec3(sN.x * 0.4 + wn.x, wn.y, sN.y * 0.4 + wn.z));
+            vec3 dN = texture2D(tDirtN, wuv * 0.1).xyz * 2.0 - 1.0;
+            vec3 dirtN = normalize(vec3(dN.x * 0.45 + wn.x, wn.y, dN.y * 0.45 + wn.z));
+            vec3 wN = normalize(sandN * tW.x + dirtN * tW.y + grassN * tW.w + rockN * tW.z * 1.2);
             wN = normalize(mix(wN, wn, max(tWet * 0.6, tSnow * 0.8)));
             normal = normalize((viewMatrix * vec4(wN, 0.0)).xyz);
           }`,

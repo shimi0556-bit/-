@@ -179,16 +179,30 @@ export const RECIPES = {
     }`,
   sandNormal: /* glsl */ `
     float height(vec2 uv) {
-      float w = fbm(uv, 2.0, 3);
-      return sin((uv.x + uv.y * 0.3 + w * 0.25) * 6.2831 * 14.0) * 0.4 + fbm(uv, 32.0, 3) * 0.3;
+      // Wind ripples: irregular, forking, fading in and out — and fine grain.
+      float w = fbm(uv, 2.0, 4);
+      float amp = smoothstep(-0.4, 0.5, fbm(uv + 7.3, 3.0, 3));
+      float r = sin((uv.x + uv.y * 0.3 + w * 0.55) * 6.2831 * 14.0);
+      return r * 0.16 * amp + fbm(uv, 32.0, 3) * 0.3;
+    }`,
+  dirtNormal: /* glsl */ `
+    float height(vec2 uv) {
+      // Packed earth: clods, small stones, cracks.
+      vec3 w = worley(uv, 24.0);
+      float pebble = smoothstep(0.26, 0.1, w.x) * step(0.62, w.z) * (0.5 + w.z * 0.5);
+      return fbm(uv, 6.0, 6) * 0.55 + pebble * 0.22 + fbm(uv, 40.0, 3) * 0.14;
     }`,
   dirt: /* glsl */ `
     vec4 bake(vec2 uv) {
       float n = fbm(uv, 6.0, 6);
+      float n2 = fbm(uv + 3.1, 18.0, 4);
       vec3 w = worley(uv, 24.0);
-      float pebble = smoothstep(0.32, 0.18, w.x);
+      // Only some cells hold a stone, of varied size and colour; the rest is earth with clods and grit.
+      float pebble = smoothstep(0.22, 0.08, w.x * (0.8 + w.z * 0.5)) * step(0.68, w.z);
       vec3 c = mix(vec3(0.19, 0.14, 0.1), vec3(0.33, 0.26, 0.19), smoothstep(-0.5, 0.5, n));
-      c = mix(c, vec3(0.42, 0.4, 0.37) * (0.7 + w.z * 0.5), pebble * 0.7);
+      c *= 0.88 + 0.22 * smoothstep(-0.4, 0.4, n2);
+      c *= 0.94 + hash12(floor(uv * 512.0)) * 0.12;
+      c = mix(c, vec3(0.4, 0.37, 0.33) * (0.72 + fract(w.z * 7.3) * 0.45), pebble * 0.6);
       return vec4(c, 1.0);
     }`,
   // Stone plaza tiles: albedo / normal / ORM (R=AO, G=roughness, B=metal).

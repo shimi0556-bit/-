@@ -12,6 +12,7 @@ const STEP = 1 / 60;
 /** What the explorer can travel in. */
 export const ROAM = {
   car: { name: 'מכונית', hint: 'על היבשה ועל הגשרים' },
+  moto: { name: 'אופנוע שטח', hint: 'בשבילי העפר, בין הסלעים ועל הכבישים' },
   boat: { name: 'סירה', hint: 'על פני הים' },
   sub: { name: 'צוללת', hint: 'מתחת לים, בין השוניות' },
   plane: { name: 'מטוס', hint: 'באוויר, מעל הכול — נוחת וממריא מהכביש' },
@@ -53,7 +54,7 @@ export class Explore {
       },
     };
     this._pre = () => {
-      if (this.kind === 'car' && this.obj) {
+      if (this.onWheels && this.obj) {
         this.obj.vehicle.controls.hold = false;
         this.obj.vehicle.preStep(this.engine.physics.fixedStep);
       }
@@ -128,8 +129,13 @@ export class Explore {
     }
   }
 
+  /** Driving on wheels (car or motorbike) rather than sailing or flying. */
+  get onWheels() {
+    return this.kind === 'car' || this.kind === 'moto';
+  }
+
   get position() {
-    return this.kind === 'car' ? this.obj.body.position : this.obj.position;
+    return this.onWheels ? this.obj.body.position : this.obj.position;
   }
 
   get heading() {
@@ -138,7 +144,7 @@ export class Explore {
   }
 
   get speed() {
-    return this.kind === 'car' ? this.obj.vehicle.speed : this.obj.speed;
+    return this.onWheels ? this.obj.vehicle.speed : this.obj.speed;
   }
 
   /** Puts the explorer in a vehicle; `at` = { x, y, z, yaw, speed } or a sensible spot nearby. */
@@ -149,9 +155,9 @@ export class Explore {
     this.kind = kind;
     const spot = this._spot(kind, here);
     const color = g.settings.color;
-    if (kind === 'car') {
+    if (kind === 'car' || kind === 'moto') {
       const ctx = g.carContext(this.island);
-      const car = new Car(ctx, { color, stripe: '#111111', number: 7, name: 'את/ה', isPlayer: true, position: new THREE.Vector3(spot.x, spot.y + (spot.exact ? 0 : 0.7), spot.z), heading: spot.yaw, type: g.settings.car || 'gt' });
+      const car = new Car(ctx, { color, stripe: '#111111', number: 7, name: 'את/ה', isPlayer: true, position: new THREE.Vector3(spot.x, spot.y + (spot.exact ? 0 : 0.7), spot.z), heading: spot.yaw, type: kind === 'moto' ? 'moto' : g.settings.car || 'gt' });
       // Carrying on from another island: same speed, same direction.
       if (spot.exact && spot.speed) car.body.velocity.set(Math.sin(spot.yaw) * spot.speed, spot.vy || 0, Math.cos(spot.yaw) * spot.speed);
       this.obj = car;
@@ -212,7 +218,7 @@ export class Explore {
       }
       return null;
     };
-    if (kind === 'car') {
+    if (kind === 'car' || kind === 'moto') {
       // On a bridge deck already? Stay there. Else the nearest bit of the circuit, or dry land.
       if (here && here.onDeck) return { x, y: here.y + 0.5, z, yaw };
       if (g > 0.8 && here) return { x, y: g + 0.8, z, yaw };
@@ -257,7 +263,7 @@ export class Explore {
     if (Bu && Bu.items.length) {
       const p = this.position;
       let mover = null;
-      if (this.kind === 'car') {
+      if (this.onWheels) {
         const v = this.obj.body.velocity;
         mover = { x: p.x, z: p.z, vx: v.x, vz: v.z, r: 1.25 };
       } else if (p.y < this.ground(p.x, p.z) + 2.5) {
@@ -265,7 +271,7 @@ export class Explore {
         mover = { x: p.x, z: p.z, vx: v.x, vz: v.z, r: 2 };
       }
       const drag = Bu.update(dt, mover ? [mover] : null);
-      if (drag && this.kind === 'car') {
+      if (drag && this.onWheels) {
         const v = this.obj.body.velocity;
         const k = 1 - Math.min(0.12, drag * dt * 0.55);
         v.x *= k;
@@ -275,12 +281,12 @@ export class Explore {
     // Herds bolt from a vehicle on the ground.
     if (this.island.life) {
       const p = this.position;
-      const low = this.kind === 'car' || p.y < this.ground(p.x, p.z) + 6;
+      const low = this.onWheels || p.y < this.ground(p.x, p.z) + 6;
       this.island.life.threat = low ? { x: p.x, z: p.z, speed: Math.abs(this.speed) } : null;
     }
     // City traffic brakes for the explorer.
-    if (this.island.city) this.island.city.avoid = this.kind === 'car' || this.position.y < this.ground(this.position.x, this.position.z) + 4 ? this.position : null;
-    if (this.kind === 'car') {
+    if (this.island.city) this.island.city.avoid = this.onWheels || this.position.y < this.ground(this.position.x, this.position.z) + 4 ? this.position : null;
+    if (this.onWheels) {
       this.obj.update(dt, (x, z) => this.island.surface(x, z), this.island.dustColor);
       this.game.wheels.commit();
     } else {
@@ -308,7 +314,7 @@ export class Explore {
       this.spawn(this.kind);
     }
     // The car fell into the sea: back to land.
-    if (this.kind === 'car' && this.position.y < -3) this.spawn('car');
+    if (this.onWheels && this.position.y < -3) this.spawn(this.kind);
     // Heading for another island? It is built when we get there.
     const [wx, wz] = this.world.toWorld(this.position.x, this.position.z);
     const st = this.world.islandAt(wx, wz);
@@ -318,9 +324,9 @@ export class Explore {
       if (inside > 120 && !this.travelling) {
         this.travelling = true;
         const p = this.position;
-        const onDeck = this.kind === 'car' && this.ground(p.x, p.z) < p.y - 3;
+        const onDeck = this.onWheels && this.ground(p.x, p.z) < p.y - 3;
         const o = this.obj;
-        this.game.roamTravel(st, { wx, wz, y: p.y, yaw: this.heading, speed: this.speed, kind: this.kind, onDeck, pitch: o.pitch, vy: this.kind === 'car' ? o.body.velocity.y : o.vy });
+        this.game.roamTravel(st, { wx, wz, y: p.y, yaw: this.heading, speed: this.speed, kind: this.kind, onDeck, pitch: o.pitch, vy: this.onWheels ? o.body.velocity.y : o.vy });
       }
     }
   }

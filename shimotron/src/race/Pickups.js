@@ -92,7 +92,7 @@ export class Pickups {
     }
     this.boxes = [];
     for (const i of picks.sort((a, b) => a - b)) {
-      for (const lat of [-4.8, -2.4, 0, 2.4, 4.8]) {
+      for (const lat of [-0.69, -0.34, 0, 0.34, 0.69].map((f) => f * tr.W)) {
         const pose = tr.pose(i / n, lat);
         this.boxes.push({ i, lat, pos: pose.position.clone().add(new THREE.Vector3(0, 1.0, 0)), respawn: 0, phase: Math.random() * 6 });
       }

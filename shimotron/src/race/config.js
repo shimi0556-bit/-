@@ -171,6 +171,34 @@ export const CAR_TYPES = [
     },
     shape: { halfL: 2.3, w: 0.97, flare: 0.09, floor: -0.45, belt: 0.04, hoodDrop: 0.22, roof: 0.5, cabin: [0.95, 0.2, -0.35, -1.5], cabinW: 0.7, wing: 'big', extras: ['fins'] },
   },
+  {
+    // The motocross bike (the dirt-trail race only: not in the garage).
+    id: 'moto',
+    name: 'אופנוע מוטוקרוס',
+    desc: 'קל, זריז ומזנק — עשוי לעפר, לקפיצות ולפניות חדות',
+    price: 0,
+    hidden: true,
+    spec: {
+      bike: true,
+      mass: 260,
+      body: { half: [0.24, 0.3, 0.95], offset: [0, 0.02, 0] },
+      cabin: { half: [0.22, 0.32, 0.3], offset: [0, 0.55, -0.1] },
+      wheel: { radius: 0.37, width: 0.14, front: 0.74, rear: -0.72, track: 0.3, height: 0.12, restLength: 0.5, travel: 0.42, stiffness: 28, dampCompression: 3.6, dampRelaxation: 2.6, rollInfluence: 0, grip: 1.5 },
+      engine: { accel: 9.4, topSpeed: 36, reverseTop: 5, frontShare: 0, gears: [0, 2.9, 2.1, 1.6, 1.27, 1.03], idleRpm: 1700, redline: 11800 },
+      brake: { decel: 9.8, frontBias: 0.66 },
+      handbrake: { decel: 4, grip: 0.5 },
+      steer: { max: 0.62, min: 0.03, rate: 4.2, returnRate: 7 },
+      downforce: 0,
+      drag: 0.0028,
+      rolling: 0.25,
+      shiftTime: 0.08,
+      assist: { yaw: 0.6, antiRoll: 10 },
+      nitro: { accel: 5, drain: 0.3 },
+      offroad: 1.35,
+      exhaust: [-0.19, 0.2, -0.95],
+    },
+    shape: {},
+  },
 ];
 
 const merge = (a, b) => {
@@ -374,5 +402,6 @@ export const STAGES = [
     lavaGain: 0.3, // daylight: keep the lakes orange instead of blown out
     roadGrip: 0.97,
     track: { radius: [0.38, 0.58], wiggle: 0.36, targetLength: [3100, 4400] },
+    trail: true, // a motocross trail through the mesas (the motorbike race)
   },
 ];

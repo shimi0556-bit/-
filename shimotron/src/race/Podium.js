@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Emitter } from '../engine/fx/Particles.js';
 import { createCarModel } from './CarModel.js';
+import { createMotoModel } from './MotoModel.js';
 import { carSpec } from './config.js';
 import { smoothstep } from '../engine/core/Random.js';
 import { humanParts, paintHuman, SHOULDER_X, SHOULDER_Y, HAIRS } from './Humans.js';
@@ -337,9 +338,18 @@ export class Podium {
   // ------------------------------------------------------------ cars
 
   _car(w, k) {
+    const spec = carSpec(w.type || 'gt');
+    if (spec.bike) {
+      // A motocross bike stands on its own two wheels (its rest pose), on the stand.
+      const bike = createMotoModel(this.materials, { color: w.color, number: w.number, stripe: w.stripe || '#111111' });
+      this.cars.push(bike);
+      bike.group.position.set(-5.9, 0.66, STEPS[k].z * 1.3);
+      bike.group.rotation.y = Math.PI / 2 + (k === 0 ? 0 : k === 1 ? -0.22 : 0.22);
+      this.group.add(bike.group);
+      return;
+    }
     const model = createCarModel(this.materials, { color: w.color, number: w.number, stripe: w.stripe || '#111111', type: w.type || 'gt' });
     this.cars.push(model);
-    const spec = carSpec(w.type || 'gt');
     const Wh = spec.wheel;
     const len = Wh.restLength - 9.82 / (4 * Wh.stiffness);
     const car = model.group;

@@ -57,6 +57,7 @@ export class Materials {
     t('sand', { size: 512 });
     t('sandNormal', { size: 512, kind: 'normal', strength: 1.0 });
     t('dirt', { size: 512 });
+    t('dirtNormal', { size: 512, kind: 'normal', strength: 0.7 });
     t('tiles', { size: 1024 });
     t('tilesNormal', { size: 1024, kind: 'normal', strength: 2.5 });
     t('tilesORM', { size: 512, kind: 'data' });
