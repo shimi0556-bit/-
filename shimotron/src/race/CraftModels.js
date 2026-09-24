@@ -1269,3 +1269,6 @@ export function designFor(kind, k, choice = null) {
   if (choice && list.includes(choice)) return k === 0 ? choice : list[(list.indexOf(choice) + k) % list.length];
   return list[k % list.length];
 }
+
+// Shape helpers, shared with the city's cars.
+export { loft, paint, paintBy, smooth, rod, tube };

@@ -260,6 +260,8 @@ export class Track {
     const W = this.W;
     const a = Math.abs(q.lat);
     if (a > W + 4.5) return false;
+    // Where a side road or street leaves through the barriers the wheels follow the ground past the edge line.
+    if (a > W + 0.4 && this.gaps && this.inGap(q.i, Math.sign(q.lat))) return false;
     const n = this.n;
     const i = q.i;
     const j = (i + 1) % n;
@@ -1100,6 +1102,7 @@ export class Track {
     for (const c of corners.slice(0, 12)) {
       for (const num of [150, 100, 50]) {
         const s = (c.brake - Math.round((num - 50) / this.ds) + n) % n;
+        if (this.inGap(s, c.side)) continue;
         const lat = c.side * (this.W + 3.2);
         const p = this.pose(s / n, lat);
         const gy = this._groundY(p.position.x, p.position.z);
@@ -1120,7 +1123,10 @@ export class Track {
     const picked = [];
     for (const i of boards) if (!picked.some((j) => Math.min(Math.abs(i - j), n - Math.abs(i - j)) < 220)) picked.push(i);
     picked.slice(0, 6).forEach((i, k) => {
-      const side = k % 2 ? 1 : -1;
+      let side = k % 2 ? 1 : -1;
+      const near = (sd) => [-3, 0, 3].some((d) => this.inGap((i + d + n) % n, sd));
+      if (near(side)) side = -side;
+      if (near(side)) return;
       const p = this.pose(i / n, side * (this.W + 10));
       const gy = this._groundY(p.position.x, p.position.z);
       const text = texts[k % texts.length];
@@ -1179,6 +1185,7 @@ export class Track {
       const side = -c.side;
       for (let k = -6; k <= 6; k++) {
         const s = (c.apex + k * 1 + this.n) % this.n;
+        if (this.inGap(s, side)) continue;
         const p = this.pose(s / this.n, side * (this.W + 5.3));
         const gy = this._groundY(p.position.x, p.position.z);
         for (let h = 0; h < 3; h++) mats.push(new THREE.Matrix4().setPosition(p.position.x, gy + 0.15 + h * 0.3, p.position.z));
@@ -1209,6 +1216,7 @@ export class Track {
     for (let i = 0; i < n; i += every) {
       if (this.covered && this.covered[i]) continue; // under a tunnel roof or a bridge
       const side = (i / every) % 2 ? 1 : -1;
+      if (this.inGap(i, side)) continue;
       const p = this.pose(i / n, side * (this.W + 8.2));
       const gy = this._groundY(p.position.x, p.position.z);
       poles.push(new THREE.Matrix4().setPosition(p.position.x, gy, p.position.z));

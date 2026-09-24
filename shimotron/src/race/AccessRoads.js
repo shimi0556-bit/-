@@ -107,6 +107,12 @@ export class AccessRoads {
     return best;
   }
 
+  /** Height of the asphalt at (x, z), or null off these roads. */
+  pavedY(x, z) {
+    const q = this.nearest(x, z, this._pq || (this._pq = {}));
+    return q && q.d < HALF + 0.3 ? q.y + 0.04 : null;
+  }
+
   dist(x, z) {
     const q = this.nearest(x, z, this._q || (this._q = {}));
     return q ? q.d : Infinity;

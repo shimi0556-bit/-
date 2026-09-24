@@ -1123,7 +1123,7 @@ class Game {
       particles: this.engine.particles,
       wheels: this.wheels,
       skid: this.skid,
-      ground: (from, to, result) => island.track.raycastRoad(from, to, result, island.track.roadBody),
+      ground: (from, to, result) => island.groundRay(from, to, result),
       surfaceGrip: {
         asphalt: [rg, 0],
         curb: [rg * 0.94, 0.15],

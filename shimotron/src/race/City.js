@@ -1,4 +1,7 @@
 import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
+import { Colliders } from './Colliders.js';
+import { civilianModels, civilianMaterial, CAR_COLORS, pickType } from './CivilianCars.js';
 import { buildLandmarks } from './CityLandmarks.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Random, smoothstep } from '../engine/core/Random.js';
@@ -10,6 +13,10 @@ const _p = new THREE.Vector3();
 const _s = new THREE.Vector3();
 const _v = new THREE.Vector3();
 const UP = new THREE.Vector3(0, 1, 0);
+export const STREET_LIFT = 0.14; // street surface above the levelled ground (wheels ride the street plane: Island.groundRay)
+const PARKED_NEAR = 70; // full detail inside this distance
+const PARKED_MID = 240; // lighter model out to here, then silhouettes
+const PARKED_FAR = 650;
 
 /** Facade styles, and the storey height each one is drawn with. */
 const S = { bauhaus: 0, stone: 1, office: 2, glass: 3, brick: 4 };
@@ -64,18 +71,22 @@ export class City {
 
   // ------------------------------------------------------------ geometry helpers
 
-  /** Grid → world. */
+  /**
+   * Grid → world: the grid turned by `angle` about the vertical, the same
+   * turn as a mesh's rotation.y = angle, so buildings, slabs and anything
+   * placed with that yaw line up with the streets.
+   */
   _world(u, v, out = new THREE.Vector3()) {
     const c = Math.cos(this.angle);
     const s = Math.sin(this.angle);
-    return out.set(u * c - v * s, 0, u * s + v * c);
+    return out.set(u * c + v * s, 0, -u * s + v * c);
   }
 
   /** World → grid. */
   _grid(x, z) {
     const c = Math.cos(this.angle);
     const s = Math.sin(this.angle);
-    return [x * c + z * s, -x * s + z * c];
+    return [x * c - z * s, x * s + z * c];
   }
 
   /** Distance past the road edge, or Infinity away from the track. */
@@ -103,6 +114,96 @@ export class City {
   }
 
   // ------------------------------------------------------------ plan
+
+  /**
+   * The city stands on levelled ground: a smooth surface through the
+   * natural heights at every street crossing and mid-block (a node every
+   * half block), smoothed and interpolated with cubic curves, so streets
+   * and lots are gentle planes that drive like the circuit. Call before
+   * plan(); returns the height modifier to chain after the circuit's.
+   */
+  level() {
+    const t = this.terrain;
+    const P = this.pitch / 2;
+    const R = this.stage.island.radius * 1.2;
+    const n = Math.ceil(R / P) + 3;
+    const N = 2 * n + 1;
+    const raw = new Float32Array(N * N);
+    for (let j = 0; j < N; j++) {
+      for (let i = 0; i < N; i++) {
+        const p = this._world((i - n) * P, (j - n) * P);
+        raw[j * N + i] = t.height(p.x, p.z);
+      }
+    }
+    // Two passes of a 3×3 average: the city's own gentle hills, no bumps.
+    let g = raw;
+    for (let pass = 0; pass < 2; pass++) {
+      const out = new Float32Array(N * N);
+      for (let j = 0; j < N; j++) {
+        for (let i = 0; i < N; i++) {
+          let sum = 0;
+          let w = 0;
+          for (let dj = -1; dj <= 1; dj++) {
+            for (let di = -1; di <= 1; di++) {
+              const ii = Math.min(N - 1, Math.max(0, i + di));
+              const jj = Math.min(N - 1, Math.max(0, j + dj));
+              const k = di || dj ? 1 : 2;
+              sum += g[jj * N + ii] * k;
+              w += k;
+            }
+          }
+          out[j * N + i] = sum / w;
+        }
+      }
+      g = out;
+    }
+    this.levelGrid = { g, raw, n, N, P };
+    return (x, z, h) => this._levelled(x, z, h);
+  }
+
+  /** Smoothed city ground at (x, z) (Catmull-Rom across the node grid). */
+  groundLevel(x, z) {
+    const { g, n, N, P } = this.levelGrid;
+    const [u, v] = this._grid(x, z);
+    const fx = u / P + n;
+    const fz = v / P + n;
+    const i = Math.floor(fx);
+    const j = Math.floor(fz);
+    const tx = fx - i;
+    const tz = fz - j;
+    const at = (a, b) => g[Math.min(N - 1, Math.max(0, b)) * N + Math.min(N - 1, Math.max(0, a))];
+    const cr = (p0, p1, p2, p3, t) => p1 + 0.5 * t * (p2 - p0 + t * (2 * p0 - 5 * p1 + 4 * p2 - p3 + t * (3 * (p1 - p2) + p3 - p0)));
+    const row = (b) => cr(at(i - 1, b), at(i, b), at(i + 1, b), at(i + 2, b), tx);
+    return cr(row(j - 1), row(j), row(j + 1), row(j + 2), tz);
+  }
+
+  _levelled(x, z, h) {
+    if (!this.levelGrid) return h;
+    const d = Math.hypot(x, z);
+    const R = this.stage.island.radius;
+    if (d > R * 1.2) return h;
+    const L = this.groundLevel(x, z);
+    // Only on dry land, fading out at the coast and next to the circuit (its own shaping wins there).
+    let w = smoothstep(1.4, 4, Math.min(h, L)) * (1 - smoothstep(R * 1.08, R * 1.2, d));
+    const c = this.track.clearance(x, z);
+    w *= smoothstep(6, 20, c);
+    return h + (L - h) * w;
+  }
+
+  /** Height of the drivable street surface at (x, z), or null off the streets (lots, the circuit's verges). */
+  pavedY(x, z) {
+    const hit = this._lotAt(x, z);
+    if (!hit || (hit.lot && hit.lot.kind !== 'none')) return null;
+    if (this._clear(x, z) < 6.8 && !this.inGate(x, z)) return null;
+    return this.terrain.heightAt(x, z) + STREET_LIFT;
+  }
+
+  /** Streets (and plazas): paved, flat and grippy. */
+  street(x, z) {
+    const hit = this._lotAt(x, z);
+    if (!hit) return false;
+    return !hit.lot || hit.lot.kind === 'none' || hit.lot.kind === 'plaza';
+  }
 
   /** Layout only (no meshes): runs before the terrain bake so the ground can be painted. */
   plan() {
@@ -156,7 +257,104 @@ export class City {
       }
     }
     this._landmarkPlan();
+    this._gates();
     return this;
+  }
+
+  /**
+   * Openings where a city street meets the circuit square-on: the barriers,
+   * fence and sidewalk stop, and the street runs on across the run-off onto
+   * the track, so a car can leave the circuit and drive the whole grid.
+   * Away from the start, the tunnel, the footbridge and the slow corners.
+   */
+  _gates() {
+    const tr = this.track;
+    const n = tr.n;
+    const W = tr.W;
+    const P = this.pitch;
+    const half = (P - this.block) / 2; // street half-width
+    const circ = (a, b) => Math.min(Math.abs(a - b), n - Math.abs(a - b));
+    const cands = [];
+    const c = Math.cos(this.angle);
+    const s = Math.sin(this.angle);
+    for (let i = 0; i < n; i++) {
+      if (circ(i, 0) * tr.ds < 220 || this.keepClear[i]) continue;
+      let bend = 0;
+      for (let d = -Math.round(40 / tr.ds); d <= Math.round(40 / tr.ds); d++) bend = Math.max(bend, Math.abs(tr.kappa[(i + d + n) % n]));
+      if (bend > 0.012) continue;
+      for (const side of [-1, 1]) {
+        const lat = side * (W + this.lotClear + 6);
+        const qx = tr.x[i] - tr.tz[i] * lat;
+        const qz = tr.z[i] + tr.tx[i] * lat;
+        const [u, v] = this._grid(qx, qz);
+        for (const axis of [0, 1]) {
+          const along = axis ? v : u; // the coordinate that is constant along this street
+          const k = Math.round(along / P);
+          if (Math.abs(along - k * P) > 1.6) continue;
+          // Street direction in the world (along u for axis 1, along v for axis 0), pointing away from the circuit.
+          let dx = axis ? c : s;
+          let dz = axis ? -s : c;
+          const nx = -tr.tz[i] * side;
+          const nz = tr.tx[i] * side;
+          if (dx * nx + dz * nz < 0) {
+            dx = -dx;
+            dz = -dz;
+          }
+          const cross = Math.abs(dx * tr.tx[i] + dz * tr.tz[i]);
+          if (cross > 0.4) continue;
+          // It must lead into built blocks.
+          let ok = true;
+          for (const d of [14, 34, 60]) {
+            const px = qx + dx * d;
+            const pz = qz + dz * d;
+            const hit = this._lotAt(px, pz);
+            if (!hit || !this._built(hit.cell) || this._clear(px, pz) < this.lotClear + 4 || this.terrain.height(px, pz) < 1.8) ok = false;
+          }
+          if (ok) cands.push({ i, side, axis, k, dx, dz, cross, score: cross + bend * 20 });
+        }
+      }
+    }
+    cands.sort((a, b) => a.score - b.score);
+    this.gates = [];
+    for (const g of cands) {
+      if (this.gates.some((o) => circ(o.i, g.i) * tr.ds < 170)) continue;
+      // Where the street's centre line meets the edge of the road, and where it has cleared the sidewalk.
+      const line = (t) => (g.axis ? this._world(t, g.k * P) : this._world(g.k * P, t));
+      const [u0, v0] = this._grid(tr.x[g.i], tr.z[g.i]);
+      let t = g.axis ? u0 : v0;
+      const dir = Math.sign(g.axis ? g.dx * c - g.dz * s : g.dx * s + g.dz * c) || 1;
+      let t0 = null;
+      let t1 = null;
+      for (let step = 0; step < 200; step++, t += dir * 0.5) {
+        const p = line(t);
+        const cl = this._clear(p.x, p.z);
+        if (t0 === null && cl > 0.4) t0 = t;
+        if (cl > this.lotClear + 9) {
+          t1 = t;
+          break;
+        }
+      }
+      if (t0 === null || t1 === null) continue;
+      const q = this._near(line(t0).x, line(t0).z);
+      const sin = Math.max(0.5, Math.sqrt(1 - g.cross * g.cross));
+      this.gates.push({ ...g, i: q.i, t0, t1, dir, half, line });
+      tr.gaps = tr.gaps || [];
+      tr.gaps.push({ i: q.i, side: g.side, half: Math.ceil((half / sin + 2.5) / tr.ds) });
+      if (this.gates.length >= 8) break;
+    }
+  }
+
+  /** Inside one of the openings from the circuit into the streets? */
+  inGate(x, z, pad = 0) {
+    for (const g of this.gates || []) {
+      const [u, v] = this._grid(x, z);
+      const off = g.axis ? v - g.k * this.pitch : u - g.k * this.pitch;
+      const t = g.axis ? u : v;
+      const lo = Math.min(g.t0, g.t1) - 3 - pad;
+      const hi = Math.max(g.t0, g.t1) + 3 + pad;
+      if (Math.abs(off) < g.half + pad && t > lo && t < hi) return true;
+    }
+    return false;
   }
 
   /**
@@ -282,6 +480,7 @@ export class City {
     if (hit.lot && this.landmarks && (hit.lot === this.landmarks.ferris || hit.lot.cell === this.landmarks.stadium) && kind !== 'grass') return true;
     if (hit.lot && (hit.lot.kind === 'park' || (hit.lot.kind === 'plaza' && kind !== 'grass'))) return false;
     if (kind === 'grass') return true;
+    if (this.inGate(x, z, 2)) return true;
     const c = this._clear(x, z);
     if (c > 8 && c < 13.6 && !this._covered(x, z)) return false;
     return true;
@@ -296,6 +495,7 @@ export class City {
       if (tr.covered[i]) continue;
       if (Math.min(i, tr.n - i) * tr.ds < 130) continue;
       for (const side of [-1, 1]) {
+        if (tr.inGap(i, side)) continue;
         const lat = side * (tr.W + 11.4);
         const x = tr.x[i] - tr.tz[i] * lat;
         const z = tr.z[i] + tr.tx[i] * lat;
@@ -310,6 +510,7 @@ export class City {
 
   build() {
     if (!this.cells) this.plan();
+    this.colliders = new Colliders(this.engine.physics);
     const T = this.materials.textures;
     this.paving = new THREE.MeshStandardMaterial({ name: 'מדרכה', color: 0xc9c4ba, roughness: 0.86, metalness: 0 });
     this.materials.triplanar(this.paving, T.tiles, T.tilesNormal, 0.42, 0.6);
@@ -327,6 +528,8 @@ export class City {
     this._spectators();
     this._tunnel();
     this._footbridge();
+    // Everything standing is solid: buildings, poles, parked cars.
+    this.colliders.build();
     return this.group;
   }
 
@@ -363,19 +566,25 @@ export class City {
     const t = this.terrain;
     const P = this.pitch;
     const L = this.block / 2;
-    const seg = 10;
+    // Cuts across a cell: 2 m strips over the street band, so the tarmac meets the kerbs exactly; coarser over the blocks.
+    const cuts = [];
+    const band = P / 2 - L;
+    for (let k = 0; k < 4; k++) cuts.push(-P / 2 + (band * k) / 4);
+    for (let k = 0; k < 8; k++) cuts.push(-L + (2 * L * k) / 8);
+    for (let k = 0; k <= 4; k++) cuts.push(L + (band * k) / 4);
+    const seg = cuts.length - 1;
     const pos = [];
     const uv = [];
     const vert = (u, v) => {
       const p = this._world(u, v);
       const h = t.heightAt(p.x, p.z);
-      return { x: p.x, y: h + 0.14, z: p.z, u, v, ok: this._clear(p.x, p.z) > 7 && h > 0.8 };
+      return { x: p.x, y: h + STREET_LIFT, z: p.z, u, v, ok: this._clear(p.x, p.z) > 7 && h > 0.8 };
     };
     for (const cell of this.cells.values()) {
       const grid = [];
       for (let a = 0; a <= seg; a++) {
         const row = [];
-        for (let c = 0; c <= seg; c++) row.push(vert(cell.u - P / 2 + (a / seg) * P, cell.v - P / 2 + (c / seg) * P));
+        for (let c = 0; c <= seg; c++) row.push(vert(cell.u + cuts[a], cell.v + cuts[c]));
         grid.push(row);
       }
       for (let a = 0; a < seg; a++) {
@@ -383,7 +592,7 @@ export class City {
           const q = [grid[a][c], grid[a + 1][c], grid[a][c + 1], grid[a + 1][c + 1]];
           const mu = (q[0].u + q[3].u) / 2 - cell.u;
           const mv = (q[0].v + q[3].v) / 2 - cell.v;
-          if (Math.abs(mu) < L - 1 && Math.abs(mv) < L - 1) {
+          if (Math.abs(mu) < L && Math.abs(mv) < L) {
             const lot = cell.lots[(mu > 0 ? 1 : 0) + (mv > 0 ? 2 : 0)];
             if (lot.kind !== 'none') continue;
           }
@@ -438,6 +647,47 @@ export class City {
     mesh.name = 'רחובות';
     mesh.userData.noPick = true;
     this.group.add(mesh);
+    // The openings: the street carries on over the sidewalk line and the run-off to the circuit's edge.
+    for (const g of this.gates || []) {
+      const gp = [];
+      const guv = [];
+      const idx = [];
+      const cols = 9;
+      const len = Math.abs(g.t1 - g.t0);
+      const rows = Math.ceil(len / 1.5);
+      for (let r = 0; r <= rows; r++) {
+        const tt = g.t0 + ((g.t1 - g.t0) * r) / rows;
+        for (let c = 0; c < cols; c++) {
+          const off = -g.half + (2 * g.half * c) / (cols - 1);
+          const u = g.axis ? tt : g.k * P + off;
+          const v = g.axis ? g.k * P + off : tt;
+          const p = this._world(u, v);
+          gp.push(p.x, t.heightAt(p.x, p.z) + STREET_LIFT, p.z);
+          guv.push(u, v);
+          if (r && c) {
+            const a = r * cols + c;
+            idx.push(a - cols - 1, a - cols, a - 1, a - cols, a, a - 1);
+          }
+        }
+      }
+      const gg = new THREE.BufferGeometry();
+      gg.setAttribute('position', new THREE.Float32BufferAttribute(gp, 3));
+      gg.setAttribute('uv', new THREE.Float32BufferAttribute(guv, 2));
+      gg.setIndex(idx);
+      gg.computeVertexNormals();
+      // Face up whichever way the grid was wound.
+      if (gg.attributes.normal.getY(0) < 0) {
+        for (let k = 0; k < idx.length; k += 3) [idx[k + 1], idx[k + 2]] = [idx[k + 2], idx[k + 1]];
+        gg.setIndex(idx);
+        gg.computeVertexNormals();
+      }
+      gg.computeBoundingSphere();
+      const gm = new THREE.Mesh(gg, mat);
+      gm.receiveShadow = true;
+      gm.name = 'יציאה מהמסלול לעיר';
+      gm.userData.noPick = true;
+      this.group.add(gm);
+    }
   }
 
   /**
@@ -450,7 +700,7 @@ export class City {
     const t = this.terrain;
     const W = tr.W;
     const n = tr.n;
-    const ribbon = (profile, material, name) => {
+    const ribbon = (profile, material, name, gapped = false) => {
       const pos = [];
       const uv = [];
       const idx = [];
@@ -468,7 +718,7 @@ export class City {
             pos.push(x, Math.max(t.heightAt(x, z), t.height(x, z)) + lift, z);
             uv.push((i * tr.ds) / 2.5, lat / 2.5); // same 2.5 m tiles as the road
           }
-          if (rows) {
+          if (rows && !(gapped && (tr.inGap(k, side) || tr.inGap((i - 2 + n) % n, side)))) {
             for (let c = 0; c < cols - 1; c++) {
               const a = base + (rows - 1) * cols + c;
               const b = a + cols;
@@ -512,6 +762,7 @@ export class City {
       ],
       this.paving,
       'מדרכה לאורך המסלול',
+      true,
     );
   }
 
@@ -523,6 +774,8 @@ export class City {
     for (const lot of this.lots) {
       if (lot.kind === 'park') continue;
       items.push({ m: new THREE.Matrix4().compose(_p.set(lot.p.x, lot.y - 0.15, lot.p.z), _q, _s.set(L + 0.3, 0.38, L + 0.3)) });
+      // A kerb the wheels climb, as they would.
+      this.colliders.box(lot.p.x, lot.y + 0.04, lot.p.z, (L + 0.3) / 2, 0.19, (L + 0.3) / 2, this.angle);
     }
     const geo = new THREE.BoxGeometry(1, 1, 1);
     geo.translate(0, 0.5, 0);
@@ -636,6 +889,8 @@ export class City {
       }
     }
     this.buildings = main;
+    for (const b of main) this.colliders.box(b.x, b.y + b.h / 2, b.z, b.w / 2, b.h / 2, b.d / 2, b.yaw);
+    for (const t of this.roundTowers) this.colliders.box(t.x, t.y + t.h / 2, t.z, t.r * 0.86, t.h / 2, t.r * 0.86, 0);
     // One instanced mesh, one facade shader; style per instance.
     const boxGeo = new THREE.BoxGeometry(1, 1, 1);
     boxGeo.translate(0, 0.5, 0);
@@ -1021,7 +1276,7 @@ export class City {
         [1, 0],
       ]) {
         const p = this._world(cell.u + a * half, cell.v + c * half);
-        if (this._clear(p.x, p.z) < 9) continue;
+        if (this._clear(p.x, p.z) < 9 || this.inGate(p.x, p.z)) continue;
         const y = this.terrain.heightAt(p.x, p.z);
         poles.push({ m: new THREE.Matrix4().setPosition(p.x, y, p.z) });
         heads.push({ m: new THREE.Matrix4().setPosition(p.x, y + 7.2, p.z) });
@@ -1034,6 +1289,7 @@ export class City {
     this.materials.trackEmissive(headMat, 0);
     this.lampMat = headMat;
     this._inst(poleGeo, this.materials.lib.iron, poles, 'עמודי תאורה', { color: false });
+    for (const P of poles) this.colliders.post(P.m.elements[12], P.m.elements[13], P.m.elements[14], 0.14, 7.4, 'metal');
     this._inst(headGeo, headMat, heads, 'פנסי רחוב', { color: false, cast: false });
   }
 
@@ -1079,52 +1335,108 @@ export class City {
     headMat.customProgramCacheKey = () => 'city-signal';
     this.materials.trackEmissive(headMat, 1.2);
     this._inst(poleGeo, this.materials.lib.darkMetal || this.materials.lib.iron, poles, 'עמודי רמזור', { color: false });
+    for (const P of poles) this.colliders.post(P.m.elements[12], P.m.elements[13], P.m.elements[14], 0.12, 3.6, 'metal');
     this.signals = this._inst(headGeo, headMat, heads, 'רמזורים', { cast: false });
     this.signalDirs = heads.map((h) => h.dir);
     this.signalPhase = -1;
   }
 
-  _carGeometry() {
-    if (this._carGeo) return this._carGeo;
-    const body = new THREE.BoxGeometry(1.8, 0.7, 4.2);
-    body.translate(0, 0.6, 0);
-    const cab = new THREE.BoxGeometry(1.55, 0.55, 2.1);
-    cab.translate(0, 1.2, -0.2);
-    const col = (g, c) => {
-      const a = new Float32Array(g.attributes.position.count * 3);
-      for (let i = 0; i < a.length; i += 3) a.set(c, i);
-      g.setAttribute('color', new THREE.BufferAttribute(a, 3));
-      return g.toNonIndexed();
-    };
-    this._carGeo = mergeGeometries([col(body, [1, 1, 1]), col(cab, [0.12, 0.13, 0.15])]);
-    this._carMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35, metalness: 0.55, name: 'מכוניות' });
-    return this._carGeo;
+  /** Instanced cars of one type with a paint colour each (iTint). */
+  _carMesh(type, count, name, lod = 0) {
+    const M = civilianModels(lod)[type];
+    const geo = M.geo.clone();
+    const tint = new THREE.InstancedBufferAttribute(new Float32Array(count * 3), 3);
+    geo.setAttribute('iTint', tint);
+    if (!this.civMat) this.civMat = civilianMaterial();
+    const mesh = new THREE.InstancedMesh(geo, this.civMat, count);
+    mesh.name = name;
+    mesh.userData.noPick = true;
+    mesh.castShadow = lod < 2;
+    mesh.receiveShadow = true;
+    return { mesh, tint, model: M };
   }
 
-  /** Cars parked along the kerbs. */
+  /**
+   * Cars parked along the kerbs: saloons, hatchbacks, SUVs, vans, pickups
+   * and taxis, each solid. They are drawn in three levels of detail — full
+   * detail near the camera, lighter further out, a bare silhouette far
+   * away — re-sorted whenever the camera has moved a few metres.
+   */
   _parked() {
     const rng = this.rng;
     const L = this.block / 2;
-    const items = [];
+    const cars = [];
     for (const cell of this.cells.values()) {
       if (!this._built(cell)) continue;
       for (let side = 0; side < 4; side++) {
         const a0 = (side * Math.PI) / 2;
         const nx = Math.cos(a0);
         const nz = Math.sin(a0);
-        for (let s = -L + 9; s <= L - 9; s += 5.6) {
-          if (rng.random() < 0.4) continue;
-          const lu = nx * (L + 1.5) - nz * s;
-          const lv = nz * (L + 1.5) + nx * s;
+        // Rows with gaps: driveways, loading bays, the odd empty stretch.
+        let s = -L + 9 + rng.random() * 3;
+        while (s <= L - 9) {
+          const type = pickType(rng.random());
+          const M = civilianModels()[type];
+          const bay = M.len + rng.range(0.9, 1.8);
+          if (rng.random() < 0.5) {
+            s += bay + (rng.random() < 0.3 ? rng.range(4, 12) : 0);
+            continue;
+          }
+          const lu = nx * (L + 1.5) - nz * (s + bay / 2);
+          const lv = nz * (L + 1.5) + nx * (s + bay / 2);
+          s += bay;
           const p = this._world(cell.u + lu, cell.v + lv);
-          if (this._clear(p.x, p.z) < 9) continue;
+          if (this._clear(p.x, p.z) < this.lotClear + 2.4) continue; // not on the circuit's sidewalk
           // Along the kerb: the street runs along (-nz, nx) in grid space.
-          _q.setFromAxisAngle(UP, Math.atan2(-nz, nx) - this.angle + (rng.random() < 0.5 ? 0 : Math.PI));
-          items.push({ m: new THREE.Matrix4().compose(_p.set(p.x, this.terrain.heightAt(p.x, p.z) + 0.07, p.z), _q, _s.set(1, 1, 1)), c: new THREE.Color().setHSL(rng.random(), rng.range(0.05, 0.55), rng.range(0.18, 0.72)) });
+          const yaw = Math.atan2(-nz, nx) + this.angle + (rng.random() < 0.5 ? 0 : Math.PI) + rng.range(-0.025, 0.025);
+          const gy = this.terrain.heightAt(p.x, p.z) + STREET_LIFT;
+          _q.setFromAxisAngle(UP, yaw);
+          const m = new THREE.Matrix4().compose(_p.set(p.x, gy, p.z), _q, _s.set(1, 1, 1));
+          cars.push({ x: p.x, z: p.z, type, m, c: new THREE.Color(type === 'taxi' ? 0xf2c21a : rng.pick(CAR_COLORS)) });
+          this.colliders.box(p.x, gy + M.height * 0.45, p.z, M.wid / 2, M.height * 0.45, M.len / 2, yaw);
         }
       }
     }
-    this._inst(this._carGeometry(), this._carMat, items, 'רכבים חונים');
+    if (!cars.length) return;
+    const types = [...new Set(cars.map((c) => c.type))];
+    this.parked = { cars, at: null, levels: [] };
+    for (let lod = 0; lod < 3; lod++) {
+      const level = {};
+      for (const type of types) {
+        const n = cars.filter((c) => c.type === type).length;
+        const { mesh, tint } = this._carMesh(type, n, 'רכבים חונים', lod);
+        mesh.count = 0;
+        mesh.frustumCulled = false;
+        mesh.userData.lod = lod;
+        this.group.add(mesh);
+        level[type] = { mesh, tint };
+      }
+      this.parked.levels.push(level);
+    }
+    this._sortParked(this.engine.camera.position);
+  }
+
+  /** Puts every parked car in the level of detail its distance from `eye` calls for. */
+  _sortParked(eye) {
+    const P = this.parked;
+    P.at = eye.clone();
+    for (const level of P.levels) for (const t in level) level[t].mesh.count = 0;
+    for (const c of P.cars) {
+      const d = Math.hypot(c.x - eye.x, c.z - eye.z);
+      if (d > PARKED_FAR) continue;
+      const { mesh, tint } = P.levels[d < PARKED_NEAR ? 0 : d < PARKED_MID ? 1 : 2][c.type];
+      const k = mesh.count++;
+      mesh.setMatrixAt(k, c.m);
+      c.c.toArray(tint.array, k * 3);
+    }
+    for (const level of P.levels) {
+      for (const t in level) {
+        const { mesh, tint } = level[t];
+        mesh.visible = mesh.count > 0;
+        mesh.instanceMatrix.needsUpdate = true;
+        tint.needsUpdate = true;
+      }
+    }
   }
 
   /** Spectators on the sidewalk behind the catch fence, thickest at the slow corners. */
@@ -1138,6 +1450,7 @@ export class City {
       const slow = tr.speed ? Math.max(0, 1 - tr.speed[i] / 45) : 0.3;
       if (rng.random() > 0.08 + slow * 1.6) continue;
       const side = rng.random() < 0.5 ? -1 : 1;
+      if (tr.inGap(i, side)) continue;
       const group = 1 + Math.floor(rng.random() * (1 + slow * 5));
       for (let k = 0; k < group; k++) {
         const lat = side * (W + rng.range(7.6, 10.5));
@@ -1307,40 +1620,49 @@ export class City {
       for (let k = 0; k < 16 && ok; k++) {
         const a = (k / 16) * Math.PI * 2;
         const p = this._world(cell.u + Math.cos(a) * lane * 1.1, cell.v + Math.sin(a) * lane * 1.1);
-        if (this._clear(p.x, p.z) < 8 || this.terrain.height(p.x, p.z) < 1.5) ok = false;
+        if (this._clear(p.x, p.z) < this.lotClear + 3 || this.terrain.height(p.x, p.z) < 1.5) ok = false;
       }
       if (!ok) continue;
       const count = 1 + Math.floor(rng.random() * 2);
-      for (let k = 0; k < count; k++) this.cars.push({ b: cell, lane: lane + (k % 2 ? 3.2 : 0), s: rng.random(), speed: rng.range(8, 13), dir: rng.random() < 0.5 ? 1 : -1, col: new THREE.Color().setHSL(rng.random(), rng.range(0.1, 0.6), rng.range(0.25, 0.7)) });
+      for (let k = 0; k < count; k++) {
+        const type = pickType(rng.random());
+        this.cars.push({ b: cell, lane: lane + (k % 2 ? 3.2 : 0), s: rng.random(), speed: rng.range(8, 13), dir: rng.random() < 0.5 ? 1 : -1, type, col: new THREE.Color(type === 'taxi' ? 0xf2c21a : rng.pick(CAR_COLORS)) });
+      }
     }
     if (!this.cars.length) return;
-    this.carMesh = new THREE.InstancedMesh(this._carGeometry(), this._carMat, this.cars.length);
-    this.cars.forEach((c, k) => this.carMesh.setColorAt(k, c.col));
-    const col = (g, c) => {
-      const a = new Float32Array(g.attributes.position.count * 3);
-      for (let i = 0; i < a.length; i += 3) a.set(c, i);
-      g.setAttribute('color', new THREE.BufferAttribute(a, 3));
-      return g.toNonIndexed();
-    };
-    const lights = [];
-    for (const s of [-1, 1]) {
-      lights.push(col(new THREE.BoxGeometry(0.34, 0.14, 0.05).translate(s * 0.62, 0.75, 2.11), [1, 0.95, 0.85]));
-      lights.push(col(new THREE.BoxGeometry(0.34, 0.12, 0.05).translate(s * 0.62, 0.78, -2.11), [1, 0.08, 0.04]));
-    }
+    // One mesh per type, lamps alongside; each car keeps its slot.
     const lightMat = new THREE.MeshStandardMaterial({ vertexColors: true, color: 0x000000, emissive: 0xffffff, emissiveIntensity: 1 });
     lightMat.onBeforeCompile = (shader) => {
       shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n#ifdef USE_COLOR\ntotalEmissiveRadiance *= vColor.rgb;\n#endif');
     };
     lightMat.customProgramCacheKey = () => 'city-carlights';
     this.materials.trackEmissive(lightMat, 0.8);
-    this.carLightMesh = new THREE.InstancedMesh(mergeGeometries(lights), lightMat, this.cars.length);
-    for (const m of [this.carMesh, this.carLightMesh]) {
-      m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-      m.frustumCulled = false;
-      m.userData.noPick = true;
-      this.group.add(m);
+    this.trafficMeshes = [];
+    const types = [...new Set(this.cars.map((c) => c.type))];
+    for (const type of types) {
+      const mine = this.cars.filter((c) => c.type === type);
+      const { mesh, tint, model } = this._carMesh(type, mine.length, 'תנועה');
+      const lamps = new THREE.InstancedMesh(model.lamps, lightMat, mine.length);
+      mine.forEach((c, k) => {
+        c.mesh = mesh;
+        c.lamps = lamps;
+        c.slot = k;
+        c.col.toArray(tint.array, k * 3);
+        // A moving body the player can hit (it pushes, it is not pushed).
+        const M = model;
+        const body = new CANNON.Body({ mass: 0, type: CANNON.Body.KINEMATIC });
+        body.addShape(new CANNON.Box(new CANNON.Vec3(M.wid / 2, M.height * 0.45, M.len / 2)), new CANNON.Vec3(0, M.height * 0.45, 0));
+        this.engine.physics.world.addBody(body);
+        c.body = body;
+      });
+      for (const m of [mesh, lamps]) {
+        m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        m.frustumCulled = false;
+        m.userData.noPick = true;
+        this.group.add(m);
+      }
+      this.trafficMeshes.push(mesh, lamps);
     }
-    this.carMesh.castShadow = true;
     this._moveTraffic(0);
   }
 
@@ -1351,7 +1673,10 @@ export class City {
       const hl = c.lane;
       const side = 2 * (hl - r);
       const per = 4 * side + 2 * Math.PI * r;
-      c.s = (c.s + (c.dir * c.speed * dt) / per + 1) % 1;
+      // Brake for whatever is in the lane ahead (the player's car), then pull away again.
+      const want = c.blocked ? 0 : c.speed;
+      c.v = c.v === undefined ? c.speed : c.v + Math.max(-9 * dt, Math.min(3 * dt, want - c.v));
+      c.s = (c.s + (c.dir * c.v * dt) / per + 1) % 1;
       let d = c.s * per;
       // Walk the rounded rectangle: straight, quarter circle, ×4.
       let u = 0;
@@ -1382,15 +1707,28 @@ export class City {
         d -= arc;
       }
       const p = this._world(c.b.u + u, c.b.v + v, _p);
-      const y = this.terrain.heightAt(p.x, p.z) + 0.07;
-      const heading = yaw + this.angle * -1 + (c.dir < 0 ? Math.PI : 0);
+      const y = this.terrain.heightAt(p.x, p.z) + STREET_LIFT;
+      const heading = yaw + this.angle + (c.dir < 0 ? Math.PI : 0);
+      c.blocked = false;
+      if (this.avoid) {
+        const ax = this.avoid.x - p.x;
+        const az = this.avoid.z - p.z;
+        const ahead = ax * Math.sin(heading) + az * Math.cos(heading);
+        const side = Math.abs(ax * Math.cos(heading) - az * Math.sin(heading));
+        c.blocked = ahead > 0 && ahead < 5 + c.v * 0.9 && side < 2.6;
+      }
       _q.setFromAxisAngle(UP, heading);
       _m.compose(_p.set(p.x, y, p.z), _q, _s.set(1, 1, 1));
-      this.carMesh.setMatrixAt(k, _m);
-      this.carLightMesh.setMatrixAt(k, _m);
+      c.mesh.setMatrixAt(c.slot, _m);
+      c.lamps.setMatrixAt(c.slot, _m);
+      const B = c.body;
+      if (B) {
+        if (dt > 0) B.velocity.set((p.x - B.position.x) / dt, (y - B.position.y) / dt, (p.z - B.position.z) / dt);
+        B.position.set(p.x, y, p.z);
+        B.quaternion.set(_q.x, _q.y, _q.z, _q.w);
+      }
     });
-    this.carMesh.instanceMatrix.needsUpdate = true;
-    this.carLightMesh.instanceMatrix.needsUpdate = true;
+    for (const m of this.trafficMeshes) m.instanceMatrix.needsUpdate = true;
   }
 
   // ------------------------------------------------------------ per frame
@@ -1427,6 +1765,11 @@ export class City {
       }
     }
     this._moveTraffic(dt);
+    if (this.parked) {
+      const eye = eng.camera.position;
+      const at = this.parked.at;
+      if ((eye.x - at.x) ** 2 + (eye.z - at.z) ** 2 > 64) this._sortParked(eye);
+    }
     this._sound(dt);
   }
 

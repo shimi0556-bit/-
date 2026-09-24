@@ -86,6 +86,12 @@ export class Island {
       // The city is laid out before the ground is baked, so its blocks can be painted as paving.
       this.city = new City(eng, terrain, track, st, this.materials);
       this.city.keepOut = this.keepOut;
+      // Level the ground under it first (sampled from the circuit-shaped terrain), then lay it out.
+      const base = track.heightModifier;
+      terrain.heightModifier = base;
+      const lv = this.city.level();
+      const roads = this.roads;
+      terrain.heightModifier = roads ? (x, z, h) => roads.height(x, z, lv(x, z, base(x, z, h))) : (x, z, h) => lv(x, z, base(x, z, h));
       this.city.plan();
       terrain.splatModifier = (x, z, w, h) => this.city.splat(track.splatModifier(x, z, w, h), x, z);
     }
@@ -276,6 +282,54 @@ export class Island {
     this.emitters.push(plume);
   }
 
+  /** Height of paving the wheels roll on (access roads, city streets) at (x, z), or null. */
+  pavedY(x, z) {
+    const r = this.roads ? this.roads.pavedY(x, z) : null;
+    if (r !== null) return r;
+    return this.city ? this.city.pavedY(x, z) : null;
+  }
+
+  /**
+   * A wheel's ray against the ground: the circuit and the paved roads and
+   * streets answer analytically (as the planes they are drawn as); false
+   * leaves it to the physics world (terrain, kerbs, obstacles).
+   */
+  groundRay(from, to, result) {
+    const tr = this.track;
+    if (tr.raycastRoad(from, to, result, tr.roadBody)) return true;
+    if (!this.roads && !this.city) return false;
+    const y = this.pavedY(from.x, from.z);
+    if (y === null || from.y - y > 3 || from.y < y - 0.3) return false;
+    const e = 0.7;
+    const at = (x, z) => {
+      const v = this.pavedY(x, z);
+      return v === null ? y : v;
+    };
+    const gx = (at(from.x + e, from.z) - at(from.x - e, from.z)) / (2 * e);
+    const gz = (at(from.x, from.z + e) - at(from.x, from.z - e)) / (2 * e);
+    const il = 1 / Math.sqrt(gx * gx + 1 + gz * gz);
+    const nx = -gx * il;
+    const ny = il;
+    const nz = -gz * il;
+    let dx = to.x - from.x;
+    let dy = to.y - from.y;
+    let dz = to.z - from.z;
+    const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    dx /= len;
+    dy /= len;
+    dz /= len;
+    const denom = nx * dx + ny * dy + nz * dz;
+    if (denom > -1e-4) return true;
+    const t = (ny * (y - from.y)) / denom;
+    if (t < 0 || t > len) return true;
+    result.hitPointWorld.set(from.x + dx * t, from.y + dy * t, from.z + dz * t);
+    result.hitNormalWorld.set(nx, ny, nz);
+    result.distance = t;
+    result.body = tr.roadBody;
+    result.hasHit = true;
+    return true;
+  }
+
   /** What a wheel rolls on at (x, z). */
   surface(x, z) {
     const tr = this.track;
@@ -288,6 +342,7 @@ export class Island {
       if (this.city && a < tr.W + 6.6) return 'asphalt'; // street circuit: tarmac run-off, no gravel
       if (a < tr.W + 4.6) return 'gravel';
     }
+    if (this.city && this.city.street(x, z)) return 'asphalt';
     const h = this.terrain.heightAt(x, z);
     if (h < 0.25) return 'water';
     if (this.stage.weather === 'snow') return 'snow';

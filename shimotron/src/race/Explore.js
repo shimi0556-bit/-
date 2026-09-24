@@ -252,6 +252,8 @@ export class Explore {
     if (dt <= 0 || !this.obj) return;
     const I = this.engine.input;
     this.driver.update(dt);
+    // City traffic brakes for the explorer.
+    if (this.island.city) this.island.city.avoid = this.kind === 'car' || this.position.y < this.ground(this.position.x, this.position.z) + 4 ? this.position : null;
     if (this.kind === 'car') {
       this.obj.update(dt, (x, z) => this.island.surface(x, z), this.island.dustColor);
       this.game.wheels.commit();
@@ -299,6 +301,7 @@ export class Explore {
 
   dispose() {
     this._drop();
+    if (this.island.city) this.island.city.avoid = null;
     const P = this.engine.physics;
     for (const b of this.bodies) P.world.removeBody(b);
     this.bodies = [];
