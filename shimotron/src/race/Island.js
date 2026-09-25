@@ -220,8 +220,11 @@ export class Island {
     await nextFrame();
 
     await progress(0.74, 'מכוון שמיים, ים ומזג אוויר…');
-    if (this.water) this.applyWater(this.water);
-    this._sky();
+    // Built in the background behind the world map, it leaves the sky and sea alone: resume() sets them when it comes into play.
+    if (!this.opts.background) {
+      if (this.water) this.applyWater(this.water);
+      this._sky();
+    }
     if (st.weather) {
       this.weather = new Weather(eng, st.weather);
       this.group.add(this.weather.points);

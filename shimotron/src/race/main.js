@@ -177,8 +177,6 @@ class Game {
     const wu = this.water.uniforms;
     wu.tWorld.value = this.world.depthTexture;
     wu.uWorldSize.value = WORLD.span;
-    // All the islands, built now so the whole world is there from the start.
-    await this._preloadIslands((p, t) => progress(0.3 + p * 0.58, `בונה את כל האיים · ${t}`));
     this._showMap(true);
     engine.cameraRig = this._worldView();
     engine.cameraRig.update(10);
@@ -194,6 +192,31 @@ class Game {
     this.ui.hideLoader();
     this.toMenu();
     this._planAll();
+    // The islands themselves are built behind the menu, one after another, while the player chooses;
+    // starting anything first waits for the rest (_finishWorld), so the whole world is there before play.
+    this._bgBuild = this._preloadIslands((p, t, k, n) => {
+      this._bgP = p;
+      this._bgText = t;
+      if (this._bgWait) this.ui.showLoader(`משלים את בניית העולם · ${t}`, p);
+      else this.ui.buildStatus(this.state === 'menu' ? `בונה את האיים ברקע · ${k + 1}/${n}` : null);
+      return nextFrame(); // a frame for the menu between steps
+    }, true).catch((e) => console.error(e)).finally(() => {
+      this._bgBuild = null;
+      this.ui.buildStatus(null);
+    });
+  }
+
+  /** Waits for the islands still being built in the background, with the loading screen showing what is left. */
+  async _finishWorld() {
+    if (!this._bgBuild) return;
+    this._bgWait = true;
+    this.ui.buildStatus(null);
+    this.ui.showLoader(`משלים את בניית העולם · ${this._bgText || ''}`, this._bgP || 0);
+    try {
+      await this._bgBuild;
+    } finally {
+      this._bgWait = false;
+    }
   }
 
   // ------------------------------------------------------------- islands
@@ -220,6 +243,7 @@ class Game {
    * putting the other on, with the world shifted so it sits at the origin.
    */
   async loadIsland(index, progress) {
+    await this._finishWorld();
     const st = STAGES[index];
     if (this.islandDirty) this._clearIslands();
     if (this.island && this.island.stage === st) return this.island;
@@ -231,17 +255,17 @@ class Game {
     return island;
   }
 
-  /** Builds one island (off stage when it is not the one wanted now). */
-  async _buildIsland(index, progress) {
+  /** Builds one island (off stage when it is not the one wanted now); in the background, the menu keeps drawing. */
+  async _buildIsland(index, progress, background = false) {
     const st = STAGES[index];
     const eng = this.engine;
     // Nothing to see behind the loading screen: stop drawing while it is built.
-    const running = eng._running;
+    const running = eng._running && (!background || this._bgWait);
     if (running) eng.stop();
     try {
       if (this.island) this.island.suspend();
       const pad = this.world.pad && this.world.pad.id === st.id ? this.world.pad : null;
-      const island = new Island(eng, this.materials, this.water, st, { plan: this.plans[st.id], cache: this.bakeCache, keepOut: (x, z) => this.world.keepOut(st.id, x, z), pad, bridgeEnds: this.world.bridgeEnds(st.id) });
+      const island = new Island(eng, this.materials, this.water, st, { plan: this.plans[st.id], cache: this.bakeCache, keepOut: (x, z) => this.world.keepOut(st.id, x, z), pad, bridgeEnds: this.world.bridgeEnds(st.id), background });
       await island.build(progress);
       island.suspend();
       if (this.island) this.island.resume();
@@ -297,11 +321,12 @@ class Game {
   }
 
   /** Builds every island not built yet, so travelling between them never waits. */
-  async _preloadIslands(progress) {
+  async _preloadIslands(progress, background = false) {
     const todo = STAGES.map((st, i) => i).filter((i) => !this.islands.has(STAGES[i].id));
     for (let k = 0; k < todo.length; k++) {
       const i = todo[k];
-      await this._buildIsland(i, (p, t) => progress((k + p) / todo.length, `${STAGES[i].name}: ${t}`));
+      if (this.islands.has(STAGES[i].id)) continue;
+      await this._buildIsland(i, (p, t) => progress((k + p) / todo.length, `${STAGES[i].name}: ${t}`, k, todo.length), background);
     }
   }
 
@@ -983,6 +1008,7 @@ class Game {
       this.mapDive = false;
     }
     if (!this.island || this.island.stage !== st || this.islandDirty) {
+      await this._finishWorld();
       const ready = this.islands.has(st.id) && !this.islandDirty;
       if (!ready) {
         // After a graphics change: build them all again, once, so travel stays seamless.
@@ -1266,6 +1292,34 @@ class Game {
     });
   }
 
+  /**
+   * Photo: the 3D view as it is right now, without the dashboard and buttons
+   * (those are page elements, not part of the picture), saved as a PNG into
+   * the browser's downloads folder.
+   */
+  photo() {
+    const canvas = this.engine.renderer.domElement;
+    // Draw a fresh frame and read it in the same task: the canvas keeps its picture only until it is shown.
+    this.engine.pipeline.render(0);
+    canvas.toBlob((blob) => {
+      if (!blob) return this.ui.toast('הצילום לא הצליח');
+      const d = new Date();
+      const p2 = (n) => String(n).padStart(2, '0');
+      const a = document.createElement('a');
+      a.download = `shimotron-${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}_${p2(d.getHours())}-${p2(d.getMinutes())}-${p2(d.getSeconds())}.png`;
+      a.href = URL.createObjectURL(blob);
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+      this.photos = (this.photos || 0) + 1;
+      this.ui.toast(`התמונה נשמרה בתיקיית ההורדות · ${a.download}`);
+    }, 'image/png');
+    this.ui.flash();
+    this._audioReady();
+    if (this.engine.audio.enabled) this.engine.audio.ui('click');
+  }
+
   _keys() {
     const block = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'AltRight', 'AltLeft'];
     window.addEventListener('keydown', (e) => {
@@ -1273,6 +1327,7 @@ class Game {
       // Ctrl is the fire key: keep the browser's Ctrl shortcuts (save, find, bookmark…) out of the game.
       if (playing && (block.includes(e.code) || e.ctrlKey)) e.preventDefault();
       if (e.repeat) return;
+      if (e.code === 'KeyF' && this.state !== 'loading' && !e.ctrlKey && !e.altKey) return this.photo();
       if (this.state !== 'race' && this.state !== 'explore') return;
       if (e.code === 'Escape' || e.code === 'KeyP') this.pause(!this.paused);
       else if (e.code === 'KeyC') this.cycleCamera();

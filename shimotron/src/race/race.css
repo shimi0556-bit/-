@@ -89,8 +89,27 @@ button { font: inherit; color: inherit; }
 .field > span { color: var(--faint); font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
 
 /* World map: the menu is a panel on one side, the archipelago shows on the other. */
-.screen.map { pointer-events: none; background: linear-gradient(270deg, rgba(6, 8, 12, 0.93) 0%, rgba(6, 8, 12, 0.8) 440px, rgba(6, 8, 12, 0) 640px); }
-.screen.map > .menu-grid { pointer-events: auto; max-width: 480px; }
+/* The panel itself scrolls (not the click-through layer over the map), so the wheel, touchpads and touch screens all move it. */
+.screen.map { pointer-events: none; overflow: hidden; background: linear-gradient(270deg, rgba(6, 8, 12, 0.93) 0%, rgba(6, 8, 12, 0.8) 440px, rgba(6, 8, 12, 0) 640px); }
+.screen.map > .menu-grid {
+  pointer-events: auto; max-width: 480px; max-height: 100%; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y;
+  padding-inline-end: 10px; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
+}
+.screen.map > .menu-grid::-webkit-scrollbar { width: 8px; }
+.screen.map > .menu-grid::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.3); border-radius: 8px; }
+.jump {
+  position: sticky; bottom: 0; justify-self: center; z-index: 2; margin-top: -12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55); transition: opacity 0.2s;
+}
+.jump[hidden] { display: none; }
+.buildstatus {
+  position: fixed; left: calc(16px + var(--safe-l)); bottom: calc(16px + var(--safe-b)); z-index: 45; pointer-events: none;
+  display: flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; font-size: 13px; color: var(--muted);
+  background: rgba(8, 11, 16, 0.78); border: 1px solid rgba(255, 255, 255, 0.14); backdrop-filter: blur(6px);
+}
+.buildstatus[hidden] { display: none; }
+.buildstatus i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: buildpulse 1s ease-in-out infinite; }
+@keyframes buildpulse { 50% { opacity: 0.25; } }
 .screen.map .islands { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .screen.map .island p { display: none; }
 .maplabels { position: fixed; inset: 0; pointer-events: none; z-index: -1; }

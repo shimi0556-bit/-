@@ -25,7 +25,8 @@ const h = (tag, attrs = {}, ...kids) => {
 
 const ICON = {
   pause: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>',
-  camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+  photo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+  view: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="7" width="12" height="10" rx="2"/><path d="M15 11l6-3v8l-6-3z"/></svg>',
   reset: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v5h5"/></svg>',
   left: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 4 6 12l9 8z"/></svg>',
   right: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="m9 4 9 8-9 8z"/></svg>',
@@ -106,6 +107,9 @@ export class RaceUI {
   // ------------------------------------------------------------------ menu
 
   showMenu(state) {
+    // Picking something re-draws the menu: stay where the player had scrolled to.
+    const prev = this.menuEl && this.menuEl.querySelector('.menu-grid');
+    const keep = prev ? prev.scrollTop : 0;
     this.clear();
     const g = this.game;
     const s = g.settings;
@@ -184,7 +188,7 @@ export class RaceUI {
             )
           : null,
         h('div', { class: 'islands', role: 'group', 'aria-label': 'בחירת אי' }, cards),
-        h('h2', { class: 'section-title' }, 'הרכב שלך'),
+        h('h2', { class: 'section-title', id: 'menu-cars' }, 'הרכב שלך'),
         this.carPicker({ selected: s.car || 'gt', color: s.color, onPick: (id) => g.setSetting('car', id) }),
         h(
           'div',
@@ -206,6 +210,7 @@ export class RaceUI {
           h('span', {}, h('kbd', {}, 'רווח'), ' בלם יד (דריפט)'),
           h('span', {}, h('kbd', {}, 'Shift'), ' ניטרו'),
           h('span', {}, h('kbd', {}, 'C'), ' מצלמה'),
+          h('span', {}, h('kbd', {}, 'F'), ' צילום תמונה (נשמרת בהורדות)'),
           h('span', {}, h('kbd', {}, 'AltGr'), ' חזרה למסלול'),
           h('span', {}, h('kbd', {}, 'Ctrl'), ' ירייה / מוקש'),
           h('span', {}, h('kbd', {}, 'Esc'), ' עצירה'),
@@ -215,9 +220,37 @@ export class RaceUI {
     );
     this.menuEl = menu;
     this.root.append(menu);
+    const panel = menu.querySelector('.menu-grid');
+    panel.scrollTop = keep;
+    this._menuScroll(panel);
     this.refreshPreviews();
     const first = cards[state.selected];
     if (first) first.focus({ preventScroll: true });
+  }
+
+  /**
+   * The menu is taller than the screen: the wheel scrolls it wherever the
+   * pointer is (over the map too), and a button at the bottom jumps to the
+   * vehicle choice until it is in view.
+   */
+  _menuScroll(panel) {
+    if (!panel) return;
+    const cars = panel.querySelector('#menu-cars');
+    const jump = h('button', { class: 'btn primary jump', type: 'button', onclick: () => cars.scrollIntoView({ behavior: 'smooth', block: 'start' }) }, 'בחירת רכב והגדרות ↓');
+    panel.append(jump);
+    const update = () => {
+      const top = cars.getBoundingClientRect().top - panel.getBoundingClientRect().top;
+      jump.hidden = top < panel.clientHeight * 0.75;
+    };
+    panel.addEventListener('scroll', update, { passive: true });
+    requestAnimationFrame(update);
+    const onWheel = (e) => {
+      if (!this.menuEl || !panel.isConnected) return window.removeEventListener('wheel', onWheel);
+      if (panel.contains(e.target)) return; // the panel scrolls itself
+      const k = e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? panel.clientHeight : 1;
+      panel.scrollBy({ top: e.deltaY * k });
+    };
+    window.addEventListener('wheel', onWheel, { passive: true });
   }
 
   /** Sound mixer: each channel on or off. */
@@ -288,6 +321,20 @@ export class RaceUI {
 
   // ------------------------------------------------------------ loading
 
+  /** A small note over the map while the islands are still being built behind the menu (null hides it). */
+  buildStatus(text) {
+    if (!text) {
+      if (this.statusEl) this.statusEl.hidden = true;
+      return;
+    }
+    if (!this.statusEl) {
+      this.statusEl = h('div', { class: 'buildstatus', role: 'status', 'aria-live': 'polite' }, h('i'), h('span'));
+      this.root.append(this.statusEl);
+    }
+    this.statusEl.hidden = false;
+    this.statusEl.querySelector('span').textContent = text;
+  }
+
   showLoader(text, p = 0) {
     let el = document.getElementById('loader');
     if (!el) return;
@@ -352,7 +399,8 @@ export class RaceUI {
       'div',
       { class: 'topbtns' },
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'עצירה', onclick: () => g.pause(true), html: ICON.pause }),
-      h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'החלפת מצלמה', onclick: () => g.cycleCamera(), html: ICON.camera }),
+      h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'החלפת מצלמה', title: 'החלפת מצלמה (C)', onclick: () => g.cycleCamera(), html: ICON.view }),
+      h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'צילום תמונה', title: 'צילום תמונה (F) — נשמרת בתיקיית ההורדות', onclick: () => g.photo(), html: ICON.photo }),
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'חזרה למסלול', onclick: () => (g.touch.reset = true), html: ICON.reset }),
     );
     this.topEl = top;
@@ -398,7 +446,8 @@ export class RaceUI {
       'div',
       { class: 'topbtns' },
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'עצירה', onclick: () => g.pause(true), html: ICON.pause }),
-      h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'החלפת מצלמה', onclick: () => g.cycleCamera(), html: ICON.camera }),
+      h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'החלפת מצלמה', title: 'החלפת מצלמה (C)', onclick: () => g.cycleCamera(), html: ICON.view }),
+      h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'צילום תמונה', title: 'צילום תמונה (F) — נשמרת בתיקיית ההורדות', onclick: () => g.photo(), html: ICON.photo }),
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'חזרה', onclick: () => (g.touch.reset = true), html: ICON.reset }),
     );
     this.topEl = top;
