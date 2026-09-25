@@ -354,8 +354,11 @@ export class Terrain {
         const nx = at(ix - 1, iz) - at(ix + 1, iz);
         const nz = at(ix, iz - 1) - at(ix, iz + 1);
         const ny = 2 * step;
-        const l = Math.hypot(nx, ny, nz);
-        normals.set([nx / l, ny / l, nz / l], (iz * w + ix) * 3);
+        const il = 1 / Math.sqrt(nx * nx + ny * ny + nz * nz);
+        const o = (iz * w + ix) * 3;
+        normals[o] = nx * il;
+        normals[o + 1] = ny * il;
+        normals[o + 2] = nz * il;
       }
     }
     this._buildSplat();
@@ -382,26 +385,37 @@ export class Terrain {
         for (let iz = z0; iz <= z1; iz++) {
           for (let ix = x0; ix <= x1; ix++, k++) {
             const gi = iz * w + ix;
-            pos.set([-half + ix * step, H[gi], -half + iz * step], k * 3);
-            nrm.set([normals[gi * 3], normals[gi * 3 + 1], normals[gi * 3 + 2]], k * 3);
-            uv.set([ix / n, iz / n], k * 2);
+            pos[k * 3] = -half + ix * step;
+            pos[k * 3 + 1] = H[gi];
+            pos[k * 3 + 2] = -half + iz * step;
+            nrm[k * 3] = normals[gi * 3];
+            nrm[k * 3 + 1] = normals[gi * 3 + 1];
+            nrm[k * 3 + 2] = normals[gi * 3 + 2];
+            uv[k * 2] = ix / n;
+            uv[k * 2 + 1] = iz / n;
           }
         }
-        const idx = [];
+        const idx = new (cw * ch > 65535 ? Uint32Array : Uint16Array)((cw - 1) * (ch - 1) * 6);
+        let q = 0;
         for (let z = 0; z < ch - 1; z++) {
           for (let x = 0; x < cw - 1; x++) {
             const a = z * cw + x;
             const b = a + 1;
             const c = a + cw;
             const d = c + 1;
-            idx.push(a, c, b, b, c, d);
+            idx[q++] = a;
+            idx[q++] = c;
+            idx[q++] = b;
+            idx[q++] = b;
+            idx[q++] = c;
+            idx[q++] = d;
           }
         }
         const geo = new THREE.BufferGeometry();
         geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
         geo.setAttribute('normal', new THREE.BufferAttribute(nrm, 3));
         geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
-        geo.setIndex(idx);
+        geo.setIndex(new THREE.BufferAttribute(idx, 1));
         geo.computeBoundingSphere();
         geo.computeBoundingBox();
         const tile = new THREE.Mesh(geo, this.material);
@@ -436,27 +450,38 @@ export class Terrain {
       for (let jx = 0; jx <= m; jx++, k++) {
         const ix = Math.min(n, jx * stride);
         const iz = Math.min(n, jz * stride);
-        pos.set([-half + ix * step, at(ix, iz), -half + iz * step], k * 3);
+        pos[k * 3] = -half + ix * step;
+        pos[k * 3 + 1] = at(ix, iz);
+        pos[k * 3 + 2] = -half + iz * step;
         const nx = at(ix - stride, iz) - at(ix + stride, iz);
         const nz = at(ix, iz - stride) - at(ix, iz + stride);
         const ny = 2 * step * stride;
-        const l = Math.hypot(nx, ny, nz);
-        nrm.set([nx / l, ny / l, nz / l], k * 3);
-        uv.set([ix / n, iz / n], k * 2);
+        const il = 1 / Math.sqrt(nx * nx + ny * ny + nz * nz);
+        nrm[k * 3] = nx * il;
+        nrm[k * 3 + 1] = ny * il;
+        nrm[k * 3 + 2] = nz * il;
+        uv[k * 2] = ix / n;
+        uv[k * 2 + 1] = iz / n;
       }
     }
-    const idx = [];
+    const idx = new (cw * cw > 65535 ? Uint32Array : Uint16Array)(m * m * 6);
+    let q = 0;
     for (let z = 0; z < m; z++) {
       for (let x = 0; x < m; x++) {
         const a = z * cw + x;
-        idx.push(a, a + cw, a + 1, a + 1, a + cw, a + cw + 1);
+        idx[q++] = a;
+        idx[q++] = a + cw;
+        idx[q++] = a + 1;
+        idx[q++] = a + 1;
+        idx[q++] = a + cw;
+        idx[q++] = a + cw + 1;
       }
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     geo.setAttribute('normal', new THREE.BufferAttribute(nrm, 3));
     geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
-    geo.setIndex(idx);
+    geo.setIndex(new THREE.BufferAttribute(idx, 1));
     geo.computeBoundingSphere();
     const mesh = new THREE.Mesh(geo, this.material);
     mesh.name = 'שטח מרחוק';
