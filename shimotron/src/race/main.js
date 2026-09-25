@@ -118,6 +118,8 @@ class Game {
     engine.atmosphere.model.mieCoefficient = 0.0032;
     engine.atmosphere.model.mieDirectionalG = 0.72;
     window.shimotron = { engine, version: VERSION, THREE, game: this };
+    // In the claude.ai viewer, photos are saved through the viewer (asked for now, used on the first photo).
+    if (window.claude && typeof window.claude.use === 'function') this._downloads = window.claude.use('downloads').catch(() => null);
 
     await progress(0.14, 'אופה טקסטורות פרוצדורליות על ה־GPU…');
     const materials = new Materials(engine);
@@ -1301,23 +1303,36 @@ class Game {
     const canvas = this.engine.renderer.domElement;
     // Draw a fresh frame and read it in the same task: the canvas keeps its picture only until it is shown.
     this.engine.pipeline.render(0);
-    canvas.toBlob((blob) => {
-      if (!blob) return this.ui.toast('הצילום לא הצליח');
-      const d = new Date();
-      const p2 = (n) => String(n).padStart(2, '0');
-      const a = document.createElement('a');
-      a.download = `shimotron-${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}_${p2(d.getHours())}-${p2(d.getMinutes())}-${p2(d.getSeconds())}.png`;
-      a.href = URL.createObjectURL(blob);
-      document.body.append(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 10000);
-      this.photos = (this.photos || 0) + 1;
-      this.ui.toast(`התמונה נשמרה בתיקיית ההורדות · ${a.download}`);
-    }, 'image/png');
+    canvas.toBlob((blob) => this._savePhoto(blob), 'image/png');
     this.ui.flash();
     this._audioReady();
     if (this.engine.audio.enabled) this.engine.audio.ui('click');
+  }
+
+  async _savePhoto(blob) {
+    if (!blob) return this.ui.toast('הצילום לא הצליח');
+    const d = new Date();
+    const p2 = (n) => String(n).padStart(2, '0');
+    const filename = `shimotron-${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}_${p2(d.getHours())}-${p2(d.getMinutes())}-${p2(d.getSeconds())}.png`;
+    // Inside the claude.ai viewer a page cannot download by itself: the viewer's host saves it (after asking).
+    const host = window.claude && typeof window.claude.use === 'function' ? await (this._downloads ||= window.claude.use('downloads').catch(() => null)) : null;
+    if (host) {
+      try {
+        await host.save({ filename, data: blob });
+        this.ui.toast(`התמונה נשמרה · ${filename}`);
+      } catch (e) {
+        this.ui.toast(e && e.code === 'declined' ? 'התמונה לא נשמרה' : 'אי אפשר לשמור תמונות בתצוגה הזאת');
+      }
+      return;
+    }
+    const a = document.createElement('a');
+    a.download = filename;
+    a.href = URL.createObjectURL(blob);
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    this.ui.toast(`התמונה נשמרה בתיקיית ההורדות · ${filename}`);
   }
 
   _keys() {
