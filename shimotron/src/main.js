@@ -1,3 +1,4 @@
+import './fonts/fonts.css';
 import './styles.css';
 import * as THREE from 'three';
 import { Engine, VERSION } from './engine/Engine.js';
@@ -52,7 +53,7 @@ async function boot() {
 
   await progress(0.03, 'טוען גופנים…');
   if (document.fonts) {
-    await Promise.race([Promise.all([document.fonts.load('700 120px "Karantina"'), document.fonts.load('600 40px "IBM Plex Sans Hebrew"')]).catch(() => {}), wait(2500)]);
+    await Promise.race([Promise.all([document.fonts.load('700 120px "Karantina"', 'אב AZ 09'), document.fonts.load('600 40px "IBM Plex Sans Hebrew"', 'אב AZ 09')]).catch(() => {}), wait(2500)]);
   }
 
   await progress(0.06, 'מאתחל את המנוע…');

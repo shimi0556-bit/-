@@ -1,4 +1,5 @@
 import { Underwater } from './Underwater.js';
+import '../fonts/fonts.css';
 import './race.css';
 import { DESIGNS, DESIGN_NAMES } from './CraftModels.js';
 import * as THREE from 'three';
@@ -95,7 +96,7 @@ class Game {
       }
     })()) throw new Error('הדפדפן הזה לא תומך ב־WebGL 2. נסו Chrome, Edge, Firefox או Safari בגרסה עדכנית.');
     await progress(0.03, 'טוען גופנים…');
-    if (document.fonts) await Promise.race([Promise.all([document.fonts.load('700 120px "Karantina"'), document.fonts.load('600 20px "IBM Plex Sans Hebrew"'), document.fonts.load('700 40px "JetBrains Mono"')]).catch(() => {}), wait(2500)]);
+    if (document.fonts) await Promise.race([Promise.all([document.fonts.load('700 120px "Karantina"', 'אב AZ 09'), document.fonts.load('600 20px "IBM Plex Sans Hebrew"', 'אב AZ 09'), document.fonts.load('700 40px "JetBrains Mono"', 'אב AZ 09')]).catch(() => {}), wait(2500)]);
 
     await progress(0.08, 'מאתחל את מנוע שימוטרון…');
     const canvas = document.getElementById('viewport');

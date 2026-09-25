@@ -64,8 +64,8 @@ export class World {
   }
 
   async build(plans, progress = async () => {}) {
-    const low = this.engine.quality.presetName === 'low';
-    this.N = low ? 81 : 121;
+    // One grid for every quality level: the bridges are set on it, and the ground baked for the offline build depends on them.
+    this.N = 121;
     const n = this.stages.length;
     for (let k = 0; k < n; k++) {
       const st = this.stages[k];

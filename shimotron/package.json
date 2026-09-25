@@ -9,6 +9,7 @@
     "build": "vite build && vite build --mode race",
     "build:engine": "vite build",
     "build:race": "vite build --mode race",
+    "usb": "vite build && vite build --mode race && node tools/bake-ground.mjs && vite build --mode usb && node tools/usb.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

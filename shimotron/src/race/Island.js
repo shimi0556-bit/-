@@ -15,8 +15,14 @@ import { AccessRoads } from './AccessRoads.js';
 import { Colliders } from './Colliders.js';
 import { Bushes } from './Bushes.js';
 import { Trail, planTrail } from './Trail.js';
+import { bakedGround, bakedSegments } from './BakedGround.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
+const hash = (str) => {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 0x01000193);
+  return (h >>> 0).toString(36);
+};
 
 /**
  * What a neighbouring island leaves out while seen from across the water
@@ -71,7 +77,7 @@ export class Island {
       island: st.island,
       biome: st.biome,
       size: st.size,
-      segments: SEGMENTS[q] || 520,
+      segments: bakedSegments || SEGMENTS[q] || 520,
       seed: st.seed,
       reef: st.life?.reef ?? 0.5,
     });
@@ -138,8 +144,11 @@ export class Island {
     await progress(0.32, 'חוצב את הכביש בשטח…');
     // Heights and ground maps: from the cache when this island was built before, else baked in slices.
     const cache = this.opts.cache;
-    const key = `${st.id}|${terrain.segments}|${plan.controls.length}|${Math.round(plan.length * 100)}|${this.trail ? Math.round(this.trail.length * 10) : 0}`;
-    const hit = cache && cache.get(key);
+    const landings = ends.map((e) => [e.x, e.y, e.z].map((v) => Math.round(v * 10)).join(',')).join(';');
+    this.groundKey = `${st.id}|${plan.controls.length}|${Math.round(plan.length * 100)}|${this.trail ? Math.round(this.trail.length * 10) : 0}|${hash(landings)}`;
+    const key = `${this.groundKey}|${terrain.segments}`;
+    // Offline build: the ground ships pre-baked in the file.
+    const hit = (cache && cache.get(key)) || (await bakedGround(st.id, this.groundKey, terrain));
     if (hit) {
       terrain.heights = hit.heights;
       terrain.splatPre = hit.splat;
