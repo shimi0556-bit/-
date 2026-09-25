@@ -191,7 +191,9 @@ export class Vehicle {
     const lim = this.steerLimit(Math.abs(vf));
     const want = clamp(C.steer, -1, 1) * lim;
     const rate = (Math.abs(want) > Math.abs(this.steerAngle) && Math.sign(want) === Math.sign(this.steerAngle || want) ? S.steer.rate : S.steer.returnRate) * dt;
-    this.steerAngle += clamp(want - this.steerAngle, -rate, rate);
+    // Bikes ease in and out of the angle (the machine has to bank first) instead of sweeping at a fixed rate.
+    const next = S.steer.lag ? this.steerAngle + (want - this.steerAngle) * (1 - Math.exp(-dt / S.steer.lag)) : want;
+    this.steerAngle += clamp(next - this.steerAngle, -rate, rate);
     // Positive cannon steering turns toward +x (left), so negate.
     veh.setSteeringValue(-this.steerAngle, 0);
     veh.setSteeringValue(-this.steerAngle, 1);

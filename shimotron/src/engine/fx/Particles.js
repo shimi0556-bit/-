@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { fogUniforms } from '../render/HeightFog.js';
 
+const _grey = new THREE.Color();
+
 /**
  * Pooled billboard particles. One ParticleSystem = one draw call
  * (instanced quads, no point-size limits). Emitters feed systems with
@@ -8,8 +10,11 @@ import { fogUniforms } from '../render/HeightFog.js';
  * turbulence and optional velocity stretching (sparks).
  */
 export class ParticleSystem {
-  constructor(engine, { name, texture, max = 2000, additive = true, lit = false, stretch = 0, softness = 1, gain = 1 }) {
+  constructor(engine, { name, texture, max = 2000, additive = true, lit = false, stretch = 0, softness = 1, gain = 1, desaturate = 0, tint = null }) {
     this.gain = gain; // brightness under the sky (white water is brighter than smoke)
+    // White water scatters light many times over: it keeps little of a low sun's colour (0..1), and a hint of the sea's (tint).
+    this.desaturate = desaturate;
+    this.tint = tint ? new THREE.Color(...tint) : null;
     this.engine = engine;
     this.max = max;
     this.count = 0;
@@ -316,7 +321,7 @@ export class Particles {
       glow: new ParticleSystem(engine, { name: 'זוהר', texture: T.softDot, max: Math.round(1400 * q), additive: true }),
       dust: new ParticleSystem(engine, { name: 'אבק', texture: T.smoke, max: Math.round(600 * q), additive: false, lit: true }),
       // White water: bow spray, rooster tails and splashes.
-      spray: new ParticleSystem(engine, { name: 'רסס', texture: T.spray || T.smoke, max: Math.round(2400 * q), additive: false, lit: true, gain: 2.3 }),
+      spray: new ParticleSystem(engine, { name: 'רסס', texture: T.spray || T.smoke, max: Math.round(2400 * q), additive: false, lit: true, gain: 2.3, desaturate: 0.82, tint: [0.88, 0.97, 1.0] }),
     };
     this.emitters = [];
     this.materials = materials;
@@ -381,8 +386,11 @@ export class Particles {
     lit.multiplyScalar(1 / Math.PI);
     const emissive = this.materials.emissiveScale || 1;
     for (const s of Object.values(this.systems)) {
-      if (s.lit) s.uniforms.uLight.value.copy(lit).multiplyScalar(s.gain);
-      else s.uniforms.uLight.value.setScalar(emissive * 0.25);
+      if (s.lit) {
+        const L = s.uniforms.uLight.value.copy(lit).multiplyScalar(s.gain);
+        if (s.desaturate) L.lerp(_grey.setScalar(L.r * 0.2126 + L.g * 0.7152 + L.b * 0.0722), s.desaturate);
+        if (s.tint) L.multiply(s.tint);
+      } else s.uniforms.uLight.value.setScalar(emissive * 0.25);
       s.update(dt, t);
     }
   }

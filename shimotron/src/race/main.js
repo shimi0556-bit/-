@@ -1,4 +1,5 @@
 import { Underwater } from './Underwater.js';
+import { SurfSpray } from './Surf.js';
 import '../fonts/fonts.css';
 import './race.css';
 import { DESIGNS, DESIGN_NAMES } from './CraftModels.js';
@@ -137,6 +138,9 @@ class Game {
     // Systems, in order.
     engine.addSystem({ update: () => materials.update(engine.atmosphere.exposure, engine.time.elapsed) });
     engine.addSystem({ update: (dt, simDt) => this.water && this.water.update(dt, simDt) });
+    // Breakers along the shores throw up spray.
+    this.surf = new SurfSpray(engine, (x, z) => this.floorAt(x, z));
+    engine.addSystem({ update: (dt, simDt) => this.water && this.state !== 'menu' && !this.inSpace && this.surf.update(simDt, this.water.uniforms.uWaveAmp.value) });
     engine.addSystem({ update: (dt) => this.island && this.state !== 'menu' && !this.inSpace && this.island.flora && this.island.flora.update(dt) });
     engine.addSystem({ update: (dt, simDt) => this.race && this.race.update(simDt) });
     engine.addSystem({ update: (dt, simDt) => this.explore && this.state === 'explore' && this.explore.update(simDt) });

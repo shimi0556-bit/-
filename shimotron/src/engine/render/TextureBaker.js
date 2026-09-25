@@ -457,23 +457,25 @@ export const RECIPES = {
       a *= smoothstep(0.1, 0.6, n + 0.2);
       return vec4(vec3(0.75 + n * 0.25), clamp(a, 0.0, 1.0));
     }`,
-  // Water spray: a little mist and a scatter of droplets.
+  // Water spray: a torn, misty body with a fine scatter of droplets (no two particles read as the same disc).
   spray: /* glsl */ `
     vec4 bake(vec2 uv) {
       vec2 p = uv - 0.5; float d = length(p) * 2.0;
-      float mist = pow(clamp(1.0 - d, 0.0, 1.0), 1.6) * 0.4;
+      float n = fbm(uv + uSeed, 4.0, 5) * 0.5 + 0.5;
+      float body = smoothstep(1.0, 0.2, d + (n - 0.5) * 0.9);
+      float mist = body * smoothstep(0.3, 0.8, n) * 0.62;
       float drops = 0.0;
       for (int i = 0; i < 3; i++) {
-        float sc = 9.0 + float(i) * 8.0;
-        vec2 g = uv * sc + uSeed * float(i + 1);
+        float sc = 22.0 + float(i) * 15.0;
+        vec2 g = uv * sc + uSeed * float(i + 1) * 3.1;
         vec2 id = floor(g); vec2 f = fract(g) - 0.5;
         float h = fract(sin(dot(id, vec2(12.9898, 78.233)) + float(i) * 7.1) * 43758.5453);
         vec2 o = vec2(fract(h * 13.1), fract(h * 71.7)) - 0.5;
-        float r = 0.14 + 0.22 * fract(h * 3.3);
-        drops = max(drops, smoothstep(r, r * 0.35, length(f - o * 0.5)) * step(0.4, h));
+        float r = 0.07 + 0.13 * fract(h * 3.3);
+        drops = max(drops, smoothstep(r, r * 0.3, length(f - o * 0.6)) * step(0.55, h) * (0.45 + 0.55 * fract(h * 5.7)));
       }
-      drops *= smoothstep(1.0, 0.45, d);
-      return vec4(vec3(0.92 + drops * 0.08), clamp(mist + drops * 0.95, 0.0, 1.0));
+      drops *= smoothstep(1.0, 0.3, d) * (0.4 + 0.6 * body);
+      return vec4(vec3(0.9 + drops * 0.1), clamp(mist + drops * 0.85, 0.0, 1.0));
     }`,
   flame: /* glsl */ `
     vec4 bake(vec2 uv) {

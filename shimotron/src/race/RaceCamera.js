@@ -97,7 +97,8 @@ export class RaceCamera {
     _fwd.set(fwd.x, 0, fwd.z).normalize();
     if (hv > 6 && car.vehicle.speed > 0) _fwd.lerp(_d.set(vel.x / hv, 0, vel.z / hv), 0.35).normalize();
     if (this.lookBack) _fwd.negate();
-    const kh = 1 - Math.exp(-dt * (view.distance > 0 ? 5 : 30));
+    // Bikes flick through turns: their chase camera swings round more gently.
+    const kh = 1 - Math.exp(-dt * (view.distance > 0 ? (car.spec?.bike ? 3.2 : 5) : 30));
     this.heading.lerp(_fwd, this.snap ? 1 : kh).normalize();
 
     let fovTarget = view.fov;

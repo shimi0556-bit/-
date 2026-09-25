@@ -187,7 +187,9 @@ export const CAR_TYPES = [
       engine: { accel: 9.4, topSpeed: 36, reverseTop: 5, frontShare: 0, gears: [0, 2.9, 2.1, 1.6, 1.27, 1.03], idleRpm: 1700, redline: 11800 },
       brake: { decel: 9.8, frontBias: 0.66 },
       handbrake: { decel: 4, grip: 0.5 },
-      steer: { max: 0.62, min: 0.03, rate: 4.2, returnRate: 7 },
+      // Half a car's wheelbase: the same wheel angle turns twice as tight, so a much smaller angle at speed
+      // (~1.6 g at the limit), and the angle builds up as the bike banks into the turn (lag, seconds).
+      steer: { max: 0.55, min: 0.02, gripAngle: 24, rate: 3, returnRate: 4.5, lag: 0.12 },
       downforce: 0,
       drag: 0.0028,
       rolling: 0.25,

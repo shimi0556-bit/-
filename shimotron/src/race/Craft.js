@@ -71,24 +71,32 @@ function craftMaterials(engine) {
     transparent: true,
     depthWrite: false,
     side: THREE.DoubleSide,
-    uniforms: { uTime: { value: 0 } },
+    // Lit like the spray (sky and sun on white water): unlit, it glowed under the dim evening and night skies.
+    uniforms: { uTime: { value: 0 }, uLight: { value: new THREE.Color(1, 1, 1) } },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: `uniform float uTime; varying vec2 vUv;
+    fragmentShader: `uniform float uTime; uniform vec3 uLight; varying vec2 vUv;
       float h(vec2 p){ return fract(sin(dot(p, vec2(12.9, 78.2))) * 43758.5); }
       float n(vec2 p){ vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + vec2(1, 1)), f.x), f.y); }
       void main(){
         float edge = 1.0 - smoothstep(0.0, 0.2, min(abs(vUv.x - 0.06), abs(vUv.x - 0.94)));
         float mid = 1.0 - smoothstep(0.0, 0.12, abs(vUv.x - 0.5));
         float foam = smoothstep(0.35, 0.8, n(vUv * vec2(26.0, 40.0) + vec2(0.0, uTime * 3.0)));
-        float a = (1.0 - vUv.y) * (0.3 + 0.6 * foam) * max(0.4 * edge, mid * 0.9 + 0.25);
-        gl_FragColor = vec4(vec3(0.96), a * 0.75);
+        // Broken into patches and streaks that drift back, fading out behind.
+        float broken = smoothstep(0.2, 0.7, n(vUv * vec2(7.0, 12.0) + vec2(3.1, uTime * 1.3)));
+        float fade = pow(1.0 - vUv.y, 1.4);
+        float a = fade * (0.3 + 0.6 * foam) * max(0.4 * edge, mid * 0.9 + 0.25) * (0.45 + 0.55 * broken);
+        gl_FragColor = vec4(uLight * 0.82, a * 0.72);
       }`,
   });
   // Seen from inside, a canopy is barely there: a faint, clear version for the cockpit view.
   const glassInside = new THREE.MeshPhysicalMaterial({ name: 'זכוכית מבפנים', color: 0xd8e8f0, transparent: true, opacity: 0.07, roughness: 0.02, metalness: 0, side: THREE.DoubleSide, depthWrite: false, envMapIntensity: 0.4 });
   const m = { body, matte, metal, glass, glassInside, pilot, glow, fabric, lines, wake, wakeGeo };
   // Keep the foam moving.
-  engine.events.on('frame', () => (wake.uniforms.uTime.value = engine.time.elapsed));
+  engine.events.on('frame', () => {
+    wake.uniforms.uTime.value = engine.time.elapsed;
+    const spray = engine.particles && engine.particles.systems.spray;
+    if (spray) wake.uniforms.uLight.value.copy(spray.uniforms.uLight.value);
+  });
   MATS.set(engine, m);
   return m;
 }
