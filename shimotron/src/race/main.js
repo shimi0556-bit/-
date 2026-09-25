@@ -258,6 +258,37 @@ class Game {
     this.water.uniforms.uWorldOffset.value.set(...this.world.origin);
     this.camera.groundHeight = (x, z) => island.terrain.heightAt(x, z);
     this._flyT = 0;
+    this._neighbours(0, true);
+  }
+
+  /**
+   * The whole world at once: every built island near the camera is drawn in
+   * full where it stands (not as its distant stand-in), so looking across
+   * the water from one island shows the next one exactly as you will find
+   * it there. Far ones, and the world map, keep the stand-ins.
+   */
+  _neighbours(dt, now = false) {
+    this._nbT = (this._nbT || 0) - dt;
+    if (!now && this._nbT > 0) return;
+    this._nbT = 0.4;
+    const full = new Set();
+    const on = this.island && !this.mapOn && !this.inSpace && this.state !== 'menu' && this.state !== 'loading';
+    if (on) {
+      const cam = this.engine.camera.position;
+      const [ox, oz] = this.world.origin;
+      // Within about a kilometre and a half of a neighbour's shore (islands are ~2.9 km apart, centre to centre).
+      const reach = { low: 2100, medium: 2500, high: 2900, ultra: 3300 }[this.engine.quality.presetName] || 2500;
+      for (const [id, isl] of this.islands) {
+        if (isl === this.island) continue;
+        const [cx, cz] = this.world.pos(id);
+        const d = Math.hypot(cam.x + ox - cx, cam.z + oz - cz);
+        if (d < reach) {
+          isl.showNeighbour(cx - ox, cz - oz);
+          full.add(id);
+        } else isl.hideNeighbour();
+      }
+    } else for (const isl of this.islands.values()) if (isl !== this.island) isl.hideNeighbour();
+    this.world.setFull(full);
   }
 
   /** Builds every island not built yet, so travelling between them never waits. */
@@ -1286,6 +1317,7 @@ class Game {
 
   _frame(dt) {
     this._musicFrame();
+    this._neighbours(dt);
     this._mapLabels();
     if (this.state === 'explore' && this.explore) this.ui.updateExplore(this.explore, dt);
     // Under the waves: water fog instead of air.

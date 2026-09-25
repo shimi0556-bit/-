@@ -762,8 +762,18 @@ export class World {
 
   /** Show the stand-in of the origin island (world map) or the real one (playing). */
   showLocal(local) {
-    for (const [id, lod] of Object.entries(this.lods)) lod.visible = !(local && id === this.originId);
     this.local = local;
+    this._lodVisibility();
+  }
+
+  /** Islands drawn in full right now (the neighbours near the camera): their stand-ins step aside. */
+  setFull(ids) {
+    this.full = ids;
+    this._lodVisibility();
+  }
+
+  _lodVisibility() {
+    for (const [id, lod] of Object.entries(this.lods)) lod.visible = !(this.local && (id === this.originId || (this.full && this.full.has(id))));
   }
 
   /** Bridge obstacles near the origin island, in its local coordinates: pier and pylon circles, deck segments. */

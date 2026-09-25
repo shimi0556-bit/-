@@ -17,6 +17,21 @@ import { Bushes } from './Bushes.js';
 import { Trail, planTrail } from './Trail.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
+
+/**
+ * What a neighbouring island leaves out while seen from across the water
+ * (a kilometre and more away): crowds, sea life, bushes, grass, small rocks,
+ * parked cars, traffic and street furniture — invisible at that range, but
+ * most of the triangles. Terrain, trees, buildings, roads and landmarks stay.
+ */
+const FAR_HIDDEN = new Set([
+  'שיחים', 'גבעולי שיחים', 'דשא', 'פרחים', 'סלעים',
+  'קהל', 'חומת צמיגים', 'עמודי מעקה', 'מחזירי אור', 'עמודי גדר',
+  'כדור סרדינים', 'להקות דגים', 'מדוזות', 'שונית', 'כבשים', 'פרות', 'גמלים', 'לווייתנים', 'דולפינים', 'פטישנים', 'טונות צדות', 'כרישי לווייתן', 'ספינות טרופות', 'חיי הים הגדולים',
+  'רכבים חונים', 'תנועה', 'פנסי רחוב', 'מעקות ברזל', 'מעקות מרפסת', 'עמודי תאורה', 'מזגנים', 'דודי שמש', 'מזגנים על הגג', 'קולטי שמש', 'סוככים', 'עמודי רמזור', 'רמזורים', 'מרפסות',
+  'צמיגים', 'חבילות קש', 'יתדות', 'סרט סימון',
+  'Terrain', // the full-resolution ground; the coarse one takes its place
+]);
 const SEGMENTS = { low: 420, medium: 520, high: 600, ultra: 640 };
 
 /**
@@ -136,6 +151,10 @@ export class Island {
       }
     }
     this.group.add(terrain.build(this.materials));
+    // The coarse ground it is drawn with from the other islands.
+    this.farTerrain = terrain.buildFar(4);
+    this.farTerrain.visible = false;
+    this.group.add(this.farTerrain);
     await nextFrame();
     const before = new Set(eng.physics.world.bodies);
     terrain.addPhysics(eng.physics);
@@ -422,9 +441,44 @@ export class Island {
     this.group.removeFromParent();
   }
 
+  /**
+   * Seen from the island in play: its whole scenery in place, `ox, oz` from
+   * the origin — no physics, nothing ticking, and its lights off (so the
+   * number of lights in the scene, and with it every shader, stays as it is).
+   */
+  showNeighbour(ox, oz) {
+    this.group.position.set(ox, 0, oz);
+    if (!this.neighbour) {
+      this.neighbour = true;
+      this.group.traverse((o) => {
+        if (o.isLight || FAR_HIDDEN.has(o.name)) {
+          o.userData.shown = o.visible;
+          o.visible = false;
+        }
+      });
+      if (this.farTerrain) this.farTerrain.visible = true;
+      this.group.visible = true;
+      this.engine.scene.add(this.group);
+    }
+    this.group.updateMatrixWorld(true);
+  }
+
+  hideNeighbour() {
+    if (!this.neighbour) return;
+    this.neighbour = false;
+    this.group.removeFromParent();
+    this.group.traverse((o) => {
+      if (o.isLight || FAR_HIDDEN.has(o.name)) o.visible = o.userData.shown ?? true;
+    });
+    if (this.farTerrain) this.farTerrain.visible = false;
+    this.group.position.set(0, 0, 0);
+    this.group.updateMatrixWorld(true);
+  }
+
   /** Back on stage: its ground, circuit and bodies in the physics world, its sky and sea colours. */
   resume() {
     if (!this.suspended) return;
+    this.hideNeighbour();
     this.suspended = false;
     const eng = this.engine;
     for (const b of this.bodies) eng.physics.world.addBody(b);

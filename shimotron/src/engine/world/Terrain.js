@@ -414,6 +414,57 @@ export class Terrain {
     return this.mesh;
   }
 
+  /**
+   * The same ground at a fraction of the resolution (every `stride`-th
+   * height sample), one mesh, same material: how the island is drawn from
+   * another island a kilometre and more away. Call after build().
+   */
+  buildFar(stride = 4) {
+    const n = this.segments;
+    const w = n + 1;
+    const half = this.size / 2;
+    const step = this.size / n;
+    const H = this.heights;
+    const m = Math.floor(n / stride);
+    const cw = m + 1;
+    const pos = new Float32Array(cw * cw * 3);
+    const nrm = new Float32Array(cw * cw * 3);
+    const uv = new Float32Array(cw * cw * 2);
+    const at = (ix, iz) => H[Math.min(n, Math.max(0, iz)) * w + Math.min(n, Math.max(0, ix))];
+    let k = 0;
+    for (let jz = 0; jz <= m; jz++) {
+      for (let jx = 0; jx <= m; jx++, k++) {
+        const ix = Math.min(n, jx * stride);
+        const iz = Math.min(n, jz * stride);
+        pos.set([-half + ix * step, at(ix, iz), -half + iz * step], k * 3);
+        const nx = at(ix - stride, iz) - at(ix + stride, iz);
+        const nz = at(ix, iz - stride) - at(ix, iz + stride);
+        const ny = 2 * step * stride;
+        const l = Math.hypot(nx, ny, nz);
+        nrm.set([nx / l, ny / l, nz / l], k * 3);
+        uv.set([ix / n, iz / n], k * 2);
+      }
+    }
+    const idx = [];
+    for (let z = 0; z < m; z++) {
+      for (let x = 0; x < m; x++) {
+        const a = z * cw + x;
+        idx.push(a, a + cw, a + 1, a + 1, a + cw, a + cw + 1);
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('normal', new THREE.BufferAttribute(nrm, 3));
+    geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    geo.setIndex(idx);
+    geo.computeBoundingSphere();
+    const mesh = new THREE.Mesh(geo, this.material);
+    mesh.name = 'שטח מרחוק';
+    mesh.receiveShadow = false;
+    mesh.castShadow = false;
+    return mesh;
+  }
+
   _buildSplat() {
     let pre = this.splatPre;
     if (!pre) {
@@ -506,10 +557,11 @@ export class Terrain {
     mat.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, uniforms);
       shader.vertexShader = shader.vertexShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vTPos;\nvarying vec3 vTNrm;')
+        .replace('#include <common>', '#include <common>\nvarying vec3 vTPos;\nvarying vec3 vTNrm;\nvarying vec2 vTLoc;')
         .replace(
           '#include <begin_vertex>',
           `#include <begin_vertex>
+          vTLoc = transformed.xz; // the island's own coordinates, wherever it stands in the world
           vTPos = (modelMatrix * vec4(transformed, 1.0)).xyz;
           vTNrm = normalize(mat3(modelMatrix) * objectNormal);`,
         );
@@ -517,7 +569,7 @@ export class Terrain {
         .replace(
           '#include <common>',
           `#include <common>
-          varying vec3 vTPos; varying vec3 vTNrm;
+          varying vec3 vTPos; varying vec3 vTNrm; varying vec2 vTLoc;
           uniform sampler2D tSplat, tGrass, tGrassN, tRock, tRockN, tSand, tSandN, tDirt, tDirtN;
           uniform float uSize; uniform float uTime; uniform vec3 uCaustic;
           uniform vec3 uTintGrass; uniform vec3 uTintSand; uniform vec3 uTintDirt; uniform vec3 uTintRock; uniform vec2 uSnow; uniform float uStrata;
@@ -540,7 +592,7 @@ export class Terrain {
         .replace(
           '#include <map_fragment>',
           `{
-            vec2 suv = vTPos.xz / uSize + 0.5;
+            vec2 suv = vTLoc / uSize + 0.5;
             vec4 sp = texture2D(tSplat, suv);
             vec2 wuv = vTPos.xz;
             vec3 n = normalize(vTNrm);
