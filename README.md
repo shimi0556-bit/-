@@ -34,14 +34,13 @@ A personal playground repo: vendored tools/apps and Claude Code skills, collecte
 | [`bowling-3d/`](bowling-3d) | Three.js 3D bowling game — full lane with gutters, standard 10-pin rack with chain-reaction physics, mouse/keyboard aiming with a charge-up power meter and mid-roll curve, and official 10-frame strike/spare/10th-frame scoring. | Open `index.html` directly, or serve statically |
 | [`generals-game/`](generals-game) | Single-player, browser-only strategy game inspired by Generals.io — grid capture, fog of war, army growth on generals/cities, capture-the-general win condition, AI bot opponents. Hebrew UI, no dependencies. | Open `index.html` directly, or serve statically |
 | [`go-game/`](go-game) | Self-contained Go (Baduk/Weiqi) board game — single HTML file, Hebrew UI, no dependencies. Full rules (captures, suicide prevention, positional superko), 9×9/13×13/19×19 boards, pass-to-scoring flow with dead-stone marking, undo, and an optional simple heuristic AI opponent. | Open `index.html` directly |
-
-Most of these were vendored (copied in, not submoduled) from [hoodini](https://github.com/hoodini) (Yuval Avidani)'s public GitHub repos; `claude-hud` and `gods-eye-view` are from different, independent authors (jarrodwatts, 27.9k★; bilawalsidhu, 25.6k★). `claude-spark-pack/`, `claude-grok-mcp-bridge/`, `claude-skills/`, `reversi-game/`, and `snake-3d-game/` are local packs added to this playground (not from those GitHub sources).
+| [`submarine-simulator/`](submarine-simulator) | **ABYSS** — Three.js deep-sea submersible simulator: procedural seafloor, reefs, wrecks, canyons, vents and trench; depth fog and headlight falloff, sonar minimap, a waypoint journey from the continental shelf to the Challenger Deep, and arcade sub physics with ballast and hull-pressure risk. | Open `index.html` directly (needs internet — loads Three.js from cdnjs, like `skyhawk-flight-simulator/`) |
 | [`guitar-fx-mixer/`](guitar-fx-mixer) | Hebrew single-file browser guitar effects rig — plug a guitar into an audio interface, get amp + cab sim and 20 effects (drives, mod, delay, reverb, octaver, harmonizer, wah…), tuner, looper, WAV recording, presets and MIDI. Zero-latency ADAA distortion in AudioWorklets, works offline. | Open `index.html` in Chrome/Edge |
-
-Most of these were vendored (copied in, not submoduled) from [hoodini](https://github.com/hoodini) (Yuval Avidani)'s public GitHub repos; `claude-hud` and `gods-eye-view` are from different, independent authors (jarrodwatts, 27.9k★; bilawalsidhu, 25.6k★). `claude-spark-pack/`, `claude-grok-mcp-bridge/`, `guitar-fx-mixer/`, and `claude-skills/` are local packs added to this playground (not from those GitHub sources).
 | [`shimotron/`](shimotron) | **שימוטרון** — browser 3D engine with a full Hebrew editor: physically based lighting with a live sky and day/night cycle, GTAO, god rays, bloom, AgX, Gerstner ocean, wind-animated foliage, particles, cannon-es physics, synthesized 3D audio, and a procedural showcase island. Includes **Shimotron Rally**: seven procedural islands in one sea, bridged to a central city and chosen from a 3D world map; car races (six car types, item boxes, championship, career with a garage, a 3D winners' podium), plus boat, submarine, stunt-plane, paraglider and space races (with a rocket launch from the city's spaceport), and free roam across land, sea and air; coral reefs, fish schools, dolphins, boats, balloons and herds; AI opponents and touch controls. No image, model or audio files. Built in this repo. | Open `shimotron/dist/index.html` (editor) or `shimotron/dist/race.html` (game) directly, or `cd shimotron && npm install && npm run dev` |
 
-Most of these were vendored (copied in, not submoduled) from [hoodini](https://github.com/hoodini) (Yuval Avidani)'s public GitHub repos; `claude-hud` and `gods-eye-view` are from different, independent authors (jarrodwatts, 27.9k★; bilawalsidhu, 25.6k★). `claude-spark-pack/`, `claude-grok-mcp-bridge/`, and `claude-skills/` are local packs added to this playground (not from those GitHub sources). `shimotron/` was written from scratch in this repo.
+Most of these were vendored (copied in, not submoduled) from [hoodini](https://github.com/hoodini) (Yuval Avidani)'s public GitHub repos; `claude-hud` and `gods-eye-view` are from different, independent authors (jarrodwatts, 27.9k★; bilawalsidhu, 25.6k★). `claude-spark-pack/`, `claude-grok-mcp-bridge/`, and `claude-skills/` are local packs added to this playground (not from those GitHub sources). The Hebrew courses, the games (`chess-game/`, `reversi-game/`, `snake-3d-game/`, `bowling-3d/`, `generals-game/`, `go-game/`, `submarine-simulator/`), `guitar-fx-mixer/` and `shimotron/` were written from scratch in this repo.
+
+Also here: [`decks/`](decks) (a demo deck for the `deck-edit-mode` skill) and [`wiki/`](wiki) (a Claude-maintained knowledge base for the projects — see `CLAUDE.md`).
 
 **Not vendored:** [poloclub/transformer-explainer](https://github.com/poloclub/transformer-explainer) — a well-known interactive visualization of how a GPT-2 transformer works, live at [poloclub.github.io/transformer-explainer](https://poloclub.github.io/transformer-explainer). Skipped because it bundles ~627MB of real GPT-2 ONNX model weights (~1.2GB total repo) — too heavy to vendor into git. Just visit the live demo.
 
@@ -58,8 +57,21 @@ Installed via the [`skills`](https://www.npmjs.com/package/skills) CLI and track
 **From [majidmanzarpour/threejs-game-skills](https://github.com/majidmanzarpour/threejs-game-skills)** (build/upgrade/finish Three.js browser games — pairs well with `skyhawk-flight-simulator/`):
 `threejs-game-director` (entrypoint/router), `threejs-gameplay-systems`, `threejs-aaa-graphics-builder`, `threejs-game-ui-designer`, `threejs-3d-generator`, `threejs-image-generator`, `threejs-audio-generator`, `threejs-debug-profiler`, `threejs-qa-release`
 
+**From [heygen-com/hyperframes](https://github.com/heygen-com/hyperframes)** (the HTML video framework that `video-edit` renders with):
+`hyperframes` (entrypoint), `hyperframes-core`, `hyperframes-animation`, `hyperframes-creative`, `hyperframes-keyframes`, `hyperframes-audio`, `hyperframes-cli`, `hyperframes-registry`
+
+**Also from [hoodini/ai-agents-skills](https://github.com/hoodini/ai-agents-skills):** `yuv-design-system` (referenced by `video-edit` and `video-to-landing-page`), `yuv-decks`
+
+**From [anthropics/skills](https://github.com/anthropics/skills):** `frontend-design`, `webapp-testing`
+
+**From [obra/superpowers-skills](https://github.com/obra/superpowers-skills)** (vendored by hand, not in `skills-lock.json`): `systematic-debugging`
+
 **Local / this repo** (canonical copies in [`claude-skills/`](claude-skills), installed into `.agents/skills` and symlinked into `.claude/skills`):
 `cinematic-spark` (pairs with `claude-spark-pack/`), `claude-grok-bridge` (pairs with `claude-grok-mcp-bridge/`), `interactive-course-builder` (the reusable template + rules behind `powerpoint-course/`, `excel-course/` and `gmail-course/` — copy `template.html`, fill in the `COURSE` array, keep the 3-level structure and the `history.replaceState` back-button fix)
+
+**Local, installed straight into `.agents/skills`:** `game-design-building`, `creative-thinking`, `playwriting`, `video-editing-craft`, `course-presenter-layout`, `cartoon-news-creator` (from agentskills.co.il). `deck-edit-mode` lives directly in `.claude/skills` — see `CLAUDE.md`.
+
+`claude-skills/` also keeps the source (and `zips/` for upload) of eight Hebrew skills written while building `shimotron/` — `boneh-olamot-mishak-3d`, `bodek-mishakei-3d`, `tchushat-nehiga`, `teina-mehira`, `tafrit-mishak-ivrit`, `yam-vegalim`, `matzav-tzilum`, `orez-disk-on-key`. They're installed at the claude.ai account level, not in this repo's `.claude/skills`, so they don't load twice.
 
 To add more skills: `npx skills add <owner>/<repo> -s <skill-name> -y`
 
