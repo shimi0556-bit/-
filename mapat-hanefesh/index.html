@@ -453,7 +453,7 @@ function relKey(r){return RELS[r.type].directed?r.from+'>'+r.to+':'+r.type:[r.fr
 /* ================= state ================= */
 function emptyState(){
   return {version:1,stories:[],concepts:{},relations:[],
-    settings:{defaultType:'value',showStories:true,showCo:false,hidden:[]},
+    settings:{defaultType:'value',showStories:true,showCo:false,hidden:[],myValues:0},
     last:{view:'story',storyId:null}};
 }
 
@@ -497,6 +497,7 @@ function sanitize(o){
     s.settings.showStories=st.showStories!==false;
     s.settings.showCo=!!st.showCo;
     if(Array.isArray(st.hidden)) s.settings.hidden=st.hidden.filter(t=>typeof t==='string'&&TYPES[t]);
+    if(Number.isInteger(st.myValues)) s.settings.myValues=st.myValues;
   }
   if(o.last&&typeof o.last==='object'){
     if(['story','graph','insights'].includes(o.last.view)) s.last.view=o.last.view;
@@ -544,9 +545,49 @@ function addSample(s){
   return {first:s1.id,focus:ids['נאמנות']};
 }
 
-let state=null, storageOk=true, firstRun=false, sampleInfo=null;
+/* ערכים אישיים של שמעון — נגזרו ממה שהוא בונה ואיך שהוא עובד. אפשר לשנות או למחוק כל אחד בתוך האפליקציה. */
+const MY_VALUES_VERSION=1;
+const MY_VALUES=[
+  ['יצירה','לבנות דברים משלי: משחקים, תוכנות, סרטונים. לראות רעיון הופך למשהו שעובד באמת.'],
+  ['מצוינות','שכל דבר שאני בונה ייצא טוב, מקצועי ויפה יותר מהקודם.'],
+  ['למידה','ללמוד כל כלי עד שאני שולט בו, ולקחת מכל פרויקט משהו לפעם הבאה.'],
+  ['סקרנות','לחקור מה קיים בעולם ומה עוד אפשר לעשות. לנסות כלים חדשים.'],
+  ['יעילות','להגיע לתוצאה בלי סיבובים: תשובה קצרה, החלטה, ביצוע.'],
+  ['עצמאות','כלים שעובדים אצלי, בסביבה שלי, גם בלי אינטרנט ובלי תלות באחרים.'],
+  ['יופי','שמה שאני יוצר ייראה מרשים ויעשה רושם כבר ברגע הראשון.'],
+  ['דיוק','שדברים ייראו ויתנהגו כמו במציאות, עד הפרט הקטן.'],
+  ['נתינה','לבנות וללמד דברים שמועילים גם לאחרים.'],
+  ['הבנת אנשים','להבין מה עובר על אדם אחר: מה הוא מרגיש ולמה הוא מגיב כך.'],
+  ['סדר','שכל מה שבניתי יישמר מסודר ולא ילך לאיבוד.']
+];
+const MY_LINKS=[
+  ['יעילות','conflicts','מצוינות','רוצה תוצאה מהר, ובאותו זמן שהיא תהיה הכי טובה שאפשר.'],
+  ['למידה','supports','מצוינות','כל פרויקט מלמד משהו שהופך את הבא לטוב יותר.'],
+  ['סקרנות','leads','יצירה','רעיון חדש שראיתי הופך מהר לדבר שאני בונה.'],
+  ['הבנת אנשים','supports','נתינה','כשאני מבין מה אחר צריך, אני יודע מה לבנות בשבילו.']
+];
+function addMyValues(s){
+  const idx=new Map(Object.values(s.concepts).map(c=>[key(c.name),c.id]));
+  const ids={}; let added=0;
+  for(const [name,note] of MY_VALUES){
+    let id=idx.get(key(name));
+    if(!id){id=uid('c');s.concepts[id]={id,name,type:'value',note,auto:false,created:Date.now()};idx.set(key(name),id);added++;}
+    else{const c=s.concepts[id];if(!c.note)c.note=note;c.auto=false;c.sample=false;}
+    ids[name]=id;
+  }
+  const keys=new Set(s.relations.map(relKey));
+  for(const [a,type,b,note] of MY_LINKS){
+    const r={id:uid('r'),from:ids[a],to:ids[b],type,note,storyId:null};
+    if(!keys.has(relKey(r))){s.relations.push(r);keys.add(relKey(r));}
+  }
+  s.settings.myValues=MY_VALUES_VERSION;
+  return added;
+}
+
+let state=null, storageOk=true, firstRun=false, sampleInfo=null, myAdded=0;
 try{const raw=localStorage.getItem(STORE_KEY); if(raw) state=sanitize(JSON.parse(raw));}catch(e){state=null;}
 if(!state){state=emptyState(); sampleInfo=addSample(state); firstRun=true;}
+if((state.settings.myValues||0)<MY_VALUES_VERSION) myAdded=addMyValues(state);
 
 const ui={view:state.last.view,storyId:state.last.storyId,mode:'read',selected:null,sideTab:'stories',search:'',
   local:false,connect:false,insertType:null,drawer:false};
@@ -1219,6 +1260,8 @@ function renderDataModal(){
     '<div class="data-row"><button class="btn btn-soft" data-act="import-text">שחזור מהטקסט</button></div>'+
     '<div id="import-confirm" hidden></div>'+
     '<p class="form-error" id="data-error" hidden></p>'+
+    '<h3>הערכים שלי</h3><div class="data-row"><button class="btn btn-soft" data-act="add-my-values">הוספה מחדש של הערכים המותאמים לי</button></div>'+
+    '<p class="muted small">מוסיף רק ערכים שחסרים. ערכים שמחקתם או שיניתם לא ישתנו אחרת.</p>'+
     '<h3>דוגמאות</h3><div class="data-row">'+(hasSample?'<button class="btn btn-soft" data-act="remove-sample">הסרת הסיפורים לדוגמה</button>':'<button class="btn btn-soft" data-act="load-sample">טעינת סיפורים לדוגמה</button>')+'</div>'+
     '<h3>התחלה מחדש</h3><div class="data-row"><button class="btn btn-ghost btn-danger" data-act="wipe">מחיקת כל הנתונים</button></div>'+
     '<div class="modal-actions"><span class="grow"></span><button class="btn btn-ghost" data-act="close-modal">סגירה</button></div>';
@@ -1670,6 +1713,7 @@ document.addEventListener('click',e=>{
     case 'delete-concept': if(armed(t,'למחוק את המושג? לחצו שוב')) deleteConcept(id); break;
     case 'remove-sample': closeModal(); removeSample(); break;
     case 'load-sample': loadSample(); break;
+    case 'add-my-values': {const n=addMyValues(state);closeModal();ui.sideTab='concepts';commit();toast(n?'נוספו '+n+' ערכים':'כל הערכים כבר כאן');break;}
     case 'open-data': closeDrawer(); renderDataModal(); openModal(); break;
     case 'export-file': {
       try{const blob=new Blob([exportJSON()],{type:'application/json'});const url=URL.createObjectURL(blob);
@@ -1816,10 +1860,12 @@ derive();
 if(!getStory(ui.storyId)){const f=sortedStories()[0];ui.storyId=f?f.id:null;}
 {const s=getStory(ui.storyId);ui.mode=s&&s.text.trim()?'read':'write';}
 if(firstRun&&sampleInfo){ui.storyId=sampleInfo.first;ui.mode='read';ui.view='story';if(window.innerWidth>1180)ui.selected={kind:'concept',id:sampleInfo.focus};}
+if(myAdded){derive();ui.sideTab='concepts';const f=D.nameIdx.get(key(MY_VALUES[0][0]));if(f&&window.innerWidth>1180)ui.selected={kind:'concept',id:f};}
 renderSidebar(); renderMain(); renderInspector();
 try{localStorage.setItem(STORE_KEY+'.probe','1');localStorage.removeItem(STORE_KEY+'.probe');setSaveStatus(firstRun?'נטענו סיפורים לדוגמה':'נשמר בדפדפן');}
 catch(e){storageOk=false;setSaveStatus('השמירה בדפדפן לא זמינה כאן. כדאי לגבות לקובץ.',true);}
-if(firstRun) scheduleSave();
+if(firstRun||myAdded) scheduleSave();
+if(myAdded) setTimeout(()=>toast('נוספו '+myAdded+' ערכים שמותאמים לך. אפשר לשנות או למחוק כל אחד.'),400);
 })();
 </script>
 </body>
