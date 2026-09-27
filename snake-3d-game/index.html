@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>נחש תלת מימד — Neon Snake 3D</title>
+<style>
+  :root {
+    --neon-cyan: #34f5ff;
+    --neon-magenta: #ff2ee6;
+    --neon-gold: #ffd23f;
+    --bg-deep: #05040c;
+    --panel-bg: rgba(10, 8, 24, 0.82);
+    --panel-border: rgba(52, 245, 255, 0.35);
+    --text-light: #eaf6ff;
+    --text-dim: #93a3c9;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg-deep);
+    color: var(--text-light);
+    font-family: "Segoe UI", "Heebo", Arial, sans-serif;
+    user-select: none;
+  }
+  #app { position: fixed; inset: 0; }
+  #gameCanvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .overlay.hidden { display: none; }
+  .overlay > * { pointer-events: auto; }
+
+  .card {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 18px;
+    padding: 28px 30px;
+    width: min(92vw, 380px);
+    text-align: center;
+    box-shadow: 0 0 40px rgba(52, 245, 255, 0.15), 0 20px 50px rgba(0,0,0,0.55);
+    backdrop-filter: blur(6px);
+    animation: cardIn .35s ease-out;
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(14px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .title {
+    font-size: clamp(28px, 7vw, 40px);
+    font-weight: 800;
+    letter-spacing: 2px;
+    margin: 0 0 4px;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-magenta));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 24px rgba(52, 245, 255, 0.35);
+  }
+  .subtitle { color: var(--text-dim); font-size: 13px; margin: 0 0 20px; }
+
+  .field { text-align: right; margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
+  .seg {
+    display: flex;
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .seg button {
+    flex: 1;
+    padding: 9px 6px;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .seg button + button { border-right: 1px solid var(--panel-border); }
+  .seg button.active {
+    background: linear-gradient(90deg, rgba(52,245,255,0.25), rgba(255,46,230,0.2));
+    color: var(--text-light);
+    font-weight: 700;
+  }
+
+  .btn-main {
+    width: 100%;
+    margin-top: 6px;
+    padding: 13px;
+    border-radius: 12px;
+    border: none;
+    font-family: inherit;
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #06121a;
+    background: linear-gradient(90deg, var(--neon-cyan), #7dfcd0);
+    box-shadow: 0 0 22px rgba(52, 245, 255, 0.45);
+    cursor: pointer;
+  }
+  .btn-main:active { transform: translateY(1px); }
+  .btn-ghost {
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 12px;
+    border: 1px solid var(--panel-border);
+    background: transparent;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .hiscore-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+    padding: 0 2px;
+  }
+  .hiscore-row b { color: var(--neon-gold); }
+
+  #hud {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    right: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    pointer-events: none;
+    font-size: 13px;
+  }
+  #hud.hidden { display: none; }
+  .hud-chip {
+    background: rgba(8, 10, 22, 0.6);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 7px 12px;
+    backdrop-filter: blur(4px);
+  }
+  .hud-chip .num { font-size: 19px; font-weight: 800; color: var(--neon-cyan); }
+  .hud-chip .lbl { font-size: 10px; color: var(--text-dim); }
+
+  #pauseBtn {
+    pointer-events: auto;
+    background: rgba(8, 10, 22, 0.6);
+    border: 1px solid var(--panel-border);
+    color: var(--text-light);
+    border-radius: 10px;
+    width: 38px;
+    height: 38px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  .final-score {
+    font-size: 44px;
+    font-weight: 800;
+    color: var(--neon-gold);
+    margin: 6px 0 0;
+    text-shadow: 0 0 18px rgba(255, 210, 63, 0.5);
+  }
+  .record-badge {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--neon-magenta), var(--neon-gold));
+    color: #1a0a14;
+    font-weight: 800;
+    letter-spacing: .5px;
+  }
+
+  #dpad {
+    position: absolute;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: grid;
+    grid-template-columns: repeat(3, 58px);
+    grid-template-rows: repeat(3, 58px);
+    gap: 6px;
+    opacity: 0.9;
+  }
+  #dpad.hidden { display: none; }
+  @media (hover: hover) and (pointer: fine) {
+    #dpad { display: none; }
+  }
+  .dbtn {
+    background: rgba(8, 10, 22, 0.55);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    color: var(--neon-cyan);
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: none;
+  }
+  .dbtn:active { background: rgba(52, 245, 255, 0.25); }
+  #dUp { grid-column: 2; grid-row: 1; }
+  #dLeft { grid-column: 1; grid-row: 2; }
+  #dRight { grid-column: 3; grid-row: 2; }
+  #dDown { grid-column: 2; grid-row: 3; }
+
+  footer.hint {
+    position: absolute;
+    bottom: 8px;
+    right: 0;
+    left: 0;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 11px;
+    pointer-events: none;
+  }
+  @media (max-width: 700px) {
+    footer.hint.desktop-only { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <canvas id="gameCanvas"></canvas>
+
+  <div id="hud" class="overlay hidden" style="align-items:flex-start;">
+    <div class="hud-chip"><div class="num" id="scoreNum">0</div><div class="lbl">ניקוד</div></div>
+    <button id="pauseBtn">⏸</button>
+    <div class="hud-chip"><div class="num" id="lenNum">3</div><div class="lbl">אורך</div></div>
+  </div>
+
+  <div id="dpad" class="hidden">
+    <button class="dbtn" id="dUp">▲</button>
+    <button class="dbtn" id="dLeft">◀</button>
+    <button class="dbtn" id="dRight">▶</button>
+    <button class="dbtn" id="dDown">▼</button>
+  </div>
+
+  <footer class="hint desktop-only" id="hintFooter">חצים / WASD לניווט · P להשהיה</footer>
+
+  <div id="menuOverlay" class="overlay">
+    <div class="card">
+      <h1 class="title">NEON SNAKE 3D</h1>
+      <p class="subtitle">משחק נחש תלת מימדי — אספו אנרגיה, גדלו, אל תפגעו בקיר או בעצמכם</p>
+
+      <div class="hiscore-row">
+        <span>שיא אישי</span>
+        <b id="menuHiScore">0</b>
+      </div>
+
+      <div class="field">
+        <label>רמת קושי</label>
+        <div class="seg" id="diffSeg">
+          <button data-diff="easy">קלה</button>
+          <button data-diff="normal" class="active">רגילה</button>
+          <button data-diff="hard">קשה</button>
+        </div>
+      </div>
+
+      <button class="btn-main" id="startBtn">▶ התחל משחק</button>
+      <p class="subtitle" style="margin:12px 0 0;">מקלדת: חצים / WASD &nbsp;·&nbsp; בנייד: כפתורי הכיוון על המסך</p>
+    </div>
+  </div>
+
+  <div id="pauseOverlay" class="overlay hidden">
+    <div class="card">
+      <h1 class="title" style="font-size:28px;">מושהה</h1>
+      <button class="btn-main" id="resumeBtn">▶ המשך</button>
+      <button class="btn-ghost" id="quitBtn">חזרה לתפריט</button>
+    </div>
+  </div>
+
+  <div id="overOverlay" class="overlay hidden">
+    <div class="card">
+      <h1 class="title" style="font-size:26px;">המשחק נגמר</h1>
+      <div class="final-score" id="finalScore">0</div>
+      <div id="recordBadge" class="record-badge" style="display:none;">שיא חדש! 🏆</div>
+      <div class="hiscore-row" style="margin-top:16px;">
+        <span>שיא אישי</span>
+        <b id="overHiScore">0</b>
+      </div>
+      <button class="btn-main" id="retryBtn">↻ שחק שוב</button>
+      <button class="btn-ghost" id="menuBtn">תפריט ראשי</button>
+    </div>
+  </div>
+</div>
+
+<script src="game.bundle.js"></script>
+
+</body>
+</html>
