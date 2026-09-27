@@ -1,0 +1,29 @@
+{
+  "name": "shimotron",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Shimotron — a browser 3D engine with PBR, dynamic sky, terrain, water, physics, particles, an in-browser editor, and Shimotron Rally (a racing game built on it)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && vite build --mode race",
+    "build:engine": "vite build",
+    "build:race": "vite build --mode race",
+    "models": "node tools/models.mjs",
+    "usb": "vite build && vite build --mode race && node tools/bake-ground.mjs && vite build --mode usb && node tools/usb.mjs",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "cannon-es": "^0.20.0",
+    "three": "^0.186.0"
+  },
+  "devDependencies": {
+    "@gltf-transform/core": "^4.5.0",
+    "@gltf-transform/extensions": "^4.5.0",
+    "@gltf-transform/functions": "^4.5.0",
+    "meshoptimizer": "^1.3.0",
+    "sharp": "^0.35.4",
+    "vite": "^8.3.0",
+    "vite-plugin-singlefile": "^2.3.3"
+  }
+}

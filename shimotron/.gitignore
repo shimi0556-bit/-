@@ -1,0 +1,6 @@
+node_modules/
+.vite/
+.ground/
+dist/usb/
+dist/usb-build/
+.models/
