@@ -2,6 +2,8 @@
 
 A personal playground repo: vendored tools/apps and Claude Code skills, collected while exploring what's out there to extend Claude Code with.
 
+**Start here:** open [`index.html`](index.html) (**המגרש**), a Hebrew launcher for every game, course and tool below that runs straight from the file. Each card opens its project in a full-screen player. Thumbnails and helper scripts live in [`playground/`](playground).
+
 ## Projects
 
 | Folder | What it is | How to run |
