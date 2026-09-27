@@ -155,6 +155,26 @@ export const CAR_TYPES = [
     shape: { open: true, formula: true, halfL: 2.35, w: 0.28, flare: 0, arches: false, floor: -0.44, belt: 0.0, hoodDrop: 0.08, tailRise: 0.12, noseLen: 1.0, pods: 0.34, wing: 'formula', lights: 'none', skirts: false, splitter: false, mirrors: false, extras: ['helmet', 'airbox', 'halo'] },
   },
   {
+    // A real, detailed 3D model (tools/models.mjs): "Car Concept" by Eric Chadwick, CC BY 4.0.
+    // The wheels, track and wheelbase match the model; `shape` is only the fallback body.
+    id: 'concept',
+    model: 'concept',
+    name: 'קונספט',
+    desc: 'מודל תלת־ממד אמיתי ומפורט, עם פנים, מראות ודיסקים. מהירה, נמוכה ומדויקת',
+    price: 18000,
+    spec: {
+      mass: 1320,
+      body: { half: [1.02, 0.28, 2.15], offset: [0, -0.2, 0.15] },
+      cabin: { half: [0.82, 0.17, 1.25], offset: [0, 0.32, -0.05] },
+      wheel: { radius: 0.384, width: 0.28, front: 1.4, rear: -1.4, track: 0.975, grip: 1.7 },
+      engine: { accel: 11.8, topSpeed: 71, frontShare: 0.28 },
+      downforce: 0.7,
+      drag: 0.0007,
+      exhaust: [0.42, -0.38, -2.06, true],
+    },
+    shape: { halfL: 2.2, w: 1.0, flare: 0.08, floor: -0.44, belt: 0.06, hoodDrop: 0.2, roof: 0.52, cabin: [0.9, 0.25, -0.5, -1.55], cabinW: 0.8, wing: 'none' },
+  },
+  {
     id: 'hyper',
     name: 'היפרקאר',
     desc: 'הכי מהירה שיש, עם כנף ענקית ומיכל ניטרו גדול',
@@ -187,9 +207,10 @@ export const CAR_TYPES = [
       engine: { accel: 9.4, topSpeed: 36, reverseTop: 5, frontShare: 0, gears: [0, 2.9, 2.1, 1.6, 1.27, 1.03], idleRpm: 1700, redline: 11800 },
       brake: { decel: 9.8, frontBias: 0.66 },
       handbrake: { decel: 4, grip: 0.5 },
-      // Half a car's wheelbase: the same wheel angle turns twice as tight, so a much smaller angle at speed
-      // (~1.6 g at the limit), and the angle builds up as the bike banks into the turn (lag, seconds).
-      steer: { max: 0.55, min: 0.02, gripAngle: 24, rate: 3, returnRate: 4.5, lag: 0.12 },
+      // Half a car's wheelbase: the same wheel angle turns twice as tight. carSpec scales the speed limit
+      // (gripAngle) with grip and wheelbase (~1.8 g here, like a car); the angle builds up as the bike
+      // banks into the turn (lag, seconds) and moves slower than a car's (rate, returnRate).
+      steer: { max: 0.55, min: 0.02, rate: 3, returnRate: 4.5, lag: 0.12 },
       downforce: 0,
       drag: 0.0028,
       rolling: 0.25,

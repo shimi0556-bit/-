@@ -3,3 +3,4 @@ node_modules/
 .ground/
 dist/usb/
 dist/usb-build/
+.models/

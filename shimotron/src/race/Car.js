@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Emitter } from '../engine/fx/Particles.js';
 import { Vehicle } from './Vehicle.js';
-import { createCarModel } from './CarModel.js';
+import { createVehicleModel, hasRealModel } from './RealModels.js';
 import { createMotoModel } from './MotoModel.js';
 import { carSpec } from './config.js';
 
@@ -36,13 +36,13 @@ export class Car {
     this.vehicle = new Vehicle(ctx.physics, { position, heading, ground: ctx.ground, spec: this.spec });
     this.body = this.vehicle.body;
     this.body.userData = { car: this };
-    // Motorbikes draw their own two wheels (and lean); cars take four from the shared batch.
-    const model = this.spec.bike ? createMotoModel(ctx.materials, { color, number, stripe }) : createCarModel(ctx.materials, { color, number, stripe, type });
+    // Motorbikes and real models draw their own wheels; procedural cars take four from the shared batch.
+    const model = this.spec.bike ? createMotoModel(ctx.materials, { color, number, stripe }) : createVehicleModel(ctx.materials, { color, number, stripe, type });
     this.model = model;
     this.object = model.group;
     this.object.name = `מכונית ${number}`;
     ctx.scene.add(this.object);
-    this.wheelBase = this.spec.bike ? -1 : ctx.wheels.allocate();
+    this.wheelBase = this.spec.bike || hasRealModel(type) ? -1 : ctx.wheels.allocate();
     this.forward = new THREE.Vector3(0, 0, 1);
     this.right = new THREE.Vector3(-1, 0, 0);
     this.position = this.object.position;
@@ -266,8 +266,8 @@ export class Car {
     }
     // Nitro flames out of both exhausts.
     for (let k = 0; k < 2; k++) {
-      const ex = this.spec.exhaust;
-      if (ex) this._local(ex[0], ex[1], ex[2], this.flames[k].position);
+      const ex = this.spec.exhaust; // [x, y, z, twin]: twin pipes mirror x
+      if (ex) this._local(ex[3] && k ? -ex[0] : ex[0], ex[1], ex[2], this.flames[k].position);
       else this._local(k === 0 ? 0.34 : -0.34, -0.3, -(this.spec.body.half[2] + 0.14), this.flames[k].position);
       this.flames[k].o.dir.copy(this.forward).negate();
       this.flames[k].rate = veh.nitroActive ? 60 : 0;

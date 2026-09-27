@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Emitter } from '../engine/fx/Particles.js';
-import { createCarModel } from './CarModel.js';
+import { createVehicleModel, hasRealModel } from './RealModels.js';
 import { createMotoModel } from './MotoModel.js';
 import { carSpec } from './config.js';
 import { smoothstep } from '../engine/core/Random.js';
@@ -348,7 +348,7 @@ export class Podium {
       this.group.add(bike.group);
       return;
     }
-    const model = createCarModel(this.materials, { color: w.color, number: w.number, stripe: w.stripe || '#111111', type: w.type || 'gt' });
+    const model = createVehicleModel(this.materials, { color: w.color, number: w.number, stripe: w.stripe || '#111111', type: w.type || 'gt' });
     this.cars.push(model);
     const Wh = spec.wheel;
     const len = Wh.restLength - 9.82 / (4 * Wh.stiffness);
@@ -356,6 +356,7 @@ export class Podium {
     car.position.set(-5.9, Wh.radius + len - Wh.height, STEPS[k].z * 1.3);
     car.rotation.y = Math.PI / 2 + (k === 0 ? 0 : k === 1 ? -0.22 : 0.22);
     this.group.add(car);
+    if (hasRealModel(w.type)) return; // stands on its own wheels
     const wb = this.game.wheels;
     const scale = wb.scaleFor(Wh);
     for (let i = 0; i < 4; i++) {

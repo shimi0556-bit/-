@@ -110,7 +110,7 @@ ${QUALITY.map(([h, name, note]) => `    <a class="q" href="Shimotron-Rally.html$
   </ul>
   <a class="editor" href="Shimotron-Editor.html">פתיחת מנוע שימוטרון והעורך ←</a></div>
 
-  <footer>שימוטרון · מנוע תלת־ממד ומשחק מירוצים בדפדפן. אין בו אף קובץ תמונה, מודל או צליל: הכול נבנה בקוד. הגופנים: Karantina, IBM Plex Sans Hebrew ו־JetBrains Mono (רישיון SIL OFL).</footer>
+  <footer>שימוטרון · מנוע תלת־ממד ומשחק מירוצים בדפדפן. כמעט הכול נבנה בקוד, בלי קבצי תמונה או צליל. המכונית "קונספט" היא מודל אמיתי: "Car Concept" מאת Eric Chadwick (Khronos glTF Sample Assets), ברישיון CC BY 4.0. שינויים: הוסרו סמלים והמודל הוקטן. הגופנים: Karantina, IBM Plex Sans Hebrew ו־JetBrains Mono (רישיון SIL OFL).</footer>
 </main>
 </body>
 </html>
@@ -152,6 +152,11 @@ const readme = [
   '',
   'צריך דפדפן עדכני: Chrome, Edge, Firefox או Safari.',
   'ההתקדמות והשיאים נשמרים בדפדפן של המחשב שעליו משחקים.',
+  '',
+  'קרדיט:',
+  '  המכונית "קונספט": "Car Concept" מאת Eric Chadwick (Khronos glTF Sample Assets),',
+  '  רישיון CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). שינויים: הוסרו סמלים, המודל הוקטן.',
+  '  הגופנים: Karantina, IBM Plex Sans Hebrew, JetBrains Mono (רישיון SIL OFL).',
   '',
 ].join('\r\n');
 

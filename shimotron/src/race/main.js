@@ -27,6 +27,7 @@ import { CarAudio } from './CarAudio.js';
 import { RaceUI } from './ui.js';
 import { ITEMS } from './Pickups.js';
 import { Podium } from './Podium.js';
+import { loadRealModels, warmRealModels } from './RealModels.js';
 import { World, WORLD } from './World.js';
 import { SpaceScene } from './Space.js';
 import { Explore, ROAM } from './Explore.js';
@@ -130,6 +131,8 @@ class Game {
     this.materials = materials;
     engine.particles = new Particles(engine, materials);
     engine.audio = new AudioEngine(engine);
+    await progress(0.17, 'טוען מודלים תלת־ממדיים אמיתיים…');
+    await loadRealModels();
     this.wheels = new WheelBatch(materials, 32);
     engine.scene.add(this.wheels.group);
     this.skid = new SkidMarks(engine.quality.presetName === 'low' ? 2500 : 5000);
@@ -183,11 +186,13 @@ class Game {
     engine.cameraRig = this._worldView();
     engine.cameraRig.update(10);
     await progress(0.9, 'מקמפל שיידרים…');
+    const unwarm = warmRealModels(engine.scene, materials);
     try {
       await Promise.race([engine.renderer.compileAsync(engine.scene, engine.camera), wait(12000)]);
     } catch {
       /* first frames compile whatever is left */
     }
+    unwarm();
     engine.atmosphere.update(0);
     engine.start();
     await progress(1, 'מוכן');
@@ -667,7 +672,7 @@ class Game {
     const myCar = this.mode === 'career' && this.career ? this.career.car : this.settings.car || 'gt';
     const list = [{ id: 'player', name: 'את/ה', color: this.settings.color, stripe: '#111111', number: 7, isPlayer: true, type: myCar }];
     // Opponents drive a mix of car types that rotates from island to island.
-    const mix = ['gt', 'rally', 'muscle', 'formula', 'buggy', 'gt', 'hyper'];
+    const mix = ['gt', 'rally', 'muscle', 'formula', 'buggy', 'concept', 'hyper'];
     for (let i = 0; i < RACE.opponents; i++) {
       let color = colors[i];
       if (color.toLowerCase() === this.settings.color.toLowerCase()) color = colors[(i + RACE.opponents) % colors.length];

@@ -1,6 +1,6 @@
 import { STAGES, AI, RACE, CAR, CAR_TYPES, CAREER, PODIUM, carRatings } from './config.js';
 import { Race } from './Race.js';
-import { drawCarProfile } from './CarModel.js';
+import { drawProfile, MODEL_CREDIT } from './RealModels.js';
 import { ITEMS } from './Pickups.js';
 import { ROAM } from './Explore.js';
 import { DESIGNS, DESIGN_NAMES } from './CraftModels.js';
@@ -216,6 +216,7 @@ export class RaceUI {
           h('span', {}, h('kbd', {}, 'Esc'), ' עצירה'),
           h('span', {}, 'תומך גם בג׳ויסטיק ובמסך מגע'),
         ),
+        h('p', { class: 'credits' }, MODEL_CREDIT),
       ),
     );
     this.menuEl = menu;
@@ -283,7 +284,7 @@ export class RaceUI {
     const labels = { speed: 'מהירות', accel: 'תאוצה', grip: 'אחיזה', offroad: 'שטח' };
     const cards = CAR_TYPES.filter((t) => !t.hidden).map((t) => {
       const cv = h('canvas', { width: 320, height: 120, 'aria-hidden': 'true' });
-      drawCarProfile(cv, t.id, color);
+      drawProfile(cv, t.id, color);
       const r = carRatings(t.id);
       const have = !owned || owned.has(t.id);
       const bars = h(
