@@ -31,6 +31,12 @@
       "skillPath": "skills/fal-ai/SKILL.md",
       "computedHash": "de15d718548d8a638b9adb7d30df7d944a85363bfa33def39ed16ef4b519f17d"
     },
+    "gilaf-sdf": {
+      "source": "claude-skills",
+      "sourceType": "local",
+      "skillPath": "gilaf-sdf/SKILL.md",
+      "computedHash": "bd848c787a2b30ad72e9f927fde4aebdb232ec684b43728a6dfa7d85c41bd63c"
+    },
     "image-master": {
       "source": "hoodini/ai-agents-skills",
       "sourceType": "github",
