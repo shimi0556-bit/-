@@ -1,0 +1,2 @@
+renders/*.html -diff linguist-generated
+renders/*.mp4 binary

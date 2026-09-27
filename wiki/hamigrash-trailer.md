@@ -43,4 +43,5 @@ Rendering needs FFmpeg and HyperFrames' headless Chrome (`npx hyperframes browse
 - The ticker's "מבזק" label sits in a tab above the crawl, not on top of it. Covering the crawl tripped `text_occluded` and a 1:1 contrast finding on clipped text.
 - The decorative ghost words carry `aria-hidden="true"` and `data-layout-ignore`, so the contrast audit skips them.
 - No music bed. HeyGen was signed out and no local music engine was installed, so there are sound effects only. To add music: `npx hyperframes auth login`, then `media-use resolve --type bgm`.
+- `renders/hamigrash-trailer.html` is a single self-contained HTML page with the trailer embedded (base64). It uses a CRF-20 re-encode of the MP4, which is 6.8MB with SSIM 0.9975 against the original, so the page is 9.2MB. The page starts with `<!DOCTYPE html>` plus a `Content-Type: text/html` meta so download tools classify it as HTML. `.gitattributes` keeps git from diffing it as text.
 - In this sandbox, `jsdelivr` and `cdnjs` are blocked. That's why GSAP is vendored locally, and why the ABYSS/SkyHawk screenshots were taken with a local three r128.
