@@ -310,6 +310,27 @@ h1,h2,h3{text-wrap:balance}
 .data-text{width:100%;min-height:90px;border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:8px 10px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;direction:ltr;text-align:left}
 .toast{position:fixed;inset-block-end:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;font-size:13.5px;box-shadow:var(--shadow);z-index:60;max-width:calc(100% - 32px)}
 
+/* ---------- AI ---------- */
+.ai-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.ai-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;cursor:pointer}
+.ai-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);flex:none}
+.ai-row select{border:1px solid var(--tc,var(--line));background:var(--tcs,var(--surface));color:var(--ink);border-radius:999px;padding:1px 6px;font-size:12.5px}
+.ai-row .ai-name{font-weight:700}
+.ai-quote{flex-basis:100%;font-family:var(--font-story);font-size:15px;color:var(--ink-2);padding-inline-start:24px}
+.ai-tag{font-size:11px;color:var(--muted);border:1px solid var(--line-2);border-radius:4px;padding:0 5px}
+.ai-question{font-family:var(--font-story);font-size:18px;background:var(--accent-soft);border-radius:8px;padding:10px 14px;margin:0}
+.ai-status{font-size:13px;color:var(--muted);margin:0;line-height:1.55}
+.ai-status.ok{color:var(--good)}
+.ai-status.bad{color:var(--bad)}
+.ai-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:8px}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--line-2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px;margin-inline-end:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.card-mirror{grid-column:1/-1}
+.mirror-text{font-family:var(--font-story);font-size:17px;line-height:1.75;max-width:75ch}
+.mirror-text p{margin:0 0 .7em}
+.mirror-text ul{margin:0 0 .7em;padding-inline-start:1.3em}
+.mirror-meta{font-size:12px;color:var(--muted);margin:0}
+
 /* ---------- responsive ---------- */
 @media (max-width:1180px){
   .app{grid-template-columns:284px minmax(0,1fr)}
@@ -368,7 +389,7 @@ h1,h2,h3{text-wrap:balance}
     <div class="side-list" id="side-list"></div>
     <div class="side-foot">
       <button class="btn btn-soft" data-act="download-app">הורדת האפליקציה כקובץ HTML</button>
-      <button class="btn btn-ghost" data-act="open-data">גיבוי, שחזור ודוגמאות</button>
+      <button class="btn btn-ghost" data-act="open-data">הגדרות AI, גיבוי ודוגמאות</button>
       <div id="save-status" class="save-status" aria-live="polite"></div>
     </div>
   </aside>
@@ -496,7 +517,7 @@ function relKey(r){return RELS[r.type].directed?r.from+'>'+r.to+':'+r.type:[r.fr
 function emptyState(){
   return {version:1,stories:[],concepts:{},relations:[],
     settings:{defaultType:'value',showStories:true,showCo:false,hidden:[],myValues:0},
-    last:{view:'story',storyId:null}};
+    last:{view:'story',storyId:null},reflection:null};
 }
 
 function sanitize(o){
@@ -540,7 +561,10 @@ function sanitize(o){
     s.settings.showCo=!!st.showCo;
     if(Array.isArray(st.hidden)) s.settings.hidden=st.hidden.filter(t=>typeof t==='string'&&TYPES[t]);
     if(Number.isInteger(st.myValues)) s.settings.myValues=st.myValues;
+    if(Array.isArray(st.mirrorImported)) s.settings.mirrorImported=st.mirrorImported.filter(x=>typeof x==='string').slice(-3000);
   }
+  if(o.reflection&&typeof o.reflection==='object'&&typeof o.reflection.text==='string')
+    s.reflection={text:o.reflection.text.slice(0,8000),at:Number(o.reflection.at)||Date.now(),model:str(o.reflection.model,80)};
   if(o.last&&typeof o.last==='object'){
     if(['story','graph','insights'].includes(o.last.view)) s.last.view=o.last.view;
     s.last.storyId=storyMap.get(o.last.storyId)||null;
@@ -826,6 +850,7 @@ function renderStoryView(){
           '<button data-act="mode" data-mode="write" aria-pressed="'+write+'">כתיבה</button>'+
           '<button data-act="mode" data-mode="read" aria-pressed="'+!write+'">קריאה</button>'+
         '</div>'+
+        (hub()&&typeof hub().mirrorLook==='function'?'<button class="btn btn-soft" data-act="send-mirror" title="המראה תבדוק את הסיפור מול ההגדרות שהצהרת">🪞 הראה במראה</button>':'')+
         '<button class="btn btn-ghost btn-danger" data-act="delete-story">מחיקת הסיפור</button>'+
       '</div>'+
     '</div>'+
@@ -843,7 +868,8 @@ function renderStoryView(){
       '<div class="reading" id="reading" title="לחיצה כפולה לעריכה"></div>'+
       '<div class="read-actions"><button class="btn btn-soft" data-act="mode" data-mode="write">עריכת הסיפור</button><span class="muted small">לחיצה על מושג מסומן פותחת אותו</span></div>'
     )+
-    '<section class="block"><div class="block-head"><h2>מה יש בסיפור</h2><span class="muted small" id="chips-hint">גררו מושג אל מושג אחר כדי לחבר ביניהם</span></div><div id="story-chips" class="chips"></div></section>'+
+    '<section class="block"><div class="block-head"><h2>מה יש בסיפור</h2><span class="muted small" id="chips-hint">גררו מושג אל מושג אחר כדי לחבר ביניהם</span>'+
+      '<button class="btn btn-soft" data-act="ai-analyze" title="ה־AI קורא את הסיפור ומציע ערכים, רגשות, מחשבות וקשרים. שום דבר לא נוסף בלי אישור.">✨ הצעות AI</button></div><div id="story-chips" class="chips"></div></section>'+
     '<section class="block"><div class="block-head"><h2>קשרים</h2><button class="btn btn-soft" data-act="new-rel-story">＋ חיבור בין מושגים</button></div><ul id="story-rels" class="rel-list"></ul></section>'+
   '</div></div>';
   renderStoryDerived();
@@ -928,6 +954,8 @@ function renderInsights(){
     '<p class="ins-summary"><b>'+state.stories.length+'</b> סיפורים · <b>'+cs.length+'</b> מושגים · <b>'+state.relations.length+'</b> קשרים</p>'+
     '<p class="disclaimer">המפה משקפת רק את מה שכתבתם וסימנתם. זה כלי להתבוננות עצמית, לא אבחון ולא תחליף לשיחה עם איש מקצוע.</p></header>'+
     '<div class="ins-grid">';
+
+  html+=mirrorCardHTML();
 
   html+=card('הערכים המרכזיים','לפי מספר הסיפורים שבהם הם מופיעים ומספר הקשרים שלהם.',
     values.length?'<ul>'+values.map(v=>'<li><button type="button" class="bar-row" data-act="open-concept" data-id="'+v.id+'">'+
@@ -1210,6 +1238,328 @@ function pickAC(i){
   clearTimeout(deriveTimer); derive(); renderSidebar(); renderStoryDerived(); if(ui.selected) renderInspector();
 }
 
+/* ================= AI: Mistral directly, or the AI Hub when embedded ================= */
+const AI_STORE='mapat-hanefesh.ai';
+const AI_DEF={key:'',model:'mistral-large-latest',base:'https://api.mistral.ai/v1'};
+const AI_FALLBACK_MODEL='mistral-small-latest';
+let aiCfg=Object.assign({},AI_DEF);
+try{const raw=localStorage.getItem(AI_STORE);if(raw){const o=JSON.parse(raw);if(o&&typeof o==='object')['key','model','base'].forEach(k=>{if(typeof o[k]==='string')aiCfg[k]=o[k];});}}catch(e){}
+const HIDDEN_CHARS=/[\u00A0\u180E\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF]/g;
+const cleanKey=k=>String(k||'').replace(HIDDEN_CHARS,'').replace(/\s+/g,'').replace(/[^\x21-\x7E]/g,'');
+const cleanBase=u=>String(u||'').replace(HIDDEN_CHARS,'').replace(/\s+/g,'').replace(/\/+$/,'');
+function saveAiCfg(){try{localStorage.setItem(AI_STORE,JSON.stringify(aiCfg));}catch(e){}}
+function hub(){try{if(window.parent&&window.parent!==window&&typeof window.parent.hubAI==='function')return window.parent;}catch(e){}return null;}
+function hubInfo(){const h=hub();if(!h)return null;try{return h.hubAIInfo();}catch(e){return null;}}
+function aiReady(){if(hub()){const i=hubInfo();return !!(i&&i.chosen);}return !!cleanKey(aiCfg.key);}
+function aiLabel(){
+  if(hub()){const i=hubInfo();return i&&i.chosen?(i.names[i.chosen]||i.chosen)+' · '+i.model:'לא מחובר';}
+  return aiCfg.key?'Mistral · '+(aiCfg.model||AI_DEF.model):'לא מחובר';
+}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function aiErr(msg,status){const e=new Error(msg);e.status=status||0;return e;}
+async function readApiError(r){
+  let txt='';try{txt=await r.text();}catch(e){}
+  if(/^\s*</.test(txt)) return {msg:'',html:true};
+  let msg='';
+  try{const j=JSON.parse(txt);
+    msg=(j.error&&(j.error.message||j.error))||j.message||(typeof j.detail==='string'?j.detail:Array.isArray(j.detail)?j.detail.map(d=>d.msg||JSON.stringify(d)).join('; '):'')||'';
+    if(typeof msg!=='string') msg=JSON.stringify(msg);
+  }catch(e){msg=txt.slice(0,200);}
+  return {msg,html:false};
+}
+function explainStatus(status,info){
+  const tail=info.msg?' ('+info.msg+')':'';
+  if(info.html) return 'במקום תשובה מהשרת הגיע דף אינטרנט. זה קורה בדרך כלל כשסינון (למשל נטפרי) חוסם את הכתובת. בקשו פתיחה של api.mistral.ai, או הגדירו כתובת שרת אחרת.';
+  if(status===401) return 'המפתח לא התקבל (401). ודאו שהעתקתם את כל המפתח מ־console.mistral.ai ושהוא עדיין פעיל.';
+  if(status===402) return 'בחשבון Mistral צריך להפעיל תוכנית או אמצעי תשלום (402).'+tail;
+  if(status===403) return 'אין הרשאה (403). ייתכן שהמפתח לא מורשה למודל הזה או שהחשבון מוגבל.'+tail;
+  if(status===429) return 'עברתם את מכסת השימוש (429). חכו דקה ונסו שוב, או בדקו את המכסה בחשבון Mistral.';
+  if(status>=500) return 'השרת של Mistral לא זמין כרגע ('+status+'). נסו שוב בעוד כמה דקות.';
+  return 'שגיאה '+status+tail;
+}
+function contentText(c){if(typeof c==='string')return c;if(Array.isArray(c))return c.map(x=>typeof x==='string'?x:(x&&x.type!=='thinking'&&x.text)||'').join('');return '';}
+async function mistralChat(cfg,messages,opts){
+  opts=Object.assign({},opts||{});
+  const key=cleanKey(cfg.key);
+  if(!key) throw aiErr('אין מפתח Mistral. הוסיפו אותו בהגדרות ה־AI.');
+  const base=cleanBase(cfg.base)||AI_DEF.base;
+  let model=String(cfg.model||'').trim()||AI_DEF.model;
+  for(let attempt=0;attempt<4;attempt++){
+    const body={model,messages,max_tokens:opts.maxTokens||1200,temperature:opts.temperature==null?0.4:opts.temperature};
+    if(opts.json) body.response_format={type:'json_object'};
+    let r;
+    try{r=await fetch(base+'/chat/completions',{method:'POST',signal:opts.signal,headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)});}
+    catch(e){
+      if(e&&e.name==='AbortError') throw e;
+      let host=base;try{host=new URL(base).host;}catch(_){}
+      throw aiErr('אין חיבור לשרת '+host+'. בדקו את החיבור לאינטרנט. אם יש נטפרי או סינון אחר, ייתכן שהכתובת חסומה ויש לבקש לפתוח אותה.'+(window.claude?' בגרסה שבקישור של claude.ai אין גישה לשרתים חיצוניים, אז השתמשו בקובץ שהורדתם.':''));
+    }
+    if(r.ok){
+      let j=null;try{j=await r.json();}catch(e){}
+      const t=j&&j.choices&&j.choices[0]&&j.choices[0].message?contentText(j.choices[0].message.content):'';
+      if(t.trim()) return {text:t,model};
+      throw aiErr('התשובה מ־Mistral הגיעה ריקה. נסו שוב.');
+    }
+    const info=await readApiError(r);
+    if([400,404,422].includes(r.status)&&/model/i.test(info.msg)&&model!==AI_FALLBACK_MODEL){model=AI_FALLBACK_MODEL;continue;}
+    if(r.status===400&&opts.json&&/response_format|json/i.test(info.msg)){opts.json=false;continue;}
+    if((r.status===429||r.status===503)&&attempt<2){await sleep(2500*(attempt+1));continue;}
+    throw aiErr(explainStatus(r.status,info),r.status);
+  }
+  throw aiErr('Mistral לא ענה אחרי כמה ניסיונות. נסו שוב.');
+}
+async function askAI(system,user,opts){
+  opts=opts||{};
+  const h=hub();
+  if(h){const res=await h.hubAI(user,{system,maxTokens:opts.maxTokens,json:!!opts.json,signal:opts.signal,temperature:opts.temperature});return {text:String(res.text||''),model:res.model||''};}
+  return mistralChat(aiCfg,[{role:'system',content:system},{role:'user',content:user}],opts);
+}
+function parseAIJSON(t){
+  const s=String(t||'').replace(/```(?:json)?/gi,'').trim();
+  const a=s.indexOf('{'),b=s.lastIndexOf('}');
+  const bad=()=>aiErr('התשובה לא הגיעה בפורמט שאפשר לקרוא. נסו שוב.');
+  if(a<0||b<=a) throw bad();
+  try{return JSON.parse(s.slice(a,b+1));}catch(e){throw bad();}
+}
+const TYPE_BY_LABEL={};TYPE_ORDER.forEach(t=>{TYPE_BY_LABEL[t]=t;TYPE_BY_LABEL[TYPES[t].label]=t;});
+Object.assign(TYPE_BY_LABEL,{'מחשבה':'belief','אמונות':'belief','ערכים':'value','רגשות':'emotion','צרכים':'need','מעשה':'behavior','פעולה':'behavior','התנהגויות':'behavior','אנשים':'person','דמות':'person'});
+const REL_BY_LABEL={};REL_ORDER.forEach(r=>{REL_BY_LABEL[r]=r;REL_BY_LABEL[normName(RELS[r].label.replace('־',''))]=r;});
+function linkRanges(text){return Array.from(text.matchAll(LINK_RE)).map(m=>[m.index,m.index+m[0].length]);}
+function findOutsideLinks(text,quote){
+  if(!quote) return -1;
+  const ranges=linkRanges(text); let from=0;
+  while(true){
+    const i=text.indexOf(quote,from); if(i<0) return -1;
+    if(!ranges.some(([a,b])=>i<b&&i+quote.length>a)) return i;
+    from=i+1;
+  }
+}
+
+/* ---------- ✨ suggestions for one story ---------- */
+let AIR=null, aiAbort=null;
+async function analyzeStory(){
+  const s=getStory(ui.storyId); if(!s) return;
+  flushDerive();
+  if(!s.text.trim()){toast('כתבו קודם את הסיפור');return;}
+  if(!aiReady()){openAiSettings('כדי לקבל הצעות צריך לחבר AI. הדביקו מפתח Mistral ולחצו "שמירה".');return;}
+  if(aiAbort) aiAbort.abort();
+  aiAbort=new AbortController();
+  AIR={storyId:s.id,loading:true}; renderAiModal(); openModal();
+  const existing=Object.values(state.concepts).slice(0,150).map(c=>c.name+' = '+c.type).join('\n');
+  const plain=plainWithRanges(s.text,null).plain.slice(0,9000);
+  const sys='אתה עוזר רפלקטיבי שמנתח סיפור אישי בעברית ומזהה בו מושגים פסיכולוגיים. אתה לא מאבחן ולא נותן עצות. אתה מחזיר JSON בלבד. בתוך ערכי הטקסט אל תשתמש במירכאות כפולות רגילות; לראשי תיבות ולציטוטים השתמש ב־״ או ב־׳.';
+  const user='סוגי מושגים מותרים (type):\nvalue = ערך (מה שחשוב לי)\nemotion = רגש\nbelief = אמונה או מחשבה\nneed = צורך\nbehavior = התנהגות, מה שעשיתי\nperson = אדם\n\n'+
+    'סוגי קשרים מותרים (type):\nleads = מוביל ל (מחשבה ← רגש ← מעשה)\nsupports = מחזק את\nconflicts = מתנגש עם\nprotects = מגן על\nmasks = מסתיר את (למשל כעס שמסתיר פגיעה)\nrelated = קשור ל\n\n'+
+    'מושגים שכבר קיימים אצלי (אם המשמעות זהה, השתמש בדיוק באותו שם):\n'+(existing||'(אין עדיין)')+'\n\n'+
+    'הסיפור:\n---\n'+plain+'\n---\n\n'+
+    'החזר JSON בדיוק במבנה הזה:\n{"concepts":[{"name":"שם קצר","type":"value","quote":"המילים המדויקות מהסיפור"}],"relations":[{"from":"שם","type":"leads","to":"שם","note":"הסבר קצר"}],"question":"שאלה אחת למחשבה"}\n\n'+
+    'כללים: עד 10 מושגים ועד 6 קשרים. name הוא 1 עד 4 מילים. quote חייב להופיע בסיפור מילה במילה (העתק אותו בדיוק, בלי לשנות אותיות). '+
+    'חפש במיוחד ערכים שחשובים לכותב גם אם לא נאמרו במפורש, ומתחים בין ערכים. בקשרים השתמש רק בשמות מתוך concepts או מתוך המושגים הקיימים. הכול בעברית.';
+  try{
+    const res=await askAI(sys,user,{json:true,maxTokens:1600,signal:aiAbort.signal});
+    AIR=buildSuggestions(parseAIJSON(res.text),s,res.model);
+  }catch(e){
+    if(e&&e.name==='AbortError') return;
+    AIR={storyId:s.id,error:(e&&e.message)||String(e)};
+  }
+  if(!$('#modal').hidden&&AIR) renderAiModal();
+}
+function buildSuggestions(d,s,model){
+  const plain=plainWithRanges(s.text,null).plain;
+  const inStory=new Set((D.storyConcepts.get(s.id)||[]).map(id=>key(state.concepts[id].name)));
+  const concepts=[],seen=new Set();
+  for(const c of (Array.isArray(d.concepts)?d.concepts:[])){
+    if(!c||typeof c!=='object') continue;
+    const name=cleanName(String(c.name||'')).slice(0,40); if(!name) continue;
+    const k=key(name); if(seen.has(k)||inStory.has(k)) continue; seen.add(k);
+    const type=TYPE_BY_LABEL[normName(String(c.type||''))]||'value';
+    let quote=normName(String(c.quote||'')).replace(/^["'״׳]+|["'״׳]+$/g,'').slice(0,120);
+    if(quote&&!plain.includes(quote)){const q2=quote.replace(/[.,!?;:]+$/,'');quote=plain.includes(q2)?q2:'';}
+    const exId=D.nameIdx.get(k);
+    concepts.push({name:exId?state.concepts[exId].name:name,type:exId?state.concepts[exId].type:type,quote,exists:!!exId,on:true});
+  }
+  const known=n=>seen.has(key(n))||D.nameIdx.has(key(n));
+  const relations=[],rseen=new Set();
+  for(const r of (Array.isArray(d.relations)?d.relations:[])){
+    if(!r||typeof r!=='object') continue;
+    const from=cleanName(String(r.from||'')),to=cleanName(String(r.to||''));
+    const type=REL_BY_LABEL[normName(String(r.type||'').replace('־',''))];
+    if(!from||!to||!type||key(from)===key(to)||!known(from)||!known(to)) continue;
+    const a=D.nameIdx.get(key(from)),b=D.nameIdx.get(key(to));
+    if(a&&b&&state.relations.some(x=>relKey(x)===relKey({from:a,to:b,type}))) continue;
+    const rk=key(from)+'|'+type+'|'+key(to); if(rseen.has(rk)) continue; rseen.add(rk);
+    relations.push({from,to,type,note:normName(String(r.note||'')).slice(0,200),on:true});
+  }
+  const question=normName(String(d.question||'')).slice(0,300);
+  return {storyId:s.id,concepts,relations,question,model};
+}
+function renderAiModal(){
+  const box=$('#modal-box'); const A=AIR; if(!A) return;
+  const s=getStory(A.storyId);
+  let h='<h2 id="modal-title">✨ הצעות AI</h2>';
+  if(A.loading){
+    box.innerHTML=h+'<p class="ai-status"><span class="spinner" aria-hidden="true"></span>קורא את "'+esc(s?s.title||'ללא שם':'')+'" ומחפש ערכים, רגשות וקשרים… ('+esc(aiLabel())+')</p>'+
+      '<div class="modal-actions"><span class="grow"></span><button class="btn btn-ghost" data-act="close-modal">ביטול</button></div>';
+    return;
+  }
+  if(A.error){
+    box.innerHTML=h+'<p class="ai-status bad">'+esc(A.error)+'</p>'+
+      '<div class="modal-actions"><button class="btn btn-ghost" data-act="open-ai-settings">הגדרות AI</button><span class="grow"></span>'+
+      '<button class="btn btn-ghost" data-act="close-modal">סגירה</button><button class="btn btn-primary" data-act="ai-analyze">נסו שוב</button></div>';
+    return;
+  }
+  const n=A.concepts.filter(c=>c.on).length+A.relations.filter(r=>r.on).length;
+  h+='<p class="muted small">סמנו מה להוסיף. שום דבר לא משתנה עד שלוחצים "הוספה". המילים שציטטנו מהסיפור יסומנו בו כמושגים.'+(A.model?' ('+esc(A.model)+')':'')+'</p>';
+  h+='<h3>מושגים</h3>'+(A.concepts.length?'<ul class="ai-list">'+A.concepts.map((c,i)=>
+    '<li><label class="ai-row t-'+c.type+'"><input type="checkbox" data-ai-c="'+i+'"'+(c.on?' checked':'')+'>'+
+    (c.exists?'<i class="dot"></i>':'<select data-ai-type="'+i+'" aria-label="סוג">'+TYPE_ORDER.map(t=>'<option value="'+t+'"'+(t===c.type?' selected':'')+'>'+TYPES[t].label+'</option>').join('')+'</select>')+
+    '<span class="ai-name">'+esc(c.name)+'</span>'+(c.exists?'<span class="ai-tag">כבר קיים</span>':'')+(c.quote?'':'<span class="ai-tag">לא יסומן בטקסט</span>')+
+    (c.quote?'<span class="ai-quote">"'+esc(c.quote)+'"</span>':'')+'</label></li>').join('')+'</ul>'
+    :'<p class="empty-card">לא נמצאו מושגים חדשים. כל מה שה־AI זיהה כבר מסומן.</p>');
+  h+='<h3>קשרים</h3>'+(A.relations.length?'<ul class="ai-list">'+A.relations.map((r,i)=>
+    '<li><label class="ai-row"><input type="checkbox" data-ai-r="'+i+'"'+(r.on?' checked':'')+'><b>'+esc(r.from)+'</b><span class="rel-tag rel-'+r.type+'">'+RELS[r.type].label+'</span><b>'+esc(r.to)+'</b>'+
+    (r.note?'<span class="ai-quote">'+esc(r.note)+'</span>':'')+'</label></li>').join('')+'</ul>'
+    :'<p class="empty-card">אין הצעות לקשרים חדשים.</p>');
+  if(A.question) h+='<h3>שאלה למחשבה</h3><p class="ai-question">'+esc(A.question)+'</p>';
+  h+='<div class="modal-actions"><span class="grow"></span><button class="btn btn-ghost" data-act="close-modal">ביטול</button>'+
+    '<button class="btn btn-primary" data-act="ai-apply"'+(n?'':' disabled')+'>הוספה ('+n+')</button></div>';
+  box.innerHTML=h;
+}
+function applySuggestions(){
+  const A=AIR; if(!A||!A.concepts) return;
+  const s=getStory(A.storyId); if(!s){closeModal();return;}
+  let text=s.text,marked=0,added=0,linked=0;
+  for(const c of A.concepts){
+    if(!c.on) continue;
+    const exId=D.nameIdx.get(key(c.name));
+    const name=exId?state.concepts[exId].name:c.name;
+    if(!exId) pendingTypes.set(key(name),c.type);
+    const pos=findOutsideLinks(text,c.quote);
+    if(pos>=0){
+      const q=text.substr(pos,c.quote.length);
+      text=text.slice(0,pos)+'[['+name+(key(q)!==key(name)?'|'+q:'')+']]'+text.slice(pos+q.length);
+      marked++;
+    }else if(!exId){
+      const id=uid('c'); state.concepts[id]={id,name,type:c.type,note:'',auto:false,created:Date.now()};
+      pendingTypes.delete(key(name)); added++;
+    }
+  }
+  s.text=text; s.updated=Date.now();
+  derive();
+  for(const r of A.relations){
+    if(!r.on) continue;
+    const a=D.nameIdx.get(key(r.from)),b=D.nameIdx.get(key(r.to));
+    if(!a||!b||a===b) continue;
+    const rel={id:uid('r'),from:a,to:b,type:r.type,note:r.note,storyId:s.id};
+    if(state.relations.some(x=>relKey(x)===relKey(rel))) continue;
+    state.relations.push(rel); linked++;
+  }
+  AIR=null; closeModal(); ui.mode='read';
+  commit({fullMain:true});
+  toast('נוספו '+(marked+added)+' מושגים ו־'+linked+' קשרים');
+}
+
+/* ---------- 🪞 mirror: a reflection on the whole map ---------- */
+let mirrorBusy=false,mirrorError='';
+function mirrorCardHTML(){
+  const r=state.reflection;
+  const body=mirrorBusy?'<p class="ai-status"><span class="spinner" aria-hidden="true"></span>ה־AI קורא את המפה… ('+esc(aiLabel())+')</p>':
+    mirrorError?'<p class="ai-status bad">'+esc(mirrorError)+'</p>':
+    r?'<div class="mirror-text">'+renderPlainAI(r.text)+'</div><p class="mirror-meta">'+new Date(r.at).toLocaleDateString('he-IL')+(r.model?' · '+esc(r.model):'')+'</p>':
+    '<p class="empty-card">ה־AI יקרא את הערכים, הקשרים והסיפורים האחרונים וישקף לכם דפוסים ושאלות. המידע נשלח לספק ה־AI רק כשלוחצים.</p>';
+  return '<section class="card card-mirror"><div class="block-head"><h2>🪞 מראה</h2>'+
+    '<button class="btn '+(r?'btn-soft':'btn-primary')+'" data-act="ai-mirror"'+(mirrorBusy?' disabled':'')+'>'+(r?'שיקוף חדש':'בקשו שיקוף')+'</button></div>'+body+'</section>';
+}
+function renderPlainAI(t){
+  const lines=String(t).replace(/\r/g,'').split('\n'); let out='',list=false;
+  const inline=x=>esc(x).replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');
+  for(const raw of lines){
+    const l=raw.trim();
+    if(/^[-•*]\s+/.test(l)||/^\d+[.)]\s+/.test(l)){if(!list){out+='<ul>';list=true;}out+='<li>'+inline(l.replace(/^([-•*]|\d+[.)])\s+/,''))+'</li>';continue;}
+    if(list){out+='</ul>';list=false;}
+    if(!l) continue;
+    out+='<p>'+inline(l.replace(/^#+\s*/,''))+'</p>';
+  }
+  if(list) out+='</ul>';
+  return out;
+}
+function mapSummary(){
+  const cs=Object.values(state.concepts);
+  const line=c=>'- '+c.name+(c.note?': '+c.note:'')+' ('+storyCount(c.id)+' סיפורים)';
+  let t='';
+  for(const ty of TYPE_ORDER){
+    const items=cs.filter(c=>c.type===ty).sort((a,b)=>storyCount(b.id)-storyCount(a.id)).slice(0,20);
+    if(items.length) t+=TYPES[ty].plural+':\n'+items.map(line).join('\n')+'\n\n';
+  }
+  const nm=id=>state.concepts[id]?state.concepts[id].name:'?';
+  if(state.relations.length) t+='קשרים:\n'+state.relations.slice(0,50).map(r=>'- '+nm(r.from)+' '+RELS[r.type].label+' '+nm(r.to)+(r.note?' ('+r.note+')':'')).join('\n')+'\n\n';
+  const stories=sortedStories().slice(0,5);
+  if(stories.length) t+='סיפורים אחרונים:\n'+stories.map(s=>'### '+(s.title||'ללא שם')+' ('+fmtDate(s.date)+')\n'+plainWithRanges(s.text,null).plain.slice(0,1100)).join('\n\n');
+  return t;
+}
+async function runMirror(){
+  if(!aiReady()){openAiSettings('כדי לקבל שיקוף צריך לחבר AI. הדביקו מפתח Mistral ולחצו "שמירה".');return;}
+  if(!Object.keys(state.concepts).length&&!state.stories.length){toast('אין עדיין מה לשקף. כתבו סיפור קודם.');return;}
+  mirrorBusy=true; mirrorError=''; if(ui.view==='insights') renderMain();
+  const sys='אתה מראה רפלקטיבית: קורא את מפת הערכים והסיפורים של אדם ומשקף לו בעדינות ובדיוק מה נראה בה. אתה לא מאבחן, לא נותן עצות רפואיות ולא שופט. כותב בעברית פשוטה, בגוף שני, חם וענייני.';
+  const user='זו המפה שלי:\n\n'+mapSummary()+'\n\nכתוב לי שיקוף קצר (עד 220 מילים) בשלושה חלקים, כל כותרת בשורה משלה:\nמה אני רואה: פסקה אחת.\nדפוסים: 2 עד 3 נקודות שמתחילות ב־"- ". שים לב במיוחד למתחים בין ערכים ולשרשראות של מחשבה, רגש ומעשה.\nשאלות: 3 שאלות שמתחילות ב־"- ".\nבלי הקדמה ובלי סיכום.';
+  try{
+    const res=await askAI(sys,user,{maxTokens:900,temperature:0.6});
+    state.reflection={text:res.text.trim().slice(0,8000),at:Date.now(),model:res.model||''};
+    scheduleSave();
+  }catch(e){mirrorError=(e&&e.message)||String(e);}
+  mirrorBusy=false; if(ui.view==='insights') renderMain();
+}
+
+/* ---------- AI settings ---------- */
+let aiNotice='';
+function aiSettingsHTML(){
+  let body;
+  if(hub()){
+    const i=hubInfo()||{providers:[],names:{}};
+    const host=esc(i.host||'התוכנה הראשית');
+    const open=typeof hub().hubOpenSettings==='function'?'<div class="data-row"><button class="btn btn-soft" data-act="hub-settings">פתיחת „הגדרות חיבור” של '+host+'</button></div>':'';
+    body=i.providers.length?
+      '<p class="muted small">מפת הנפש משתמשת בחיבור ה־AI של '+host+' ('+esc((i.names[i.chosen]||'')+' · '+(i.model||''))+'). הסיפור נשלח רק כשלוחצים על כפתור AI.</p>'+
+      (i.providers.length>1?'<label class="field"><span>ספק AI</span><select id="ai-hub-prov">'+i.providers.map(p=>'<option value="'+esc(p)+'"'+(p===i.chosen?' selected':'')+'>'+esc(i.names[p]||p)+'</option>').join('')+'</select></label>':'')+open
+      :'<p class="ai-status bad">'+(i.locked?'המפתחות מוצפנים ועדיין לא נפתחו. רעננו את הדף והזינו את סיסמת האב.':'עוד אין מפתח Mistral ב־'+host+'. הכניסו אותו ב„הגדרות חיבור”.')+'</p>'+open;
+    if(typeof hub().mirrorDefs==='function') body+='<div class="data-row"><button class="btn btn-soft" data-act="mirror-import">ייבוא הגדרות חדשות מהסולמות של '+host+'</button></div>';
+  }else{
+    body='<p class="muted small">המפתח נשמר רק בדפדפן הזה ולא נכלל בגיבוי. הסיפור נשלח ל־Mistral רק כשלוחצים על כפתור AI. מפתח מקבלים ב־console.mistral.ai.</p>'+
+      '<div class="ai-fields">'+
+        '<label class="field"><span>מפתח Mistral</span><input id="ai-key" type="password" autocomplete="off" spellcheck="false" dir="ltr" value="'+esc(aiCfg.key)+'" placeholder="הדביקו כאן את המפתח"></label>'+
+        '<label class="field"><span>מודל</span><input id="ai-model" dir="ltr" value="'+esc(aiCfg.model)+'" placeholder="'+AI_DEF.model+'"></label>'+
+        '<label class="field"><span>כתובת שרת</span><input id="ai-base" dir="ltr" value="'+esc(aiCfg.base)+'" placeholder="'+AI_DEF.base+'"></label>'+
+      '</div>'+
+      '<div class="data-row"><button class="btn btn-primary" data-act="ai-save">שמירה</button></div>';
+  }
+  return '<h3 id="ai-settings">חיבור AI</h3>'+(aiNotice?'<p class="ai-status">'+esc(aiNotice)+'</p>':'')+body+
+    '<div class="data-row"><button class="btn btn-soft" data-act="ai-test">בדיקת חיבור</button><span class="ai-status" id="ai-test" aria-live="polite"></span></div>';
+}
+function openAiSettings(msg){
+  aiNotice=msg||''; AIR=null; renderDataModal(); aiNotice='';
+  if($('#modal').hidden) openModal();
+  const k=$('#ai-key')||$('#ai-hub-prov'); if(k) k.focus();
+}
+function readAiFields(){
+  const k=$('#ai-key'); if(!k) return;
+  aiCfg.key=cleanKey(k.value);
+  aiCfg.model=($('#ai-model').value||'').trim()||AI_DEF.model;
+  aiCfg.base=cleanBase($('#ai-base').value)||AI_DEF.base;
+}
+async function testAI(){
+  readAiFields();
+  const out=$('#ai-test'); if(!out) return;
+  if(!aiReady()){out.className='ai-status bad';out.textContent=hub()?'אין ספק עם מפתח ב־AI Hub.':'הדביקו קודם מפתח.';return;}
+  out.className='ai-status'; out.innerHTML='<span class="spinner" aria-hidden="true"></span>בודק…';
+  const t0=performance.now();
+  try{
+    const res=await askAI('ענה במילה אחת.','כתוב: עובד',{maxTokens:10,temperature:0});
+    out.className='ai-status ok'; out.textContent='✓ עובד · '+(res.model||aiLabel())+' · '+Math.round(performance.now()-t0)+'ms';
+    if(!hub()) saveAiCfg();
+  }catch(e){out.className='ai-status bad'; out.textContent='✗ '+((e&&e.message)||e);}
+}
+
 /* ================= relation modal ================= */
 let RM=null, lastFocus=null, pendingImport=null;
 function guessRel(a,b){
@@ -1291,7 +1641,7 @@ function exportJSON(){
 }
 function renderDataModal(){
   const hasSample=state.stories.some(s=>s.sample);
-  $('#modal-box').innerHTML='<h2 id="modal-title">גיבוי, שחזור ודוגמאות</h2>'+
+  $('#modal-box').innerHTML='<h2 id="modal-title">הגדרות, גיבוי ודוגמאות</h2>'+aiSettingsHTML()+
     '<p class="muted">כל מה שכותבים נשמר רק בדפדפן הזה, במכשיר הזה. ניקוי נתוני הדפדפן ימחק אותו, אז כדאי לשמור גיבוי מדי פעם.</p>'+
     '<h3>גיבוי</h3><div class="data-row"><button class="btn btn-primary" data-act="export-file">הורדת קובץ גיבוי</button>'+
       '<button class="btn btn-soft" data-act="export-copy">העתקה ללוח</button></div>'+
@@ -1329,6 +1679,7 @@ function openModal(){
 function closeModal(){
   if($('#modal').hidden) return;
   $('#modal').hidden=true; RM=null; pendingImport=null;
+  if(AIR){AIR=null;if(aiAbort){aiAbort.abort();aiAbort=null;}}
   if(lastFocus&&lastFocus.isConnected) lastFocus.focus();
 }
 let toastT=null;
@@ -1766,6 +2117,15 @@ document.addEventListener('click',e=>{
       break;}
     case 'import-text': prepareImport($('#import-text').value); break;
     case 'pick-file': $('#import-file').click(); break;
+    case 'ai-analyze': analyzeStory(); break;
+    case 'ai-apply': applySuggestions(); break;
+    case 'ai-mirror': runMirror(); break;
+    case 'open-ai-settings': openAiSettings(); break;
+    case 'ai-save': readAiFields(); saveAiCfg(); toast(aiCfg.key?'ההגדרות נשמרו':'המפתח נמחק'); break;
+    case 'ai-test': testAI(); break;
+    case 'send-mirror': sendToMirror(); break;
+    case 'hub-settings': closeModal(); try{hub().hubOpenSettings();}catch(e){} break;
+    case 'mirror-import': {const n=importMirrorDefs();closeModal();commit();toast(n?'נוספו '+n+' ערכים מהמראה':'אין הגדרות חדשות במראה');break;}
     case 'import-apply': {
       if(!pendingImport) break;
       state=pendingImport; pendingImport=null; ui.selected=null; ui.storyId=null; ui.view='story'; ui.mode='read';
@@ -1809,6 +2169,15 @@ document.addEventListener('input',e=>{
 document.addEventListener('change',e=>{
   const t=e.target;
   if(t.name==='rm-type'&&RM){RM.type=t.value;RM.touched=true;updateSentence();return;}
+  if(AIR&&AIR.concepts&&(t.dataset.aiC!=null||t.dataset.aiR!=null||t.dataset.aiType!=null)){
+    if(t.dataset.aiType!=null){if(TYPES[t.value]){AIR.concepts[+t.dataset.aiType].type=t.value;const row=t.closest('.ai-row');if(row)row.className='ai-row t-'+t.value;}return;}
+    if(t.dataset.aiC!=null) AIR.concepts[+t.dataset.aiC].on=t.checked;
+    if(t.dataset.aiR!=null) AIR.relations[+t.dataset.aiR].on=t.checked;
+    const btn=$('[data-act="ai-apply"]');const n=AIR.concepts.filter(c=>c.on).length+AIR.relations.filter(r=>r.on).length;
+    if(btn){btn.textContent='הוספה ('+n+')';btn.disabled=!n;}
+    return;
+  }
+  if(t.id==='ai-hub-prov'){const h=hub();if(h){try{h.hubAISetProvider(t.value);}catch(e){}}toast('הספק עודכן');return;}
   switch(t.id){
     case 'story-date': {const s=getStory(ui.storyId);if(s&&/^\d{4}-\d{2}-\d{2}$/.test(t.value)){s.date=t.value;scheduleSave();renderSidebar();}break;}
     case 'insp-type': {const c=ui.selected&&state.concepts[ui.selected.id];if(c&&TYPES[t.value]){c.type=t.value;c.auto=false;commit();}break;}
@@ -1892,6 +2261,49 @@ const onTheme=()=>{if(G.canvas){readColors();requestDraw();}};
 try{window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',onTheme);}catch(e){}
 new MutationObserver(onTheme).observe(root,{attributes:true,attributeFilter:['data-theme','class']});
 
+/* ================= embedded inside another program (המראה) ================= */
+/* ההגדרות שבסולמות של המראה (אומץ, אמת וכו') הן הערכים שהוצהרו — הן נכנסות למפה כמושגים.
+   כל הגדרה נכנסת פעם אחת בלבד, כך שמושג שנמחק כאן לא חוזר. */
+function importMirrorDefs(){
+  const h=hub(); if(!h||typeof h.mirrorDefs!=='function') return 0;
+  let defs=[]; try{defs=h.mirrorDefs()||[];}catch(e){return 0;}
+  const done=new Set(state.settings.mirrorImported||[]);
+  let added=0;
+  for(const d of defs){
+    if(!d||typeof d.term!=='string'||done.has(String(d.id))) continue;
+    done.add(String(d.id));
+    const name=cleanName(d.term); if(!name) continue;
+    const note=String(d.body||'').slice(0,2000);
+    const ex=D.nameIdx.get(key(name));
+    if(ex){const c=state.concepts[ex];if(!c.note&&note){c.note=note;c.auto=false;}continue;}
+    const id=uid('c');
+    state.concepts[id]={id,name,type:/התנהגות/.test(d.level||'')?'behavior':'value',note,auto:false,created:Date.now()};
+    D.nameIdx.set(key(name),id); added++;
+  }
+  state.settings.mirrorImported=[...done].slice(-3000);
+  return added;
+}
+window.mapatOnShow=function(){
+  const i=hubInfo(); if(i&&i.theme) window.mapatSetTheme(i.theme);
+  const n=importMirrorDefs();
+  if(n){commit();toast('נוספו '+n+' ערכים מההגדרות שבמראה');}
+  else scheduleSave();
+};
+function sendToMirror(){
+  const h=hub(); const s=getStory(ui.storyId);
+  if(!h||typeof h.mirrorLook!=='function'||!s) return;
+  flushDerive();
+  if(!s.text.trim()){toast('הסיפור עדיין ריק');return;}
+  h.mirrorLook(plainWithRanges(s.text,null).plain);
+}
+window.mapatSetTheme=function(t){if(t==='light'||t==='dark'){root.dataset.theme=t;onTheme();}};
+let mirrorAdded=0;
+if(hub()){
+  const i=hubInfo(); if(i&&i.theme) window.mapatSetTheme(i.theme);
+  $$('[data-act="download-app"]').forEach(b=>{b.hidden=true;});
+  derive(); mirrorAdded=importMirrorDefs();
+}
+
 /* ================= boot ================= */
 $('#nc-type').innerHTML=TYPE_ORDER.map(t=>'<option value="'+t+'">'+TYPES[t].label+'</option>').join('');
 derive();
@@ -1904,6 +2316,7 @@ try{localStorage.setItem(STORE_KEY+'.probe','1');localStorage.removeItem(STORE_K
 catch(e){storageOk=false;setSaveStatus('השמירה בדפדפן לא זמינה כאן. כדאי לגבות לקובץ.',true);}
 if(firstRun||myAdded) scheduleSave();
 if(myAdded) setTimeout(()=>toast('נוספו '+myAdded+' ערכים שמותאמים לך. אפשר לשנות או למחוק כל אחד.'),400);
+if(mirrorAdded){scheduleSave();setTimeout(()=>toast('נוספו '+mirrorAdded+' ערכים מההגדרות שבמראה'),myAdded?3200:400);}
 })();
 </script>
 </body>
