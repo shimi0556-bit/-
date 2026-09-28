@@ -35,7 +35,7 @@
       "source": "claude-skills",
       "sourceType": "local",
       "skillPath": "gilaf-sdf/SKILL.md",
-      "computedHash": "6ad6d2e3c68bedbf8797bb877566ce6ce77f8058414f3938051109f8eecb957d"
+      "computedHash": "7dab4dba88c20a9a5e996a618a441475412385e1a7b7529edeb5eb23200e8a25"
     },
     "image-master": {
       "source": "hoodini/ai-agents-skills",

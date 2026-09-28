@@ -5,7 +5,7 @@ import { runRecipe, countNodes, RecipeError } from './dsl.js';
 import { compile } from './glsl.js';
 import { Preview, LIGHTS } from './renderer.js';
 import { Mesher, simplifyMesh, meshStats } from './mesher.js';
-import { toGLB, toSTL, toOBJ, toZIP } from './export.js';
+import { toGLB, toGLBParts, toSTL, toOBJ, toZIP } from './export.js';
 import { skeleton } from './anim.js';
 import { promptCreate, promptImprove, promptFix, extractCode, SAMPLE_ERRORS } from './ai.js';
 
@@ -426,7 +426,12 @@ function setupExport() {
   $('cancelBtn').addEventListener('click', () => S.buildCtl?.abort());
   $('saveBtn').addEventListener('click', async () => {
     if (!S.mesh) return;
-    const files = exportFiles({ glb: $('fGlb').checked, stl: $('fStl').checked, obj: $('fObj').checked, mm: +$('mm').value || 80 });
+    const files = exportFiles({ glb: $('fGlb').checked && !S.result?.parts, stl: $('fStl').checked, obj: $('fObj').checked, mm: +$('mm').value || 80 });
+    if ($('fGlb').checked && S.result?.parts) {
+      $('exportStatus').textContent = 'בונה חלקים נפרדים…';
+      const r = await buildParts({ res: +$('res').value, tris: +$('tris').value || 60000, lo: 12000 });
+      files.unshift({ name: `${modelName()}.glb`, data: toGLBParts(r.hi, { name: modelName() }) }, { name: `${modelName()}-lo.glb`, data: toGLBParts(r.lo, { name: modelName() }) });
+    }
     if (!files.length) {
       $('exportStatus').textContent = 'בחרו לפחות פורמט אחד.';
       return;
@@ -439,6 +444,55 @@ function setupExport() {
     } else ok = await saveFile(files[0].name, files[0].data);
     if (ok) $('exportStatus').textContent = 'הקבצים נשמרו.';
   });
+}
+
+// Meshes each exportParts() entry on its own, all at the same cell size, and writes one GLB
+// with a node, mesh and material per part (plus an optional lighter copy for distance LOD).
+async function buildParts({ res = 256, tris = 60000, lo = 0, onProgress = () => {} } = {}) {
+  const result = S.result;
+  if (!result?.parts) throw new Error('This recipe has no exportParts() list');
+  if (!S.mesher) S.mesher = new Mesher();
+  const b = S.compiled.restBounds;
+  const h = Math.max(...b.max.map((v, i) => v - b.min[i])) / Math.max(8, res - 5);
+  const scene = { ...result.scene };
+  delete scene.bounds;
+  const built = [];
+  for (const [i, part] of result.parts.entries()) {
+    onProgress(i / result.parts.length, `חלק ${part.name}`);
+    const compiled = compile({ node: part.node, scene, params: [], anim: null });
+    let mesh;
+    try {
+      mesh = await S.mesher.build(compiled, { cell: h });
+    } catch (e) {
+      throw new Error(`part '${part.name}': ${e.message}`);
+    }
+    const vc = mesh.positions.length / 3;
+    const avg = (arr) => [0, 1, 2].map((c) => {
+      let t = 0;
+      for (let v = 0; v < vc; v++) t += arr[v * 3 + c];
+      return t / vc;
+    });
+    const m = part.mat || avg(mesh.mats);
+    built.push({
+      name: part.name,
+      raw: mesh,
+      vertexColors: part.vertexColors,
+      material: { name: part.material, color: part.color || avg(mesh.colors), rough: m[0], metal: m[1], glow: m[2] },
+    });
+  }
+  const rawTotal = built.reduce((t, p) => t + p.raw.indices.length / 3, 0);
+  const level = async (budget) => {
+    const out = [];
+    for (const p of built) {
+      const share = Math.max(120, Math.round((budget * (p.raw.indices.length / 3)) / rawTotal));
+      out.push({ ...p, mesh: budget ? await simplifyMesh(p.raw, share) : p.raw });
+    }
+    return out;
+  };
+  const hi = await level(tris);
+  const low = lo ? await level(lo) : null;
+  const count = (lvl) => lvl.reduce((t, p) => t + p.mesh.indices.length / 3, 0);
+  return { hi, lo: low, stats: { parts: built.length, raw: rawTotal, hiTris: count(hi), loTris: low ? count(low) : 0, cell: h } };
 }
 
 function exportFiles({ glb, stl, obj, mm = 80 }) {
@@ -627,6 +681,7 @@ window.gilaf = {
       nodes: countNodes(result.node),
       lines: compiled.lines,
       bones: compiled.bones.map((b) => b.name),
+      parts: result.parts ? result.parts.map((p) => p.name) : null,
       anim: compiled.anim ? { seconds: compiled.anim.seconds, fps: compiled.anim.fps } : null,
     };
   },
@@ -660,6 +715,12 @@ window.gilaf = {
     for (let i = 0; i < n; i++) out.push(pv.renderStill(width, height, { yaw, pitch, zoom, panY: 0, u: i / n }, frames).toDataURL('image/png'));
     Object.assign(pv, saved);
     return { frames: out, fps: n / anim.seconds, seconds: anim.seconds };
+  },
+  async exportParts({ res = 256, tris = 60000, lo = 0, name = 'model' } = {}) {
+    const r = await buildParts({ res, tris, lo });
+    const files = [{ name: `${name}.glb`, b64: b64(toGLBParts(r.hi, { name })) }];
+    if (r.lo) files.push({ name: `${name}-lo.glb`, b64: b64(toGLBParts(r.lo, { name })) });
+    return { stats: r.stats, parts: r.hi.map((p) => ({ name: p.name, material: p.material.name, tris: p.mesh.indices.length / 3 })), files };
   },
   meshView({ width = 1000, height = 800, yaw = 32, pitch = 16, wire = true } = {}) {
     const pv = S.preview;

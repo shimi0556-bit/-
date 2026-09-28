@@ -105,6 +105,27 @@ return dog;
 - Export: GLB carries a skeleton (one joint per bone), skin weights and the looping clip, ready for
   Three.js `AnimationMixer`, Blender, Unity or Godot. STL/OBJ are the rest pose.
 
+## Separate parts for games (`exportParts`)
+Some games look parts up by name: a car's wheels spin on their own, its paint gets recoloured, its lights glow.
+List the parts once; the studio's GLB download and `tools/gilaf.mjs export` then write one node, mesh and
+material per part (plus a lighter `-lo.glb` with `--lo N`). The returned shape is still what the preview shows.
+
+```js
+exportParts([
+  { name: 'Body', shape: body, material: 'Paint 1 Carmine' },     // material name the game searches for
+  { name: 'WheelFrontL', shape: wheel(0.975, 1.4), material: 'Tire' },
+  { name: 'Glass', shape: windows, material: 'Window', color: '#101722', surface: 'glossy' },
+  { name: 'Decals', shape: livery, vertexColors: true },          // keep per-vertex paint instead of one colour
+]);
+return union(body, windows, ...);
+```
+- Each part is meshed on its own, with one shared cell size, so parts line up exactly.
+- A part's colour and surface are averaged from its own paint unless you give `color` / `surface`.
+- Parts may overlap. Make overlays solid rather than paper-thin: the car's stripe is the body grown by 0.006
+  (`body.round(0.006)`) and cut to two strips, so it sits just proud of the paint.
+- Build to the game's units and axes: `recipes/car.js` is a car in Shimotron Rally's format
+  (metres, +Z forward, Y up, left wheel at +X).
+
 ## Craft rules for high-quality models
 1. **Block out big forms first** (3–6 shapes), check the silhouette, then add secondary forms, then small details.
 2. **Blend organics with `add(part, k)`** where k is 10–30% of the smaller part's size. Hard-surface parts use small k (0.005–0.03) or `box(..., round)`.

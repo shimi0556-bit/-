@@ -224,14 +224,15 @@ export class Mesher {
     };
   }
 
-  async build(compiled, { res = 192, onProgress = () => {}, signal } = {}) {
+  async build(compiled, { res = 192, cell = 0, onProgress = () => {}, signal } = {}) {
     const t0 = performance.now();
     this.prepare(compiled);
     const gl = this.gl;
     const b = compiled.restBounds || compiled.bounds;
     const ext = b.max.map((v, i) => v - b.min[i]);
     const pad = 2;
-    const h = Math.max(...ext) / Math.max(8, res - 2 * pad - 1);
+    // a fixed cell size keeps separately meshed parts at the same detail
+    const h = cell > 0 ? cell : Math.max(...ext) / Math.max(8, res - 2 * pad - 1);
     const N = ext.map((e) => Math.min(1024, Math.ceil(e / h) + 2 * pad + 1));
     const [nx, ny, nz] = N;
     const min = b.min.map((v, i) => v - (h * (N[i] - 1) - ext[i]) / 2);

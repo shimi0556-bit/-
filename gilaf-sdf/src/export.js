@@ -287,3 +287,112 @@ export function toZIP(files) {
   end.setUint32(16, offset, true);
   return new Blob([...locals, ...centrals, new Uint8Array(end.buffer)], { type: 'application/zip' });
 }
+
+// Several named parts, each its own node, mesh and material (for game formats that look parts up by name).
+// parts: [{ name, mesh, material: { name, color: [r,g,b] sRGB, rough, metal, glow }, vertexColors }]
+export function toGLBParts(parts, { name = 'gilaf-model' } = {}) {
+  const chunks = [];
+  let offset = 0;
+  const views = [];
+  const accessors = [];
+  const addView = (arr, target) => {
+    const bytes = new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
+    const view = { buffer: 0, byteOffset: offset, byteLength: bytes.byteLength };
+    if (target) view.target = target;
+    views.push(view);
+    chunks.push(bytes);
+    offset += bytes.byteLength;
+    const pad = (4 - (offset % 4)) % 4;
+    if (pad) {
+      chunks.push(new Uint8Array(pad));
+      offset += pad;
+    }
+    return views.length - 1;
+  };
+  const acc = (a) => accessors.push(a) - 1;
+  const json = {
+    asset: { version: '2.0', generator: 'Gilaf SDF Studio' },
+    scene: 0,
+    scenes: [{ name, nodes: [] }],
+    nodes: [],
+    meshes: [],
+    materials: [],
+    accessors,
+    bufferViews: views,
+    buffers: [{ byteLength: 0 }],
+  };
+  const matIndex = new Map();
+  let emissiveUsed = false;
+  for (const part of parts) {
+    const m = part.mesh;
+    const vc = m.positions.length / 3;
+    if (!vc || !m.indices.length) continue;
+    const min = [Infinity, Infinity, Infinity];
+    const max = [-Infinity, -Infinity, -Infinity];
+    for (let i = 0; i < vc; i++) for (let c = 0; c < 3; c++) {
+      min[c] = Math.min(min[c], m.positions[i * 3 + c]);
+      max[c] = Math.max(max[c], m.positions[i * 3 + c]);
+    }
+    const attributes = {
+      POSITION: acc({ bufferView: addView(m.positions, 34962), componentType: 5126, count: vc, type: 'VEC3', min, max }),
+      NORMAL: acc({ bufferView: addView(m.normals, 34962), componentType: 5126, count: vc, type: 'VEC3' }),
+    };
+    if (part.vertexColors) {
+      const col = new Uint16Array(vc * 4);
+      for (let i = 0; i < vc; i++) {
+        for (let c = 0; c < 3; c++) col[i * 4 + c] = Math.round(srgbToLinear(m.colors[i * 3 + c]) * 65535);
+        col[i * 4 + 3] = 65535;
+      }
+      attributes.COLOR_0 = acc({ bufferView: addView(col, 34962), componentType: 5123, normalized: true, count: vc, type: 'VEC4' });
+    }
+    const indices = acc({ bufferView: addView(m.indices, 34963), componentType: 5125, count: m.indices.length, type: 'SCALAR' });
+    const mt = part.material;
+    const key = `${mt.name}|${part.vertexColors}`;
+    if (!matIndex.has(key)) {
+      const base = part.vertexColors ? [1, 1, 1] : mt.color.map(srgbToLinear);
+      const mat = {
+        name: mt.name,
+        pbrMetallicRoughness: { baseColorFactor: [...base, 1], metallicFactor: mt.metal, roughnessFactor: Math.max(0.04, mt.rough) },
+      };
+      if (mt.glow > 0) {
+        mat.emissiveFactor = mt.color.map(srgbToLinear);
+        if (mt.glow > 1) {
+          mat.extensions = { KHR_materials_emissive_strength: { emissiveStrength: mt.glow } };
+          emissiveUsed = true;
+        }
+      }
+      json.materials.push(mat);
+      matIndex.set(key, json.materials.length - 1);
+    }
+    json.meshes.push({ name: part.name, primitives: [{ attributes, indices, material: matIndex.get(key) }] });
+    json.nodes.push({ name: part.name, mesh: json.meshes.length - 1 });
+    json.scenes[0].nodes.push(json.nodes.length - 1);
+  }
+  if (emissiveUsed) json.extensionsUsed = ['KHR_materials_emissive_strength'];
+  json.buffers[0].byteLength = offset;
+  let jsonBytes = new TextEncoder().encode(JSON.stringify(json));
+  const jpad = (4 - (jsonBytes.length % 4)) % 4;
+  if (jpad) {
+    const j2 = new Uint8Array(jsonBytes.length + jpad).fill(0x20);
+    j2.set(jsonBytes);
+    jsonBytes = j2;
+  }
+  const total = 12 + 8 + jsonBytes.length + 8 + offset;
+  const out = new Uint8Array(total);
+  const dv = new DataView(out.buffer);
+  dv.setUint32(0, 0x46546c67, true);
+  dv.setUint32(4, 2, true);
+  dv.setUint32(8, total, true);
+  dv.setUint32(12, jsonBytes.length, true);
+  dv.setUint32(16, 0x4e4f534a, true);
+  out.set(jsonBytes, 20);
+  let p = 20 + jsonBytes.length;
+  dv.setUint32(p, offset, true);
+  dv.setUint32(p + 4, 0x004e4942, true);
+  p += 8;
+  for (const c of chunks) {
+    out.set(c, p);
+    p += c.byteLength;
+  }
+  return out;
+}

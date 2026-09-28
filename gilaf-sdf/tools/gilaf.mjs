@@ -72,6 +72,7 @@ const USAGE = `usage: node tools/gilaf.mjs <render|still|export|check> <recipe.j
   render   2x2 contact sheet (3/4, front, side, back)      --out --size --clay --light --frames
   still    one view                                          --out --yaw --pitch --zoom --width --height --clay --light
   export   mesh files (.glb .stl .obj by --out extension)    --out --res --tris --mm --formats glb,stl
+           recipes with exportParts(): one GLB with a node per part; --lo N adds <out>-lo.glb
   animate  one animation loop as video (.mp4 .gif .webm)   --out --size --yaw --pitch --zoom --frames --count --light
   check    compile only and print stats`;
 
@@ -160,6 +161,22 @@ async function main() {
       mkdirSync(dirname(resolve(out)), { recursive: true });
       writeFileSync(out, Buffer.from(url.split(',')[1], 'base64'));
       console.log(`wrote ${out} (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
+    }
+
+    if (info.parts) console.log(`parts: ${info.parts.join(', ')}`);
+    if (o.cmd === 'export' && info.parts && (!o.formats || o.formats === 'glb') && extname(o.out || '.glb') === '.glb') {
+      // named parts: one GLB with a node per part (+ a lighter -lo.glb with --lo N)
+      const out = o.out || join('models', `${name}.glb`);
+      const r = await page.evaluate((a) => window.gilaf.exportParts(a), { res: +(o.res || 256), tris: +(o.tris || 60000), lo: +(o.lo || 0), name });
+      mkdirSync(dirname(resolve(out)), { recursive: true });
+      for (const f of r.files) {
+        const target = f.name.endsWith('-lo.glb') ? out.replace(/\.glb$/, '-lo.glb') : out;
+        writeFileSync(target, Buffer.from(f.b64, 'base64'));
+        console.log(`wrote ${target} (${(Buffer.byteLength(f.b64, 'base64') / 1024).toFixed(0)} KB)`);
+      }
+      console.log(`parts: ${r.parts.map((p) => `${p.name}[${p.material}] ${p.tris}`).join(', ')}`);
+      console.log(`triangles: hi ${r.stats.hiTris}${r.stats.loTris ? `, lo ${r.stats.loTris}` : ''} (raw ${r.stats.raw}), cell ${r.stats.cell.toFixed(4)}`);
+      return;
     }
 
     if (o.cmd === 'export') {

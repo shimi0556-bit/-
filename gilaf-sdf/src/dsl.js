@@ -500,6 +500,28 @@ export function createApi(params = {}) {
       return typeof v === 'number' && Number.isFinite(v) ? v : def;
     },
 
+    // separate named parts for export (a car's body, glass and four wheels, for example)
+    exportParts: (list) => {
+      if (!Array.isArray(list) || !list.length) fail('exportParts() takes a list: [{ name, shape, material }, ...]');
+      const seen = new Set();
+      state.parts = list.map((p, i) => {
+        if (!p || typeof p !== 'object') fail(`exportParts(): item ${i} must be { name, shape }`);
+        if (typeof p.name !== 'string' || !p.name) fail(`exportParts(): item ${i} needs a name`);
+        if (seen.has(p.name)) fail(`exportParts(): two parts are named '${p.name}'`);
+        seen.add(p.name);
+        asNode(p.shape, `exportParts(): part '${p.name}' shape`);
+        if (p.shape.dim !== 3) fail(`exportParts(): part '${p.name}' must be a 3D shape`);
+        return {
+          name: p.name,
+          node: p.shape,
+          material: typeof p.material === 'string' && p.material ? p.material : p.name,
+          color: p.color != null ? parseColor(p.color, `part ${p.name} color`) : null,
+          mat: parseMat(p.surface ?? null),
+          vertexColors: !!p.vertexColors,
+        };
+      });
+    },
+
     // animation: tracks are functions of t, which runs 0 → 1 over `seconds` and loops
     animate: (opts, tracks) => {
       const o = typeof opts === 'number' ? { seconds: opts } : opts || {};
@@ -763,7 +785,7 @@ export function runRecipe(code, params = {}) {
   const node = fn(...names.map((k) => api[k]));
   if (!(node instanceof Node)) fail('The recipe must end with `return <shape>` (for example: return sphere(0.5))');
   if (node.dim !== 3) fail('The recipe returned a 2D shape. Use .extrude(depth) or .revolve() to make it 3D');
-  return { node, scene: state.scene, params: state.params, anim: state.anim || null };
+  return { node, scene: state.scene, params: state.params, anim: state.anim || null, parts: state.parts || null };
 }
 
 let scriptSeq = 0;

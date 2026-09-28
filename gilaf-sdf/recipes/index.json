@@ -5,6 +5,11 @@
     "file": "dog.js"
   },
   {
+    "id": "car",
+    "name": "מכונית מירוץ גילוף GT",
+    "file": "car.js"
+  },
+  {
     "id": "robot",
     "name": "רובוט עוזר",
     "file": "robot.js"

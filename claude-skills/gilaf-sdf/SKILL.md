@@ -69,6 +69,9 @@ complete language reference plus the craft rules. For the expected quality bar, 
 - Animation strips: a count that divides the number of cycles hides the motion (8 frames of
   `wave(t, 8)` all land on 0). Use 6 or 10 frames for a strip, or look at the video.
 - Bones cannot live inside `mirror/ring/grid/twist/bend`; build left/right parts with a side function.
+- Game assets with named parts (car wheels, paint, lamps): build to the game's units and axes and list the parts
+  with `exportParts([...])` (see the reference). `recipes/car.js` and `integrations/shimotron-rally/` show the full
+  path from recipe to a car driving in Shimotron Rally. Check the game's loader for the names it requires.
 - Software rendering here is ~15 s per 480px frame for a detailed model: run the final
   `animate` in the background and keep working.
 
