@@ -263,6 +263,12 @@ a.intersect(b)    // רק החלק המשותף</pre>
       <h3>צורות מסובבות ומשוכות</h3>
       <pre>polygon([[0,0],[.4,0],[.3,.5],[.45,1],[0,1]], {smooth: 8}).revolve()  // אגרטל
 star(5, 0.5, 0.22).extrude(0.1, 0.02)   // כוכב תלת־ממדי</pre>
+      <h3>הנפשה</h3>
+      <pre>const tail = tube([...]).bone('tail', [0, 0.3, -0.5])  // חלק זז + נקודת ציר
+animate({ seconds: 4 }, {
+  tail: (t) => ({ rotate: [0, 35 * wave(t, 8), 0] }),   // כשכוש
+  head: (t) => ({ rotate: [0, 0, 10 * wave(t, 1)] }),   // הטיית ראש
+})</pre>
       <h3>סליידרים</h3>
       <pre>const ears = param('ears', 0.3, 0.1, 0.6)   // יוצר סליידר חי</pre>
       <p>הסוד לאיכות: קודם מסות גדולות, אחר כך צורות משניות, ורק בסוף פרטים קטנים. המסו חלקים אורגניים עם רדיוס של 10–30% מגודל החלק הקטן.</p>
@@ -276,14 +282,15 @@ star(5, 0.5, 0.22).extrude(0.1, 0.02)   // כוכב תלת־ממדי</pre>
       <button class="chip" id="clayBtn" aria-pressed="false" title="הצגת צורה בלבד, בלי צבעים">חימר</button>
       <button class="chip" id="meshBtn" aria-pressed="false" disabled title="הצגת רשת המשולשים שנבנתה">רשת</button>
       <button class="chip" id="wireBtn" aria-pressed="false" hidden>קווים</button>
+      <button class="chip" id="playBtn" aria-pressed="true" hidden>עצירה</button>
       <button class="chip" id="shotBtn">צילום PNG</button>
     </div>
     <div class="hud"><span id="hudInfo">גררו לסיבוב · גלגלת או צביטה לזום · הקשה כפולה לאיפוס</span><span id="hudFrames"></span></div>
   </main>
 </div>
 <script type="module">"use strict";
-const BUILTIN_RECIPES = [{"id":"robot","name":"רובוט עוזר","code":"// Friendly helper robot: hard-surface forms, a recessed glossy visor, glowing eyes.\nscene({ light: 'studio' });\n\nconst headW = param('headWidth', 0.92, 0.7, 1.2);\nconst armDrop = param('armDrop', 0.0, -0.25, 0.25);\n\nconst white = '#eeeae2';\nconst orange = '#ff7a2f';\nconst steel = '#a3a9b4';\nconst joint = '#6d7380';\n\n// ---- head ----\nconst headY = 1.58;\nlet head = box(headW, 0.64, 0.72, 0.22).move(0, headY, 0).color(white, 'plastic');\n// visor pocket, painted dark glossy by the colored cutter\nhead = head.cut(box(headW - 0.2, 0.42, 0.3, 0.14).move(0, headY - 0.02, 0.4).color('#101318', 'glossy'), 0.02);\nconst eye = box(0.1, 0.15, 0.06, 0.05).move(0.17, headY, 0.26).color('#7df3ff', 'glow');\nconst ear = cylinder(0.15, 0.1, 0.03).rotateZ(90).move(headW / 2 + 0.02, headY, 0).color(orange, 'plastic')\n  .add(cylinder(0.07, 0.06, 0.02).rotateZ(90).move(headW / 2 + 0.08, headY, 0).color(steel, 'metal'), 0.01);\nconst antenna = capsule([0, headY + 0.3, 0], [0.05, headY + 0.55, -0.05], 0.022).color(steel, 'metal')\n  .add(sphere(0.06).move(0.05, headY + 0.58, -0.05).color(orange, 'glow'), 0.01);\nhead = head.add(eye.mirror('x'), 0.01).add(ear.mirror('x'), 0.02).add(antenna, 0.03);\n\n// ---- body ----\nconst neck = cylinder(0.13, 0.3, 0.02).move(0, 1.2, 0).color(joint, 'brushed');\nlet torso = box(0.96, 0.82, 0.66, 0.28).move(0, 0.86, 0).color(white, 'plastic')\n  .paint(box(2, 0.16, 2).move(0, 0.56, 0), orange, 0.004)\n  .cut(box(0.5, 0.32, 0.3, 0.09).shell(0.014).move(0, 0.95, 0.33), 0.004)\n  .add(cylinder(0.07, 0.06, 0.02).rotateX(90).move(0, 0.95, 0.33).color('#ffd166', 'glow'), 0.01)\n  // back vents: one slot repeated four times\n  .cut(capsule([-0.18, 0, 0], [0.18, 0, 0], 0.028).grid([0, 0.09, 0], [1, 4, 1]).move(0, 0.95, -0.34).color('#23262d', 'satin'), 0.012);\n\n// ---- arms (model the right side, mirror it) ----\nconst sh = [0.56, 1.06 + armDrop * 0.2, 0];\nconst el = [0.66, 0.78 + armDrop, 0.04];\nconst wr = [0.62, 0.52 + armDrop, 0.16];\nconst arm = sphere(0.13).move(...sh).color(steel, 'metal')\n  .add(capsule(sh, el, 0.085, 0.075).color(white, 'plastic'), 0.04)\n  .add(sphere(0.085).move(...el).color(steel, 'metal'), 0.02)\n  .add(capsule(el, wr, 0.08, 0.1).color(white, 'plastic'), 0.03)\n  .add(torus(0.08, 0.035).rotateX(80).move(wr[0], wr[1] - 0.08, wr[2] + 0.03).color(orange, 'plastic'), 0.02);\n\n// ---- legs ----\nconst leg = capsule([0.22, 0.5, 0], [0.24, 0.2, 0.02], 0.1, 0.09).color(joint, 'brushed')\n  .add(box(0.3, 0.16, 0.42, 0.07).move(0.25, 0.08, 0.06).color(white, 'plastic')\n    .paint(box(1, 1, 0.1).move(0.25, 0.08, 0.27), orange, 0.005), 0.05);\n\nreturn torso\n  .add(neck, 0.04)\n  .add(head, 0.03)\n  .add(arm.mirror('x'), 0.03)\n  .add(leg.mirror('x'), 0.04);\n"},{"id":"octopus","name":"תמנון","code":"// Octopus: organic blending, spline tentacles repeated with ring(), mottled skin.\nscene({ light: 'sunset' });\n\nconst curl = param('curl', 1.0, 0.0, 1.6);\nconst skin = '#e0633f';\nconst belly = '#f6b28f';\n\n// one tentacle along +X, curling up at the tip; ring(8) makes the other seven\nconst t = (a) => a * curl;\nconst tentacle = tube([\n  [0.3, 0.4, 0, 0.16],\n  [0.58, 0.2, 0, 0.13],\n  [0.88, 0.1, 0.04, 0.1],\n  [1.12, 0.12 + t(0.08), 0.08, 0.07],\n  [1.22, 0.28 + t(0.14), 0.02, 0.045],\n  [1.12, 0.4 + t(0.2), -0.06 * curl, 0.025],\n], { smooth: 6 })\n  // suckers: pale dots on the underside\n  .paint(sphere(0.045).grid([0.16, 0, 0], [6, 1, 1]).move(0.72, 0.02, 0.02), '#fbd9c4', 0.012);\n\nconst legs = tentacle.ring(8).color(skin, 'satin')\n  .gradient(belly, 'y', 0.35, 0.02);\n\n// mantle (the head) and the web between the legs\nconst mantle = ellipsoid(0.62, 0.74, 0.6).move(0, 1.08, -0.08).rotateX(-12)\n  .displace(0.012, 5, { octaves: 3, seed: 2 });\nconst web = ellipsoid(0.7, 0.3, 0.7).move(0, 0.48, 0);\nconst bodyShape = mantle.add(web, 0.28).color(skin, 'satin')\n  .colorNoise('#b8432a', 7, 0.7, { sharp: 0.6 })\n  .gradient(belly, 'y', 0.75, 0.35);\n\n// eyes on the side of the head, with a slit pupil\nconst eyeBall = sphere(0.14).color('#f7efe0', 'glossy')\n  .paint(box(0.14, 0.04, 0.3).move(0.02, 0, 0.1), '#15110e', 0.004)\n  .paint(sphere(0.05).move(0.02, 0.03, 0.14), '#15110e', 0.002);\nconst eyeLid = ellipsoid(0.19, 0.12, 0.17).move(0, 0.06, -0.02).cut(sphere(0.16).move(0.02, -0.05, 0.08), 0.03).color(skin, 'satin');\nconst eye = eyeBall.add(eyeLid, 0.03).rotateY(28).move(0.3, 0.86, 0.36);\n\nreturn bodyShape.add(legs, 0.12).add(eye.mirror('x'), 0.05);\n"},{"id":"rook","name":"צריח שחמט משיש","code":"// Chess rook in marble: lathe profile, battlements from ring(), carved arrow slits, veined stone.\nscene({ light: 'studio' });\n\nconst merlons = Math.round(param('merlons', 6, 4, 10, 1));\nconst height = param('height', 1.7, 1.3, 2.2);\n\n// the turned body: [radius, height] from the base to the top rim\nconst h = height;\nconst body = lathe([\n  [0.52, 0], [0.54, 0.05], [0.5, 0.1], [0.44, 0.14], [0.46, 0.2], [0.38, 0.28],\n  [0.3, 0.45], [0.27, h * 0.62], [0.3, h * 0.72], [0.36, h * 0.76], [0.4, h * 0.8],\n  [0.4, h * 0.97], [0.38, h],\n], { smooth: 4 });\n\n// hollow crown and the gaps between battlements\nconst crown = cylinder(0.3, 0.4).move(0, h, 0);\nconst gap = box(1.0, 0.3, 0.14, 0.01).move(0.45, h, 0);\nconst slit = capsule([0, h * 0.5, 0.3], [0, h * 0.6, 0.3], 0.028);\n\n// a thin ring of decoration under the crown\nconst collar = torus(0.39, 0.025).move(0, h * 0.8, 0);\n\nreturn body\n  .cut(crown, 0.02)\n  .cut(gap.ring(merlons), 0.015)\n  .cut(slit.ring(4).rotateY(45), 0.01)\n  .add(collar, 0.01)\n  .color('#eee9e1', 'glossy')\n  .colorNoise('#d6cfc3', 3, 0.6, { sharp: 0.1 })                          // soft cloudy tone\n  .colorNoise('#8d877d', 2.2, 0.8, { veins: true, sharp: 0.6, seed: 3 })  // grey veins\n  .colorNoise('#a39c90', 5, 0.5, { veins: true, sharp: 0.85, seed: 8 })   // fine veins\n  .paint(torus(0.52, 0.06).move(0, 0.05, 0), '#2d2a26', 0.005, 'satin');   // felt pad\n"},{"id":"vase","name":"כד קרמיקה","code":"// Glazed amphora: lathe outline, hollow wall opened at the top, spline handles, painted bands.\nscene({ light: 'daylight' });\n\nconst belly = param('belly', 0.5, 0.36, 0.62);\nconst neck = param('neck', 0.2, 0.14, 0.3);\n\n// outline from the foot to the lip: [radius, height]\nconst outline = [\n  [0.24, 0], [0.3, 0.05], [belly * 0.86, 0.28], [belly, 0.55],\n  [belly * 0.9, 0.8], [neck + 0.04, 1.08], [neck, 1.24], [neck + 0.07, 1.38], [neck + 0.08, 1.42],\n];\nconst top = 1.42;\n\nlet body = lathe(outline, { smooth: 5 })\n  .shell(0.05)                          // hollow wall\n  .cut(halfspace('-y', top - 0.03))     // open the lip\n  .color('#1d5f73', 'glossy');\n\n// shallow flutes around the belly (the wall is thicker than their depth)\nconst flute = capsule([belly + 0.018, 0.36, 0], [belly + 0.018, 0.72, 0], 0.035);\nbody = body.cut(flute.ring(20), 0.015);\n\n// two handles from neck to shoulder, modelled once and mirrored\nconst handle = tube([\n  [neck + 0.02, 1.2, 0, 0.045],\n  [neck + 0.2, 1.24, 0, 0.042],\n  [belly * 0.95 + 0.1, 1.02, 0, 0.04],\n  [belly * 0.93, 0.84, 0, 0.045],\n], { smooth: 6 }).color('#1d5f73', 'glossy');\n\nreturn body.add(handle.mirror('x'), 0.035)\n  .gradient('#d8b58a', 'y', 0.3, 0.02)                               // raw clay foot\n  .paint(torus(belly * 0.98, 0.035).move(0, 0.55, 0).scale(1.02), '#e8d9b8', 0.006)   // cream band\n  .paint(box(3, 0.05, 3).move(0, 1.02, 0), '#e8d9b8', 0.006)\n  .colorNoise('#2e8c8c', 9, 0.4, { sharp: 0.2 })\n  .paint(lathe(outline, { smooth: 5 }).round(-0.012), '#0b2530', 0.004);   // darker glaze inside (painted last so nothing covers it)\n"},{"id":"spaceship","name":"חללית סיור","code":"// Scout spaceship: mirrored hard-surface forms, elongate(), extruded wing outlines, glowing engines.\nscene({ light: 'night' });\n\nconst sweep = param('wingSweep', 0.4, 0.0, 0.8);\nconst hull = '#dfe3e8';\nconst dark = '#2a2f38';\nconst accent = '#ff5a36';\n\n// fuselage: long rounded body tapering to a pointed nose\nlet fuselage = capsule([0, 0, 1.3], [0, 0, -0.9], 0.08, 0.3)\n  .scale(1, 0.72, 1)\n  .add(ellipsoid(0.34, 0.24, 0.9).move(0, 0.02, -0.45), 0.2)\n  .cut(halfspace('y', -0.14), 0.05)                 // flat belly\n  .color(hull, 'plastic');\n\n// canopy: glossy glass bubble\nconst canopy = ellipsoid(0.17, 0.15, 0.48).move(0, 0.11, 0.42).color('#0d1420', 'glossy');\n\n// panel seams and a dorsal stripe\nfuselage = fuselage\n  .cut(box(1, 0.01, 0.012).grid([0, 0, 0.3], [1, 1, 4]).move(0, 0.1, -0.55).color(dark), 0.003)\n  .paint(box(0.08, 1, 1.4).move(0, 0.3, -0.35), accent, 0.006);\n\n// air intakes on the sides\nconst intake = box(0.16, 0.14, 0.4, 0.05).move(0.3, -0.02, -0.05)\n  .cut(box(0.12, 0.09, 0.3, 0.04).move(0.3, -0.02, 0.1).color('#101318', 'satin'), 0.01)\n  .color(hull, 'plastic');\n\n// wing: 2D outline extruded thin and laid flat; built for the right side, mirrored\nconst wing = polygon([\n  [0.25, 0.5], [1.3, -0.15 - sweep * 0.55], [1.38, -0.5 - sweep * 0.55], [0.25, -0.72],\n]).extrude(0.07, 0.025)\n  .rotateX(90).move(0, -0.06, -0.3)\n  .color(hull, 'plastic')\n  .paint(box(0.35, 1, 3).move(1.2, 0, 0), accent, 0.008)\n  .cut(box(0.5, 1, 0.012).move(0.8, 0, -0.35 - sweep * 0.25).rotateY(-20).color(dark), 0.003);\n\n// wingtip cannons and the main engines with glowing nozzles\nconst cannon = capsule([1.32, -0.06, 0.25 - sweep * 0.5], [1.32, -0.06, -0.85 - sweep * 0.4], 0.05, 0.085).color('#8f96a1', 'metal');\nconst engine = capsule([0.34, 0, -0.3], [0.34, 0, -1.25], 0.14, 0.2).color('#8f96a1', 'brushed')\n  .cut(cylinder(0.15, 0.3).rotateX(90).move(0.34, 0, -1.45).color('#6fd8ff', 'glow'), 0.02);\n\n// twin tail fins leaning outward\nconst fin = polygon([[0, 0], [0.6, 0], [0.7, 0.45], [0.5, 0.47]], 1).extrude(0.05, 0.02)\n  .rotateY(90).rotateZ(-14).move(0.2, 0.08, -0.7).color(hull, 'plastic')\n  .paint(box(1, 0.14, 2).move(0.3, 0.46, 0), accent, 0.006);\n\nreturn fuselage\n  .add(canopy, 0.03)\n  .add(intake.mirror('x'), 0.04)\n  .add(wing.mirror('x'), 0.06)\n  .add(cannon.mirror('x'), 0.03)\n  .add(engine.mirror('x'), 0.08)\n  .add(fin.mirror('x'), 0.03);\n"},{"id":"crystals","name":"סלע קריסטלים","code":"// Crystal geode: ridged-noise rock, a scattered cluster of hexagonal crystals, emissive cores.\nscene({ light: 'night' });\n\nconst count = Math.round(param('crystals', 9, 3, 16, 1));\nconst glow = param('glow', 0.35, 0, 2);\n\nconst rock = ellipsoid(1.0, 0.45, 0.85).move(0, 0.2, 0)\n  .cut(ellipsoid(0.7, 0.4, 0.55).move(0, 0.62, 0.05), 0.12)       // the bowl the crystals grow from\n  .displace(0.06, 2.5, { octaves: 5, ridged: true, seed: 4 })\n  .color('#4a4550', 'matte')\n  .colorNoise('#6f6878', 5, 0.8, { sharp: 0.3 })\n  .intersect(halfspace('y', 0.55), 0.04);\n\n// one hexagonal crystal: prism with a pointed cap, standing on its base at the origin\nconst crystal = (len, r) => ngon(6, r).extrude(len, r * 0.08).rotateX(-90).move(0, len / 2, 0)\n  .add(cone(r * 0.96, 0.001, r * 1.6).move(0, len + r * 0.8, 0), 0.01);\n\nconst rnd = rand(7);\nconst parts = range(count).map((i) => {\n  const a = (i / count) * TAU + rnd.range(-0.3, 0.3);\n  const d = i === 0 ? 0 : rnd.range(0.12, 0.42);\n  const len = i === 0 ? 0.95 : rnd.range(0.35, 0.7);\n  const r = i === 0 ? 0.13 : rnd.range(0.06, 0.1);\n  const tiltOut = i === 0 ? 0 : 18 + d * 40;\n  return crystal(len, r)\n    .rotate(0, 0, -tiltOut)                // lean outward...\n    .rotateY((-a * 180) / PI)              // ...in the direction of its position\n    .move(Math.cos(a) * d, 0.28, Math.sin(a) * d);\n});\nconst cluster = union(...parts)\n  .color('#8e5cf0', { rough: 0.08, metal: 0, glow })\n  .gradient('#e2ccff', 'y', 0.5, 1.6);\n\nreturn rock.add(cluster, 0.03);\n"},{"id":"mushroom","name":"בית פטרייה","code":"// Mushroom cottage: soft organic blends, painted spots, a carved door and glowing windows.\nscene({ light: 'sunset' });\n\nconst capR = param('capR', 0.78, 0.55, 1.0);\n\nconst stem = capsule([0, 0, 0], [0, 0.78, 0], 0.34, 0.27)\n  .displace(0.008, 10, { octaves: 3 })\n  .color('#efe3cc', 'satin')\n  .colorNoise('#d9c7a6', 6, 0.5);\n\nconst cap = ellipsoid(capR, capR * 0.58, capR).move(0, 0.9, 0)\n  .cut(ellipsoid(capR * 0.92, capR * 0.3, capR * 0.92).move(0, 0.62, 0), 0.08)   // hollow underside\n  .color('#c8372d', 'glossy')\n  .paint(sphere(0.13).move(capR * 0.45, 1.12, capR * 0.45).mirror('x'), '#fff4e2', 0.012)\n  .paint(sphere(0.1).move(0, 1.32, 0.12), '#fff4e2', 0.012)\n  .paint(sphere(0.09).move(capR * 0.7, 1.02, -capR * 0.3).mirror('x'), '#fff4e2', 0.012)\n  .paint(sphere(0.11).move(0.1, 1.2, -capR * 0.6), '#fff4e2', 0.012);\n\n// door: carved arch, painted by the colored cutter, with a tiny knob\nconst door = box(0.22, 0.36, 0.3, 0.1).move(0, 0.18, 0.34).color('#5b3a22', 'satin');\nconst knob = sphere(0.018).move(0.06, 0.2, 0.3).color('#d8b25a', 'metal');\n\n// round windows with warm light\nconst win = cylinder(0.065, 0.2).rotateX(90).rotateY(40).move(0.22, 0.55, 0.22).color('#ffcf6b', 'glow');\nconst frame = torus(0.075, 0.018).rotateX(90).rotateY(40).move(0.25, 0.55, 0.25).color('#5b3a22', 'satin');\n\n// grass tufts around the base\nconst tuft = cone(0.03, 0.001, 0.2).rotateZ(12).move(0.46, 0.08, 0).color('#6f9e3a', 'satin');\n\nreturn stem\n  .add(cap, 0.06)\n  .cut(door, 0.015)\n  .add(knob, 0.004)\n  .cut(win.mirror('x'), 0.01)\n  .add(frame.mirror('x'), 0.008)\n  .add(tuft.ring(14), 0.02);\n"}];
-const RECIPE_REFERENCE = "# Gilaf recipe language — reference\n\nA recipe is the **body of a JavaScript function** that ends with `return <shape>`.\nEvery shape is a signed distance field (SDF); shapes are combined, blended, carved and painted.\nY is up. One unit ≈ whatever you like; models usually span 1–3 units. The model sits on a floor at its lowest point.\n\n```js\nconst head = sphere(0.5).color('#f2c9a0', 'satin');\nconst nose = ellipsoid(0.09, 0.07, 0.12).move(0, -0.02, 0.48);\nreturn head.add(nose, 0.06);          // smooth blend, radius 0.06\n```\n\n## 3D primitives (all centered at the origin)\n| call | notes |\n|---|---|\n| `sphere(r)` | |\n| `box(w, h, d, round=0)` | full width/height/depth; `round` bevels the edges |\n| `ellipsoid(rx, ry, rz)` | radii |\n| `capsule([x,y,z], [x,y,z], r1, r2=r1)` | a limb between two points; different radii make a tapered cone with round ends |\n| `cylinder(r, h, round=0)` | vertical (Y) axis, full height `h` |\n| `cone(rBottom, rTop, h)` | capped cone, vertical, full height `h` |\n| `torus(R, r)` | ring in the XZ plane (lying flat) |\n| `octahedron(s)` | gem/diamond shape |\n| `halfspace(axis='y', offset=0)` | everything below `axis=offset` (`'-y'` = above). Use with `.cut()` / `.intersect()` |\n| `tube(points, {radius, smooth=6, closed})` | smooth spline through `[x,y,z,r]` points (radius per point). Tails, tentacles, horns, pipes, handles |\n| `lathe([[r,y], ...], {smooth=true})` | turned solid around Y from an outline of `[radius, height]` points, heights increasing. Perfectly smooth and fast: vases, bottles, chess pieces, columns, stems |\n\n## 2D shapes → 3D\n2D shapes live in the XY plane: `circle(r)`, `rect(w, h, round=0)`, `polygon([[x,y],...], {smooth})`,\n`ngon(sides, r)`, `star(points, rOuter, rInner)`. They support `move(x,y)`, `rotate(deg)`, `scale(s)`,\n`round(r)`, `shell(t)`, `add/cut/intersect`.\n- `.extrude(depth, round=0)` → 3D along Z (logos, badges, cookie cutters).\n- `.revolve(offset=0)` → spin around the Y axis. X of the 2D shape = radius, Y = height.\n  Use it for profiles that fold back on themselves or rings (`circle(0.1).move(0.5, 0).revolve()` = torus).\n  For ordinary turned objects prefer `lathe()`: it is smoother and much faster than a polygon profile.\n  `polygon(points, {smooth: 4})` rounds a rough outline into a spline (more points = slower).\n\n## Transforms (applied in the order written, in world space)\n`.move(x,y,z)` (alias `.at`), `.rotate(xDeg, yDeg, zDeg)`, `.rotateX/Y/Z(deg)`,\n`.orient([dx,dy,dz])` (point the shape's +Y axis along a direction),\n`.scale(s)` or `.scale(sx,sy,sz)` (non-uniform is approximate but fine).\n`.mirror('x')` — symmetric copy across the YZ plane: model ONE side at +x, mirror it (also `'z'`, `'xz'`).\n`.ring(n)` — n copies around the Y axis. Place ONE copy off-axis wherever you like; the others are spaced evenly from it.\n`.grid([sx,sy,sz], [nx,ny,nz])` — array of copies, centered.\n`.twist(k)` twists around Y (radians per unit). `.bend(k)` bends along X.\n`.elongate(x,y,z)` stretches the middle of a shape without distorting its round ends.\n\n## Combining\n`a.add(b, k=0)` union; `k > 0` melts them together with a fillet of radius ≈ k.\n`a.cut(b, k=0)` subtract b from a (k = rounded edge). If `b` has its own `.color()`, the cut surface is painted with it.\n`a.intersect(b, k=0)` keep the overlap.\n`union(a, b, c...)`, `blend(k, a, b, c...)`, `group(...)` for many parts at once.\n\n## Surface\n`.round(r)` inflate (rounder, bigger). `.shell(t)` hollow skin of thickness t (cut it open to see inside).\n`.displace(amount, scale=4, {octaves=4, ridged=false, seed})` organic noise: rock, bark, skin, terrain.\nKeep `amount * scale` below ~0.6 for clean results.\n\n## Color & material\n`.color('#rrggbb', material?)` sets color for the whole sub-shape. Materials:\n`'matte' 'clay' 'satin' 'plastic' 'glossy' 'metal' 'brushed' 'chrome' 'glow'` or `{rough, metal, glow}`.\n`.material('metal')` changes only the material.\n`.paint(region, '#hex', soft=0, material?)` paints where the surface is inside `region` (geometry unchanged):\nspots, stripes, masks, belly color, eye whites. `soft` blurs the paint edge.\n`.colorNoise('#hex', scale=6, amount=1, {sharp=0.5, seed})` mottled second color (skin, stone, rust).\n`.colorNoise('#hex', scale, amount, {veins: true, sharp})` draws thin vein lines instead (marble, cracks, leaf veins).\n`.gradient('#hex', 'y', from, to)` blends toward a second color along an axis.\nColors blend smoothly inside `add(..., k)` fillets.\n**Color operations apply in the order written**: a later `colorNoise` / `paint` covers earlier ones, so put the must-show paint last.\n**Hollow objects**: `lathe(outline).shell(0.04).cut(halfspace('-y', topHeight - 0.03))` gives a wall 0.04 thick, open at the top.\nPaint the inside with `.paint(lathe(outline).round(-0.015), '#dark')` (a slightly shrunken copy selects the inner wall).\n\n## Scene & parameters\n`scene({ light: 'studio'|'sunset'|'daylight'|'night', ground: true, background: '#hex', exposure: 1, zoom: 1, step })`\n`param('name', default, min, max)` — returns a number and adds a slider in the studio.\nHelpers: `rand(seed)` (seeded random, `.range(a,b)`, `.pick(arr)`), `range(n)`, `lerp`, `clamp`, `rad`, `PI`, `TAU`, plus all of JavaScript (`for` loops, arrays, `Math`).\n\n## Craft rules for high-quality models\n1. **Block out big forms first** (3–6 shapes), check the silhouette, then add secondary forms, then small details.\n2. **Blend organics with `add(part, k)`** where k is 10–30% of the smaller part's size. Hard-surface parts use small k (0.005–0.03) or `box(..., round)`.\n3. **Model one side and `.mirror('x')`** for anything symmetric. Use `.ring(n)` / `.grid()` for repeats — they cost nothing.\n4. **Proportions**: measure from a reference size (e.g. head = 1 unit) and derive every other size from it with variables.\n5. **Layer detail at three scales**: primary masses, secondary forms (panels, muscles, rims, lids), tertiary detail (bolts, seams, grooves with `cut(..., small k)`, `displace` with small amount).\n6. **Color with intent**: 2–4 main colors, one accent. Use `paint` for markings, `colorNoise` for natural surfaces, `glow` sparingly for eyes/lights.\n7. **Keep parts touching or overlapping** so the model is one solid piece (important for 3D printing).\n8. Prefer `capsule` / `ellipsoid` / `tube` for organic shapes and `box(..., round)` / `cylinder(..., round)` for manufactured ones.\n9. Performance: under ~150 primitives is smooth. Use `mirror` / `ring` / `grid` instead of duplicating parts.\n10. `displace` with large amount × scale, `twist` and `bend` make the field inexact and slow the preview; keep them moderate.\n11. Look at the model from all sides (front, side, back, three-quarter) before calling it done: back and underside are where models look unfinished.\n\n## Complete example\n```js\n// Mushroom cottage\nscene({ light: 'sunset' });\nconst capR = param('capR', 0.78, 0.55, 1.0);\nconst stem = capsule([0, 0, 0], [0, 0.78, 0], 0.34, 0.27)\n  .displace(0.008, 10, { octaves: 3 })\n  .color('#efe3cc', 'satin').colorNoise('#d9c7a6', 6, 0.5);\nconst cap = ellipsoid(capR, capR * 0.58, capR).move(0, 0.9, 0)\n  .cut(ellipsoid(capR * 0.92, capR * 0.3, capR * 0.92).move(0, 0.62, 0), 0.08)   // hollow underside\n  .color('#c8372d', 'glossy')\n  .paint(sphere(0.13).move(capR * 0.45, 1.12, capR * 0.45).mirror('x'), '#fff4e2', 0.012);\nconst door = box(0.22, 0.36, 0.3, 0.1).move(0, 0.18, 0.34).color('#5b3a22', 'satin');   // colored cutter paints the hole\nconst win = cylinder(0.065, 0.2).rotateX(90).rotateY(40).move(0.22, 0.55, 0.22).color('#ffcf6b', 'glow');\nconst tuft = cone(0.03, 0.001, 0.2).rotateZ(12).move(0.46, 0.08, 0).color('#6f9e3a', 'satin');\nreturn stem.add(cap, 0.06).cut(door, 0.015).cut(win.mirror('x'), 0.01).add(tuft.ring(14), 0.02);\n```\n";
+const BUILTIN_RECIPES = [{"id":"dog","name":"כלבלב מונפש","code":"// Cute sitting puppy with a looping animation: tail wag, curious head tilt,\n// floppy ears that follow the head, breathing, blinking and a panting tongue.\nscene({ light: 'studio' });\n\nconst headSize = param('headSize', 1.0, 0.8, 1.25);\nconst earLength = param('earLength', 1.0, 0.7, 1.4);\n\nconst fur = '#dc9853';\nconst cream = '#f7e6cc';\nconst earFur = '#9b6034';\nconst dark = '#1b1512';\n\n// ---------- body (sitting) ----------\nconst rump = ellipsoid(0.42, 0.33, 0.44).move(0, 0.32, -0.14);\nconst chest = ellipsoid(0.3, 0.42, 0.3).rotateX(-14).move(0, 0.64, 0.06);\nconst thigh = (s) => ellipsoid(0.17, 0.21, 0.27).rotateX(-20).move(s * 0.25, 0.26, -0.04);\nconst hindPaw = (s) => ellipsoid(0.1, 0.07, 0.15).move(s * 0.27, 0.065, 0.16);\nconst frontLeg = (s) => capsule([s * 0.14, 0.62, 0.13], [s * 0.15, 0.1, 0.25], 0.085, 0.075);\nconst frontPaw = (s) => ellipsoid(0.105, 0.075, 0.13).move(s * 0.15, 0.07, 0.29);\n// toe grooves on each front paw\nconst toes = (s) => union(...[-1, 1].map((k) => capsule([s * 0.15 + k * 0.035, 0.1, 0.36], [s * 0.15 + k * 0.035, 0.06, 0.41], 0.008)));\n\nlet body = rump\n  .add(chest, 0.18)\n  .add(union(thigh(1), thigh(-1)), 0.1)\n  .add(union(hindPaw(1), hindPaw(-1)), 0.05)\n  .add(union(frontLeg(1), frontLeg(-1)), 0.06)\n  .add(union(frontPaw(1), frontPaw(-1)), 0.04)\n  .color(fur, 'satin')\n  .colorNoise('#c98a4f', 9, 0.35, { sharp: 0.2 })\n  .paint(ellipsoid(0.2, 0.3, 0.2).move(0, 0.62, 0.28), cream, 0.06)           // chest blaze\n  .paint(box(2, 0.16, 2).move(0, 0.02, 0), cream, 0.04)                       // white socks\n  .paint(ellipsoid(0.3, 0.22, 0.34).move(0, 0.56, -0.3), '#b8773f', 0.07)     // darker saddle on the back\n  .cut(union(toes(1), toes(-1)).color('#b98755'), 0.006);\n\n// ---------- collar ----------\n// collar: low at the chest, high at the back of the neck\nconst collarR = param('collarSize', 0.25, 0.2, 0.3);\nconst collar = torus(collarR, 0.042).rotateX(22).move(0, 0.94, 0.05).color('#d8443c', 'plastic');\nconst tagY = 0.94 - collarR * Math.sin(rad(22)) - 0.07;\nconst tagZ = 0.05 + collarR * Math.cos(rad(22)) + 0.085;\nconst tag = cylinder(0.068, 0.024, 0.01).rotateX(75).move(0, tagY, tagZ).color('#f2c14e', 'metal')\n  .add(torus(0.022, 0.008).rotateY(90).move(0, tagY + 0.07, tagZ - 0.01).color('#f2c14e', 'metal'), 0.005);\n\n// ---------- head ----------\nconst hs = headSize;\nconst headY = 1.14;\nconst skull = ellipsoid(0.34 * hs, 0.31 * hs, 0.3 * hs).move(0, headY, 0.1);\nconst cheek = (s) => sphere(0.105 * hs).move(s * 0.085 * hs, headY - 0.13 * hs, 0.3 * hs);\nconst muzzle = ellipsoid(0.15 * hs, 0.1 * hs, 0.13 * hs).move(0, headY - 0.1 * hs, 0.33 * hs);\nconst nose = ellipsoid(0.066 * hs, 0.048 * hs, 0.05 * hs).move(0, headY - 0.06 * hs, 0.455 * hs).color(dark, 'glossy');\n\n// mouth: a short line under the nose and a small \"w\" smile, cut in and painted dark\nconst smile = union(...[-1, 1].map((s) => torus(0.042 * hs, 0.011 * hs).rotateX(90).move(s * 0.042 * hs, headY - 0.14 * hs, 0.43 * hs)))\n  .intersect(halfspace('y', headY - 0.14 * hs))\n  .add(capsule([0, headY - 0.09 * hs, 0.45 * hs], [0, headY - 0.14 * hs, 0.44 * hs], 0.008 * hs))\n  .color('#3a2418', 'satin');\n\n// eyes: glossy with a sparkle; each is a bone so it can blink (squash)\nconst eye = (s, name) => {\n  const c = [s * 0.14 * hs, headY + 0.02 * hs, 0.335 * hs];\n  return sphere(0.068 * hs).move(...c).color(dark, 'glossy')\n    .paint(sphere(0.022 * hs).move(c[0] + s * 0.012 * hs, c[1] + 0.03 * hs, c[2] + 0.055 * hs), '#ffffff', 0.004)\n    .bone(name, c);\n};\nconst brow = (s) => sphere(0.045 * hs).move(s * 0.12 * hs, headY + 0.13 * hs, 0.3 * hs);\n\n// floppy ears hanging from the top of the head; each swings around its root\nconst ear = (s, name) => {\n  const root = [s * 0.25 * hs, headY + 0.2 * hs, 0.05 * hs];\n  return ellipsoid(0.12 * hs, 0.22 * hs * earLength, 0.06 * hs)\n    .rotateZ(-s * 10)\n    .rotateY(s * 12)\n    .move(s * 0.34 * hs, headY - 0.04 * hs - 0.08 * (earLength - 1), 0.04 * hs)\n    .color(earFur, 'satin')\n    .colorNoise('#7d4a26', 7, 0.4)\n    .bone(name, root);\n};\n\n// panting tongue\nconst tongue = ellipsoid(0.048 * hs, 0.018 * hs, 0.06 * hs).rotateX(35).move(0, headY - 0.185 * hs, 0.43 * hs)\n  .color('#f07f86', 'glossy')\n  .bone('tongue', [0, headY - 0.15 * hs, 0.4 * hs]);\n\nlet head = skull\n  .add(union(cheek(1), cheek(-1)), 0.05)\n  .add(muzzle, 0.06)\n  .color(fur, 'satin')\n  .colorNoise('#c98a4f', 9, 0.3, { sharp: 0.2 })\n  .paint(ellipsoid(0.2 * hs, 0.16 * hs, 0.2 * hs).move(0, headY - 0.1 * hs, 0.36 * hs), cream, 0.03)   // white muzzle\n  .paint(capsule([0, headY - 0.05 * hs, 0.35 * hs], [0, headY + 0.25 * hs, 0.25 * hs], 0.035 * hs), cream, 0.02) // forehead stripe\n  .paint(union(brow(1), brow(-1)), '#b77a45', 0.015)\n  .add(nose, 0.02)\n  .cut(smile, 0.006)\n  .add(tongue, 0.01)\n  .add(eye(1, 'eyeR'), 0.012).add(eye(-1, 'eyeL'), 0.012)\n  .add(ear(1, 'earR'), 0.04).add(ear(-1, 'earL'), 0.04)\n  .bone('head', [0, 0.92, 0.08]);\n\n// ---------- tail: a curled spline, wagging around its root ----------\nconst tail = tube([\n  [0, 0.28, -0.52, 0.075],\n  [0, 0.42, -0.66, 0.07],\n  [0, 0.62, -0.68, 0.06],\n  [0, 0.76, -0.58, 0.05],\n  [0, 0.8, -0.48, 0.04],\n], { smooth: 6 })\n  .color(fur, 'satin')\n  .paint(sphere(0.1).move(0, 0.8, -0.48), cream, 0.03)\n  .bone('tail', [0, 0.28, -0.5]);\n\nconst dog = body\n  .add(head, 0.1)\n  .add(tail, 0.06)\n  .add(collar, 0.012)\n  .add(tag, 0.004)\n  .bone('body', [0, 0.02, 0]);\n\n// ---------- animation: one 4-second loop ----------\nconst blink = (t) => Math.max(pulse(t, 0.3, 0.035), pulse(t, 0.78, 0.03), pulse(t, 0.86, 0.03));\nanimate({ seconds: 4, fps: 30 }, {\n  body: (t) => ({ scale: [1 + 0.012 * wave(t, 4), 1 + 0.018 * wave(t, 4), 1 + 0.012 * wave(t, 4)] }),\n  head: (t) => ({ rotate: [4 * wave(t, 2, 0.25), 6 * wave(t, 1, 0.1), 11 * wave(t, 1)] }),\n  earL: (t) => ({ rotate: [0, 0, -9 * wave(t, 1, -0.08) + 4 * wave(t, 4)] }),\n  earR: (t) => ({ rotate: [0, 0, -9 * wave(t, 1, -0.08) - 4 * wave(t, 4)] }),\n  eyeL: (t) => ({ scale: [1, 1 - 0.88 * blink(t), 1] }),\n  eyeR: (t) => ({ scale: [1, 1 - 0.88 * blink(t), 1] }),\n  tongue: (t) => ({ rotate: [8 * wave(t, 8), 0, 0] }),\n  tail: (t) => ({ rotate: [0, 38 * wave(t, 8), 6 * wave(t, 8, 0.25)] }),\n});\n\nreturn dog;\n"},{"id":"robot","name":"רובוט עוזר","code":"// Friendly helper robot: hard-surface forms, a recessed glossy visor, glowing eyes.\nscene({ light: 'studio' });\n\nconst headW = param('headWidth', 0.92, 0.7, 1.2);\nconst armDrop = param('armDrop', 0.0, -0.25, 0.25);\n\nconst white = '#eeeae2';\nconst orange = '#ff7a2f';\nconst steel = '#a3a9b4';\nconst joint = '#6d7380';\n\n// ---- head ----\nconst headY = 1.58;\nlet head = box(headW, 0.64, 0.72, 0.22).move(0, headY, 0).color(white, 'plastic');\n// visor pocket, painted dark glossy by the colored cutter\nhead = head.cut(box(headW - 0.2, 0.42, 0.3, 0.14).move(0, headY - 0.02, 0.4).color('#101318', 'glossy'), 0.02);\nconst eye = box(0.1, 0.15, 0.06, 0.05).move(0.17, headY, 0.26).color('#7df3ff', 'glow');\nconst ear = cylinder(0.15, 0.1, 0.03).rotateZ(90).move(headW / 2 + 0.02, headY, 0).color(orange, 'plastic')\n  .add(cylinder(0.07, 0.06, 0.02).rotateZ(90).move(headW / 2 + 0.08, headY, 0).color(steel, 'metal'), 0.01);\nconst antenna = capsule([0, headY + 0.3, 0], [0.05, headY + 0.55, -0.05], 0.022).color(steel, 'metal')\n  .add(sphere(0.06).move(0.05, headY + 0.58, -0.05).color(orange, 'glow'), 0.01);\nhead = head.add(eye.mirror('x'), 0.01).add(ear.mirror('x'), 0.02).add(antenna, 0.03);\n\n// ---- body ----\nconst neck = cylinder(0.13, 0.3, 0.02).move(0, 1.2, 0).color(joint, 'brushed');\nlet torso = box(0.96, 0.82, 0.66, 0.28).move(0, 0.86, 0).color(white, 'plastic')\n  .paint(box(2, 0.16, 2).move(0, 0.56, 0), orange, 0.004)\n  .cut(box(0.5, 0.32, 0.3, 0.09).shell(0.014).move(0, 0.95, 0.33), 0.004)\n  .add(cylinder(0.07, 0.06, 0.02).rotateX(90).move(0, 0.95, 0.33).color('#ffd166', 'glow'), 0.01)\n  // back vents: one slot repeated four times\n  .cut(capsule([-0.18, 0, 0], [0.18, 0, 0], 0.028).grid([0, 0.09, 0], [1, 4, 1]).move(0, 0.95, -0.34).color('#23262d', 'satin'), 0.012);\n\n// ---- arms (model the right side, mirror it) ----\nconst sh = [0.56, 1.06 + armDrop * 0.2, 0];\nconst el = [0.66, 0.78 + armDrop, 0.04];\nconst wr = [0.62, 0.52 + armDrop, 0.16];\nconst arm = sphere(0.13).move(...sh).color(steel, 'metal')\n  .add(capsule(sh, el, 0.085, 0.075).color(white, 'plastic'), 0.04)\n  .add(sphere(0.085).move(...el).color(steel, 'metal'), 0.02)\n  .add(capsule(el, wr, 0.08, 0.1).color(white, 'plastic'), 0.03)\n  .add(torus(0.08, 0.035).rotateX(80).move(wr[0], wr[1] - 0.08, wr[2] + 0.03).color(orange, 'plastic'), 0.02);\n\n// ---- legs ----\nconst leg = capsule([0.22, 0.5, 0], [0.24, 0.2, 0.02], 0.1, 0.09).color(joint, 'brushed')\n  .add(box(0.3, 0.16, 0.42, 0.07).move(0.25, 0.08, 0.06).color(white, 'plastic')\n    .paint(box(1, 1, 0.1).move(0.25, 0.08, 0.27), orange, 0.005), 0.05);\n\nreturn torso\n  .add(neck, 0.04)\n  .add(head, 0.03)\n  .add(arm.mirror('x'), 0.03)\n  .add(leg.mirror('x'), 0.04);\n"},{"id":"octopus","name":"תמנון","code":"// Octopus: organic blending, spline tentacles repeated with ring(), mottled skin.\nscene({ light: 'sunset' });\n\nconst curl = param('curl', 1.0, 0.0, 1.6);\nconst skin = '#e0633f';\nconst belly = '#f6b28f';\n\n// one tentacle along +X, curling up at the tip; ring(8) makes the other seven\nconst t = (a) => a * curl;\nconst tentacle = tube([\n  [0.3, 0.4, 0, 0.16],\n  [0.58, 0.2, 0, 0.13],\n  [0.88, 0.1, 0.04, 0.1],\n  [1.12, 0.12 + t(0.08), 0.08, 0.07],\n  [1.22, 0.28 + t(0.14), 0.02, 0.045],\n  [1.12, 0.4 + t(0.2), -0.06 * curl, 0.025],\n], { smooth: 6 })\n  // suckers: pale dots on the underside\n  .paint(sphere(0.045).grid([0.16, 0, 0], [6, 1, 1]).move(0.72, 0.02, 0.02), '#fbd9c4', 0.012);\n\nconst legs = tentacle.ring(8).color(skin, 'satin')\n  .gradient(belly, 'y', 0.35, 0.02);\n\n// mantle (the head) and the web between the legs\nconst mantle = ellipsoid(0.62, 0.74, 0.6).move(0, 1.08, -0.08).rotateX(-12)\n  .displace(0.012, 5, { octaves: 3, seed: 2 });\nconst web = ellipsoid(0.7, 0.3, 0.7).move(0, 0.48, 0);\nconst bodyShape = mantle.add(web, 0.28).color(skin, 'satin')\n  .colorNoise('#b8432a', 7, 0.7, { sharp: 0.6 })\n  .gradient(belly, 'y', 0.75, 0.35);\n\n// eyes on the side of the head, with a slit pupil\nconst eyeBall = sphere(0.14).color('#f7efe0', 'glossy')\n  .paint(box(0.14, 0.04, 0.3).move(0.02, 0, 0.1), '#15110e', 0.004)\n  .paint(sphere(0.05).move(0.02, 0.03, 0.14), '#15110e', 0.002);\nconst eyeLid = ellipsoid(0.19, 0.12, 0.17).move(0, 0.06, -0.02).cut(sphere(0.16).move(0.02, -0.05, 0.08), 0.03).color(skin, 'satin');\nconst eye = eyeBall.add(eyeLid, 0.03).rotateY(28).move(0.3, 0.86, 0.36);\n\nreturn bodyShape.add(legs, 0.12).add(eye.mirror('x'), 0.05);\n"},{"id":"rook","name":"צריח שחמט משיש","code":"// Chess rook in marble: lathe profile, battlements from ring(), carved arrow slits, veined stone.\nscene({ light: 'studio' });\n\nconst merlons = Math.round(param('merlons', 6, 4, 10, 1));\nconst height = param('height', 1.7, 1.3, 2.2);\n\n// the turned body: [radius, height] from the base to the top rim\nconst h = height;\nconst body = lathe([\n  [0.52, 0], [0.54, 0.05], [0.5, 0.1], [0.44, 0.14], [0.46, 0.2], [0.38, 0.28],\n  [0.3, 0.45], [0.27, h * 0.62], [0.3, h * 0.72], [0.36, h * 0.76], [0.4, h * 0.8],\n  [0.4, h * 0.97], [0.38, h],\n], { smooth: 4 });\n\n// hollow crown and the gaps between battlements\nconst crown = cylinder(0.3, 0.4).move(0, h, 0);\nconst gap = box(1.0, 0.3, 0.14, 0.01).move(0.45, h, 0);\nconst slit = capsule([0, h * 0.5, 0.3], [0, h * 0.6, 0.3], 0.028);\n\n// a thin ring of decoration under the crown\nconst collar = torus(0.39, 0.025).move(0, h * 0.8, 0);\n\nreturn body\n  .cut(crown, 0.02)\n  .cut(gap.ring(merlons), 0.015)\n  .cut(slit.ring(4).rotateY(45), 0.01)\n  .add(collar, 0.01)\n  .color('#eee9e1', 'glossy')\n  .colorNoise('#d6cfc3', 3, 0.6, { sharp: 0.1 })                          // soft cloudy tone\n  .colorNoise('#8d877d', 2.2, 0.8, { veins: true, sharp: 0.6, seed: 3 })  // grey veins\n  .colorNoise('#a39c90', 5, 0.5, { veins: true, sharp: 0.85, seed: 8 })   // fine veins\n  .paint(torus(0.52, 0.06).move(0, 0.05, 0), '#2d2a26', 0.005, 'satin');   // felt pad\n"},{"id":"vase","name":"כד קרמיקה","code":"// Glazed amphora: lathe outline, hollow wall opened at the top, spline handles, painted bands.\nscene({ light: 'daylight' });\n\nconst belly = param('belly', 0.5, 0.36, 0.62);\nconst neck = param('neck', 0.2, 0.14, 0.3);\n\n// outline from the foot to the lip: [radius, height]\nconst outline = [\n  [0.24, 0], [0.3, 0.05], [belly * 0.86, 0.28], [belly, 0.55],\n  [belly * 0.9, 0.8], [neck + 0.04, 1.08], [neck, 1.24], [neck + 0.07, 1.38], [neck + 0.08, 1.42],\n];\nconst top = 1.42;\n\nlet body = lathe(outline, { smooth: 5 })\n  .shell(0.05)                          // hollow wall\n  .cut(halfspace('-y', top - 0.03))     // open the lip\n  .color('#1d5f73', 'glossy');\n\n// shallow flutes around the belly (the wall is thicker than their depth)\nconst flute = capsule([belly + 0.018, 0.36, 0], [belly + 0.018, 0.72, 0], 0.035);\nbody = body.cut(flute.ring(20), 0.015);\n\n// two handles from neck to shoulder, modelled once and mirrored\nconst handle = tube([\n  [neck + 0.02, 1.2, 0, 0.045],\n  [neck + 0.2, 1.24, 0, 0.042],\n  [belly * 0.95 + 0.1, 1.02, 0, 0.04],\n  [belly * 0.93, 0.84, 0, 0.045],\n], { smooth: 6 }).color('#1d5f73', 'glossy');\n\nreturn body.add(handle.mirror('x'), 0.035)\n  .gradient('#d8b58a', 'y', 0.3, 0.02)                               // raw clay foot\n  .paint(torus(belly * 0.98, 0.035).move(0, 0.55, 0).scale(1.02), '#e8d9b8', 0.006)   // cream band\n  .paint(box(3, 0.05, 3).move(0, 1.02, 0), '#e8d9b8', 0.006)\n  .colorNoise('#2e8c8c', 9, 0.4, { sharp: 0.2 })\n  .paint(lathe(outline, { smooth: 5 }).round(-0.012), '#0b2530', 0.004);   // darker glaze inside (painted last so nothing covers it)\n"},{"id":"spaceship","name":"חללית סיור","code":"// Scout spaceship: mirrored hard-surface forms, elongate(), extruded wing outlines, glowing engines.\nscene({ light: 'night' });\n\nconst sweep = param('wingSweep', 0.4, 0.0, 0.8);\nconst hull = '#dfe3e8';\nconst dark = '#2a2f38';\nconst accent = '#ff5a36';\n\n// fuselage: long rounded body tapering to a pointed nose\nlet fuselage = capsule([0, 0, 1.3], [0, 0, -0.9], 0.08, 0.3)\n  .scale(1, 0.72, 1)\n  .add(ellipsoid(0.34, 0.24, 0.9).move(0, 0.02, -0.45), 0.2)\n  .cut(halfspace('y', -0.14), 0.05)                 // flat belly\n  .color(hull, 'plastic');\n\n// canopy: glossy glass bubble\nconst canopy = ellipsoid(0.17, 0.15, 0.48).move(0, 0.11, 0.42).color('#0d1420', 'glossy');\n\n// panel seams and a dorsal stripe\nfuselage = fuselage\n  .cut(box(1, 0.01, 0.012).grid([0, 0, 0.3], [1, 1, 4]).move(0, 0.1, -0.55).color(dark), 0.003)\n  .paint(box(0.08, 1, 1.4).move(0, 0.3, -0.35), accent, 0.006);\n\n// air intakes on the sides\nconst intake = box(0.16, 0.14, 0.4, 0.05).move(0.3, -0.02, -0.05)\n  .cut(box(0.12, 0.09, 0.3, 0.04).move(0.3, -0.02, 0.1).color('#101318', 'satin'), 0.01)\n  .color(hull, 'plastic');\n\n// wing: 2D outline extruded thin and laid flat; built for the right side, mirrored\nconst wing = polygon([\n  [0.25, 0.5], [1.3, -0.15 - sweep * 0.55], [1.38, -0.5 - sweep * 0.55], [0.25, -0.72],\n]).extrude(0.07, 0.025)\n  .rotateX(90).move(0, -0.06, -0.3)\n  .color(hull, 'plastic')\n  .paint(box(0.35, 1, 3).move(1.2, 0, 0), accent, 0.008)\n  .cut(box(0.5, 1, 0.012).move(0.8, 0, -0.35 - sweep * 0.25).rotateY(-20).color(dark), 0.003);\n\n// wingtip cannons and the main engines with glowing nozzles\nconst cannon = capsule([1.32, -0.06, 0.25 - sweep * 0.5], [1.32, -0.06, -0.85 - sweep * 0.4], 0.05, 0.085).color('#8f96a1', 'metal');\nconst engine = capsule([0.34, 0, -0.3], [0.34, 0, -1.25], 0.14, 0.2).color('#8f96a1', 'brushed')\n  .cut(cylinder(0.15, 0.3).rotateX(90).move(0.34, 0, -1.45).color('#6fd8ff', 'glow'), 0.02);\n\n// twin tail fins leaning outward\nconst fin = polygon([[0, 0], [0.6, 0], [0.7, 0.45], [0.5, 0.47]], 1).extrude(0.05, 0.02)\n  .rotateY(90).rotateZ(-14).move(0.2, 0.08, -0.7).color(hull, 'plastic')\n  .paint(box(1, 0.14, 2).move(0.3, 0.46, 0), accent, 0.006);\n\nreturn fuselage\n  .add(canopy, 0.03)\n  .add(intake.mirror('x'), 0.04)\n  .add(wing.mirror('x'), 0.06)\n  .add(cannon.mirror('x'), 0.03)\n  .add(engine.mirror('x'), 0.08)\n  .add(fin.mirror('x'), 0.03);\n"},{"id":"crystals","name":"סלע קריסטלים","code":"// Crystal geode: ridged-noise rock, a scattered cluster of hexagonal crystals, emissive cores.\nscene({ light: 'night' });\n\nconst count = Math.round(param('crystals', 9, 3, 16, 1));\nconst glow = param('glow', 0.35, 0, 2);\n\nconst rock = ellipsoid(1.0, 0.45, 0.85).move(0, 0.2, 0)\n  .cut(ellipsoid(0.7, 0.4, 0.55).move(0, 0.62, 0.05), 0.12)       // the bowl the crystals grow from\n  .displace(0.06, 2.5, { octaves: 5, ridged: true, seed: 4 })\n  .color('#4a4550', 'matte')\n  .colorNoise('#6f6878', 5, 0.8, { sharp: 0.3 })\n  .intersect(halfspace('y', 0.55), 0.04);\n\n// one hexagonal crystal: prism with a pointed cap, standing on its base at the origin\nconst crystal = (len, r) => ngon(6, r).extrude(len, r * 0.08).rotateX(-90).move(0, len / 2, 0)\n  .add(cone(r * 0.96, 0.001, r * 1.6).move(0, len + r * 0.8, 0), 0.01);\n\nconst rnd = rand(7);\nconst parts = range(count).map((i) => {\n  const a = (i / count) * TAU + rnd.range(-0.3, 0.3);\n  const d = i === 0 ? 0 : rnd.range(0.12, 0.42);\n  const len = i === 0 ? 0.95 : rnd.range(0.35, 0.7);\n  const r = i === 0 ? 0.13 : rnd.range(0.06, 0.1);\n  const tiltOut = i === 0 ? 0 : 18 + d * 40;\n  return crystal(len, r)\n    .rotate(0, 0, -tiltOut)                // lean outward...\n    .rotateY((-a * 180) / PI)              // ...in the direction of its position\n    .move(Math.cos(a) * d, 0.28, Math.sin(a) * d);\n});\nconst cluster = union(...parts)\n  .color('#8e5cf0', { rough: 0.08, metal: 0, glow })\n  .gradient('#e2ccff', 'y', 0.5, 1.6);\n\nreturn rock.add(cluster, 0.03);\n"},{"id":"mushroom","name":"בית פטרייה","code":"// Mushroom cottage: soft organic blends, painted spots, a carved door and glowing windows.\nscene({ light: 'sunset' });\n\nconst capR = param('capR', 0.78, 0.55, 1.0);\n\nconst stem = capsule([0, 0, 0], [0, 0.78, 0], 0.34, 0.27)\n  .displace(0.008, 10, { octaves: 3 })\n  .color('#efe3cc', 'satin')\n  .colorNoise('#d9c7a6', 6, 0.5);\n\nconst cap = ellipsoid(capR, capR * 0.58, capR).move(0, 0.9, 0)\n  .cut(ellipsoid(capR * 0.92, capR * 0.3, capR * 0.92).move(0, 0.62, 0), 0.08)   // hollow underside\n  .color('#c8372d', 'glossy')\n  .paint(sphere(0.13).move(capR * 0.45, 1.12, capR * 0.45).mirror('x'), '#fff4e2', 0.012)\n  .paint(sphere(0.1).move(0, 1.32, 0.12), '#fff4e2', 0.012)\n  .paint(sphere(0.09).move(capR * 0.7, 1.02, -capR * 0.3).mirror('x'), '#fff4e2', 0.012)\n  .paint(sphere(0.11).move(0.1, 1.2, -capR * 0.6), '#fff4e2', 0.012);\n\n// door: carved arch, painted by the colored cutter, with a tiny knob\nconst door = box(0.22, 0.36, 0.3, 0.1).move(0, 0.18, 0.34).color('#5b3a22', 'satin');\nconst knob = sphere(0.018).move(0.06, 0.2, 0.3).color('#d8b25a', 'metal');\n\n// round windows with warm light\nconst win = cylinder(0.065, 0.2).rotateX(90).rotateY(40).move(0.22, 0.55, 0.22).color('#ffcf6b', 'glow');\nconst frame = torus(0.075, 0.018).rotateX(90).rotateY(40).move(0.25, 0.55, 0.25).color('#5b3a22', 'satin');\n\n// grass tufts around the base\nconst tuft = cone(0.03, 0.001, 0.2).rotateZ(12).move(0.46, 0.08, 0).color('#6f9e3a', 'satin');\n\nreturn stem\n  .add(cap, 0.06)\n  .cut(door, 0.015)\n  .add(knob, 0.004)\n  .cut(win.mirror('x'), 0.01)\n  .add(frame.mirror('x'), 0.008)\n  .add(tuft.ring(14), 0.02);\n"}];
+const RECIPE_REFERENCE = "# Gilaf recipe language — reference\n\nA recipe is the **body of a JavaScript function** that ends with `return <shape>`.\nEvery shape is a signed distance field (SDF); shapes are combined, blended, carved and painted.\nY is up. One unit ≈ whatever you like; models usually span 1–3 units. The model sits on a floor at its lowest point.\n\n```js\nconst head = sphere(0.5).color('#f2c9a0', 'satin');\nconst nose = ellipsoid(0.09, 0.07, 0.12).move(0, -0.02, 0.48);\nreturn head.add(nose, 0.06);          // smooth blend, radius 0.06\n```\n\n## 3D primitives (all centered at the origin)\n| call | notes |\n|---|---|\n| `sphere(r)` | |\n| `box(w, h, d, round=0)` | full width/height/depth; `round` bevels the edges |\n| `ellipsoid(rx, ry, rz)` | radii |\n| `capsule([x,y,z], [x,y,z], r1, r2=r1)` | a limb between two points; different radii make a tapered cone with round ends |\n| `cylinder(r, h, round=0)` | vertical (Y) axis, full height `h` |\n| `cone(rBottom, rTop, h)` | capped cone, vertical, full height `h` |\n| `torus(R, r)` | ring in the XZ plane (lying flat) |\n| `octahedron(s)` | gem/diamond shape |\n| `halfspace(axis='y', offset=0)` | everything below `axis=offset` (`'-y'` = above). Use with `.cut()` / `.intersect()` |\n| `tube(points, {radius, smooth=6, closed})` | smooth spline through `[x,y,z,r]` points (radius per point). Tails, tentacles, horns, pipes, handles |\n| `lathe([[r,y], ...], {smooth=true})` | turned solid around Y from an outline of `[radius, height]` points, heights increasing. Perfectly smooth and fast: vases, bottles, chess pieces, columns, stems |\n\n## 2D shapes → 3D\n2D shapes live in the XY plane: `circle(r)`, `rect(w, h, round=0)`, `polygon([[x,y],...], {smooth})`,\n`ngon(sides, r)`, `star(points, rOuter, rInner)`. They support `move(x,y)`, `rotate(deg)`, `scale(s)`,\n`round(r)`, `shell(t)`, `add/cut/intersect`.\n- `.extrude(depth, round=0)` → 3D along Z (logos, badges, cookie cutters).\n- `.revolve(offset=0)` → spin around the Y axis. X of the 2D shape = radius, Y = height.\n  Use it for profiles that fold back on themselves or rings (`circle(0.1).move(0.5, 0).revolve()` = torus).\n  For ordinary turned objects prefer `lathe()`: it is smoother and much faster than a polygon profile.\n  `polygon(points, {smooth: 4})` rounds a rough outline into a spline (more points = slower).\n\n## Transforms (applied in the order written, in world space)\n`.move(x,y,z)` (alias `.at`), `.rotate(xDeg, yDeg, zDeg)`, `.rotateX/Y/Z(deg)`,\n`.orient([dx,dy,dz])` (point the shape's +Y axis along a direction),\n`.scale(s)` or `.scale(sx,sy,sz)` (non-uniform is approximate but fine).\n`.mirror('x')` — symmetric copy across the YZ plane: model ONE side at +x, mirror it (also `'z'`, `'xz'`).\n`.ring(n)` — n copies around the Y axis. Place ONE copy off-axis wherever you like; the others are spaced evenly from it.\n`.grid([sx,sy,sz], [nx,ny,nz])` — array of copies, centered.\n`.twist(k)` twists around Y (radians per unit). `.bend(k)` bends along X.\n`.elongate(x,y,z)` stretches the middle of a shape without distorting its round ends.\n\n## Combining\n`a.add(b, k=0)` union; `k > 0` melts them together with a fillet of radius ≈ k.\n`a.cut(b, k=0)` subtract b from a (k = rounded edge). If `b` has its own `.color()`, the cut surface is painted with it.\n`a.intersect(b, k=0)` keep the overlap.\n`union(a, b, c...)`, `blend(k, a, b, c...)`, `group(...)` for many parts at once.\n\n## Surface\n`.round(r)` inflate (rounder, bigger). `.shell(t)` hollow skin of thickness t (cut it open to see inside).\n`.displace(amount, scale=4, {octaves=4, ridged=false, seed})` organic noise: rock, bark, skin, terrain.\nKeep `amount * scale` below ~0.6 for clean results.\n\n## Color & material\n`.color('#rrggbb', material?)` sets color for the whole sub-shape. Materials:\n`'matte' 'clay' 'satin' 'plastic' 'glossy' 'metal' 'brushed' 'chrome' 'glow'` or `{rough, metal, glow}`.\n`.material('metal')` changes only the material.\n`.paint(region, '#hex', soft=0, material?)` paints where the surface is inside `region` (geometry unchanged):\nspots, stripes, masks, belly color, eye whites. `soft` blurs the paint edge.\n`.colorNoise('#hex', scale=6, amount=1, {sharp=0.5, seed})` mottled second color (skin, stone, rust).\n`.colorNoise('#hex', scale, amount, {veins: true, sharp})` draws thin vein lines instead (marble, cracks, leaf veins).\n`.gradient('#hex', 'y', from, to)` blends toward a second color along an axis.\nColors blend smoothly inside `add(..., k)` fillets.\n**Color operations apply in the order written**: a later `colorNoise` / `paint` covers earlier ones, so put the must-show paint last.\n**Hollow objects**: `lathe(outline).shell(0.04).cut(halfspace('-y', topHeight - 0.03))` gives a wall 0.04 thick, open at the top.\nPaint the inside with `.paint(lathe(outline).round(-0.015), '#dark')` (a slightly shrunken copy selects the inner wall).\n\n## Scene & parameters\n`scene({ light: 'studio'|'sunset'|'daylight'|'night', ground: true, background: '#hex', exposure: 1, zoom: 1, step })`\n`param('name', default, min, max)` — returns a number and adds a slider in the studio.\nHelpers: `rand(seed)` (seeded random, `.range(a,b)`, `.pick(arr)`), `range(n)`, `lerp`, `clamp`, `rad`, `PI`, `TAU`, plus all of JavaScript (`for` loops, arrays, `Math`).\n\n## Animation (bones)\nMark a moving part with `.bone(name, pivot)`. The pivot is the joint it turns around (neck, tail root, ear root),\nin the same coordinates the part was built in. Bones nest: a bone inside another bone's shape follows it\n(ears inside the head follow the head). Then describe one looping clip:\n\n```js\nconst tail = tube([...]).color(fur).bone('tail', [0, 0.3, -0.5]);\nconst head = headShape.add(ear(1, 'earR')).add(ear(-1, 'earL')).bone('head', [0, 0.9, 0.1]);\nconst dog = body.add(head, 0.1).add(tail, 0.06).bone('body', [0, 0, 0]);\nanimate({ seconds: 4 }, {                       // t runs 0 → 1 over the loop\n  tail: (t) => ({ rotate: [0, 35 * wave(t, 8), 0] }),          // 8 wags per loop\n  head: (t) => ({ rotate: [0, 0, 10 * wave(t, 1)] }),          // curious tilt\n  earL: (t) => ({ rotate: [0, 0, -8 * wave(t, 1, -0.08)] }),   // lags a little behind the head\n  body: (t) => ({ scale: [1, 1 + 0.018 * wave(t, 4), 1] }),    // breathing\n  eyeL: (t) => ({ scale: [1, 1 - 0.9 * pulse(t, 0.3, 0.035), 1] }), // blink\n});\nreturn dog;\n```\n- A track returns `{ rotate: [xDeg, yDeg, zDeg], scale: s | [sx, sy, sz], move: [x, y, z] }`, all around the pivot.\n- `wave(t, cycles, phase)` is a seamless sine; use whole numbers of cycles so the loop has no jump.\n  `pulse(t, at, width)` is a 0→1→0 bump (blinks, hops). `ease(x)` smooths 0..1.\n- A bone cannot sit inside `mirror`, `ring`, `grid`, `twist` or `bend` (it needs one place in space).\n  For left/right parts, build them with a function of the side (`const ear = (s, name) => ...`, s = +1 / -1).\n- Melt moving parts into their parent with `add(part, k)`: the fillet bends live in the preview, and the\n  exported skin weights fade over the same zone. `.bone(name, pivot, { blend })` overrides that zone.\n- Secondary motion sells it: ears and tails lag the head by a small phase, breathing is slow and small,\n  blinks are quick (width ≈ 0.03 of the loop).\n- Export: GLB carries a skeleton (one joint per bone), skin weights and the looping clip, ready for\n  Three.js `AnimationMixer`, Blender, Unity or Godot. STL/OBJ are the rest pose.\n\n## Craft rules for high-quality models\n1. **Block out big forms first** (3–6 shapes), check the silhouette, then add secondary forms, then small details.\n2. **Blend organics with `add(part, k)`** where k is 10–30% of the smaller part's size. Hard-surface parts use small k (0.005–0.03) or `box(..., round)`.\n3. **Model one side and `.mirror('x')`** for anything symmetric. Use `.ring(n)` / `.grid()` for repeats — they cost nothing.\n4. **Proportions**: measure from a reference size (e.g. head = 1 unit) and derive every other size from it with variables.\n5. **Layer detail at three scales**: primary masses, secondary forms (panels, muscles, rims, lids), tertiary detail (bolts, seams, grooves with `cut(..., small k)`, `displace` with small amount).\n6. **Color with intent**: 2–4 main colors, one accent. Use `paint` for markings, `colorNoise` for natural surfaces, `glow` sparingly for eyes/lights.\n7. **Keep parts touching or overlapping** so the model is one solid piece (important for 3D printing).\n8. Prefer `capsule` / `ellipsoid` / `tube` for organic shapes and `box(..., round)` / `cylinder(..., round)` for manufactured ones.\n9. Performance: under ~150 primitives is smooth. Use `mirror` / `ring` / `grid` instead of duplicating parts.\n10. `displace` with large amount × scale, `twist` and `bend` make the field inexact and slow the preview; keep them moderate.\n11. Look at the model from all sides (front, side, back, three-quarter) before calling it done: back and underside are where models look unfinished.\n\n## Complete example\n```js\n// Mushroom cottage\nscene({ light: 'sunset' });\nconst capR = param('capR', 0.78, 0.55, 1.0);\nconst stem = capsule([0, 0, 0], [0, 0.78, 0], 0.34, 0.27)\n  .displace(0.008, 10, { octaves: 3 })\n  .color('#efe3cc', 'satin').colorNoise('#d9c7a6', 6, 0.5);\nconst cap = ellipsoid(capR, capR * 0.58, capR).move(0, 0.9, 0)\n  .cut(ellipsoid(capR * 0.92, capR * 0.3, capR * 0.92).move(0, 0.62, 0), 0.08)   // hollow underside\n  .color('#c8372d', 'glossy')\n  .paint(sphere(0.13).move(capR * 0.45, 1.12, capR * 0.45).mirror('x'), '#fff4e2', 0.012);\nconst door = box(0.22, 0.36, 0.3, 0.1).move(0, 0.18, 0.34).color('#5b3a22', 'satin');   // colored cutter paints the hole\nconst win = cylinder(0.065, 0.2).rotateX(90).rotateY(40).move(0.22, 0.55, 0.22).color('#ffcf6b', 'glow');\nconst tuft = cone(0.03, 0.001, 0.2).rotateZ(12).move(0.46, 0.08, 0).color('#6f9e3a', 'satin');\nreturn stem.add(cap, 0.06).cut(door, 0.015).cut(win.mirror('x'), 0.01).add(tuft.ring(14), 0.02);\n```\n";
 const __mod = {};
 __mod["meshopt_simplifier"] = (() => {
 // This file is part of meshoptimizer library and is distributed under the terms of MIT License.
@@ -1253,6 +1260,13 @@ class Node {
     this._need2('extrude');
     return new Node('extrude', { h: pos(depth, 'extrude depth') / 2, r: Math.abs(num(round, 'extrude round')) }, [this], 3);
   }
+  // Marks this shape as a moving part. `pivot` is the joint it turns around (shoulder, neck, tail root).
+  bone(name, pivot = [0, 0, 0], opts = {}) {
+    this._need3('bone');
+    if (typeof name !== 'string' || !/^[A-Za-z_][\w-]*$/.test(name)) fail("bone() needs a simple name like 'tail' or 'head'");
+    const blend = opts.blend == null ? undefined : pos(opts.blend, 'bone blend');
+    return this._wrap('bone', { name, pivot: vec3([pivot], 'bone pivot'), blend });
+  }
   revolve(offset = 0) {
     this._need2('revolve');
     return new Node('revolve', { o: num(offset, 'revolve offset') }, [this], 3);
@@ -1260,7 +1274,7 @@ class Node {
 }
 
 // True when a shape's appearance is set at its top (looking through transforms and repeats).
-const PASS = new Set(['move', 'rotate', 'scale', 'mirror', 'grid', 'ring', 'twist', 'bend', 'elongate', 'round', 'shell', 'displace']);
+const PASS = new Set(['move', 'rotate', 'scale', 'mirror', 'grid', 'ring', 'twist', 'bend', 'elongate', 'round', 'shell', 'displace', 'bone']);
 function ownColor(n) {
   let x = n;
   while (PASS.has(x.type)) x = x.k[0];
@@ -1461,6 +1475,26 @@ function createApi(params = {}) {
       return typeof v === 'number' && Number.isFinite(v) ? v : def;
     },
 
+    // animation: tracks are functions of t, which runs 0 → 1 over `seconds` and loops
+    animate: (opts, tracks) => {
+      const o = typeof opts === 'number' ? { seconds: opts } : opts || {};
+      const seconds = pos(o.seconds ?? 3, 'animate seconds');
+      if (!tracks || typeof tracks !== 'object') fail('animate() needs tracks: { boneName: (t) => ({ rotate: [x, y, z], scale, move }) }');
+      for (const [k, f] of Object.entries(tracks)) if (typeof f !== 'function') fail(`animate(): track '${k}' must be a function of t`);
+      state.anim = { seconds, tracks, fps: Math.max(10, Math.min(60, o.fps ?? 30)) };
+    },
+    wave: (t, cycles = 1, phase = 0) => Math.sin(Math.PI * 2 * (t * cycles + phase)),
+    pulse: (t, at, width = 0.06) => {
+      let d = Math.abs(t - at) % 1;
+      d = Math.min(d, 1 - d);
+      const x = Math.max(0, 1 - d / width);
+      return x * x * (3 - 2 * x);
+    },
+    ease: (x) => {
+      const c = Math.min(1, Math.max(0, x));
+      return c * c * (3 - 2 * c);
+    },
+
     // helpers
     rand: (seed) => makeRand(seed),
     range: (n) => Array.from({ length: Math.max(0, Math.floor(num(n, 'range'))) }, (_, i) => i),
@@ -1516,17 +1550,20 @@ function hermite(a, i, h, t) {
 }
 
 const cache = new WeakMap();
+const restCache = new WeakMap();
 
-function bounds(n) {
-  if (cache.has(n)) return cache.get(n);
-  const b = computeBounds(n);
-  cache.set(n, b);
+// Conservative box around a shape. With rest = true, moving parts count only in their rest pose.
+function bounds(n, rest = false) {
+  const c = rest ? restCache : cache;
+  if (c.has(n)) return c.get(n);
+  const b = computeBounds(n, rest);
+  c.set(n, b);
   return b;
 }
 
-function computeBounds(n) {
+function computeBounds(n, rest) {
   const a = n.a;
-  const kid = () => bounds(n.k[0]);
+  const kid = () => bounds(n.k[0], rest);
   switch (n.type) {
     case 'sphere':
       return boxOf([-a.r, -a.r, -a.r], [a.r, a.r, a.r]);
@@ -1548,6 +1585,17 @@ function computeBounds(n) {
       return boxOf([-a.s, -a.s, -a.s], [a.s, a.s, a.s]);
     case 'plane':
       return null;
+    case 'bone': {
+      const b = kid();
+      if (!b || rest || !a.poses) return b;
+      let out = null;
+      for (const m of a.poses) {
+        const pts = corners(b).map((p) => [0, 1, 2].map((r) => m[r] * p[0] + m[4 + r] * p[1] + m[8 + r] * p[2] + m[12 + r]));
+        out = out ? unionBox(out, fromPoints(pts)) : fromPoints(pts);
+      }
+      const e = Math.max(...out.max.map((v, i) => v - out.min[i])) * 0.04;
+      return expand(out, e);
+    }
     case 'lathe': {
       let rmax = 0;
       for (let i = 0; i < a.Y.length - 1; i++) {
@@ -1643,17 +1691,17 @@ function computeBounds(n) {
     case 'colorNoise':
     case 'gradient':
     case 'paint':
-      return bounds(n.k[0]);
+      return bounds(n.k[0], rest);
     case 'union': {
-      let b = bounds(n.k[0]);
-      for (let i = 1; i < n.k.length; i++) b = unionBox(b, bounds(n.k[i]));
+      let b = bounds(n.k[0], rest);
+      for (let i = 1; i < n.k.length; i++) b = unionBox(b, bounds(n.k[i], rest));
       return expand(b, (a.k * (n.k.length - 1)) / 4);
     }
     case 'cut':
-      return bounds(n.k[0]);
+      return bounds(n.k[0], rest);
     case 'intersect': {
-      const b0 = bounds(n.k[0]);
-      const b1 = bounds(n.k[1]);
+      const b0 = bounds(n.k[0], rest);
+      const b1 = bounds(n.k[1], rest);
       if (!b0) return b1;
       if (!b1) return b0;
       const min = b0.min.map((v, i) => Math.max(v, b1.min[i]));
@@ -1690,7 +1738,7 @@ function runRecipe(code, params = {}) {
   const node = fn(...names.map((k) => api[k]));
   if (!(node instanceof Node)) fail('The recipe must end with `return <shape>` (for example: return sphere(0.5))');
   if (node.dim !== 3) fail('The recipe returned a 2D shape. Use .extrude(depth) or .revolve() to make it 3D');
-  return { node, scene: state.scene, params: state.params };
+  return { node, scene: state.scene, params: state.params, anim: state.anim || null };
 }
 
 let scriptSeq = 0;
@@ -1720,11 +1768,257 @@ function countNodes(n) {
 return { DEFAULT_COLOR, DEFAULT_MAT, MATERIALS, RecipeError, parseColor, rotMatrix, Node, ownColor, makeRand, createApi, hermite, bounds, runRecipe, countNodes };
 })();
 
+__mod["anim"] = (() => {
+// Bones and animation: a `.bone(name, pivot)` node moves its sub-shape by a per-frame matrix.
+// The preview feeds the matrices to the shader as uniforms; the GLB exporter turns the same
+// bones into a glTF skeleton (skin weights come from each bone's distance field).
+
+const { rotMatrix, RecipeError } = __mod["dsl"];
+// ---------- 4x4 matrices, column-major (same layout as WebGL) ----------
+const m4 = {
+  id: () => [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+  mul(a, b) {
+    const r = new Array(16).fill(0);
+    for (let c = 0; c < 4; c++) for (let row = 0; row < 4; row++) {
+      let s = 0;
+      for (let k = 0; k < 4; k++) s += a[k * 4 + row] * b[c * 4 + k];
+      r[c * 4 + row] = s;
+    }
+    return r;
+  },
+  translate: (v) => [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, v[0], v[1], v[2], 1],
+  scale: (s) => [s[0], 0, 0, 0, 0, s[1], 0, 0, 0, 0, s[2], 0, 0, 0, 0, 1],
+  // from a row-major 3x3 rotation
+  rot: (m) => [m[0], m[3], m[6], 0, m[1], m[4], m[7], 0, m[2], m[5], m[8], 0, 0, 0, 0, 1],
+  apply: (m, p) => [0, 1, 2].map((r) => m[r] * p[0] + m[4 + r] * p[1] + m[8 + r] * p[2] + m[12 + r]),
+  invert(m) {
+    const [a00, a01, a02, a03, a10, a11, a12, a13, a20, a21, a22, a23, a30, a31, a32, a33] = m;
+    const b00 = a00 * a11 - a01 * a10;
+    const b01 = a00 * a12 - a02 * a10;
+    const b02 = a00 * a13 - a03 * a10;
+    const b03 = a01 * a12 - a02 * a11;
+    const b04 = a01 * a13 - a03 * a11;
+    const b05 = a02 * a13 - a03 * a12;
+    const b06 = a20 * a31 - a21 * a30;
+    const b07 = a20 * a32 - a22 * a30;
+    const b08 = a20 * a33 - a23 * a30;
+    const b09 = a21 * a32 - a22 * a31;
+    const b10 = a21 * a33 - a23 * a31;
+    const b11 = a22 * a33 - a23 * a32;
+    const det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
+    const d = 1 / det;
+    return [
+      (a11 * b11 - a12 * b10 + a13 * b09) * d, (a02 * b10 - a01 * b11 - a03 * b09) * d, (a31 * b05 - a32 * b04 + a33 * b03) * d, (a22 * b04 - a21 * b05 - a23 * b03) * d,
+      (a12 * b08 - a10 * b11 - a13 * b07) * d, (a00 * b11 - a02 * b08 + a03 * b07) * d, (a32 * b02 - a30 * b05 - a33 * b01) * d, (a20 * b05 - a22 * b02 + a23 * b01) * d,
+      (a10 * b10 - a11 * b08 + a13 * b06) * d, (a01 * b08 - a00 * b10 - a03 * b06) * d, (a30 * b04 - a31 * b02 + a33 * b00) * d, (a21 * b02 - a20 * b04 - a23 * b00) * d,
+      (a11 * b07 - a10 * b09 - a12 * b06) * d, (a00 * b09 - a01 * b07 + a02 * b06) * d, (a31 * b01 - a30 * b03 - a32 * b00) * d, (a20 * b03 - a21 * b01 + a22 * b00) * d,
+    ];
+  },
+};
+
+// Decomposes a similarity-with-axis-scale matrix into glTF translation, rotation (quaternion) and scale.
+function decompose(m) {
+  const t = [m[12], m[13], m[14]];
+  const s = [0, 1, 2].map((c) => Math.hypot(m[c * 4], m[c * 4 + 1], m[c * 4 + 2]));
+  const r = [0, 1, 2].map((c) => [0, 1, 2].map((row) => m[c * 4 + row] / s[c])); // r[col][row]
+  const R = (row, col) => r[col][row];
+  const tr = R(0, 0) + R(1, 1) + R(2, 2);
+  let q;
+  if (tr > 0) {
+    const S = Math.sqrt(tr + 1) * 2;
+    q = [(R(2, 1) - R(1, 2)) / S, (R(0, 2) - R(2, 0)) / S, (R(1, 0) - R(0, 1)) / S, 0.25 * S];
+  } else if (R(0, 0) > R(1, 1) && R(0, 0) > R(2, 2)) {
+    const S = Math.sqrt(1 + R(0, 0) - R(1, 1) - R(2, 2)) * 2;
+    q = [0.25 * S, (R(0, 1) + R(1, 0)) / S, (R(0, 2) + R(2, 0)) / S, (R(2, 1) - R(1, 2)) / S];
+  } else if (R(1, 1) > R(2, 2)) {
+    const S = Math.sqrt(1 + R(1, 1) - R(0, 0) - R(2, 2)) * 2;
+    q = [(R(0, 1) + R(1, 0)) / S, 0.25 * S, (R(1, 2) + R(2, 1)) / S, (R(0, 2) - R(2, 0)) / S];
+  } else {
+    const S = Math.sqrt(1 + R(2, 2) - R(0, 0) - R(1, 1)) * 2;
+    q = [(R(0, 2) + R(2, 0)) / S, (R(1, 2) + R(2, 1)) / S, 0.25 * S, (R(1, 0) - R(0, 1)) / S];
+  }
+  const ql = Math.hypot(...q);
+  return { t, r: q.map((x) => x / ql), s };
+}
+
+function fail(msg) {
+  throw new RecipeError(msg);
+}
+
+const BLOCK = new Set(['mirror', 'ring', 'grid', 'twist', 'bend']);
+
+// Finds every bone in the tree with its parent bone and the transforms above it.
+function collectBones(root) {
+  const bones = [];
+  const names = new Set();
+  const walk = (n, parent, E, blockedBy) => {
+    let M = E;
+    let par = parent;
+    if (n.type === 'bone') {
+      if (blockedBy) {
+        fail(`bone '${n.a.name}' is inside .${blockedBy}(). A bone needs one place in space: build each side or copy separately (for example with a function that takes the side as +1 / -1) and give each its own bone`);
+      }
+      if (names.has(n.a.name)) fail(`two bones are named '${n.a.name}'. Bone names must be unique`);
+      names.add(n.a.name);
+      const b = { node: n, name: n.a.name, pivot: n.a.pivot, blend: n.a.blend, parent: parent ? parent.index : -1, index: bones.length, E: E.slice() };
+      bones.push(b);
+      n.a.index = b.index;
+      par = b;
+    } else if (n.type === 'move') M = m4.mul(E, m4.translate(n.a.t));
+    else if (n.type === 'rotate') M = m4.mul(E, m4.rot(n.a.m));
+    else if (n.type === 'scale') M = m4.mul(E, m4.scale(n.a.s));
+    const blocked = blockedBy || (BLOCK.has(n.type) ? n.type : null);
+    const kids = n.type === 'paint' ? [n.k[0]] : n.k;
+    for (const k of kids) walk(k, par, M, blocked);
+  };
+  walk(root, null, m4.id(), null);
+  return bones;
+}
+
+const num = (v, what) => {
+  if (typeof v !== 'number' || !Number.isFinite(v)) fail(`${what} must be a number (got ${JSON.stringify(v)})`);
+  return v;
+};
+
+// Reads one track value: { rotate: [x,y,z] degrees, scale: s | [sx,sy,sz], move: [x,y,z] }.
+function trackAt(anim, name, u) {
+  const f = anim?.tracks?.[name];
+  if (!f) return null;
+  let r;
+  try {
+    r = f(u) || {};
+  } catch (e) {
+    fail(`animate(): track '${name}' failed at t=${u.toFixed(3)}: ${e.message}`);
+  }
+  const rot = r.rotate ?? [0, 0, 0];
+  const sc = r.scale ?? 1;
+  const mv = r.move ?? [0, 0, 0];
+  const rotate = (Array.isArray(rot) ? rot : [0, 0, 0]).map((v, i) => num(v ?? 0, `track ${name} rotate[${i}]`));
+  const scale = (Array.isArray(sc) ? sc : [sc, sc, sc]).map((v, i) => {
+    num(v, `track ${name} scale[${i}]`);
+    if (v <= 0) fail(`track ${name}: scale must stay above 0`);
+    return v;
+  });
+  const move = mv.map((v, i) => num(v ?? 0, `track ${name} move[${i}]`));
+  return { rotate, scale, move };
+}
+
+// Animation matrix A = T(move) R(rotate) S(scale) in the bone's own frame (origin at the pivot).
+function animMatrix(tr) {
+  if (!tr) return m4.id();
+  return m4.mul(m4.translate(tr.move), m4.mul(m4.rot(rotMatrix(...tr.rotate)), m4.scale(tr.scale)));
+}
+
+// Local motion of a bone around its pivot, in the coordinates where the bone was created.
+function boneLocal(bone, tr) {
+  return m4.mul(m4.translate(bone.pivot), m4.mul(animMatrix(tr), m4.translate(bone.pivot.map((v) => -v))));
+}
+
+// Shader uniforms for time u in [0,1): inverse local matrices and a distance scale per bone.
+function poseUniforms(bones, anim, u) {
+  const mats = new Float32Array(Math.max(1, bones.length) * 16);
+  const s = new Float32Array(Math.max(1, bones.length)).fill(1);
+  bones.forEach((b, i) => {
+    const tr = u == null ? null : trackAt(anim, b.name, u);
+    mats.set(tr ? m4.invert(boneLocal(b, tr)) : m4.id(), i * 16);
+    if (tr) s[i] = Math.min(...tr.scale);
+  });
+  return { mats, s };
+}
+
+// Samples the animation so bounds can cover every pose; stores the local matrices on the bone nodes.
+function attachPoses(bones, anim, samples = 48) {
+  for (const b of bones) {
+    const poses = [m4.id()];
+    if (anim?.tracks?.[b.name]) for (let i = 0; i < samples; i++) poses.push(boneLocal(b, trackAt(anim, b.name, i / samples)));
+    b.node.a.poses = poses;
+  }
+}
+
+// glTF skeleton: one extra root joint (index 0) plus one joint per bone, with rest and animated TRS.
+function skeleton(bones, anim, fps = 30) {
+  const W = [m4.id(), ...bones.map((b) => m4.mul(b.E, m4.translate(b.pivot)))];
+  const parent = [-1, ...bones.map((b) => b.parent + 1)];
+  const joints = W.map((w, j) => {
+    const restLocal = parent[j] < 0 ? w : m4.mul(m4.invert(W[parent[j]]), w);
+    return { name: j === 0 ? 'root' : bones[j - 1].name, parent: parent[j], rest: decompose(restLocal), restLocal, ibm: m4.invert(w) };
+  });
+  let clip = null;
+  if (anim && bones.some((b) => anim.tracks[b.name])) {
+    const n = Math.max(2, Math.round(anim.seconds * fps) + 1);
+    const times = new Float32Array(n);
+    for (let k = 0; k < n; k++) times[k] = (k / (n - 1)) * anim.seconds;
+    const channels = [];
+    bones.forEach((b, i) => {
+      if (!anim.tracks[b.name]) return;
+      const T = new Float32Array(n * 3);
+      const R = new Float32Array(n * 4);
+      const S = new Float32Array(n * 3);
+      for (let k = 0; k < n; k++) {
+        const u = (k / (n - 1)) % 1;
+        const local = m4.mul(joints[i + 1].restLocal, animMatrix(trackAt(anim, b.name, k === n - 1 ? 0 : u)));
+        const d = decompose(local);
+        T.set(d.t, k * 3);
+        // keep quaternions on one hemisphere so interpolation takes the short way
+        if (k > 0) {
+          const prev = R.subarray((k - 1) * 4, k * 4);
+          if (prev[0] * d.r[0] + prev[1] * d.r[1] + prev[2] * d.r[2] + prev[3] * d.r[3] < 0) d.r = d.r.map((x) => -x);
+        }
+        R.set(d.r, k * 4);
+        S.set(d.s, k * 3);
+      }
+      channels.push({ joint: i + 1, T, R, S });
+    });
+    clip = { times, channels };
+  }
+  return { joints, clip };
+}
+
+// Per-vertex skin weights from each bone's distance at the rest pose.
+// A bone takes a share of its parent's weight: all of it on or inside its part, fading to none
+// `blend` units outside (default: 30% of the part's thinnest side), so joints bend smoothly
+// where the parts were melted together.
+function skinWeights(bones, dist, vc, size) {
+  const J = bones.length + 1;
+  const joints = new Uint8Array(vc * 4);
+  const weights = new Float32Array(vc * 4);
+  const w = new Float32Array(J);
+  const order = new Int32Array(J);
+  for (let v = 0; v < vc; v++) {
+    w.fill(0);
+    w[0] = 1;
+    for (let i = 0; i < bones.length; i++) {
+      const b = bones[i];
+      const r = b.blend ?? Math.min(size * 0.035, b.size * 0.3);
+      const d = dist[v * bones.length + i];
+      // on or inside the part: all of it; fading out over r units outside
+      let f = Math.min(1, Math.max(0, 1 - d / r));
+      f = f * f * (3 - 2 * f);
+      const p = b.parent + 1;
+      const take = f * w[p];
+      w[i + 1] += take;
+      w[p] -= take;
+    }
+    for (let j = 0; j < J; j++) order[j] = j;
+    const top = Array.from(order).sort((a, b) => w[b] - w[a]).slice(0, 4);
+    const sum = top.reduce((s, j) => s + w[j], 0) || 1;
+    top.forEach((j, k) => {
+      joints[v * 4 + k] = w[j] > 0 ? j : 0;
+      weights[v * 4 + k] = w[j] > 0 ? w[j] / sum : 0;
+    });
+  }
+  return { joints, weights };
+}
+
+return { m4, decompose, collectBones, trackAt, animMatrix, boneLocal, poseUniforms, attachPoses, skeleton, skinWeights };
+})();
+
 __mod["glsl"] = (() => {
 // Compiles a recipe node tree into GLSL: `float map(vec3 p)` for distance and
 // `void mapC(vec3 p, out vec3 col, out vec3 mat)` for color + material.
 
 const { bounds, ownColor, DEFAULT_COLOR, DEFAULT_MAT } = __mod["dsl"];
+const { collectBones, attachPoses, poseUniforms, m4 } = __mod["anim"];
 const HELPERS = {
   core: /* glsl */ `
 float dot2(vec2 v){ return dot(v,v); }
@@ -2034,6 +2328,12 @@ function emit(g, n, p) {
       if (!fn) return prim(g, `sdSphere(${p} - ${v3(a.pts[0])}, ${f(a.pts[0][3])})`);
       return prim(g, `${fn}(${p})`);
     }
+    case 'bone': {
+      // the shader gets the inverse of this bone's current motion as a uniform
+      const q = g.v('vec3', `(uBone[${a.index}] * vec4(${p}, 1.0)).xyz`);
+      const r = emit(g, n.k[0], q);
+      return { ...r, d: g.v('float', `${r.d} * uBoneS[${a.index}]`) };
+    }
     case 'move':
       return emit(g, n.k[0], g.v('vec3', `${p} - ${v3(a.t)}`));
     case 'rotate': {
@@ -2278,8 +2578,37 @@ function emit2(g, n, p) {
 }
 
 // Compiles a recipe result into GLSL source plus the numbers the renderers need.
+function sanitize(b, scene) {
+  let out = b;
+  if (scene.bounds) out = { min: scene.bounds[0].slice(), max: scene.bounds[1].slice() };
+  if (!out || out.min.some((v) => !Number.isFinite(v)) || out.max.some((v) => !Number.isFinite(v))) {
+    out = { min: [-1.5, -1.5, -1.5], max: [1.5, 1.5, 1.5] };
+  }
+  // guard against flat or huge boxes
+  out = { min: out.min.map((v) => Math.max(v, -50)), max: out.max.map((v) => Math.min(v, 50)) };
+  for (let i = 0; i < 3; i++) if (out.max[i] - out.min[i] < 1e-3) {
+    out.min[i] -= 0.01;
+    out.max[i] += 0.01;
+  }
+  return out;
+}
+
 function compile(result, { cull = true } = {}) {
   const { node, scene } = result;
+  const anim = result.anim || null;
+  // bones first: their sampled poses feed the bounds used for culling
+  const bones = collectBones(node);
+  if (anim) {
+    const known = new Set(bones.map((b) => b.name));
+    for (const k of Object.keys(anim.tracks)) {
+      if (!known.has(k)) throw new Error(`animate(): there is no bone named '${k}'. Bones: ${[...known].join(', ') || 'none (add .bone(name, pivot) to a part)'}`);
+    }
+  }
+  attachPoses(bones, anim);
+  for (const bn of bones) {
+    const bb = bounds(bn.node.k[0], true);
+    bn.size = bb ? Math.min(...bb.max.map((v, i) => v - bb.min[i])) : 1;
+  }
   // the largest blend radius: early-outs inside primitives must stay outside every blend zone
   let kmax = 0;
   const walk = (n) => {
@@ -2293,34 +2622,43 @@ function compile(result, { cull = true } = {}) {
   const gc = new Gen('c', shared);
   const rc = emit(gc, node, 'p');
 
-  let b = bounds(node);
-  if (scene.bounds) {
-    const sb = scene.bounds;
-    b = { min: sb[0].slice(), max: sb[1].slice() };
-  }
-  if (!b || b.min.some((v) => !Number.isFinite(v)) || b.max.some((v) => !Number.isFinite(v))) {
-    b = { min: [-1.5, -1.5, -1.5], max: [1.5, 1.5, 1.5] };
-  }
-  // guard against flat or huge boxes
-  b = { min: b.min.map((v) => Math.max(v, -50)), max: b.max.map((v) => Math.min(v, 50)) };
-  for (let i = 0; i < 3; i++) if (b.max[i] - b.min[i] < 1e-3) {
-    b.min[i] -= 0.01;
-    b.max[i] += 0.01;
-  }
+  const b = sanitize(bounds(node), scene);
+  const restBounds = sanitize(bounds(node, true), scene);
 
   const step = scene.step ?? Math.max(0.3, Math.min(1, 0.95 / shared.lip));
+  const nb = Math.max(1, bones.length);
   const glsl = [
+    `uniform mat4 uBone[${nb}];\nuniform float uBoneS[${nb}];`,
     ...[...shared.helpers].map((h) => HELPERS[h]),
     ...shared.fns,
     `float map(vec3 p){\n${gd.lines.join('\n')}\n  return ${rd.d};\n}`,
     `void mapC(vec3 p, out vec3 col, out vec3 mat){\n${gc.lines.join('\n')}\n  col = ${rc.c}; mat = ${rc.m};\n}`,
   ].join('\n');
 
+  // distance to each bone's own part, in world space at rest (for skin weights)
+  let skinGlsl = '';
+  if (bones.length) {
+    const before = shared.fns.length;
+    const gs = new Gen('d', shared);
+    const cases = bones.map((bn, i) => {
+      const fn = subFn(gs, bn.node.k[0]);
+      const inv = m4.invert(bn.E);
+      const sc = Math.cbrt(Math.abs(bn.E[0] * (bn.E[5] * bn.E[10] - bn.E[9] * bn.E[6]) - bn.E[4] * (bn.E[1] * bn.E[10] - bn.E[9] * bn.E[2]) + bn.E[8] * (bn.E[1] * bn.E[6] - bn.E[5] * bn.E[2])));
+      return `  if (i == ${i}) return ${fn}((mat4(${inv.map(f).join(', ')}) * vec4(p, 1.0)).xyz) * ${f(sc)};`;
+    });
+    skinGlsl = [...shared.fns.slice(before), `float boneDist(int i, vec3 p){\n${cases.join('\n')}\n  return 1e10;\n}`].join('\n');
+  }
+
   return {
     glsl,
+    skinGlsl,
     bounds: b,
+    restBounds,
     step,
     scene,
+    anim,
+    bones,
+    pose: (u) => poseUniforms(bones, anim, u),
     materials: [...shared.materials].map((s) => s.split(',').map(Number)),
     lines: gd.lines.length + gc.lines.length,
   };
@@ -2654,6 +2992,9 @@ class Preview {
     this.prog = null;
     this.compiled = null;
     this.view = { yaw: 32, pitch: 16, zoom: 1, panY: 0 };
+    this.u = null;
+    this.playing = false;
+    this.t0 = 0;
     this.light = 'studio';
     this.clay = false;
     this.mode = 'sdf'; // or 'mesh'
@@ -2676,6 +3017,16 @@ class Preview {
     if (this.prog) gl.deleteProgram(this.prog.p);
     this.prog = prog;
     this.compiled = compiled;
+    if (compiled.anim) {
+      if (this.u == null) {
+        this.u = 0;
+        this.playing = true;
+        this.t0 = performance.now();
+      }
+    } else {
+      this.u = null;
+      this.playing = false;
+    }
     try {
       this.fit = this.probe();
     } catch {
@@ -2705,6 +3056,9 @@ class Preview {
     gl.disable(gl.BLEND);
     gl.useProgram(this.prog.p);
     const U = this.prog.uni;
+    const rest = this.compiled.pose(null);
+    gl.uniformMatrix4fv(U.uBone, false, rest.mats);
+    gl.uniform1fv(U.uBoneS, rest.s);
     gl.uniform1i(U.uProbe, 1);
     gl.uniform1i(U.uPN, N);
     gl.uniform1i(U.uPTiles, tiles);
@@ -2802,10 +3156,27 @@ class Preview {
     if (!this.raf) this.raf = requestAnimationFrame(() => this.tick());
   }
 
+  // Starts or stops animation playback; paused frames refine to full quality.
+  setPlaying(on) {
+    if (!this.compiled?.anim) return;
+    if (on && !this.playing) this.t0 = performance.now() - (this.u || 0) * this.compiled.anim.seconds * 1000;
+    this.playing = on;
+    this.invalidate();
+  }
+
   tick() {
     this.raf = 0;
     if (!this.prog) return;
     const now = performance.now();
+    const anim = this.compiled.anim;
+    if (anim && this.playing && this.mode !== 'mesh') {
+      this.u = ((now - this.t0) / 1000 / anim.seconds) % 1;
+      this.drawLow();
+      this.frame = 0;
+      this.onFrame?.(-1, this.maxFrames);
+      this.raf = requestAnimationFrame(() => this.tick());
+      return;
+    }
     const interactive = now < this.interactUntil;
     if (this.mode === 'mesh' && this.mesh) {
       this.drawMesh();
@@ -2878,6 +3249,9 @@ class Preview {
     gl.uniform3fv(U.uBgTop, bgTop);
     gl.uniform3fv(U.uBgBot, bgBot);
     gl.uniform1f(U.uExposure, L.exposure * (sc.exposure ?? 1));
+    const pose = this.compiled.pose('u' in this.view ? this.view.u : this.u);
+    gl.uniformMatrix4fv(U.uBone, false, pose.mats);
+    gl.uniform1fv(U.uBoneS, pose.s);
   }
 
   resize() {
@@ -3032,6 +3406,7 @@ __mod["mesher"] = (() => {
 
 const { linkProgram, fullscreenTriangle } = __mod["renderer"];
 const { MeshoptSimplifier } = __mod["meshopt_simplifier"];
+const { skinWeights } = __mod["anim"];
 const VERT = `#version 300 es
 in vec2 aPos; void main(){ gl_Position = vec4(aPos, 0.0, 1.0); }`;
 
@@ -3096,6 +3471,24 @@ void main(){
   }
 }`;
 
+const weightFrag = (glsl, skin) => `#version 300 es
+precision highp float; precision highp int;
+uniform highp sampler2D uPos; uniform int uCount, uW, uGroup;
+layout(location = 0) out vec4 o0; layout(location = 1) out vec4 o1;
+layout(location = 2) out vec4 o2; layout(location = 3) out vec4 o3;
+${glsl}
+${skin}
+${PACK}
+void main(){
+  ivec2 fc = ivec2(gl_FragCoord.xy);
+  if (fc.y*uW + fc.x >= uCount){ o0 = o1 = o2 = o3 = vec4(0.0); return; }
+  vec3 p = texelFetch(uPos, fc, 0).xyz;
+  o0 = packF(boneDist(uGroup*4, p));
+  o1 = packF(boneDist(uGroup*4 + 1, p));
+  o2 = packF(boneDist(uGroup*4 + 2, p));
+  o3 = packF(boneDist(uGroup*4 + 3, p));
+}`;
+
 // cube corner c = x | y<<1 | z<<2; the 12 edges as corner pairs
 const EDGES = [];
 for (let c = 0; c < 8; c++) for (let b = 0; b < 3; b++) if (!(c & (1 << b))) EDGES.push([c, c | (1 << b)]);
@@ -3141,9 +3534,67 @@ class Mesher {
     const gl = this.gl;
     if (this.evalP) gl.deleteProgram(this.evalP.p);
     if (this.refP) gl.deleteProgram(this.refP.p);
+    if (this.wP) gl.deleteProgram(this.wP.p);
     this.evalP = linkProgram(gl, VERT, evalFrag(compiled.glsl));
     this.refP = linkProgram(gl, VERT, refineFrag(compiled.glsl));
+    this.wP = compiled.skinGlsl ? linkProgram(gl, VERT, weightFrag(compiled.glsl, compiled.skinGlsl)) : null;
     this.key = compiled.glsl;
+  }
+
+  // Moving parts are meshed in their rest pose.
+  rest(P, compiled) {
+    const gl = this.gl;
+    const pose = compiled.pose(null);
+    gl.useProgram(P.p);
+    if (P.uni.uBone) gl.uniformMatrix4fv(P.uni.uBone, false, pose.mats);
+    if (P.uni.uBoneS) gl.uniform1fv(P.uni.uBoneS, pose.s);
+  }
+
+  // Distance from every vertex to every bone's part, read back as vc x bones floats.
+  boneDistances(compiled, positions) {
+    const gl = this.gl;
+    const nb = compiled.bones.length;
+    const vc = positions.length / 3;
+    const out = new Float32Array(vc * nb);
+    const W = 1024;
+    const maxRows = 256;
+    const P = this.wP;
+    this.rest(P, compiled);
+    const posTex = gl.createTexture();
+    for (let start = 0; start < vc; start += W * maxRows) {
+      const count = Math.min(W * maxRows, vc - start);
+      const rows = Math.ceil(count / W);
+      const upload = new Float32Array(W * rows * 4);
+      for (let i = 0; i < count; i++) upload.set(positions.subarray((start + i) * 3, (start + i) * 3 + 3), i * 4);
+      gl.bindTexture(gl.TEXTURE_2D, posTex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, W, rows, 0, gl.RGBA, gl.FLOAT, upload);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      const t = this.target(W, rows, 4);
+      const px = new Uint8Array(W * rows * 4);
+      const pf = new Float32Array(px.buffer);
+      for (let g = 0; g * 4 < nb; g++) {
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, posTex); // target() rebinds TEXTURE_2D, so bind the input again
+        gl.bindFramebuffer(gl.FRAMEBUFFER, t.fb);
+        gl.viewport(0, 0, W, rows);
+        gl.useProgram(P.p);
+        gl.uniform1i(P.uni.uPos, 0);
+        gl.uniform1i(P.uni.uCount, count);
+        gl.uniform1i(P.uni.uW, W);
+        gl.uniform1i(P.uni.uGroup, g);
+        gl.bindVertexArray(this.vao);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+        for (let a = 0; a < 4 && g * 4 + a < nb; a++) {
+          gl.readBuffer(gl.COLOR_ATTACHMENT0 + a);
+          gl.readPixels(0, 0, W, rows, gl.RGBA, gl.UNSIGNED_BYTE, px);
+          for (let i = 0; i < count; i++) out[(start + i) * nb + g * 4 + a] = pf[i];
+        }
+      }
+      t.free();
+    }
+    gl.deleteTexture(posTex);
+    return out;
   }
 
   target(w, h, count) {
@@ -3174,7 +3625,7 @@ class Mesher {
     const t0 = performance.now();
     this.prepare(compiled);
     const gl = this.gl;
-    const b = compiled.bounds;
+    const b = compiled.restBounds || compiled.bounds;
     const ext = b.max.map((v, i) => v - b.min[i]);
     const pad = 2;
     const h = Math.max(...ext) / Math.max(8, res - 2 * pad - 1);
@@ -3192,6 +3643,8 @@ class Mesher {
     const bytes = new Uint8Array(TW * TH * 4);
     const f32 = new Float32Array(bytes.buffer);
     const E = this.evalP;
+    this.rest(E, compiled);
+    this.rest(this.refP, compiled);
     gl.useProgram(E.p);
     gl.uniform3fv(E.uni.uMin, min);
     gl.uniform1f(E.uni.uH, h);
@@ -3400,6 +3853,16 @@ class Mesher {
       normals[i * 3 + 2] = z / l;
     }
 
+    // --- skin weights for moving parts ---
+    let skin = null;
+    if (this.wP && compiled.bones.length) {
+      onProgress(0.94, 'משקלי עצמות');
+      await nextTick();
+      const dist = this.boneDistances(compiled, positions);
+      const size = Math.hypot(...ext);
+      skin = skinWeights(compiled.bones, dist, vc, size);
+    }
+
     // --- 4. split quads along the shorter diagonal ---
     const qn = quads.length / 4;
     const indices = new Uint32Array(qn * 6);
@@ -3425,6 +3888,8 @@ class Mesher {
       colors,
       mats,
       indices,
+      joints: skin?.joints || null,
+      weights: skin?.weights || null,
       grid: N,
       cell: h,
       ms: Math.round(performance.now() - t0),
@@ -3465,9 +3930,23 @@ async function simplifyMesh(mesh, targetTris) {
     for (let i = 0; i < vc; i++) if (remap[i] >= 0) out.set(src.subarray(i * 3, i * 3 + 3), remap[i] * 3);
     return out;
   };
+  const pick4 = (src, Type) => {
+    const out = new Type(n * 4);
+    for (let i = 0; i < vc; i++) if (remap[i] >= 0) out.set(src.subarray(i * 4, i * 4 + 4), remap[i] * 4);
+    return out;
+  };
   const indices = new Uint32Array(idx.length);
   for (let i = 0; i < idx.length; i++) indices[i] = remap[idx[i]];
-  return { ...mesh, positions: pick(mesh.positions), normals: pick(mesh.normals), colors: pick(mesh.colors), mats: pick(mesh.mats), indices };
+  return {
+    ...mesh,
+    positions: pick(mesh.positions),
+    normals: pick(mesh.normals),
+    colors: pick(mesh.colors),
+    mats: pick(mesh.mats),
+    joints: mesh.joints ? pick4(mesh.joints, Uint8Array) : null,
+    weights: mesh.weights ? pick4(mesh.weights, Float32Array) : null,
+    indices,
+  };
 }
 
 function meshStats(mesh) {
@@ -3526,7 +4005,7 @@ function groupByMaterial(mesh, palette) {
   return pal.map((m, i) => ({ mat: m, indices: Uint32Array.from(groups[i]) })).filter((g) => g.indices.length);
 }
 
-function toGLB(mesh, { name = 'gilaf-model', palette = [] } = {}) {
+function toGLB(mesh, { name = 'gilaf-model', palette = [], skeleton = null } = {}) {
   const vc = mesh.positions.length / 3;
   const groups = groupByMaterial(mesh, palette);
   const col = new Uint16Array(vc * 4);
@@ -3562,6 +4041,12 @@ function toGLB(mesh, { name = 'gilaf-model', palette = [] } = {}) {
     { bufferView: addView(mesh.normals, 34962), componentType: 5126, count: vc, type: 'VEC3' },
     { bufferView: addView(col, 34962), componentType: 5123, normalized: true, count: vc, type: 'VEC4' },
   ];
+  const attributes = { POSITION: 0, NORMAL: 1, COLOR_0: 2 };
+  const skinned = !!(skeleton && mesh.joints && mesh.weights);
+  if (skinned) {
+    attributes.JOINTS_0 = accessors.push({ bufferView: addView(mesh.joints, 34962), componentType: 5121, count: vc, type: 'VEC4' }) - 1;
+    attributes.WEIGHTS_0 = accessors.push({ bufferView: addView(mesh.weights, 34962), componentType: 5126, count: vc, type: 'VEC4' }) - 1;
+  }
   const materials = [];
   const primitives = [];
   let emissiveUsed = false;
@@ -3584,7 +4069,7 @@ function toGLB(mesh, { name = 'gilaf-model', palette = [] } = {}) {
       }
     }
     materials.push(m);
-    primitives.push({ attributes: { POSITION: 0, NORMAL: 1, COLOR_0: 2 }, indices: acc, material: materials.length - 1 });
+    primitives.push({ attributes, indices: acc, material: materials.length - 1 });
   }
   const json = {
     asset: { version: '2.0', generator: 'Gilaf SDF Studio' },
@@ -3597,7 +4082,38 @@ function toGLB(mesh, { name = 'gilaf-model', palette = [] } = {}) {
     bufferViews: views,
     buffers: [{ byteLength: offset }],
   };
+  if (skinned) {
+    // joint nodes follow the mesh node; joint j is node j + 1
+    const J = skeleton.joints;
+    J.forEach((j) => {
+      const node = { name: j.name, translation: j.rest.t, rotation: j.rest.r, scale: j.rest.s };
+      const kids = J.map((k, i) => (k.parent === J.indexOf(j) ? i + 1 : -1)).filter((i) => i >= 0);
+      if (kids.length) node.children = kids;
+      json.nodes.push(node);
+    });
+    json.scenes[0].nodes.push(1);
+    const ibm = new Float32Array(J.length * 16);
+    J.forEach((j, i) => ibm.set(j.ibm, i * 16));
+    const ibmAcc = accessors.push({ bufferView: addView(ibm), componentType: 5126, count: J.length, type: 'MAT4' }) - 1;
+    json.skins = [{ name: 'skeleton', inverseBindMatrices: ibmAcc, joints: J.map((_, i) => i + 1), skeleton: 1 }];
+    json.nodes[0].skin = 0;
+    const clip = skeleton.clip;
+    if (clip) {
+      const tAcc = accessors.push({ bufferView: addView(clip.times), componentType: 5126, count: clip.times.length, type: 'SCALAR', min: [clip.times[0]], max: [clip.times[clip.times.length - 1]] }) - 1;
+      const samplers = [];
+      const channels = [];
+      for (const ch of clip.channels) {
+        for (const [path, data, type] of [['translation', ch.T, 'VEC3'], ['rotation', ch.R, 'VEC4'], ['scale', ch.S, 'VEC3']]) {
+          const o = accessors.push({ bufferView: addView(data), componentType: 5126, count: clip.times.length, type }) - 1;
+          samplers.push({ input: tAcc, output: o, interpolation: 'LINEAR' });
+          channels.push({ sampler: samplers.length - 1, target: { node: ch.joint + 1, path } });
+        }
+      }
+      json.animations = [{ name: 'loop', samplers, channels }];
+    }
+  }
   if (emissiveUsed) json.extensionsUsed = ['KHR_materials_emissive_strength'];
+  json.buffers[0].byteLength = offset;
   let jsonBytes = new TextEncoder().encode(JSON.stringify(json));
   const jpad = (4 - (jsonBytes.length % 4)) % 4;
   if (jpad) {
@@ -3841,6 +4357,7 @@ const { compile } = __mod["glsl"];
 const { Preview, LIGHTS } = __mod["renderer"];
 const { Mesher, simplifyMesh, meshStats } = __mod["mesher"];
 const { toGLB, toSTL, toOBJ, toZIP } = __mod["export"];
+const { skeleton } = __mod["anim"];
 const { promptCreate, promptImprove, promptFix, extractCode, SAMPLE_ERRORS } = __mod["ai"];
 const $ = (id) => document.getElementById(id);
 const store = {
@@ -3905,6 +4422,7 @@ function run(code = S.code, { quiet = false } = {}) {
     S.compiled = compiled;
     renderParams(result.params);
     syncLightSelect();
+    syncPlay();
     const ms = Math.round(performance.now() - t0);
     const b = compiled.bounds;
     const size = b.max.map((v, i) => (v - b.min[i]).toFixed(2)).join(' × ');
@@ -4039,7 +4557,7 @@ function setupViewport() {
   }
   const pv = S.preview;
   pv.onFrame = (f, max) => {
-    $('hudFrames').textContent = pv.mode === 'mesh' ? meshHud() : f < max ? `מחדד ${f}/${max}` : '';
+    $('hudFrames').textContent = pv.mode === 'mesh' ? meshHud() : f >= 0 && f < max ? `מחדד ${f}/${max}` : '';
   };
   new ResizeObserver(() => pv.resize()).observe(canvas);
   pv.resize();
@@ -4122,6 +4640,20 @@ function setupViewport() {
   });
   toggle('wireBtn', (on) => (pv.wire = on));
   $('shotBtn').addEventListener('click', screenshot);
+  $('playBtn').addEventListener('click', () => {
+    pv.setPlaying(!pv.playing);
+    syncPlay();
+  });
+}
+
+function syncPlay() {
+  const b = $('playBtn');
+  const anim = S.compiled?.anim;
+  b.hidden = !anim;
+  if (!anim) return;
+  const on = !!S.preview?.playing;
+  b.setAttribute('aria-pressed', String(on));
+  b.textContent = on ? 'עצירה' : 'הפעלה';
 }
 
 function syncLightSelect() {
@@ -4262,14 +4794,16 @@ function setupExport() {
 function exportFiles({ glb, stl, obj, mm = 80 }) {
   const name = modelName();
   const out = [];
-  if (glb) out.push({ name: `${name}.glb`, data: toGLB(S.mesh, { name, palette: S.compiled.materials }) });
+  const c = S.compiled;
+  const skel = c.bones.length ? skeleton(c.bones, c.anim, c.anim?.fps) : null;
+  if (glb) out.push({ name: `${name}.glb`, data: toGLB(S.mesh, { name, palette: c.materials, skeleton: skel }) });
   if (stl) out.push({ name: `${name}.stl`, data: toSTL(S.mesh, { sizeMM: mm }) });
   if (obj) out.push({ name: `${name}.obj`, data: toOBJ(S.mesh, { name }) });
   return out;
 }
 
 // ---------- Claude ----------
-function renderSheet({ size = 1200, clay = false, light, views, frames = 5 } = {}) {
+function renderSheet({ size = 1200, clay = false, light, views, frames = 5, u = null } = {}) {
   const pv = S.preview;
   const V = views || [
     { yaw: 35, pitch: 16, label: '3/4 front' },
@@ -4289,7 +4823,7 @@ function renderSheet({ size = 1200, clay = false, light, views, frames = 5 } = {
   pv.clay = clay;
   if (light) pv.light = light;
   V.forEach((v, i) => {
-    const img = pv.renderStill(tw, th, { yaw: v.yaw, pitch: v.pitch, zoom: v.zoom ?? 1, panY: 0 }, frames);
+    const img = pv.renderStill(tw, th, { yaw: v.yaw, pitch: v.pitch, zoom: v.zoom ?? 1, panY: 0, u }, frames);
     const x = (i % cols) * tw;
     const y = Math.floor(i / cols) * th;
     ctx.drawImage(img, x, y);
@@ -4433,19 +4967,28 @@ window.gilaf = {
     const result = runRecipe(code, S.params);
     const compiled = compile(result);
     S.preview.setCompiled(compiled);
+    S.preview.playing = false; // headless renders pick their own frame
     S.result = result;
     S.compiled = compiled;
-    return { params: result.params, bounds: compiled.bounds, step: compiled.step, nodes: countNodes(result.node), lines: compiled.lines };
+    return {
+      params: result.params,
+      bounds: compiled.bounds,
+      step: compiled.step,
+      nodes: countNodes(result.node),
+      lines: compiled.lines,
+      bones: compiled.bones.map((b) => b.name),
+      anim: compiled.anim ? { seconds: compiled.anim.seconds, fps: compiled.anim.fps } : null,
+    };
   },
   sheet(opts = {}) {
     return renderSheet(opts).toDataURL('image/png');
   },
-  still({ width = 1200, height = 900, yaw = 32, pitch = 16, zoom = 1, clay = false, light, frames = 12 } = {}) {
+  still({ width = 1200, height = 900, yaw = 32, pitch = 16, zoom = 1, clay = false, light, frames = 12, u = null } = {}) {
     const pv = S.preview;
     const saved = { clay: pv.clay, light: pv.light };
     pv.clay = clay;
     if (light) pv.light = light;
-    const img = pv.renderStill(width, height, { yaw, pitch, zoom, panY: 0 }, frames);
+    const img = pv.renderStill(width, height, { yaw, pitch, zoom, panY: 0, u }, frames);
     Object.assign(pv, saved);
     return img.toDataURL('image/png');
   },
@@ -4453,6 +4996,20 @@ window.gilaf = {
     const { mesh, raw } = await buildMesh({ res, tris });
     const files = exportFiles({ glb: formats.includes('glb'), stl: formats.includes('stl'), obj: formats.includes('obj'), mm });
     return { stats: { ...meshStats(mesh), raw, grid: mesh.grid, ms: mesh.ms }, files: files.map((f) => ({ name: f.name, b64: b64(f.data) })) };
+  },
+  // One loop of the animation as PNG data URLs (for video export).
+  animation({ count, width = 720, height = 720, yaw = 32, pitch = 14, zoom = 1, frames = 3, light } = {}) {
+    const pv = S.preview;
+    const anim = S.compiled?.anim;
+    if (!anim) throw new Error('This recipe has no animate() block');
+    const n = count || Math.round(anim.seconds * anim.fps);
+    const saved = { light: pv.light, playing: pv.playing };
+    pv.playing = false;
+    if (light) pv.light = light;
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(pv.renderStill(width, height, { yaw, pitch, zoom, panY: 0, u: i / n }, frames).toDataURL('image/png'));
+    Object.assign(pv, saved);
+    return { frames: out, fps: n / anim.seconds, seconds: anim.seconds };
   },
   meshView({ width = 1000, height = 800, yaw = 32, pitch = 16, wire = true } = {}) {
     const pv = S.preview;

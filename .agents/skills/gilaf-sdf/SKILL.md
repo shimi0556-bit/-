@@ -5,8 +5,9 @@ description: >-
   JavaScript language), rendering them headlessly, critiquing the renders and refining until the
   model looks professional, then exporting GLB (games, Blender, Three.js) or STL (3D printing).
   Trigger whenever the user asks to create, sculpt, design, model or print a 3D model, character,
-  prop, figurine, toy, chess piece, vase, logo in 3D or game asset, or mentions Gilaf, SDF,
-  signed distance fields, GLB/STL export, "מודל תלת מימד", "מודל תלת־ממד", "פסל", "לפסל", "גילוף",
+  prop, figurine, toy, chess piece, vase, logo in 3D or game asset, or an ANIMATED / rigged model
+  (wagging, waving, blinking, looping idle), or mentions Gilaf, SDF, signed distance fields,
+  GLB/STL export, "מודל תלת מימד", "מודל תלת־ממד", "פסל", "לפסל", "גילוף", "מונפש", "אנימציה",
   "הדפסה בתלת מימד", "קובץ STL", "מודל למשחק" — even if they do not name the skill.
 ---
 
@@ -36,7 +37,15 @@ complete language reference plus the craft rules. For the expected quality bar, 
    - 3D printing: `... export <recipe> --out gilaf-sdf/my-models/out/<name>.stl --res 320 --mm 80` (Z-up, standing on the plate, tallest side = `--mm`)
    - several at once: `--formats glb,stl,obj`
    The command prints triangles and signed volume. The volume must be positive; otherwise report it.
-7. **Deliver**: a final render (`render --size 1400 --frames 6`, or `still --yaw 30 --pitch 15`),
+7. **Animated models** (see "Animation (bones)" in the reference): sculpt and approve the rest pose
+   first (sheets render the rest pose), then add `.bone(name, pivot)` to moving parts and one
+   `animate({ seconds }, tracks)` loop. Check motion with a quick strip:
+   `node gilaf-sdf/tools/gilaf.mjs animate <recipe> --out /tmp/x.mp4 --size 320 --count 8 --frames 1`
+   then tile it (`ffmpeg -i /tmp/x.mp4 -vf tile=4x2 -frames:v 1 strip.png`) and Read the strip.
+   Final video: `animate <recipe> --out <name>.mp4,<name>.gif --size 480 --count <seconds*24> --frames 2`
+   (ffmpeg comes from `$GILAF_FFMPEG`, PATH, or `npm i @ffmpeg-installer/ffmpeg`). The GLB export
+   then carries the skeleton, skin weights and the clip; verify it with the glTF validator if you can.
+8. **Deliver**: a final render (`render --size 1400 --frames 6`, or `still --yaw 30 --pitch 15`),
    the recipe path, the exported files, and one line on how to tweak it: open `gilaf-sdf/dist/gilaf.html`
    (or the published studio) and paste the recipe into the editor to get live sliders.
 
@@ -56,6 +65,12 @@ complete language reference plus the craft rules. For the expected quality bar, 
   keep repeated parts from spanning more than one neighbouring copy, or add `scene({ step: 0.6 })`.
 
 ## Gotchas learned the hard way
+
+- Animation strips: a count that divides the number of cycles hides the motion (8 frames of
+  `wave(t, 8)` all land on 0). Use 6 or 10 frames for a strip, or look at the video.
+- Bones cannot live inside `mirror/ring/grid/twist/bend`; build left/right parts with a side function.
+- Software rendering here is ~15 s per 480px frame for a detailed model: run the final
+  `animate` in the background and keep working.
 
 - `lathe([[r, y], ...])` needs heights that increase; it is far smoother and faster than
   `polygon(...).revolve()`. Hollow vessels: `.shell(t).cut(halfspace('-y', top - 0.03))`.

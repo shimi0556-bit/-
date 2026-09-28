@@ -1,6 +1,7 @@
 # גילוף · Gilaf SDF Studio
 
 פיסול מודלים בתלת־ממד במתמטיקה של **שדות מרחק (Signed Distance Fields)**: כותבים "מתכון" קצר, רואים אותו מיד בתאורת סטודיו, ומייצאים קובץ GLB למשחקים ולבלנדר או STL להדפסה בתלת־ממד.
+אפשר גם **להנפיש**: מסמנים חלקים זזים כ"עצמות" (זנב, ראש, אוזניים), מתארים לולאת תנועה, ומקבלים סרטון וקובץ GLB עם שלד ואנימציה.
 
 ![7 מודלים שנוצרו בגילוף](docs/gallery.jpg)
 
@@ -36,16 +37,17 @@ node tools/gilaf.mjs render recipes/robot.js --clay                 # צורה �
 node tools/gilaf.mjs still  recipes/robot.js --yaw 30 --pitch 15    # תמונה אחת
 node tools/gilaf.mjs export recipes/robot.js --out robot.glb --res 256 --tris 100000
 node tools/gilaf.mjs export recipes/rook.js  --out rook.stl --res 320 --mm 60
+node tools/gilaf.mjs animate recipes/dog.js  --out dog.mp4,dog.gif --size 480 --count 96   # סרטון של לולאת ההנפשה
 node tools/build.mjs                                                 # בנייה מחדש של dist/
 ```
 
-צריך Node 18 ומעלה ו־Playwright עם Chromium (`npm i -g playwright && npx playwright install chromium`).
+צריך Node 18 ומעלה ו־Playwright עם Chromium (`npm i -g playwright && npx playwright install chromium`). לסרטונים צריך גם ffmpeg (או `npm i @ffmpeg-installer/ffmpeg`).
 
 ## מה יוצא בייצוא
 
 | פורמט | בשביל | מה בפנים |
 |---|---|---|
-| GLB | Blender, Three.js, Unity, Unreal, Godot | רשת משולשים, נורמלים, צבע לכל קודקוד, חומרים (חספוס, מתכת, זוהר) |
+| GLB | Blender, Three.js, Unity, Unreal, Godot | רשת משולשים, נורמלים, צבע לכל קודקוד, חומרים (חספוס, מתכת, זוהר), ובמודל מונפש גם שלד, משקלי עור ולולאת אנימציה |
 | STL | הדפסה בתלת־ממד | ציר Z למעלה, עומד על המשטח, בגודל שבחרתם במ״מ, גוף סגור |
 | OBJ | כלים ישנים | רשת עם צבע לכל קודקוד |
 
@@ -55,6 +57,7 @@ node tools/build.mjs                                                 # בניי�
 
 | מתכון | מה הוא מדגים |
 |---|---|
+| `dog.js` | **הנפשה**: 8 עצמות (גוף, ראש, אוזניים, עיניים, לשון, זנב), כשכוש, הטיית ראש, נשימה ומצמוץ |
 | `robot.js` | צורות קשיחות מעוגלות, כיס מסך מבריק, עיניים זוהרות, סימטריה, חריצי אוורור עם `grid` |
 | `octopus.js` | צורה אורגנית: זרועות `tube` ספליין, `ring(8)`, עור מנומר, מעבר צבע לבטן |
 | `rook.js` | `lathe` חריטה, צריחים מ־`ring`, שיש עם גידים (`colorNoise` עם `veins`) |
@@ -72,6 +75,7 @@ src/dsl.js        שפת המתכונים וחישוב תיבות חוסמות
 src/glsl.js       מהדר מתכון → GLSL
 src/renderer.js   תצוגה בזמן אמת (raymarching) ותצוגת רשת
 src/mesher.js     שדה מרחק → רשת משולשים על ה־GPU, צמצום משולשים
+src/anim.js       עצמות, תנוחות, שלד glTF ומשקלי עור
 src/export.js     כתיבת GLB / STL / OBJ / ZIP
 src/ai.js         הנחיות ל־Claude (יצירה, שיפור, תיקון)
 src/app.js        הממשק

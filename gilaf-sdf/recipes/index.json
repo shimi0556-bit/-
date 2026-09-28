@@ -1,9 +1,42 @@
 [
-  { "id": "robot", "name": "רובוט עוזר", "file": "robot.js" },
-  { "id": "octopus", "name": "תמנון", "file": "octopus.js" },
-  { "id": "rook", "name": "צריח שחמט משיש", "file": "rook.js" },
-  { "id": "vase", "name": "כד קרמיקה", "file": "vase.js" },
-  { "id": "spaceship", "name": "חללית סיור", "file": "spaceship.js" },
-  { "id": "crystals", "name": "סלע קריסטלים", "file": "crystals.js" },
-  { "id": "mushroom", "name": "בית פטרייה", "file": "mushroom.js" }
+  {
+    "id": "dog",
+    "name": "כלבלב מונפש",
+    "file": "dog.js"
+  },
+  {
+    "id": "robot",
+    "name": "רובוט עוזר",
+    "file": "robot.js"
+  },
+  {
+    "id": "octopus",
+    "name": "תמנון",
+    "file": "octopus.js"
+  },
+  {
+    "id": "rook",
+    "name": "צריח שחמט משיש",
+    "file": "rook.js"
+  },
+  {
+    "id": "vase",
+    "name": "כד קרמיקה",
+    "file": "vase.js"
+  },
+  {
+    "id": "spaceship",
+    "name": "חללית סיור",
+    "file": "spaceship.js"
+  },
+  {
+    "id": "crystals",
+    "name": "סלע קריסטלים",
+    "file": "crystals.js"
+  },
+  {
+    "id": "mushroom",
+    "name": "בית פטרייה",
+    "file": "mushroom.js"
+  }
 ]

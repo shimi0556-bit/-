@@ -6,6 +6,7 @@ import { compile } from './glsl.js';
 import { Preview, LIGHTS } from './renderer.js';
 import { Mesher, simplifyMesh, meshStats } from './mesher.js';
 import { toGLB, toSTL, toOBJ, toZIP } from './export.js';
+import { skeleton } from './anim.js';
 import { promptCreate, promptImprove, promptFix, extractCode, SAMPLE_ERRORS } from './ai.js';
 
 const $ = (id) => document.getElementById(id);
@@ -71,6 +72,7 @@ function run(code = S.code, { quiet = false } = {}) {
     S.compiled = compiled;
     renderParams(result.params);
     syncLightSelect();
+    syncPlay();
     const ms = Math.round(performance.now() - t0);
     const b = compiled.bounds;
     const size = b.max.map((v, i) => (v - b.min[i]).toFixed(2)).join(' × ');
@@ -205,7 +207,7 @@ function setupViewport() {
   }
   const pv = S.preview;
   pv.onFrame = (f, max) => {
-    $('hudFrames').textContent = pv.mode === 'mesh' ? meshHud() : f < max ? `מחדד ${f}/${max}` : '';
+    $('hudFrames').textContent = pv.mode === 'mesh' ? meshHud() : f >= 0 && f < max ? `מחדד ${f}/${max}` : '';
   };
   new ResizeObserver(() => pv.resize()).observe(canvas);
   pv.resize();
@@ -288,6 +290,20 @@ function setupViewport() {
   });
   toggle('wireBtn', (on) => (pv.wire = on));
   $('shotBtn').addEventListener('click', screenshot);
+  $('playBtn').addEventListener('click', () => {
+    pv.setPlaying(!pv.playing);
+    syncPlay();
+  });
+}
+
+function syncPlay() {
+  const b = $('playBtn');
+  const anim = S.compiled?.anim;
+  b.hidden = !anim;
+  if (!anim) return;
+  const on = !!S.preview?.playing;
+  b.setAttribute('aria-pressed', String(on));
+  b.textContent = on ? 'עצירה' : 'הפעלה';
 }
 
 function syncLightSelect() {
@@ -428,14 +444,16 @@ function setupExport() {
 function exportFiles({ glb, stl, obj, mm = 80 }) {
   const name = modelName();
   const out = [];
-  if (glb) out.push({ name: `${name}.glb`, data: toGLB(S.mesh, { name, palette: S.compiled.materials }) });
+  const c = S.compiled;
+  const skel = c.bones.length ? skeleton(c.bones, c.anim, c.anim?.fps) : null;
+  if (glb) out.push({ name: `${name}.glb`, data: toGLB(S.mesh, { name, palette: c.materials, skeleton: skel }) });
   if (stl) out.push({ name: `${name}.stl`, data: toSTL(S.mesh, { sizeMM: mm }) });
   if (obj) out.push({ name: `${name}.obj`, data: toOBJ(S.mesh, { name }) });
   return out;
 }
 
 // ---------- Claude ----------
-function renderSheet({ size = 1200, clay = false, light, views, frames = 5 } = {}) {
+function renderSheet({ size = 1200, clay = false, light, views, frames = 5, u = null } = {}) {
   const pv = S.preview;
   const V = views || [
     { yaw: 35, pitch: 16, label: '3/4 front' },
@@ -455,7 +473,7 @@ function renderSheet({ size = 1200, clay = false, light, views, frames = 5 } = {
   pv.clay = clay;
   if (light) pv.light = light;
   V.forEach((v, i) => {
-    const img = pv.renderStill(tw, th, { yaw: v.yaw, pitch: v.pitch, zoom: v.zoom ?? 1, panY: 0 }, frames);
+    const img = pv.renderStill(tw, th, { yaw: v.yaw, pitch: v.pitch, zoom: v.zoom ?? 1, panY: 0, u }, frames);
     const x = (i % cols) * tw;
     const y = Math.floor(i / cols) * th;
     ctx.drawImage(img, x, y);
@@ -599,19 +617,28 @@ window.gilaf = {
     const result = runRecipe(code, S.params);
     const compiled = compile(result);
     S.preview.setCompiled(compiled);
+    S.preview.playing = false; // headless renders pick their own frame
     S.result = result;
     S.compiled = compiled;
-    return { params: result.params, bounds: compiled.bounds, step: compiled.step, nodes: countNodes(result.node), lines: compiled.lines };
+    return {
+      params: result.params,
+      bounds: compiled.bounds,
+      step: compiled.step,
+      nodes: countNodes(result.node),
+      lines: compiled.lines,
+      bones: compiled.bones.map((b) => b.name),
+      anim: compiled.anim ? { seconds: compiled.anim.seconds, fps: compiled.anim.fps } : null,
+    };
   },
   sheet(opts = {}) {
     return renderSheet(opts).toDataURL('image/png');
   },
-  still({ width = 1200, height = 900, yaw = 32, pitch = 16, zoom = 1, clay = false, light, frames = 12 } = {}) {
+  still({ width = 1200, height = 900, yaw = 32, pitch = 16, zoom = 1, clay = false, light, frames = 12, u = null } = {}) {
     const pv = S.preview;
     const saved = { clay: pv.clay, light: pv.light };
     pv.clay = clay;
     if (light) pv.light = light;
-    const img = pv.renderStill(width, height, { yaw, pitch, zoom, panY: 0 }, frames);
+    const img = pv.renderStill(width, height, { yaw, pitch, zoom, panY: 0, u }, frames);
     Object.assign(pv, saved);
     return img.toDataURL('image/png');
   },
@@ -619,6 +646,20 @@ window.gilaf = {
     const { mesh, raw } = await buildMesh({ res, tris });
     const files = exportFiles({ glb: formats.includes('glb'), stl: formats.includes('stl'), obj: formats.includes('obj'), mm });
     return { stats: { ...meshStats(mesh), raw, grid: mesh.grid, ms: mesh.ms }, files: files.map((f) => ({ name: f.name, b64: b64(f.data) })) };
+  },
+  // One loop of the animation as PNG data URLs (for video export).
+  animation({ count, width = 720, height = 720, yaw = 32, pitch = 14, zoom = 1, frames = 3, light } = {}) {
+    const pv = S.preview;
+    const anim = S.compiled?.anim;
+    if (!anim) throw new Error('This recipe has no animate() block');
+    const n = count || Math.round(anim.seconds * anim.fps);
+    const saved = { light: pv.light, playing: pv.playing };
+    pv.playing = false;
+    if (light) pv.light = light;
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(pv.renderStill(width, height, { yaw, pitch, zoom, panY: 0, u: i / n }, frames).toDataURL('image/png'));
+    Object.assign(pv, saved);
+    return { frames: out, fps: n / anim.seconds, seconds: anim.seconds };
   },
   meshView({ width = 1000, height = 800, yaw = 32, pitch = 16, wire = true } = {}) {
     const pv = S.preview;

@@ -75,6 +75,36 @@ Paint the inside with `.paint(lathe(outline).round(-0.015), '#dark')` (a slightl
 `param('name', default, min, max)` — returns a number and adds a slider in the studio.
 Helpers: `rand(seed)` (seeded random, `.range(a,b)`, `.pick(arr)`), `range(n)`, `lerp`, `clamp`, `rad`, `PI`, `TAU`, plus all of JavaScript (`for` loops, arrays, `Math`).
 
+## Animation (bones)
+Mark a moving part with `.bone(name, pivot)`. The pivot is the joint it turns around (neck, tail root, ear root),
+in the same coordinates the part was built in. Bones nest: a bone inside another bone's shape follows it
+(ears inside the head follow the head). Then describe one looping clip:
+
+```js
+const tail = tube([...]).color(fur).bone('tail', [0, 0.3, -0.5]);
+const head = headShape.add(ear(1, 'earR')).add(ear(-1, 'earL')).bone('head', [0, 0.9, 0.1]);
+const dog = body.add(head, 0.1).add(tail, 0.06).bone('body', [0, 0, 0]);
+animate({ seconds: 4 }, {                       // t runs 0 → 1 over the loop
+  tail: (t) => ({ rotate: [0, 35 * wave(t, 8), 0] }),          // 8 wags per loop
+  head: (t) => ({ rotate: [0, 0, 10 * wave(t, 1)] }),          // curious tilt
+  earL: (t) => ({ rotate: [0, 0, -8 * wave(t, 1, -0.08)] }),   // lags a little behind the head
+  body: (t) => ({ scale: [1, 1 + 0.018 * wave(t, 4), 1] }),    // breathing
+  eyeL: (t) => ({ scale: [1, 1 - 0.9 * pulse(t, 0.3, 0.035), 1] }), // blink
+});
+return dog;
+```
+- A track returns `{ rotate: [xDeg, yDeg, zDeg], scale: s | [sx, sy, sz], move: [x, y, z] }`, all around the pivot.
+- `wave(t, cycles, phase)` is a seamless sine; use whole numbers of cycles so the loop has no jump.
+  `pulse(t, at, width)` is a 0→1→0 bump (blinks, hops). `ease(x)` smooths 0..1.
+- A bone cannot sit inside `mirror`, `ring`, `grid`, `twist` or `bend` (it needs one place in space).
+  For left/right parts, build them with a function of the side (`const ear = (s, name) => ...`, s = +1 / -1).
+- Melt moving parts into their parent with `add(part, k)`: the fillet bends live in the preview, and the
+  exported skin weights fade over the same zone. `.bone(name, pivot, { blend })` overrides that zone.
+- Secondary motion sells it: ears and tails lag the head by a small phase, breathing is slow and small,
+  blinks are quick (width ≈ 0.03 of the loop).
+- Export: GLB carries a skeleton (one joint per bone), skin weights and the looping clip, ready for
+  Three.js `AnimationMixer`, Blender, Unity or Godot. STL/OBJ are the rest pose.
+
 ## Craft rules for high-quality models
 1. **Block out big forms first** (3–6 shapes), check the silhouette, then add secondary forms, then small details.
 2. **Blend organics with `add(part, k)`** where k is 10–30% of the smaller part's size. Hard-surface parts use small k (0.005–0.03) or `box(..., round)`.

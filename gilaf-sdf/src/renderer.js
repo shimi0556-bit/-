@@ -323,6 +323,9 @@ export class Preview {
     this.prog = null;
     this.compiled = null;
     this.view = { yaw: 32, pitch: 16, zoom: 1, panY: 0 };
+    this.u = null;
+    this.playing = false;
+    this.t0 = 0;
     this.light = 'studio';
     this.clay = false;
     this.mode = 'sdf'; // or 'mesh'
@@ -345,6 +348,16 @@ export class Preview {
     if (this.prog) gl.deleteProgram(this.prog.p);
     this.prog = prog;
     this.compiled = compiled;
+    if (compiled.anim) {
+      if (this.u == null) {
+        this.u = 0;
+        this.playing = true;
+        this.t0 = performance.now();
+      }
+    } else {
+      this.u = null;
+      this.playing = false;
+    }
     try {
       this.fit = this.probe();
     } catch {
@@ -374,6 +387,9 @@ export class Preview {
     gl.disable(gl.BLEND);
     gl.useProgram(this.prog.p);
     const U = this.prog.uni;
+    const rest = this.compiled.pose(null);
+    gl.uniformMatrix4fv(U.uBone, false, rest.mats);
+    gl.uniform1fv(U.uBoneS, rest.s);
     gl.uniform1i(U.uProbe, 1);
     gl.uniform1i(U.uPN, N);
     gl.uniform1i(U.uPTiles, tiles);
@@ -471,10 +487,27 @@ export class Preview {
     if (!this.raf) this.raf = requestAnimationFrame(() => this.tick());
   }
 
+  // Starts or stops animation playback; paused frames refine to full quality.
+  setPlaying(on) {
+    if (!this.compiled?.anim) return;
+    if (on && !this.playing) this.t0 = performance.now() - (this.u || 0) * this.compiled.anim.seconds * 1000;
+    this.playing = on;
+    this.invalidate();
+  }
+
   tick() {
     this.raf = 0;
     if (!this.prog) return;
     const now = performance.now();
+    const anim = this.compiled.anim;
+    if (anim && this.playing && this.mode !== 'mesh') {
+      this.u = ((now - this.t0) / 1000 / anim.seconds) % 1;
+      this.drawLow();
+      this.frame = 0;
+      this.onFrame?.(-1, this.maxFrames);
+      this.raf = requestAnimationFrame(() => this.tick());
+      return;
+    }
     const interactive = now < this.interactUntil;
     if (this.mode === 'mesh' && this.mesh) {
       this.drawMesh();
@@ -547,6 +580,9 @@ export class Preview {
     gl.uniform3fv(U.uBgTop, bgTop);
     gl.uniform3fv(U.uBgBot, bgBot);
     gl.uniform1f(U.uExposure, L.exposure * (sc.exposure ?? 1));
+    const pose = this.compiled.pose('u' in this.view ? this.view.u : this.u);
+    gl.uniformMatrix4fv(U.uBone, false, pose.mats);
+    gl.uniform1fv(U.uBoneS, pose.s);
   }
 
   resize() {

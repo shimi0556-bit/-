@@ -2,6 +2,7 @@
 // `void mapC(vec3 p, out vec3 col, out vec3 mat)` for color + material.
 
 import { bounds, ownColor, DEFAULT_COLOR, DEFAULT_MAT } from './dsl.js';
+import { collectBones, attachPoses, poseUniforms, m4 } from './anim.js';
 
 const HELPERS = {
   core: /* glsl */ `
@@ -312,6 +313,12 @@ function emit(g, n, p) {
       if (!fn) return prim(g, `sdSphere(${p} - ${v3(a.pts[0])}, ${f(a.pts[0][3])})`);
       return prim(g, `${fn}(${p})`);
     }
+    case 'bone': {
+      // the shader gets the inverse of this bone's current motion as a uniform
+      const q = g.v('vec3', `(uBone[${a.index}] * vec4(${p}, 1.0)).xyz`);
+      const r = emit(g, n.k[0], q);
+      return { ...r, d: g.v('float', `${r.d} * uBoneS[${a.index}]`) };
+    }
     case 'move':
       return emit(g, n.k[0], g.v('vec3', `${p} - ${v3(a.t)}`));
     case 'rotate': {
@@ -556,8 +563,37 @@ function emit2(g, n, p) {
 }
 
 // Compiles a recipe result into GLSL source plus the numbers the renderers need.
+function sanitize(b, scene) {
+  let out = b;
+  if (scene.bounds) out = { min: scene.bounds[0].slice(), max: scene.bounds[1].slice() };
+  if (!out || out.min.some((v) => !Number.isFinite(v)) || out.max.some((v) => !Number.isFinite(v))) {
+    out = { min: [-1.5, -1.5, -1.5], max: [1.5, 1.5, 1.5] };
+  }
+  // guard against flat or huge boxes
+  out = { min: out.min.map((v) => Math.max(v, -50)), max: out.max.map((v) => Math.min(v, 50)) };
+  for (let i = 0; i < 3; i++) if (out.max[i] - out.min[i] < 1e-3) {
+    out.min[i] -= 0.01;
+    out.max[i] += 0.01;
+  }
+  return out;
+}
+
 export function compile(result, { cull = true } = {}) {
   const { node, scene } = result;
+  const anim = result.anim || null;
+  // bones first: their sampled poses feed the bounds used for culling
+  const bones = collectBones(node);
+  if (anim) {
+    const known = new Set(bones.map((b) => b.name));
+    for (const k of Object.keys(anim.tracks)) {
+      if (!known.has(k)) throw new Error(`animate(): there is no bone named '${k}'. Bones: ${[...known].join(', ') || 'none (add .bone(name, pivot) to a part)'}`);
+    }
+  }
+  attachPoses(bones, anim);
+  for (const bn of bones) {
+    const bb = bounds(bn.node.k[0], true);
+    bn.size = bb ? Math.min(...bb.max.map((v, i) => v - bb.min[i])) : 1;
+  }
   // the largest blend radius: early-outs inside primitives must stay outside every blend zone
   let kmax = 0;
   const walk = (n) => {
@@ -571,34 +607,43 @@ export function compile(result, { cull = true } = {}) {
   const gc = new Gen('c', shared);
   const rc = emit(gc, node, 'p');
 
-  let b = bounds(node);
-  if (scene.bounds) {
-    const sb = scene.bounds;
-    b = { min: sb[0].slice(), max: sb[1].slice() };
-  }
-  if (!b || b.min.some((v) => !Number.isFinite(v)) || b.max.some((v) => !Number.isFinite(v))) {
-    b = { min: [-1.5, -1.5, -1.5], max: [1.5, 1.5, 1.5] };
-  }
-  // guard against flat or huge boxes
-  b = { min: b.min.map((v) => Math.max(v, -50)), max: b.max.map((v) => Math.min(v, 50)) };
-  for (let i = 0; i < 3; i++) if (b.max[i] - b.min[i] < 1e-3) {
-    b.min[i] -= 0.01;
-    b.max[i] += 0.01;
-  }
+  const b = sanitize(bounds(node), scene);
+  const restBounds = sanitize(bounds(node, true), scene);
 
   const step = scene.step ?? Math.max(0.3, Math.min(1, 0.95 / shared.lip));
+  const nb = Math.max(1, bones.length);
   const glsl = [
+    `uniform mat4 uBone[${nb}];\nuniform float uBoneS[${nb}];`,
     ...[...shared.helpers].map((h) => HELPERS[h]),
     ...shared.fns,
     `float map(vec3 p){\n${gd.lines.join('\n')}\n  return ${rd.d};\n}`,
     `void mapC(vec3 p, out vec3 col, out vec3 mat){\n${gc.lines.join('\n')}\n  col = ${rc.c}; mat = ${rc.m};\n}`,
   ].join('\n');
 
+  // distance to each bone's own part, in world space at rest (for skin weights)
+  let skinGlsl = '';
+  if (bones.length) {
+    const before = shared.fns.length;
+    const gs = new Gen('d', shared);
+    const cases = bones.map((bn, i) => {
+      const fn = subFn(gs, bn.node.k[0]);
+      const inv = m4.invert(bn.E);
+      const sc = Math.cbrt(Math.abs(bn.E[0] * (bn.E[5] * bn.E[10] - bn.E[9] * bn.E[6]) - bn.E[4] * (bn.E[1] * bn.E[10] - bn.E[9] * bn.E[2]) + bn.E[8] * (bn.E[1] * bn.E[6] - bn.E[5] * bn.E[2])));
+      return `  if (i == ${i}) return ${fn}((mat4(${inv.map(f).join(', ')}) * vec4(p, 1.0)).xyz) * ${f(sc)};`;
+    });
+    skinGlsl = [...shared.fns.slice(before), `float boneDist(int i, vec3 p){\n${cases.join('\n')}\n  return 1e10;\n}`].join('\n');
+  }
+
   return {
     glsl,
+    skinGlsl,
     bounds: b,
+    restBounds,
     step,
     scene,
+    anim,
+    bones,
+    pose: (u) => poseUniforms(bones, anim, u),
     materials: [...shared.materials].map((s) => s.split(',').map(Number)),
     lines: gd.lines.length + gc.lines.length,
   };

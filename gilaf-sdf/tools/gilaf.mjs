@@ -8,11 +8,12 @@
 //   node tools/gilaf.mjs check   recipes/robot.js
 //   --param name=value (repeatable) sets slider values.
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, rmSync, existsSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve, basename, extname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 import { build } from './build.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -25,6 +26,25 @@ function loadPlaywright() {
     const g = execSync('npm root -g').toString().trim();
     return createRequire(join(g, 'noop.js'))('playwright');
   }
+}
+
+// ffmpeg: $GILAF_FFMPEG, then PATH, then the npm package @ffmpeg-installer/ffmpeg if installed.
+function findFfmpeg() {
+  if (process.env.GILAF_FFMPEG && existsSync(process.env.GILAF_FFMPEG)) return process.env.GILAF_FFMPEG;
+  try {
+    execSync('ffmpeg -version', { stdio: 'ignore' });
+    return 'ffmpeg';
+  } catch {
+    /* not on PATH */
+  }
+  for (const base of [import.meta.url, join(execSync('npm root -g').toString().trim(), 'noop.js')]) {
+    try {
+      return createRequire(base)('@ffmpeg-installer/ffmpeg').path;
+    } catch {
+      /* not installed */
+    }
+  }
+  return null;
 }
 
 function parseArgs(argv) {
@@ -52,11 +72,12 @@ const USAGE = `usage: node tools/gilaf.mjs <render|still|export|check> <recipe.j
   render   2x2 contact sheet (3/4, front, side, back)      --out --size --clay --light --frames
   still    one view                                          --out --yaw --pitch --zoom --width --height --clay --light
   export   mesh files (.glb .stl .obj by --out extension)    --out --res --tris --mm --formats glb,stl
+  animate  one animation loop as video (.mp4 .gif .webm)   --out --size --yaw --pitch --zoom --frames --count --light
   check    compile only and print stats`;
 
 async function main() {
   const o = parseArgs(process.argv.slice(2));
-  if (!o.cmd || !o.file || !['render', 'still', 'export', 'check'].includes(o.cmd)) {
+  if (!o.cmd || !o.file || !['render', 'still', 'export', 'check', 'animate'].includes(o.cmd)) {
     console.log(USAGE);
     process.exit(o.cmd ? 1 : 0);
   }
@@ -77,7 +98,49 @@ async function main() {
     const b = info.bounds;
     const size = b.max.map((v, i) => +(v - b.min[i]).toFixed(3));
     console.log(`ok: ${info.nodes} nodes, ${info.lines} GLSL lines, size ${size.join(' x ')}, step ${info.step.toFixed(2)}${info.params.length ? ', params: ' + info.params.map((q) => `${q.name}=${o.params[q.name] ?? q.def}`).join(' ') : ''}`);
+    if (info.bones.length) console.log(`bones: ${info.bones.join(', ')}${info.anim ? `; loop ${info.anim.seconds}s @ ${info.anim.fps} fps` : ''}`);
     if (o.cmd === 'check') return;
+
+    if (o.cmd === 'animate') {
+      if (!info.anim) throw new Error('This recipe has no animate() block');
+      const out = o.out || join('shots', `${name}.mp4`);
+      const count = +(o.count || Math.round(info.anim.seconds * info.anim.fps));
+      const fps = count / info.anim.seconds;
+      const [w, h] = String(o.size || '720').split('x').map(Number);
+      const dir = mkdtempSync(join(tmpdir(), 'gilaf-frames-'));
+      const t0 = Date.now();
+      for (let i = 0; i < count; i++) {
+        const url = await page.evaluate((a) => window.gilaf.still(a), {
+          width: w,
+          height: h || w,
+          yaw: +(o.yaw ?? 32),
+          pitch: +(o.pitch ?? 14),
+          zoom: +(o.zoom ?? 1),
+          light: o.light,
+          frames: +(o.frames || 3),
+          u: i / count,
+        });
+        writeFileSync(join(dir, `f${String(i).padStart(4, '0')}.png`), Buffer.from(url.split(',')[1], 'base64'));
+        if (i % 10 === 9) console.log(`frame ${i + 1}/${count} (${((Date.now() - t0) / 1000).toFixed(0)}s)`);
+      }
+      const ff = findFfmpeg();
+      if (!ff) {
+        console.log(`ffmpeg not found; frames are in ${dir} (${fps.toFixed(2)} fps). Set GILAF_FFMPEG or install ffmpeg to encode a video.`);
+        return;
+      }
+      const input = ['-y', '-loglevel', 'error', '-framerate', String(fps), '-i', join(dir, 'f%04d.png')];
+      // several outputs from the same frames: --out dog.mp4,dog.gif
+      for (const target of out.split(',')) {
+        mkdirSync(dirname(resolve(target)), { recursive: true });
+        const ext = extname(target).toLowerCase();
+        if (ext === '.gif') execFileSync(ff, [...input, '-vf', 'split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=sierra2_4a', '-loop', '0', target]);
+        else if (ext === '.webm') execFileSync(ff, [...input, '-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', '28', target]);
+        else execFileSync(ff, [...input, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '17', '-preset', 'slow', '-movflags', '+faststart', target]);
+      }
+      rmSync(dir, { recursive: true, force: true });
+      console.log(`wrote ${out} (${count} frames, ${fps.toFixed(1)} fps, ${((Date.now() - t0) / 1000).toFixed(0)}s)`);
+      return;
+    }
 
     if (o.cmd === 'render' || o.cmd === 'still') {
       const t0 = Date.now();

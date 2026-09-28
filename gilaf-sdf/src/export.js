@@ -31,7 +31,7 @@ function groupByMaterial(mesh, palette) {
   return pal.map((m, i) => ({ mat: m, indices: Uint32Array.from(groups[i]) })).filter((g) => g.indices.length);
 }
 
-export function toGLB(mesh, { name = 'gilaf-model', palette = [] } = {}) {
+export function toGLB(mesh, { name = 'gilaf-model', palette = [], skeleton = null } = {}) {
   const vc = mesh.positions.length / 3;
   const groups = groupByMaterial(mesh, palette);
   const col = new Uint16Array(vc * 4);
@@ -67,6 +67,12 @@ export function toGLB(mesh, { name = 'gilaf-model', palette = [] } = {}) {
     { bufferView: addView(mesh.normals, 34962), componentType: 5126, count: vc, type: 'VEC3' },
     { bufferView: addView(col, 34962), componentType: 5123, normalized: true, count: vc, type: 'VEC4' },
   ];
+  const attributes = { POSITION: 0, NORMAL: 1, COLOR_0: 2 };
+  const skinned = !!(skeleton && mesh.joints && mesh.weights);
+  if (skinned) {
+    attributes.JOINTS_0 = accessors.push({ bufferView: addView(mesh.joints, 34962), componentType: 5121, count: vc, type: 'VEC4' }) - 1;
+    attributes.WEIGHTS_0 = accessors.push({ bufferView: addView(mesh.weights, 34962), componentType: 5126, count: vc, type: 'VEC4' }) - 1;
+  }
   const materials = [];
   const primitives = [];
   let emissiveUsed = false;
@@ -89,7 +95,7 @@ export function toGLB(mesh, { name = 'gilaf-model', palette = [] } = {}) {
       }
     }
     materials.push(m);
-    primitives.push({ attributes: { POSITION: 0, NORMAL: 1, COLOR_0: 2 }, indices: acc, material: materials.length - 1 });
+    primitives.push({ attributes, indices: acc, material: materials.length - 1 });
   }
   const json = {
     asset: { version: '2.0', generator: 'Gilaf SDF Studio' },
@@ -102,7 +108,38 @@ export function toGLB(mesh, { name = 'gilaf-model', palette = [] } = {}) {
     bufferViews: views,
     buffers: [{ byteLength: offset }],
   };
+  if (skinned) {
+    // joint nodes follow the mesh node; joint j is node j + 1
+    const J = skeleton.joints;
+    J.forEach((j) => {
+      const node = { name: j.name, translation: j.rest.t, rotation: j.rest.r, scale: j.rest.s };
+      const kids = J.map((k, i) => (k.parent === J.indexOf(j) ? i + 1 : -1)).filter((i) => i >= 0);
+      if (kids.length) node.children = kids;
+      json.nodes.push(node);
+    });
+    json.scenes[0].nodes.push(1);
+    const ibm = new Float32Array(J.length * 16);
+    J.forEach((j, i) => ibm.set(j.ibm, i * 16));
+    const ibmAcc = accessors.push({ bufferView: addView(ibm), componentType: 5126, count: J.length, type: 'MAT4' }) - 1;
+    json.skins = [{ name: 'skeleton', inverseBindMatrices: ibmAcc, joints: J.map((_, i) => i + 1), skeleton: 1 }];
+    json.nodes[0].skin = 0;
+    const clip = skeleton.clip;
+    if (clip) {
+      const tAcc = accessors.push({ bufferView: addView(clip.times), componentType: 5126, count: clip.times.length, type: 'SCALAR', min: [clip.times[0]], max: [clip.times[clip.times.length - 1]] }) - 1;
+      const samplers = [];
+      const channels = [];
+      for (const ch of clip.channels) {
+        for (const [path, data, type] of [['translation', ch.T, 'VEC3'], ['rotation', ch.R, 'VEC4'], ['scale', ch.S, 'VEC3']]) {
+          const o = accessors.push({ bufferView: addView(data), componentType: 5126, count: clip.times.length, type }) - 1;
+          samplers.push({ input: tAcc, output: o, interpolation: 'LINEAR' });
+          channels.push({ sampler: samplers.length - 1, target: { node: ch.joint + 1, path } });
+        }
+      }
+      json.animations = [{ name: 'loop', samplers, channels }];
+    }
+  }
   if (emissiveUsed) json.extensionsUsed = ['KHR_materials_emissive_strength'];
+  json.buffers[0].byteLength = offset;
   let jsonBytes = new TextEncoder().encode(JSON.stringify(json));
   const jpad = (4 - (jsonBytes.length % 4)) % 4;
   if (jpad) {

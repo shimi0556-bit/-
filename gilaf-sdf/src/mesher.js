@@ -8,6 +8,7 @@
 
 import { linkProgram, fullscreenTriangle } from './renderer.js';
 import { MeshoptSimplifier } from '../vendor/meshopt_simplifier.js';
+import { skinWeights } from './anim.js';
 
 const VERT = `#version 300 es
 in vec2 aPos; void main(){ gl_Position = vec4(aPos, 0.0, 1.0); }`;
@@ -73,6 +74,24 @@ void main(){
   }
 }`;
 
+const weightFrag = (glsl, skin) => `#version 300 es
+precision highp float; precision highp int;
+uniform highp sampler2D uPos; uniform int uCount, uW, uGroup;
+layout(location = 0) out vec4 o0; layout(location = 1) out vec4 o1;
+layout(location = 2) out vec4 o2; layout(location = 3) out vec4 o3;
+${glsl}
+${skin}
+${PACK}
+void main(){
+  ivec2 fc = ivec2(gl_FragCoord.xy);
+  if (fc.y*uW + fc.x >= uCount){ o0 = o1 = o2 = o3 = vec4(0.0); return; }
+  vec3 p = texelFetch(uPos, fc, 0).xyz;
+  o0 = packF(boneDist(uGroup*4, p));
+  o1 = packF(boneDist(uGroup*4 + 1, p));
+  o2 = packF(boneDist(uGroup*4 + 2, p));
+  o3 = packF(boneDist(uGroup*4 + 3, p));
+}`;
+
 // cube corner c = x | y<<1 | z<<2; the 12 edges as corner pairs
 const EDGES = [];
 for (let c = 0; c < 8; c++) for (let b = 0; b < 3; b++) if (!(c & (1 << b))) EDGES.push([c, c | (1 << b)]);
@@ -118,9 +137,67 @@ export class Mesher {
     const gl = this.gl;
     if (this.evalP) gl.deleteProgram(this.evalP.p);
     if (this.refP) gl.deleteProgram(this.refP.p);
+    if (this.wP) gl.deleteProgram(this.wP.p);
     this.evalP = linkProgram(gl, VERT, evalFrag(compiled.glsl));
     this.refP = linkProgram(gl, VERT, refineFrag(compiled.glsl));
+    this.wP = compiled.skinGlsl ? linkProgram(gl, VERT, weightFrag(compiled.glsl, compiled.skinGlsl)) : null;
     this.key = compiled.glsl;
+  }
+
+  // Moving parts are meshed in their rest pose.
+  rest(P, compiled) {
+    const gl = this.gl;
+    const pose = compiled.pose(null);
+    gl.useProgram(P.p);
+    if (P.uni.uBone) gl.uniformMatrix4fv(P.uni.uBone, false, pose.mats);
+    if (P.uni.uBoneS) gl.uniform1fv(P.uni.uBoneS, pose.s);
+  }
+
+  // Distance from every vertex to every bone's part, read back as vc x bones floats.
+  boneDistances(compiled, positions) {
+    const gl = this.gl;
+    const nb = compiled.bones.length;
+    const vc = positions.length / 3;
+    const out = new Float32Array(vc * nb);
+    const W = 1024;
+    const maxRows = 256;
+    const P = this.wP;
+    this.rest(P, compiled);
+    const posTex = gl.createTexture();
+    for (let start = 0; start < vc; start += W * maxRows) {
+      const count = Math.min(W * maxRows, vc - start);
+      const rows = Math.ceil(count / W);
+      const upload = new Float32Array(W * rows * 4);
+      for (let i = 0; i < count; i++) upload.set(positions.subarray((start + i) * 3, (start + i) * 3 + 3), i * 4);
+      gl.bindTexture(gl.TEXTURE_2D, posTex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, W, rows, 0, gl.RGBA, gl.FLOAT, upload);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      const t = this.target(W, rows, 4);
+      const px = new Uint8Array(W * rows * 4);
+      const pf = new Float32Array(px.buffer);
+      for (let g = 0; g * 4 < nb; g++) {
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, posTex); // target() rebinds TEXTURE_2D, so bind the input again
+        gl.bindFramebuffer(gl.FRAMEBUFFER, t.fb);
+        gl.viewport(0, 0, W, rows);
+        gl.useProgram(P.p);
+        gl.uniform1i(P.uni.uPos, 0);
+        gl.uniform1i(P.uni.uCount, count);
+        gl.uniform1i(P.uni.uW, W);
+        gl.uniform1i(P.uni.uGroup, g);
+        gl.bindVertexArray(this.vao);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+        for (let a = 0; a < 4 && g * 4 + a < nb; a++) {
+          gl.readBuffer(gl.COLOR_ATTACHMENT0 + a);
+          gl.readPixels(0, 0, W, rows, gl.RGBA, gl.UNSIGNED_BYTE, px);
+          for (let i = 0; i < count; i++) out[(start + i) * nb + g * 4 + a] = pf[i];
+        }
+      }
+      t.free();
+    }
+    gl.deleteTexture(posTex);
+    return out;
   }
 
   target(w, h, count) {
@@ -151,7 +228,7 @@ export class Mesher {
     const t0 = performance.now();
     this.prepare(compiled);
     const gl = this.gl;
-    const b = compiled.bounds;
+    const b = compiled.restBounds || compiled.bounds;
     const ext = b.max.map((v, i) => v - b.min[i]);
     const pad = 2;
     const h = Math.max(...ext) / Math.max(8, res - 2 * pad - 1);
@@ -169,6 +246,8 @@ export class Mesher {
     const bytes = new Uint8Array(TW * TH * 4);
     const f32 = new Float32Array(bytes.buffer);
     const E = this.evalP;
+    this.rest(E, compiled);
+    this.rest(this.refP, compiled);
     gl.useProgram(E.p);
     gl.uniform3fv(E.uni.uMin, min);
     gl.uniform1f(E.uni.uH, h);
@@ -377,6 +456,16 @@ export class Mesher {
       normals[i * 3 + 2] = z / l;
     }
 
+    // --- skin weights for moving parts ---
+    let skin = null;
+    if (this.wP && compiled.bones.length) {
+      onProgress(0.94, 'משקלי עצמות');
+      await nextTick();
+      const dist = this.boneDistances(compiled, positions);
+      const size = Math.hypot(...ext);
+      skin = skinWeights(compiled.bones, dist, vc, size);
+    }
+
     // --- 4. split quads along the shorter diagonal ---
     const qn = quads.length / 4;
     const indices = new Uint32Array(qn * 6);
@@ -402,6 +491,8 @@ export class Mesher {
       colors,
       mats,
       indices,
+      joints: skin?.joints || null,
+      weights: skin?.weights || null,
       grid: N,
       cell: h,
       ms: Math.round(performance.now() - t0),
@@ -442,9 +533,23 @@ export async function simplifyMesh(mesh, targetTris) {
     for (let i = 0; i < vc; i++) if (remap[i] >= 0) out.set(src.subarray(i * 3, i * 3 + 3), remap[i] * 3);
     return out;
   };
+  const pick4 = (src, Type) => {
+    const out = new Type(n * 4);
+    for (let i = 0; i < vc; i++) if (remap[i] >= 0) out.set(src.subarray(i * 4, i * 4 + 4), remap[i] * 4);
+    return out;
+  };
   const indices = new Uint32Array(idx.length);
   for (let i = 0; i < idx.length; i++) indices[i] = remap[idx[i]];
-  return { ...mesh, positions: pick(mesh.positions), normals: pick(mesh.normals), colors: pick(mesh.colors), mats: pick(mesh.mats), indices };
+  return {
+    ...mesh,
+    positions: pick(mesh.positions),
+    normals: pick(mesh.normals),
+    colors: pick(mesh.colors),
+    mats: pick(mesh.mats),
+    joints: mesh.joints ? pick4(mesh.joints, Uint8Array) : null,
+    weights: mesh.weights ? pick4(mesh.weights, Float32Array) : null,
+    indices,
+  };
 }
 
 export function meshStats(mesh) {

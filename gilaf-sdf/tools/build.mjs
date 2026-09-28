@@ -11,7 +11,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 
 // dependency order
-const MODULES = ['vendor/meshopt_simplifier.js', 'src/dsl.js', 'src/glsl.js', 'src/renderer.js', 'src/mesher.js', 'src/export.js', 'src/ai.js', 'src/app.js'];
+const MODULES = ['vendor/meshopt_simplifier.js', 'src/dsl.js', 'src/anim.js', 'src/glsl.js', 'src/renderer.js', 'src/mesher.js', 'src/export.js', 'src/ai.js', 'src/app.js'];
 
 const key = (p) => basename(p, '.js');
 

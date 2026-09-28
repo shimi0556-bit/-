@@ -285,6 +285,13 @@ export class Node {
     this._need2('extrude');
     return new Node('extrude', { h: pos(depth, 'extrude depth') / 2, r: Math.abs(num(round, 'extrude round')) }, [this], 3);
   }
+  // Marks this shape as a moving part. `pivot` is the joint it turns around (shoulder, neck, tail root).
+  bone(name, pivot = [0, 0, 0], opts = {}) {
+    this._need3('bone');
+    if (typeof name !== 'string' || !/^[A-Za-z_][\w-]*$/.test(name)) fail("bone() needs a simple name like 'tail' or 'head'");
+    const blend = opts.blend == null ? undefined : pos(opts.blend, 'bone blend');
+    return this._wrap('bone', { name, pivot: vec3([pivot], 'bone pivot'), blend });
+  }
   revolve(offset = 0) {
     this._need2('revolve');
     return new Node('revolve', { o: num(offset, 'revolve offset') }, [this], 3);
@@ -292,7 +299,7 @@ export class Node {
 }
 
 // True when a shape's appearance is set at its top (looking through transforms and repeats).
-const PASS = new Set(['move', 'rotate', 'scale', 'mirror', 'grid', 'ring', 'twist', 'bend', 'elongate', 'round', 'shell', 'displace']);
+const PASS = new Set(['move', 'rotate', 'scale', 'mirror', 'grid', 'ring', 'twist', 'bend', 'elongate', 'round', 'shell', 'displace', 'bone']);
 export function ownColor(n) {
   let x = n;
   while (PASS.has(x.type)) x = x.k[0];
@@ -493,6 +500,26 @@ export function createApi(params = {}) {
       return typeof v === 'number' && Number.isFinite(v) ? v : def;
     },
 
+    // animation: tracks are functions of t, which runs 0 → 1 over `seconds` and loops
+    animate: (opts, tracks) => {
+      const o = typeof opts === 'number' ? { seconds: opts } : opts || {};
+      const seconds = pos(o.seconds ?? 3, 'animate seconds');
+      if (!tracks || typeof tracks !== 'object') fail('animate() needs tracks: { boneName: (t) => ({ rotate: [x, y, z], scale, move }) }');
+      for (const [k, f] of Object.entries(tracks)) if (typeof f !== 'function') fail(`animate(): track '${k}' must be a function of t`);
+      state.anim = { seconds, tracks, fps: Math.max(10, Math.min(60, o.fps ?? 30)) };
+    },
+    wave: (t, cycles = 1, phase = 0) => Math.sin(Math.PI * 2 * (t * cycles + phase)),
+    pulse: (t, at, width = 0.06) => {
+      let d = Math.abs(t - at) % 1;
+      d = Math.min(d, 1 - d);
+      const x = Math.max(0, 1 - d / width);
+      return x * x * (3 - 2 * x);
+    },
+    ease: (x) => {
+      const c = Math.min(1, Math.max(0, x));
+      return c * c * (3 - 2 * c);
+    },
+
     // helpers
     rand: (seed) => makeRand(seed),
     range: (n) => Array.from({ length: Math.max(0, Math.floor(num(n, 'range'))) }, (_, i) => i),
@@ -548,17 +575,20 @@ export function hermite(a, i, h, t) {
 }
 
 const cache = new WeakMap();
+const restCache = new WeakMap();
 
-export function bounds(n) {
-  if (cache.has(n)) return cache.get(n);
-  const b = computeBounds(n);
-  cache.set(n, b);
+// Conservative box around a shape. With rest = true, moving parts count only in their rest pose.
+export function bounds(n, rest = false) {
+  const c = rest ? restCache : cache;
+  if (c.has(n)) return c.get(n);
+  const b = computeBounds(n, rest);
+  c.set(n, b);
   return b;
 }
 
-function computeBounds(n) {
+function computeBounds(n, rest) {
   const a = n.a;
-  const kid = () => bounds(n.k[0]);
+  const kid = () => bounds(n.k[0], rest);
   switch (n.type) {
     case 'sphere':
       return boxOf([-a.r, -a.r, -a.r], [a.r, a.r, a.r]);
@@ -580,6 +610,17 @@ function computeBounds(n) {
       return boxOf([-a.s, -a.s, -a.s], [a.s, a.s, a.s]);
     case 'plane':
       return null;
+    case 'bone': {
+      const b = kid();
+      if (!b || rest || !a.poses) return b;
+      let out = null;
+      for (const m of a.poses) {
+        const pts = corners(b).map((p) => [0, 1, 2].map((r) => m[r] * p[0] + m[4 + r] * p[1] + m[8 + r] * p[2] + m[12 + r]));
+        out = out ? unionBox(out, fromPoints(pts)) : fromPoints(pts);
+      }
+      const e = Math.max(...out.max.map((v, i) => v - out.min[i])) * 0.04;
+      return expand(out, e);
+    }
     case 'lathe': {
       let rmax = 0;
       for (let i = 0; i < a.Y.length - 1; i++) {
@@ -675,17 +716,17 @@ function computeBounds(n) {
     case 'colorNoise':
     case 'gradient':
     case 'paint':
-      return bounds(n.k[0]);
+      return bounds(n.k[0], rest);
     case 'union': {
-      let b = bounds(n.k[0]);
-      for (let i = 1; i < n.k.length; i++) b = unionBox(b, bounds(n.k[i]));
+      let b = bounds(n.k[0], rest);
+      for (let i = 1; i < n.k.length; i++) b = unionBox(b, bounds(n.k[i], rest));
       return expand(b, (a.k * (n.k.length - 1)) / 4);
     }
     case 'cut':
-      return bounds(n.k[0]);
+      return bounds(n.k[0], rest);
     case 'intersect': {
-      const b0 = bounds(n.k[0]);
-      const b1 = bounds(n.k[1]);
+      const b0 = bounds(n.k[0], rest);
+      const b1 = bounds(n.k[1], rest);
       if (!b0) return b1;
       if (!b1) return b0;
       const min = b0.min.map((v, i) => Math.max(v, b1.min[i]));
@@ -722,7 +763,7 @@ export function runRecipe(code, params = {}) {
   const node = fn(...names.map((k) => api[k]));
   if (!(node instanceof Node)) fail('The recipe must end with `return <shape>` (for example: return sphere(0.5))');
   if (node.dim !== 3) fail('The recipe returned a 2D shape. Use .extrude(depth) or .revolve() to make it 3D');
-  return { node, scene: state.scene, params: state.params };
+  return { node, scene: state.scene, params: state.params, anim: state.anim || null };
 }
 
 let scriptSeq = 0;

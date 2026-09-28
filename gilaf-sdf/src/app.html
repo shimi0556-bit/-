@@ -256,6 +256,12 @@ a.intersect(b)    // רק החלק המשותף</pre>
       <h3>צורות מסובבות ומשוכות</h3>
       <pre>polygon([[0,0],[.4,0],[.3,.5],[.45,1],[0,1]], {smooth: 8}).revolve()  // אגרטל
 star(5, 0.5, 0.22).extrude(0.1, 0.02)   // כוכב תלת־ממדי</pre>
+      <h3>הנפשה</h3>
+      <pre>const tail = tube([...]).bone('tail', [0, 0.3, -0.5])  // חלק זז + נקודת ציר
+animate({ seconds: 4 }, {
+  tail: (t) => ({ rotate: [0, 35 * wave(t, 8), 0] }),   // כשכוש
+  head: (t) => ({ rotate: [0, 0, 10 * wave(t, 1)] }),   // הטיית ראש
+})</pre>
       <h3>סליידרים</h3>
       <pre>const ears = param('ears', 0.3, 0.1, 0.6)   // יוצר סליידר חי</pre>
       <p>הסוד לאיכות: קודם מסות גדולות, אחר כך צורות משניות, ורק בסוף פרטים קטנים. המסו חלקים אורגניים עם רדיוס של 10–30% מגודל החלק הקטן.</p>
@@ -269,6 +275,7 @@ star(5, 0.5, 0.22).extrude(0.1, 0.02)   // כוכב תלת־ממדי</pre>
       <button class="chip" id="clayBtn" aria-pressed="false" title="הצגת צורה בלבד, בלי צבעים">חימר</button>
       <button class="chip" id="meshBtn" aria-pressed="false" disabled title="הצגת רשת המשולשים שנבנתה">רשת</button>
       <button class="chip" id="wireBtn" aria-pressed="false" hidden>קווים</button>
+      <button class="chip" id="playBtn" aria-pressed="true" hidden>עצירה</button>
       <button class="chip" id="shotBtn">צילום PNG</button>
     </div>
     <div class="hud"><span id="hudInfo">גררו לסיבוב · גלגלת או צביטה לזום · הקשה כפולה לאיפוס</span><span id="hudFrames"></span></div>
