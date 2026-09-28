@@ -1,5 +1,5 @@
 .dev/
 shots/
-models/
+/models/
 my-models/shots/
 dist/gilaf.fragment.html
