@@ -65,7 +65,7 @@ underwater slow fast pitch:<semitones> speed:<factor>`.
 
 ## Voices
 
-- `presets/` — synthetic voices committed with the repo (`narrator_deep`, `warm_low`, `bright_young`, `child_like`),
+- `presets/` — synthetic voices committed with the repo (`narrator_deep`, `warm_low`, `bright_young`, `child_like`, `host_male`),
   all made with `design-voice` from the built-in voice.
 - `voices/` — your cloned voices. **Git-ignored on purpose**: a real person's voice never goes into the repo.
 

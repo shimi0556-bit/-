@@ -18,7 +18,8 @@ container's CPU (GPU if present). No API key.
 | List voices | `voice.py voices` |
 | Check the AI watermark | `voice.py detect file.wav` |
 
-Presets shipped in the repo (all synthetic): `default` (built-in), `narrator_deep`, `warm_low`, `bright_young`, `child_like`.
+Presets shipped in the repo (all synthetic): `default` (built-in), `narrator_deep`, `warm_low`, `bright_young`, `child_like`,
+`host_male` (energetic male game-show host; made for kosher-clicker's announcer).
 
 ## 1. Setup (every new container — it is ephemeral)
 
@@ -66,7 +67,8 @@ and `convert`.
 
 ## 4. Tuning
 
-- `--exaggeration 0.25-2.0` (default 0.5): emotion/drama. Dramatic: `--exaggeration 0.8 --cfg 0.3`.
+- `--exaggeration 0.25-2.0` (default 0.5): emotion/drama. Dramatic: `--exaggeration 0.8 --cfg 0.3`. **It also raises the
+  pitch**: `narrator_deep` went from ~117 Hz to ~214 Hz at 0.75 — keep deep voices near 0.5 and check F0.
 - `--cfg 0-1` (default 0.5): lower = slower, calmer pacing; use ~0.3 for fast-talking reference speakers, `0` if the
   output inherits the reference's accent in another language.
 - `--seed N` makes a take repeatable; change it to get a different read of the same line.

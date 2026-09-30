@@ -12,6 +12,8 @@ presets/bright_young/reference.wav
 presets/bright_young/voice.json
 presets/child_like/reference.wav
 presets/child_like/voice.json
+presets/host_male/reference.wav
+presets/host_male/voice.json
 presets/narrator_deep/reference.wav
 presets/narrator_deep/voice.json
 presets/warm_low/reference.wav

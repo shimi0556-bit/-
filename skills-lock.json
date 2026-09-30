@@ -351,7 +351,7 @@
       "source": "./claude-skills",
       "sourceType": "local",
       "skillPath": "voice-studio/SKILL.md",
-      "computedHash": "fea44aa759cb354c46255c7d019f94e46c21385272a32742ab2d2d2278f8d300"
+      "computedHash": "8f75c0cea17385823e1da7409f12fcb7515c7ad83b1060fa074dcfc8f015dc99"
     },
     "web-accessibility": {
       "source": "hoodini/ai-agents-skills",

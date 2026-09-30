@@ -159,3 +159,11 @@ symlinked into `.claude/skills`). Written from scratch in this repo on top of op
   only proved it for uv's zip). The installer's network check now probes `ve.pt` from this release first.
 - The general recipe (mirror → release → verified download, probes, fake-NetFree testing, dead ends) is saved as the
   `netfree-github-mirror` skill so it's reused for the next blocked download.
+
+### 2026-09-30 — used for kosher-clicker's on-screen announcer
+- Generated 72 announcer clips (18 lines × 4 voices: new `host_male` preset + `narrator_deep`, `bright_young`,
+  `child_like`) for `kosher-clicker/announcer.js` on branch `claude/loving-bohr-09ecbw`. Each clip: best of up to 4
+  seeds by Whisper match (accept ≥ 0.9), silence-trimmed, loudness-normalised to −16 LUFS, 48 kbps mono mp3.
+- `host_male` = `design-voice --pitch -3.5 --seed 8 --exaggeration 0.7`, ~120 Hz at exaggeration 0.75.
+- **Exaggeration raises pitch a lot:** `narrator_deep` measured ~117 Hz at 0.5 but ~214 Hz at 0.75. Generate deep
+  voices at ~0.5 and log F0 per clip.
