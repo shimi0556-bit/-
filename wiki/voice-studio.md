@@ -170,10 +170,13 @@ symlinked into `.claude/skills`). Written from scratch in this repo on top of op
 - `host_male` = `design-voice --pitch -3.5 --seed 8 --exaggeration 0.7`, ~120 Hz at exaggeration 0.75.
 - **Exaggeration raises pitch a lot:** `narrator_deep` measured ~117 Hz at 0.5 but ~214 Hz at 0.75. Generate deep
   voices at ~0.5 and log F0 per clip.
-- **Whispered takes pass Whisper.** Short exclamations ("השאלה הבאה!") in the lighter voices sometimes come out
-  mostly unvoiced (whisper-like) yet transcribed perfectly. `librosa.pyin` voiced ratio catches them: normal clips
-  measure 0.65-0.75, these 0.0-0.25. Check it on every generated clip, not just the transcript. (Measured, not
-  listened to.)
+- **Whisper-like takes pass Whisper.** Short exclamations ("השאלה הבאה!") in the lighter voices sometimes measured
+  as mostly unvoiced yet transcribed perfectly. A retry with a period instead of "!" and exaggeration −0.1 fixed both
+  flagged clips (bright_young next1, child_like next3). **But `librosa.pyin`'s voiced ratio is a noisy judge on 1-2 s
+  clips**: the same mp3 gave 0.19 at 16 kHz and 0.46 at 24 kHz, and a clip measured 0.72 before mp3 encoding read 0.0
+  after. Cross-check with frame autocorrelation (share of loud frames with normalised peak > 0.5 in the 60-1000 Hz
+  lag range: final set 0.44-0.99, median 0.78) and spectral flatness (all ~0.001, i.e. not noise/whisper) before
+  regenerating. None of this replaces listening — the clips were measured, not heard.
 - Whisper spelling differences that are *not* errors: "חייגו"→"חיגו", "ענו"→"אנו" (same sound). But one take of
   "חייגו עכשיו" came back as "חיכו עכשיו" ("wait now"), so the welcome line says "התקשרו עכשיו" instead — all 4
   voices then transcribed at 1.0.
