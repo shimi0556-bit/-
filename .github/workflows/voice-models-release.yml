@@ -1,0 +1,74 @@
+name: voice-models-release
+
+# Copies the voice-studio model files from Hugging Face into a GitHub Release of this repo, for networks that
+# block huggingface.co downloads (e.g. NetFree) but allow GitHub release downloads. voice-studio's Windows
+# installer downloads from this release, checks every file's sha256 and reassembles the split parts.
+# Runs when this file changes on the voice-studio branch, or by hand (workflow_dispatch).
+
+on:
+  push:
+    branches: [claude/exciting-cannon-7hsu15]
+    paths: [.github/workflows/voice-models-release.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      TAG: voice-models-v1
+      GH_TOKEN: ${{ github.token }}
+      # ResembleAI/chatterbox commit the files are pinned to (the one voice-studio was tested with)
+      CHATTERBOX_REV: 5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18
+    steps:
+      - name: Download from Hugging Face
+        run: |
+          set -euo pipefail
+          mkdir dl && cd dl
+          base="https://huggingface.co/ResembleAI/chatterbox/resolve/$CHATTERBOX_REV"
+          for f in ve.pt t3_mtl23ls_v3.safetensors s3gen.pt conds.pt grapheme_mtl_merged_expanded_v1.json; do
+            curl -fsSL --retry 5 -o "$f" "$base/$f"
+          done
+          curl -fsSL --retry 5 -o dicta-1.0.int8.onnx \
+            "https://huggingface.co/spaces/thewh1teagle/add-diacritics-in-hebrew/resolve/main/dicta-1.0.int8.onnx"
+          ls -la
+
+      - name: Split big files and write the manifest
+        run: |
+          set -euo pipefail
+          cd dl
+          # one line per file: <name> <size> <sha256> <asset,asset,...> (parts are joined in order)
+          : > ../models-manifest.txt
+          for f in *; do
+            size=$(stat -c %s "$f"); sha=$(sha256sum "$f" | cut -d' ' -f1)
+            if [ "$size" -gt 524288000 ]; then
+              split -b 500M -d -a 2 "$f" "$f.part"
+              rm "$f"
+              parts=$(ls "$f".part* | paste -sd, -)
+            else
+              parts="$f"
+            fi
+            echo "$f $size $sha $parts" >> ../models-manifest.txt
+          done
+          mv ../models-manifest.txt .
+          cat models-manifest.txt
+
+      - name: Publish the release
+        run: |
+          set -euo pipefail
+          cd dl
+          cat > ../notes.md <<'NOTES'
+          Model files for [voice-studio](https://github.com/shimi0556-bit/-/tree/claude/exciting-cannon-7hsu15/voice-studio), mirrored from Hugging Face
+          for networks that block huggingface.co downloads. Big files are split into 500 MB parts; `models-manifest.txt`
+          lists each file's size, sha256 and parts. The Windows installer downloads and verifies these automatically.
+
+          - Chatterbox Multilingual V3 by Resemble AI — https://huggingface.co/ResembleAI/chatterbox — MIT license.
+          - Hebrew niqqud: `dicta-1.0.int8.onnx`, ONNX export by thewh1teagle (MIT) of dicta-il/dictabert-large-char-menaked
+            by DICTA — https://huggingface.co/dicta-il/dictabert-large-char-menaked — CC BY 4.0.
+          NOTES
+          gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "voice-studio models" --notes-file ../notes.md ./*
