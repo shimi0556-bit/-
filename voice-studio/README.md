@@ -10,19 +10,32 @@ Every output carries Resemble's inaudible **Perth watermark**, so it can be iden
 
 ## Setup
 
+**Windows (PowerShell 5.1+), one line.** Nothing needs to be installed first (no Python, no git):
+
+```powershell
+[Net.ServicePointManager]::SecurityProtocol='Tls12'; irm https://raw.githubusercontent.com/shimi0556-bit/-/refs/heads/claude/exciting-cannon-7hsu15/voice-studio/install-windows.ps1 | iex
+```
+
+It downloads this folder into `%USERPROFILE%\voice-studio`, fetches `uv` into `tools\`, lets uv download Python 3.11,
+installs everything (CUDA PyTorch if `nvidia-smi` is found, CPU otherwise), adds a **Voice Studio** desktop shortcut
+and opens the web UI. Re-run it to update; `voices\` and `models\` are kept. Already have the folder (git clone / zip)?
+Double-click `setup.bat`, then `start-ui.bat`.
+
+**Linux / macOS:**
+
 ```bash
 cd voice-studio
-./setup.sh                      # venv + torch + Chatterbox (pinned commit) + Hebrew niqqud model (~300 MB)
+./setup.sh                      # venv + torch + Chatterbox + Hebrew niqqud model (~300 MB)
 ```
-The first run downloads ~3 GB of model weights from Hugging Face into `~/.cache/huggingface`.
-Windows: install Python 3.11, then `py -3.11 -m venv .venv`, `.venv\Scripts\pip install -r requirements.txt`,
-`.venv\Scripts\pip install --no-deps "chatterbox-tts @ git+https://github.com/resemble-ai/chatterbox.git@5de7a54aa4e5e2baadb0182dde554908b48b85c2"`,
-and download `dicta-1.0.int8.onnx` (URL in `setup.sh`) into `models\`.
+
+The first generation downloads ~3 GB of model weights from Hugging Face into `~/.cache/huggingface` (one time).
+Chatterbox comes from `vendor/` — a pure-Python wheel built from commit `5de7a54`, which has Multilingual V3 (the
+PyPI release doesn't) — so no git is needed. Needs Python 3.11 or 3.12 (3.13 has no `numpy<2` wheels).
 
 ## Use
 
 ```bash
-PY=.venv/bin/python
+PY=.venv/bin/python        # Windows: use voice.bat instead of "$PY voice.py", e.g.  .\voice.bat speak "שלום" -o hi.mp3
 
 $PY voice.py speak "שלום! זה הקול החדש שלי." -o hello.mp3                  # built-in voice
 $PY voice.py speak "Welcome to the studio" -v narrator_deep -o hi.wav       # a shipped preset
@@ -37,7 +50,7 @@ $PY voice.py effects hello.mp3 -e robot,hall -o robot.mp3                   # ef
 $PY voice.py voices                                                         # list voices
 $PY voice.py detect captain.wav                                             # AI watermark check
 
-$PY app.py                                                                  # Hebrew web UI on :7860
+$PY app.py --inbrowser                                                      # Hebrew web UI on :7860
 ```
 
 Tuning: `--exaggeration` (0.25-2, emotion), `--cfg` (0-1, lower = slower/calmer), `--seed` (repeatable take),
@@ -64,6 +77,9 @@ past voice authentication — and don't remove the watermark.
 |---|---|
 | `voice.py` | CLI + library (`synthesize`, `add_voice`, `design_voice`, `convert`, `apply_effects`, ...) |
 | `app.py` | Gradio web UI (Hebrew RTL) on top of `voice.py` |
-| `setup.sh`, `requirements.txt` | environment setup (Chatterbox pinned to commit `5de7a54`, which has Multilingual V3) |
+| `setup.sh`, `requirements.txt` | Linux/macOS setup |
+| `install-windows.ps1`, `files.txt` | Windows one-line installer and the list of files it downloads (update it when adding files) |
+| `setup.ps1`, `setup.bat`, `start-ui.bat`, `voice.bat` | Windows setup, UI launcher and CLI wrapper (ASCII-only: PowerShell 5.1) |
+| `vendor/` | Chatterbox wheel built from commit `5de7a54` |
 | `presets/` | synthetic preset voices |
 | `samples/` | demo outputs |

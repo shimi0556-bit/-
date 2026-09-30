@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """voice-studio web UI (Hebrew, RTL): speak, clone, design, convert and add effects from the browser.
 
-Run:  .venv/bin/python app.py      then open http://127.0.0.1:7860
+Run:  .venv/bin/python app.py --inbrowser     (Windows: double-click start-ui.bat)
 Local only by default; pass --share for a temporary public Gradio link.
 """
 import argparse
@@ -135,5 +135,6 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--port", type=int, default=7860)
     p.add_argument("--share", action="store_true", help="create a temporary public link")
+    p.add_argument("--inbrowser", action="store_true", help="open the UI in the default browser")
     a = p.parse_args()
-    build().queue().launch(server_port=a.port, share=a.share, css=CSS)
+    build().queue().launch(server_port=a.port, share=a.share, inbrowser=a.inbrowser, css=CSS)

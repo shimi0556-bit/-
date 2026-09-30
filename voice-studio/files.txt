@@ -1,0 +1,18 @@
+# Files install-windows.ps1 downloads (paths relative to voice-studio/). Update when adding files.
+README.md
+requirements.txt
+voice.py
+app.py
+setup.ps1
+setup.bat
+start-ui.bat
+voice.bat
+vendor/chatterbox_tts-0.1.7-py3-none-any.whl
+presets/bright_young/reference.wav
+presets/bright_young/voice.json
+presets/child_like/reference.wav
+presets/child_like/voice.json
+presets/narrator_deep/reference.wav
+presets/narrator_deep/voice.json
+presets/warm_low/reference.wav
+presets/warm_low/voice.json

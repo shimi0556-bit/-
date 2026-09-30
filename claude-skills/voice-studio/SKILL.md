@@ -83,7 +83,15 @@ Optional QA (you can't listen): transcribe the output and compare to the text �
 `uv pip install --python .venv/bin/python faster-whisper`, then
 `WhisperModel("ivrit-ai/whisper-large-v3-turbo-ct2", device="cpu", compute_type="int8").transcribe(path)`.
 
-## 6. Local web UI
+## 6. Running it on the user's own computer
 
 `voice-studio/app.py` is a Hebrew RTL Gradio app (speak / clone with mic recording / design / convert / effects).
-The user can run it on their own computer: `./setup.sh && .venv/bin/python app.py` → http://127.0.0.1:7860.
+
+- **Windows** (the user's machine is Windows — PowerShell 5.1, where `&&` and `.venv/bin/...` don't work): give this
+  one line to paste into PowerShell. It needs no Python/git, installs to `%USERPROFILE%\voice-studio`, adds a
+  "Voice Studio" desktop shortcut and opens the UI:
+  `[Net.ServicePointManager]::SecurityProtocol='Tls12'; irm https://raw.githubusercontent.com/shimi0556-bit/-/refs/heads/claude/exciting-cannon-7hsu15/voice-studio/install-windows.ps1 | iex`
+  Afterwards: the desktop shortcut or `start-ui.bat`; CLI via `voice.bat`.
+- **Linux/macOS:** `./setup.sh && .venv/bin/python app.py --inbrowser`.
+- If the branch in that URL gets merged/renamed, update the URL here, in `README.md` and the `$ref` default in
+  `install-windows.ps1`. New files must be added to `files.txt` or the Windows installer won't fetch them.

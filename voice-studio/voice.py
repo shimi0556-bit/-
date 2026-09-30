@@ -492,6 +492,9 @@ def cmd_detect(a):
 
 
 def main(argv=None):
+    for stream in (sys.stdout, sys.stderr):  # Hebrew in a Windows console / redirected output must not crash
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     p = argparse.ArgumentParser(prog="voice.py", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
 

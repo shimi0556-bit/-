@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# One-time setup for voice-studio: Python venv + Chatterbox + Hebrew niqqud model.
+# One-time setup for voice-studio on Linux/macOS: Python venv + Chatterbox + Hebrew niqqud model.
+# Windows: double-click setup.bat (or run setup.ps1), or use the one-line installer in README.md.
 # Model weights (~3 GB) download from Hugging Face on the first `voice.py` run and are cached.
 set -euo pipefail
 cd "$(dirname "$0")"
 
-CHATTERBOX_REF="5de7a54aa4e5e2baadb0182dde554908b48b85c2"  # master with Multilingual V3 (PyPI 0.1.7 lacks it)
 DICTA_URL="https://huggingface.co/spaces/thewh1teagle/add-diacritics-in-hebrew/resolve/main/dicta-1.0.int8.onnx"
 
+export UV_HTTP_TIMEOUT="${UV_HTTP_TIMEOUT:-300}"
 if command -v uv >/dev/null 2>&1; then
   [ -d .venv ] || uv venv .venv --python 3.11
   PIP=(uv pip install --python .venv/bin/python)
@@ -26,8 +27,13 @@ if [ "$(uname -s)" = "Linux" ] && ! command -v nvidia-smi >/dev/null 2>&1; then
   fi
 fi
 
-"${PIP[@]}" "${EXTRA[@]}" -r requirements.txt
-"${PIP[@]}" --no-deps "chatterbox-tts @ git+https://github.com/resemble-ai/chatterbox.git@${CHATTERBOX_REF}"
+"${PIP[@]}" ${EXTRA[@]+"${EXTRA[@]}"} -r requirements.txt  # (empty-array safe on bash 3.2)
+# Chatterbox: vendored pure-Python wheel of commit 5de7a54 (has Multilingual V3; PyPI 0.1.7 doesn't). No git needed.
+if [ "${PIP[0]}" = "uv" ]; then
+  "${PIP[@]}" --no-deps --reinstall-package chatterbox-tts vendor/chatterbox_tts-*.whl
+else
+  "${PIP[@]}" --no-deps --force-reinstall vendor/chatterbox_tts-*.whl
+fi
 
 mkdir -p models
 if [ ! -s models/dicta-1.0.int8.onnx ]; then

@@ -7,7 +7,8 @@ symlinked into `.claude/skills`). Written from scratch in this repo on top of op
 
 - **Engine:** Chatterbox (Resemble AI, MIT) — `ChatterboxMultilingualTTS` with `t3_model="v3"`, `ChatterboxVC` for
   conversion. Hebrew niqqud via `dicta-onnx` + `models/dicta-1.0.int8.onnx`.
-- **Run:** `cd voice-studio && ./setup.sh && .venv/bin/python voice.py speak "שלום" -o hi.mp3`
+- **Run:** Linux/macOS `cd voice-studio && ./setup.sh && .venv/bin/python voice.py speak "שלום" -o hi.mp3`;
+  Windows: the one-line `install-windows.ps1` installer (see `voice-studio/README.md`), then the desktop shortcut.
 - **Voices:** `presets/` (synthetic, committed) and `voices/` (clones, git-ignored — never commit a real person's voice).
 
 ## How it fits together
@@ -62,3 +63,23 @@ symlinked into `.claude/skills`). Written from scratch in this repo on top of op
   Claude to refuse cloning public figures / non-consenting people / deception and never to strip the watermark.
 - **Open:** no GPU here, so long narration is slow (≈10 min per minute of audio). `app.py` uses Gradio 6.8, where
   `css` goes to `launch()`, not `Blocks()`. Microphone recording in the UI wasn't tested (no mic in the sandbox).
+
+### 2026-09-30 — Windows install (the user's machine is Windows, PowerShell 5.1)
+- First attempt failed on the user's PC: they pasted the Linux commands (`cd voice-studio && ./setup.sh`) into Windows
+  PowerShell 5.1 — `&&` doesn't exist there, `.venv/bin/python` is a Linux path, and the repo wasn't on their PC at all.
+- Fix: `install-windows.ps1` (run via `irm <raw url> | iex`) downloads the files listed in `files.txt` from
+  raw.githubusercontent into `%USERPROFILE%\voice-studio`, runs `setup.ps1` in a child `powershell -ExecutionPolicy
+  Bypass` (a `.ps1` *file* would be blocked by the default policy; `iex` of a string isn't), adds a desktop shortcut to
+  `start-ui.bat`, and starts it. No Python or git needed: `setup.ps1` downloads a pinned `uv` (0.12.21) into `tools\`
+  and `uv venv --python 3.11` fetches Python itself. `.bat` files are rewritten to CRLF after download.
+- Chatterbox is now a **vendored wheel** (`vendor/`, 107 KB, built with `uv build` from commit `5de7a54`) instead of
+  `git+https://...` — removes the git dependency on Windows. `setup.sh` uses it too.
+- Windows wheel availability checked with `uv pip compile --python-platform x86_64-pc-windows-msvc --only-binary
+  :all:`: fine on Python 3.11/3.12; 3.13 fails (numpy<2). CUDA: `download.pytorch.org/whl/cu124` has torch/torchaudio
+  2.6.0 win_amd64 for cp311/cp312.
+- Tested here with PowerShell 7.4 on Linux (the scripts branch on `$env:OS`): parse check, PSScriptAnalyzer
+  compatibility rules for Windows PowerShell 5.1 (0 findings), full `setup.ps1` run from a clean folder with uv hidden
+  from PATH, then a Hebrew `speak` from that environment (exact transcript). A first run hit a uv 30 s network timeout on
+  a big wheel → `UV_HTTP_TIMEOUT=300` plus one automatic retry.
+- **Not tested on real Windows:** `Expand-Archive` of the uv zip, `.venv\Scripts\` paths, the desktop shortcut COM
+  call, `start-ui.bat`, the CUDA branch. Keep `.ps1`/`.bat` files ASCII-only (PS 5.1 reads BOM-less files as ANSI).

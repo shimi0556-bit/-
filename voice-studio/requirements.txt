@@ -1,5 +1,7 @@
-# Chatterbox runtime deps (mirrors chatterbox-tts@5de7a54 pyproject, minus gradio which the CLI doesn't need).
-# chatterbox-tts itself is installed separately with --no-deps by setup.sh (its git pin pulls perth from git).
+# Chatterbox runtime deps (mirrors chatterbox-tts@5de7a54 pyproject) + voice-studio extras below.
+# chatterbox-tts itself is installed with --no-deps from vendor/ by setup.sh / setup.ps1 (a wheel built from commit
+# 5de7a54, because PyPI 0.1.7 lacks Multilingual V3 and its git metadata pulls perth from git).
+# Windows wheels exist for everything here on Python 3.11 and 3.12 (not 3.13: numpy<2 has no 3.13 wheels).
 numpy>=1.24,<2
 librosa==0.11.0
 s3tokenizer==0.3.0
