@@ -36,6 +36,7 @@ A persistent, Claude-maintained knowledge base for this repo, following the patt
 | [`roboshaul-hebrew-tts.md`](roboshaul-hebrew-tts.md) | [`roboshaul-hebrew-tts/`](../roboshaul-hebrew-tts) |
 | [`skyhawk-flight-simulator.md`](skyhawk-flight-simulator.md) | [`skyhawk-flight-simulator/`](../skyhawk-flight-simulator) |
 | [`tokana.md`](tokana.md) | [`tokana/`](../tokana) |
+| [`voicestudio.md`](voicestudio.md) | [`.claude/skills/voicestudio`](../.claude/skills/voicestudio) |
 | [`tuning-numbers.md`](tuning-numbers.md) | [`tuning-numbers/`](../tuning-numbers) |
 | [`virtual-typewriter.md`](virtual-typewriter.md) | [`virtual-typewriter/`](../virtual-typewriter) |
 

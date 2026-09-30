@@ -276,6 +276,12 @@
       "skillPath": "skills/video-to-landing-page/SKILL.md",
       "computedHash": "f17ee0a1fc06945b56bb0705f7559d8c254480cbba7c24c6fa309f46049bb27e"
     },
+    "voicestudio": {
+      "source": "debpalash/VoiceStudio",
+      "sourceType": "github",
+      "skillPath": "skills/voicestudio/SKILL.md",
+      "computedHash": "7352b760e21c596aa992db0ff5a3660230550c832e3f7dada43a22526e9593ce"
+    },
     "web-accessibility": {
       "source": "hoodini/ai-agents-skills",
       "sourceType": "github",
