@@ -1,12 +1,10 @@
 # Files install-windows.ps1 downloads (paths relative to voice-studio/). Update when adding files.
+# No .bat files here: the jsDelivr mirror refuses them. setup.ps1 generates start-ui.bat and voice.bat.
 README.md
 requirements.txt
 voice.py
 app.py
 setup.ps1
-setup.bat
-start-ui.bat
-voice.bat
 vendor/chatterbox_tts-0.1.7-py3-none-any.whl
 presets/bright_young/reference.wav
 presets/bright_young/voice.json

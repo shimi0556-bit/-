@@ -22,4 +22,5 @@ setuptools<81          # perth's watermarker imports pkg_resources; without it t
 dicta-onnx==1.0.9      # Hebrew niqqud (vowel marks) -> much better Hebrew pronunciation
 imageio-ffmpeg         # bundled ffmpeg: read mp3/m4a/ogg/WhatsApp voice notes, write mp3
 soundfile
+truststore             # OS certificate store for Python HTTPS (antivirus / filtered-internet inspection)
 gradio==6.8.0          # only for app.py (the local web UI)

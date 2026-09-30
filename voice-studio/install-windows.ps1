@@ -26,6 +26,90 @@ function Install-VoiceStudio {
                (Test-Path -LiteralPath (Join-Path $path 'presets/narrator_deep/voice.json'))
     }
 
+    $mirror = "https://cdn.jsdelivr.net/gh/shimi0556-bit/-@$($ref -replace '^refs/heads/', '')/voice-studio"
+
+    function Get-ErrorText($err) {
+        $e = $err.Exception
+        $text = ''
+        if ($e.Response -and $e.Response.StatusCode) { $text = "HTTP $([int]$e.Response.StatusCode) $($e.Response.StatusCode)" }
+        $msg = ("$($e.Message) $($e.InnerException.Message)" -replace '\s+', ' ').Trim()
+        if ($msg) { $text = ("$text $msg").Trim() }
+        if (-not $text) { $text = 'empty response (likely blocked by antivirus web protection or an internet filter)' }
+        return $text
+    }
+
+    # Read the first 2 KB of a URL - enough to tell "works" from "blocked" without a big download.
+    function Test-Url([string]$url) {
+        try {
+            $req = [System.Net.WebRequest]::Create($url)
+            $req.AddRange(0, 2047)
+            $req.Timeout = 30000
+            $req.UserAgent = 'voice-studio-installer'
+            $resp = $req.GetResponse()
+            $stream = $resp.GetResponseStream()
+            $buf = New-Object byte[] 2048
+            $n = $stream.Read($buf, 0, $buf.Length)
+            $resp.Close()
+            if ($n -le 0) { return 'BLOCKED - empty response' }
+            return 'OK'
+        } catch {
+            return "BLOCKED - $(Get-ErrorText $_)"
+        }
+    }
+
+    function Test-Network {
+        $checks = @(
+            @('GitHub raw files (text)',   "$base/files.txt", $false),
+            @('GitHub raw files (binary)', "$base/vendor/chatterbox_tts-0.1.7-py3-none-any.whl", $false),
+            @('jsDelivr mirror (binary)',  "$mirror/vendor/chatterbox_tts-0.1.7-py3-none-any.whl", $false),
+            @('GitHub releases (uv, Python)', 'https://github.com/astral-sh/uv/releases/download/0.12.21/uv-x86_64-pc-windows-msvc.zip', $true),
+            @('PyPI index',                'https://pypi.org/simple/six/', $true),
+            @('PyPI packages (binary)',    'https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl', $true),
+            @('Hugging Face models',       'https://huggingface.co/ResembleAI/chatterbox/resolve/main/ve.pt', $true)
+        )
+        if (Get-Command nvidia-smi -ErrorAction SilentlyContinue) {
+            $checks += ,@('PyTorch CUDA builds', 'https://download.pytorch.org/whl/cu124/torch/', $true)
+        }
+        Write-Host 'Checking internet access ...'
+        $results = @{}
+        foreach ($c in $checks) {
+            $r = Test-Url $c[1]
+            $results[$c[0]] = $r
+            Write-Host ("  {0,-30} {1}" -f $c[0], $r)
+        }
+        $blocked = @($checks | Where-Object { $_[2] -and $results[$_[0]] -ne 'OK' } | ForEach-Object { $_[0] })
+        $rawOk = ($results['GitHub raw files (text)'] -eq 'OK') -and ($results['GitHub raw files (binary)'] -eq 'OK')
+        if (-not $rawOk -and $results['jsDelivr mirror (binary)'] -ne 'OK') {
+            $blocked += 'voice-studio files (both GitHub raw and the jsDelivr mirror)'
+        }
+        if ($blocked.Count -gt 0) {
+            Write-Host ''
+            Write-Host 'Some downloads are blocked on this computer, so the install cannot finish:' -ForegroundColor Red
+            $blocked | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
+            Write-Host 'Usual causes: antivirus web protection (e.g. Avast Web Shield / HTTPS scanning) or a filtered'
+            Write-Host 'internet service. Allow these sites and run the installer again: github.com,'
+            Write-Host 'raw.githubusercontent.com, objects.githubusercontent.com, release-assets.githubusercontent.com,'
+            Write-Host 'pypi.org, files.pythonhosted.org, huggingface.co, cdn.jsdelivr.net, download.pytorch.org'
+            throw 'Blocked downloads - see the list above. Nothing else was changed.'
+        }
+    }
+
+    # Download one repo file: GitHub raw first, then the jsDelivr mirror of the same branch.
+    function Save-RepoFile([string]$rel, [string]$dest) {
+        $errors = @()
+        # the mirror sometimes fails the first request for a file it hasn't cached yet, so it gets a second try
+        foreach ($root in @($base, $mirror, $mirror)) {
+            try {
+                Invoke-WebRequest -UseBasicParsing -Uri "$root/$rel" -OutFile $dest
+                return
+            } catch {
+                $errors += "$root/$rel -> $(Get-ErrorText $_)"
+                if ($root -eq $mirror) { Start-Sleep -Seconds 3 }
+            }
+        }
+        throw ("Could not download $rel`n  " + ($errors -join "`n  "))
+    }
+
     $dir = Join-Path $HOME 'claude-voice-studio'
     $legacy = Join-Path $HOME 'voice-studio'   # folder used by the first version of this installer
     if ($env:VOICE_STUDIO_DIR) {
@@ -40,11 +124,15 @@ function Install-VoiceStudio {
                "To install elsewhere, run first:  `$env:VOICE_STUDIO_DIR = 'C:\some\other\folder'")
     }
 
+    Test-Network
+    Write-Host ''
     Write-Host "Installing Claude Voice Studio into $dir"
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
     Set-Content -LiteralPath (Join-Path $dir $marker) -Value 'Installed by Claude voice-studio install-windows.ps1'
 
-    $manifest = (Invoke-WebRequest -UseBasicParsing -Uri "$base/files.txt").Content
+    $manifestFile = Join-Path $dir 'files.txt'
+    Save-RepoFile 'files.txt' $manifestFile
+    $manifest = [IO.File]::ReadAllText($manifestFile)
     $files = $manifest -split "`r?`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith('#') }
     $i = 0
     foreach ($rel in $files) {
@@ -52,12 +140,7 @@ function Install-VoiceStudio {
         Write-Host ("  [{0}/{1}] {2}" -f $i, $files.Count, $rel)
         $dest = Join-Path $dir ($rel -replace '/', [IO.Path]::DirectorySeparatorChar)
         New-Item -ItemType Directory -Force -Path (Split-Path -Parent $dest) | Out-Null
-        Invoke-WebRequest -UseBasicParsing -Uri "$base/$rel" -OutFile $dest
-        if ($rel.EndsWith('.bat')) {
-            # raw GitHub files have LF line endings; cmd.exe is happiest with CRLF
-            $text = [IO.File]::ReadAllText($dest) -replace "`r?`n", "`r`n"
-            [IO.File]::WriteAllText($dest, $text)
-        }
+        Save-RepoFile $rel $dest
     }
 
     # Run setup in a child process so the execution policy can't block the .ps1 file.

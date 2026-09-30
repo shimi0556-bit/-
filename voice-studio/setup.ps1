@@ -14,6 +14,7 @@ Set-Location -LiteralPath $PSScriptRoot
 
 $UvVersion = '0.12.21'
 $env:UV_HTTP_TIMEOUT = '300'   # large wheels (torch ~200 MB) on slow connections
+$env:UV_SYSTEM_CERTS = '1'     # trust the Windows certificate store (antivirus / filtered-internet HTTPS inspection)
 $DictaUrl = 'https://huggingface.co/spaces/thewh1teagle/add-diacritics-in-hebrew/resolve/main/dicta-1.0.int8.onnx'
 $OnWindows = $env:OS -eq 'Windows_NT'
 
@@ -32,7 +33,9 @@ function Get-File {
             Move-Item -LiteralPath $part -Destination $OutFile -Force
             return
         } catch {
-            Write-Host "  download failed from $url : $($_.Exception.Message)"
+            $status = ''
+            if ($_.Exception.Response) { $status = "HTTP $([int]$_.Exception.Response.StatusCode) " }
+            Write-Host "  download failed from $url : $status$($_.Exception.Message)"
         }
     }
     throw "Could not download $OutFile"
@@ -115,6 +118,35 @@ if (-not (Test-Path -LiteralPath $dicta) -or (Get-Item -LiteralPath $dicta).Leng
     Get-File -Urls @($DictaUrl) -OutFile $dicta
 } else {
     Write-Host '[5/5] Hebrew niqqud model already downloaded'
+}
+
+# Windows launchers. Generated here (not downloaded) because the jsDelivr mirror refuses to serve .bat files.
+$startUi = @'
+@echo off
+rem Double-click to open the voice-studio web UI in your browser. Keep this window open while you use it.
+title Claude Voice Studio
+cd /d "%~dp0"
+set HF_HUB_DISABLE_SYMLINKS_WARNING=1
+set PYTHONIOENCODING=utf-8
+if not exist ".venv\Scripts\python.exe" (
+  echo voice-studio is not installed yet - run install-windows.bat or setup.bat first.
+  pause
+  exit /b 1
+)
+echo Starting Claude Voice Studio - the browser opens by itself in a few seconds.
+echo The first time you generate speech it downloads about 3 GB of models.
+".venv\Scripts\python.exe" app.py --inbrowser
+pause
+'@
+$voiceBat = @'
+@echo off
+rem Command-line use on Windows, e.g.:  voice.bat speak "shalom" -o hello.mp3
+set HF_HUB_DISABLE_SYMLINKS_WARNING=1
+set PYTHONIOENCODING=utf-8
+"%~dp0.venv\Scripts\python.exe" "%~dp0voice.py" %*
+'@
+foreach ($pair in @(@('start-ui.bat', $startUi), @('voice.bat', $voiceBat))) {
+    [IO.File]::WriteAllText((Join-Path $PSScriptRoot $pair[0]), ($pair[1] -replace "`r?`n", "`r`n"))
 }
 
 Invoke-Checked $py @('-c', 'import chatterbox.mtl_tts, perth, dicta_onnx, imageio_ffmpeg; assert perth.PerthImplicitWatermarker is not None; print(''  check: all modules import'')')

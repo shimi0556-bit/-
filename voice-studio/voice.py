@@ -33,6 +33,13 @@ from pathlib import Path
 
 import numpy as np
 
+try:  # use the OS certificate store, so model downloads work behind antivirus / filtered-internet HTTPS inspection
+    import truststore
+
+    truststore.inject_into_ssl()
+except ImportError:
+    pass
+
 HERE = Path(__file__).resolve().parent
 VOICES_DIR = Path(os.environ.get("VOICE_STUDIO_VOICES", HERE / "voices"))  # your voices (git-ignored)
 PRESETS_DIR = HERE / "presets"  # synthetic voices shipped with the repo
