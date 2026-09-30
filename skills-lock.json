@@ -7,6 +7,12 @@
       "skillPath": "skills/analytics-metrics/SKILL.md",
       "computedHash": "e3e9a408e00744f3aab3640f8357725ae0267f2f6d85f0a0aaabeca3132017f9"
     },
+    "brainstorming": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/brainstorming/SKILL.md",
+      "computedHash": "a32d2255354775aa124855aa7100cf276bea096fff4ebb3a0edf57be216e6c72"
+    },
     "cinematic-scrub-landing": {
       "source": "hoodini/ai-agents-skills",
       "sourceType": "github",
@@ -25,11 +31,29 @@
       "skillPath": "claude-grok-bridge/SKILL.md",
       "computedHash": "2f13f698fd28d1bde49adb386117acbef1765947d523d56f0ff21e92572803d4"
     },
+    "dispatching-parallel-agents": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/dispatching-parallel-agents/SKILL.md",
+      "computedHash": "1968923066f3b707eb01d1992cdf4c42284c3855f70253b9cd5000ff45fca13c"
+    },
+    "executing-plans": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/executing-plans/SKILL.md",
+      "computedHash": "f38e8f2ddcf079f65493adc713c1fed78421dfaf5f4dbf6b3a6b2b1d95466e71"
+    },
     "fal-ai": {
       "source": "hoodini/ai-agents-skills",
       "sourceType": "github",
       "skillPath": "skills/fal-ai/SKILL.md",
       "computedHash": "de15d718548d8a638b9adb7d30df7d944a85363bfa33def39ed16ef4b519f17d"
+    },
+    "finishing-a-development-branch": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/finishing-a-development-branch/SKILL.md",
+      "computedHash": "8db5a922b242dd4e1bf824cb91c13b3e8d8e8a86d6ceaf7f0774eb9cce909d65"
     },
     "frontend-design": {
       "source": "anthropics/skills",
@@ -126,6 +150,18 @@
       "skillPath": "skills/parallax-landing-page/SKILL.md",
       "computedHash": "d8fbcf2d51a02368fd5c5d5365b135d98c1697774cba7b16bf5de8b9f649e615"
     },
+    "playwright": {
+      "source": "openai/skills",
+      "sourceType": "github",
+      "skillPath": "skills/.curated/playwright/SKILL.md",
+      "computedHash": "0ffaabcc8e0990627c4725f18bf1c7955534a796c1c199e872909de2013ce6a8"
+    },
+    "receiving-code-review": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/receiving-code-review/SKILL.md",
+      "computedHash": "091df1629510af1b92fc4abd6f96732ebedb4cb2c0f3457e8f2740b0504a2438"
+    },
     "remotion-best-practices": {
       "source": "remotion-dev/skills",
       "sourceType": "github",
@@ -198,11 +234,29 @@
       "skillPath": "skills/remotion-upgrade/SKILL.md",
       "computedHash": "ba240a4330910fab849044988696eb87b7736e3e28a802a364930c3ed8824b27"
     },
+    "requesting-code-review": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/requesting-code-review/SKILL.md",
+      "computedHash": "cfcee1b06774e7c0517f1e09be1a11f2d5680257072723e709ddbcf7e08b795a"
+    },
     "shabbat-times": {
       "source": "hoodini/ai-agents-skills",
       "sourceType": "github",
       "skillPath": "skills/shabbat-times/SKILL.md",
       "computedHash": "650c2defd349692caacba6ce8d4452459039a5e643b760000d6be4b9cf756801"
+    },
+    "subagent-driven-development": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/subagent-driven-development/SKILL.md",
+      "computedHash": "8dde5589ee083fb4999106d116f01c8fdaf3116a8a9813fdedeb80329de49046"
+    },
+    "test-driven-development": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/test-driven-development/SKILL.md",
+      "computedHash": "64b03fce4aee5a97a93160cea8111f3ba13a17b7c001db4bd5836d67fd10705d"
     },
     "threejs-3d-generator": {
       "source": "majidmanzarpour/threejs-game-skills",
@@ -258,11 +312,23 @@
       "skillPath": "skills/threejs-qa-release/SKILL.md",
       "computedHash": "8ce5e122e056d57cdab4248bb9a51923082ed0c1ac24282edf654bf19bd97e59"
     },
+    "using-git-worktrees": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/using-git-worktrees/SKILL.md",
+      "computedHash": "8cfb86f121269e8f7f12361e6795c4f6738828340e28964c9229d365666c9edd"
+    },
     "ux-design-systems": {
       "source": "hoodini/ai-agents-skills",
       "sourceType": "github",
       "skillPath": "skills/ux-design-systems/SKILL.md",
       "computedHash": "3013c21a051a284095ce7d2ef770c2c6fdb7d7643c5dcb8a042a4acd9b660baf"
+    },
+    "verification-before-completion": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/verification-before-completion/SKILL.md",
+      "computedHash": "2befe7fc55bcadaa3d97dd9e8efeb633d2561c0ebe74c5a8b17c4d9e7e4520b3"
     },
     "video-edit": {
       "source": "hoodini/ai-agents-skills",
@@ -282,11 +348,29 @@
       "skillPath": "skills/web-accessibility/SKILL.md",
       "computedHash": "c097775d156645fb8b9994e461598518d91837eebc3f7e61a2f8bd18479bafda"
     },
+    "web-perf": {
+      "source": "cloudflare/skills",
+      "sourceType": "github",
+      "skillPath": "skills/web-perf/SKILL.md",
+      "computedHash": "79c531e95ca4d96a7de920c28c127c2c09ec55cd452a92222267d2954580be23"
+    },
     "webapp-testing": {
       "source": "anthropics/skills",
       "sourceType": "github",
       "skillPath": "skills/webapp-testing/SKILL.md",
       "computedHash": "ad5b1fc52807e9afa4635e59218a026b164dc58b6c3f41b0f7c644dcd6ccf572"
+    },
+    "writing-plans": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/writing-plans/SKILL.md",
+      "computedHash": "a6c67c1900064347c2a329990dd3c555657c51c3ec53b259a08aa01a2c26139a"
+    },
+    "writing-skills": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/writing-skills/SKILL.md",
+      "computedHash": "bbdfe742f853562e643a3d40d64476359d47881e39cef80a189283fa26d11ab9"
     },
     "yuv-decks": {
       "source": "hoodini/ai-agents-skills",
