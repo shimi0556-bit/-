@@ -162,8 +162,20 @@ symlinked into `.claude/skills`). Written from scratch in this repo on top of op
 
 ### 2026-09-30 — used for kosher-clicker's on-screen announcer
 - Generated 72 announcer clips (18 lines × 4 voices: new `host_male` preset + `narrator_deep`, `bright_young`,
-  `child_like`) for `kosher-clicker/announcer.js` on branch `claude/loving-bohr-09ecbw`. Each clip: best of up to 4
-  seeds by Whisper match (accept ≥ 0.9), silence-trimmed, loudness-normalised to −16 LUFS, 48 kbps mono mp3.
+  `child_like`) for `kosher-clicker/announcer.js` on branch `claude/loving-bohr-09ecbw` (packed by
+  `kosher-clicker/tools/build_announcer.py`, ~1.1 MB of base64 mp3). Each clip: best of up to 8 seeds, accepted at
+  Whisper match ≥ 0.95 **and** pyin voiced ratio ≥ 0.4; silence-trimmed, loudness-normalised to −16 LUFS, 48 kbps mono
+  mp3. The generator scripts lived in the session scratchpad (not committed); the report with text/seed/F0 per clip
+  is what `build_announcer.py` reads.
 - `host_male` = `design-voice --pitch -3.5 --seed 8 --exaggeration 0.7`, ~120 Hz at exaggeration 0.75.
 - **Exaggeration raises pitch a lot:** `narrator_deep` measured ~117 Hz at 0.5 but ~214 Hz at 0.75. Generate deep
   voices at ~0.5 and log F0 per clip.
+- **Whispered takes pass Whisper.** Short exclamations ("השאלה הבאה!") in the lighter voices sometimes come out
+  mostly unvoiced (whisper-like) yet transcribed perfectly. `librosa.pyin` voiced ratio catches them: normal clips
+  measure 0.65-0.75, these 0.0-0.25. Check it on every generated clip, not just the transcript. (Measured, not
+  listened to.)
+- Whisper spelling differences that are *not* errors: "חייגו"→"חיגו", "ענו"→"אנו" (same sound). But one take of
+  "חייגו עכשיו" came back as "חיכו עכשיו" ("wait now"), so the welcome line says "התקשרו עכשיו" instead — all 4
+  voices then transcribed at 1.0.
+- Don't run Chatterbox (~6.6 GB RAM) and a Playwright/Chromium test at the same time in this container — the
+  combination got the container OOM-killed and restarted.
