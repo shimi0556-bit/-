@@ -1,0 +1,12 @@
+.venv/
+models/
+__pycache__/
+# Cloned voices of real people stay on this machine — never commit them. Synthetic presets live in presets/.
+voices/
+out/
+*.wav
+*.mp3
+*.ogg
+*.m4a
+!presets/*/reference.wav
+!samples/*.mp3

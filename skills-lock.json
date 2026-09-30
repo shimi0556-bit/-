@@ -383,6 +383,12 @@
       "sourceType": "github",
       "skillPath": "skills/yuv-design-system/SKILL.md",
       "computedHash": "2a84fb0b2a4faaab301a85d35363a38c3a9087059c9aec79ed0f5fdf87ebdd92"
+    },
+    "voice-studio": {
+      "source": "./claude-skills",
+      "sourceType": "local",
+      "skillPath": "voice-studio/SKILL.md",
+      "computedHash": "5f62eb5123505be54a877d6bca8a3515cea991312744feaa7cdb2159581acfa3"
     }
   }
 }

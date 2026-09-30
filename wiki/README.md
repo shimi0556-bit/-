@@ -38,5 +38,6 @@ A persistent, Claude-maintained knowledge base for this repo, following the patt
 | [`tokana.md`](tokana.md) | [`tokana/`](../tokana) |
 | [`tuning-numbers.md`](tuning-numbers.md) | [`tuning-numbers/`](../tuning-numbers) |
 | [`virtual-typewriter.md`](virtual-typewriter.md) | [`virtual-typewriter/`](../virtual-typewriter) |
+| [`voice-studio.md`](voice-studio.md) | [`voice-studio/`](../voice-studio) |
 
 New project folder added to the repo → add a page here and a row in this table.

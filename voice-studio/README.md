@@ -1,0 +1,69 @@
+# voice-studio — סטודיו הקולות
+
+Local voice generation: text-to-speech in 23 languages (strong Hebrew), **voice cloning** from a 10-30 s sample,
+**designing new synthetic voices**, **speech-to-speech voice conversion**, and 20 **voice effects**. Free, offline after
+the first model download, no API key. CPU works (≈10× slower than real time); a GPU is used automatically.
+
+Engine: [Chatterbox](https://github.com/resemble-ai/chatterbox) by Resemble AI (MIT) — Multilingual V3 for TTS/cloning,
+Chatterbox VC for conversion — plus [dicta-onnx](https://github.com/thewh1teagle/dicta-onnx) for Hebrew niqqud.
+Every output carries Resemble's inaudible **Perth watermark**, so it can be identified as AI-generated (`detect`).
+
+## Setup
+
+```bash
+cd voice-studio
+./setup.sh                      # venv + torch + Chatterbox (pinned commit) + Hebrew niqqud model (~300 MB)
+```
+The first run downloads ~3 GB of model weights from Hugging Face into `~/.cache/huggingface`.
+Windows: install Python 3.11, then `py -3.11 -m venv .venv`, `.venv\Scripts\pip install -r requirements.txt`,
+`.venv\Scripts\pip install --no-deps "chatterbox-tts @ git+https://github.com/resemble-ai/chatterbox.git@5de7a54aa4e5e2baadb0182dde554908b48b85c2"`,
+and download `dicta-1.0.int8.onnx` (URL in `setup.sh`) into `models\`.
+
+## Use
+
+```bash
+PY=.venv/bin/python
+
+$PY voice.py speak "שלום! זה הקול החדש שלי." -o hello.mp3                  # built-in voice
+$PY voice.py speak "Welcome to the studio" -v narrator_deep -o hi.wav       # a shipped preset
+$PY voice.py speak --file story.txt -v warm_low -o story.mp3                # long text, auto-split
+
+$PY voice.py add-voice me my_voice_note.ogg --consent self                  # clone (10-30 s of clean speech)
+$PY voice.py speak "משפט חדש שמעולם לא אמרתי" -v me -o me.mp3
+
+$PY voice.py design-voice old_captain --pitch -6 --effect radio             # invent a voice, no real person
+$PY voice.py convert my_recording.m4a -v old_captain -o captain.wav         # same words, other voice
+$PY voice.py effects hello.mp3 -e robot,hall -o robot.mp3                   # effects on any audio
+$PY voice.py voices                                                         # list voices
+$PY voice.py detect captain.wav                                             # AI watermark check
+
+$PY app.py                                                                  # Hebrew web UI on :7860
+```
+
+Tuning: `--exaggeration` (0.25-2, emotion), `--cfg` (0-1, lower = slower/calmer), `--seed` (repeatable take),
+`--effect` (chain on output), `-l` language code (auto for he/ar/ru/en).
+
+Effects: `deep deeper chipmunk child giant robot whisper radio telephone megaphone echo hall cave alien monster
+underwater slow fast pitch:<semitones> speed:<factor>`.
+
+## Voices
+
+- `presets/` — synthetic voices committed with the repo (`narrator_deep`, `warm_low`, `bright_young`, `child_like`),
+  all made with `design-voice` from the built-in voice.
+- `voices/` — your cloned voices. **Git-ignored on purpose**: a real person's voice never goes into the repo.
+
+## Consent
+
+Cloning needs `--consent self|permission|synthetic`, stored in each profile's `voice.json`. Only clone your own voice
+or the voice of someone who explicitly agreed. Don't use this to impersonate people, fake messages from them, or get
+past voice authentication — and don't remove the watermark.
+
+## Files
+
+| File | What |
+|---|---|
+| `voice.py` | CLI + library (`synthesize`, `add_voice`, `design_voice`, `convert`, `apply_effects`, ...) |
+| `app.py` | Gradio web UI (Hebrew RTL) on top of `voice.py` |
+| `setup.sh`, `requirements.txt` | environment setup (Chatterbox pinned to commit `5de7a54`, which has Multilingual V3) |
+| `presets/` | synthetic preset voices |
+| `samples/` | demo outputs |

@@ -1,0 +1,23 @@
+# Chatterbox runtime deps (mirrors chatterbox-tts@5de7a54 pyproject, minus gradio which the CLI doesn't need).
+# chatterbox-tts itself is installed separately with --no-deps by setup.sh (its git pin pulls perth from git).
+numpy>=1.24,<2
+librosa==0.11.0
+s3tokenizer==0.3.0
+torch==2.6.0
+torchaudio==2.6.0
+transformers==5.2.0
+diffusers==0.29.0
+conformer==0.3.2
+safetensors==0.5.3
+spacy-pkuseg
+pykakasi==2.3.0
+pyloudnorm
+omegaconf
+resemble-perth==1.0.1
+setuptools<81          # perth's watermarker imports pkg_resources; without it the watermark silently fails to load
+
+# voice-studio extras
+dicta-onnx==1.0.9      # Hebrew niqqud (vowel marks) -> much better Hebrew pronunciation
+imageio-ffmpeg         # bundled ffmpeg: read mp3/m4a/ogg/WhatsApp voice notes, write mp3
+soundfile
+gradio==6.8.0          # only for app.py (the local web UI)

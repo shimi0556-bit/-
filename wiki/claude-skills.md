@@ -1,9 +1,10 @@
 # claude-skills
 
-Canonical local copies of two skills (`cinematic-spark`, `claude-grok-bridge`), installed into `.agents/skills` and symlinked into `.claude/skills`. Not a runnable project — skill source only.
+Canonical local copies of skills installed into `.agents/skills` and symlinked into `.claude/skills` (`cinematic-spark`, `claude-grok-bridge`, `interactive-course-builder`, `voice-studio`). Not a runnable project — skill source only.
 
 - `cinematic-spark` pairs with `claude-spark-pack/`
 - `claude-grok-bridge` pairs with `claude-grok-mcp-bridge/`
+- `voice-studio` pairs with `voice-studio/` (see `wiki/voice-studio.md`)
 
 ## Notes
 _(empty)_

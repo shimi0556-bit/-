@@ -1,0 +1,16 @@
+{
+  "name": "warm_low",
+  "description": "warm, slightly low voice (synthetic)",
+  "source_file": "(designed)",
+  "seconds": 6.9,
+  "consent": "synthetic",
+  "consent_statement": "The sample is itself synthetic / AI-generated, not a real person.",
+  "consent_note": "",
+  "design": {
+    "base": "default",
+    "pitch": -2.0,
+    "effect": null,
+    "seed": 5
+  },
+  "created": "2026-09-30T16:42:50"
+}

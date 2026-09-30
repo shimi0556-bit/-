@@ -1,0 +1,16 @@
+{
+  "name": "bright_young",
+  "description": "bright, younger voice (synthetic)",
+  "source_file": "(designed)",
+  "seconds": 7.8,
+  "consent": "synthetic",
+  "consent_statement": "The sample is itself synthetic / AI-generated, not a real person.",
+  "consent_note": "",
+  "design": {
+    "base": "default",
+    "pitch": 4.0,
+    "effect": null,
+    "seed": 3
+  },
+  "created": "2026-09-30T16:37:26"
+}
