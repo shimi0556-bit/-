@@ -91,6 +91,9 @@ Optional QA (you can't listen): transcribe the output and compare to the text â€
   one line to paste into PowerShell. It needs no Python/git, installs to `%USERPROFILE%\voice-studio`, adds a
   "Voice Studio" desktop shortcut and opens the UI:
   `[Net.ServicePointManager]::SecurityProtocol='Tls12'; irm https://raw.githubusercontent.com/shimi0556-bit/-/refs/heads/claude/exciting-cannon-7hsu15/voice-studio/install-windows.ps1 | iex`
+  Simpler for a non-technical user: send them `voice-studio/install-windows.bat` with `SendUserFile` to double-click
+  (it runs the same line). Make sure they paste into a real PowerShell window ("PS C:\...>" prompt) â€” once they
+  pasted it into a game's log console, which ignores input and looks "stuck".
   Afterwards: the desktop shortcut or `start-ui.bat`; CLI via `voice.bat`.
 - **Linux/macOS:** `./setup.sh && .venv/bin/python app.py --inbrowser`.
 - If the branch in that URL gets merged/renamed, update the URL here, in `README.md` and the `$ref` default in

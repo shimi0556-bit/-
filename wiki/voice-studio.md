@@ -83,3 +83,7 @@ symlinked into `.claude/skills`). Written from scratch in this repo on top of op
   a big wheel → `UV_HTTP_TIMEOUT=300` plus one automatic retry.
 - **Not tested on real Windows:** `Expand-Archive` of the uv zip, `.venv\Scripts\` paths, the desktop shortcut COM
   call, `start-ui.bat`, the CUDA branch. Keep `.ps1`/`.bat` files ASCII-only (PS 5.1 reads BOM-less files as ANSI).
+- Second report from the user was the log of a Doom port (dsda-doom playing Freedoom's demo), not installer output:
+  the line had been pasted into the game's log console, which ignores input. Added `install-windows.bat` (double-click,
+  runs the same `irm | iex` line; CRLF, ASCII) and `.gitattributes` (`*.bat eol=crlf`) so non-technical use doesn't
+  depend on finding the right terminal. The .bat's PowerShell command was run verbatim against the live URL here.

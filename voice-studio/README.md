@@ -16,6 +16,7 @@ Every output carries Resemble's inaudible **Perth watermark**, so it can be iden
 [Net.ServicePointManager]::SecurityProtocol='Tls12'; irm https://raw.githubusercontent.com/shimi0556-bit/-/refs/heads/claude/exciting-cannon-7hsu15/voice-studio/install-windows.ps1 | iex
 ```
 
+Or download [`install-windows.bat`](install-windows.bat) and double-click it — it runs the same line.
 It downloads this folder into `%USERPROFILE%\voice-studio`, fetches `uv` into `tools\`, lets uv download Python 3.11,
 installs everything (CUDA PyTorch if `nvidia-smi` is found, CPU otherwise), adds a **Voice Studio** desktop shortcut
 and opens the web UI. Re-run it to update; `voices\` and `models\` are kept. Already have the folder (git clone / zip)?
@@ -78,7 +79,7 @@ past voice authentication — and don't remove the watermark.
 | `voice.py` | CLI + library (`synthesize`, `add_voice`, `design_voice`, `convert`, `apply_effects`, ...) |
 | `app.py` | Gradio web UI (Hebrew RTL) on top of `voice.py` |
 | `setup.sh`, `requirements.txt` | Linux/macOS setup |
-| `install-windows.ps1`, `files.txt` | Windows one-line installer and the list of files it downloads (update it when adding files) |
+| `install-windows.ps1`, `install-windows.bat`, `files.txt` | Windows installer (paste the line, or double-click the .bat) and the list of files it downloads (update it when adding files) |
 | `setup.ps1`, `setup.bat`, `start-ui.bat`, `voice.bat` | Windows setup, UI launcher and CLI wrapper (ASCII-only: PowerShell 5.1) |
 | `vendor/` | Chatterbox wheel built from commit `5de7a54` |
 | `presets/` | synthetic preset voices |
