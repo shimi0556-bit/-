@@ -122,7 +122,7 @@ Invoke-Checked $py @('-c', 'import chatterbox.mtl_tts, perth, dicta_onnx, imagei
 Write-Host ''
 Write-Host 'voice-studio is ready.'
 if ($OnWindows) {
-    Write-Host '  Web UI:  double-click start-ui.bat  (or the "Voice Studio" desktop shortcut)'
+    Write-Host '  Web UI:  double-click start-ui.bat  (or the "Claude Voice Studio" desktop shortcut)'
     Write-Host '  CLI:     .\voice.bat speak "shalom" -o hello.mp3'
 } else {
     Write-Host '  Web UI:  .venv/bin/python app.py --inbrowser'

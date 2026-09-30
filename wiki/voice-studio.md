@@ -87,3 +87,12 @@ symlinked into `.claude/skills`). Written from scratch in this repo on top of op
   the line had been pasted into the game's log console, which ignores input. Added `install-windows.bat` (double-click,
   runs the same `irm | iex` line; CRLF, ASCII) and `.gitattributes` (`*.bat eol=crlf`) so non-technical use doesn't
   depend on finding the right terminal. The .bat's PowerShell command was run verbatim against the live URL here.
+- The user's desktop has a **"VoiceStudio"** shortcut (custom pink-waveform icon) from an unrelated GitHub program another
+  Claude session installed. It is not this project. Because the first installer wrote into `%USERPROFILE%\voice-studio`
+  unconditionally (overwriting same-named files like `app.py`/`README.md`), `install-windows.ps1` now:
+  installs to `%USERPROFILE%\claude-voice-studio`; writes a `.claude-voice-studio` marker and refuses (changing nothing)
+  to write into an existing non-empty folder without that marker; reuses an old `%USERPROFILE%\voice-studio` only if it
+  is recognisably ours (`voice.py` + `presets/narrator_deep/voice.json`); names the shortcut **"Claude Voice Studio"**
+  with the `SndVol.exe` speaker icon and deletes the old "Voice Studio.lnk" only if it points into our folder.
+  Tested with a fake `$HOME` under pwsh: foreign folder refused and untouched; someone else's `voice-studio` left alone
+  while installing into `claude-voice-studio`; a legacy install updated in place with `voices/` kept.

@@ -17,9 +17,10 @@ Every output carries Resemble's inaudible **Perth watermark**, so it can be iden
 ```
 
 Or download [`install-windows.bat`](install-windows.bat) and double-click it — it runs the same line.
-It downloads this folder into `%USERPROFILE%\voice-studio`, fetches `uv` into `tools\`, lets uv download Python 3.11,
-installs everything (CUDA PyTorch if `nvidia-smi` is found, CPU otherwise), adds a **Voice Studio** desktop shortcut
-and opens the web UI. Re-run it to update; `voices\` and `models\` are kept. Already have the folder (git clone / zip)?
+It downloads this folder into `%USERPROFILE%\claude-voice-studio`, fetches `uv` into `tools\`, lets uv download Python 3.11,
+installs everything (CUDA PyTorch if `nvidia-smi` is found, CPU otherwise), adds a **Claude Voice Studio** desktop
+shortcut (speaker icon) and opens the web UI. Re-run it to update; `voices\` and `models\` are kept. It only writes
+into a folder it created (marker file `.claude-voice-studio`) and stops if the target holds anything else. Already have the folder (git clone / zip)?
 Double-click `setup.bat`, then `start-ui.bat`.
 
 **Linux / macOS:**

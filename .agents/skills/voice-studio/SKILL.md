@@ -88,8 +88,10 @@ Optional QA (you can't listen): transcribe the output and compare to the text �
 `voice-studio/app.py` is a Hebrew RTL Gradio app (speak / clone with mic recording / design / convert / effects).
 
 - **Windows** (the user's machine is Windows — PowerShell 5.1, where `&&` and `.venv/bin/...` don't work): give this
-  one line to paste into PowerShell. It needs no Python/git, installs to `%USERPROFILE%\voice-studio`, adds a
-  "Voice Studio" desktop shortcut and opens the UI:
+  one line to paste into PowerShell. It needs no Python/git, installs to `%USERPROFILE%\claude-voice-studio`, adds
+  a "Claude Voice Studio" desktop shortcut (speaker icon) and opens the UI. The user also has an unrelated program
+  with a "VoiceStudio" shortcut (custom pink waveform icon) that another Claude session installed from GitHub — that is
+  not this project; the installer never writes into a folder without its `.claude-voice-studio` marker:
   `[Net.ServicePointManager]::SecurityProtocol='Tls12'; irm https://raw.githubusercontent.com/shimi0556-bit/-/refs/heads/claude/exciting-cannon-7hsu15/voice-studio/install-windows.ps1 | iex`
   Simpler for a non-technical user: send them `voice-studio/install-windows.bat` with `SendUserFile` to double-click
   (it runs the same line). Make sure they paste into a real PowerShell window ("PS C:\...>" prompt) — once they
