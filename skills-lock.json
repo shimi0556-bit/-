@@ -138,6 +138,11 @@
       "skillPath": "skills/nano-banana-pro/SKILL.md",
       "computedHash": "847324e0bfe9acfdf880da102a537c0225c85b5db063d8a0dec0e4a2bc14bf69"
     },
+    "netfree-github-mirror": {
+      "source": "./claude-skills",
+      "sourceType": "local",
+      "computedHash": "20e3db2babb91f7c58b115ec8cd059b4db3e59be74421672f5838ded7da4d445"
+    },
     "owasp-security": {
       "source": "hoodini/ai-agents-skills",
       "sourceType": "github",
@@ -342,6 +347,12 @@
       "skillPath": "skills/video-to-landing-page/SKILL.md",
       "computedHash": "f17ee0a1fc06945b56bb0705f7559d8c254480cbba7c24c6fa309f46049bb27e"
     },
+    "voice-studio": {
+      "source": "./claude-skills",
+      "sourceType": "local",
+      "skillPath": "voice-studio/SKILL.md",
+      "computedHash": "fea44aa759cb354c46255c7d019f94e46c21385272a32742ab2d2d2278f8d300"
+    },
     "web-accessibility": {
       "source": "hoodini/ai-agents-skills",
       "sourceType": "github",
@@ -383,12 +394,6 @@
       "sourceType": "github",
       "skillPath": "skills/yuv-design-system/SKILL.md",
       "computedHash": "2a84fb0b2a4faaab301a85d35363a38c3a9087059c9aec79ed0f5fdf87ebdd92"
-    },
-    "voice-studio": {
-      "source": "./claude-skills",
-      "sourceType": "local",
-      "skillPath": "voice-studio/SKILL.md",
-      "computedHash": "fea44aa759cb354c46255c7d019f94e46c21385272a32742ab2d2d2278f8d300"
     }
   }
 }

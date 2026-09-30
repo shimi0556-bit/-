@@ -157,3 +157,5 @@ symlinked into `.claude/skills`). Written from scratch in this repo on top of op
   `https://github.com/shimi0556-bit/-.git/info/refs?service=git-upload-pack` and downloads from `/<sha>/`.
 - Still untested on real Windows + NetFree: whether NetFree lets these particular release assets through (the check
   only proved it for uv's zip). The installer's network check now probes `ve.pt` from this release first.
+- The general recipe (mirror → release → verified download, probes, fake-NetFree testing, dead ends) is saved as the
+  `netfree-github-mirror` skill so it's reused for the next blocked download.

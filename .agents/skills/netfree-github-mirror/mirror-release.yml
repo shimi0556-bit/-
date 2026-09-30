@@ -1,0 +1,65 @@
+name: mirror-my-files-v1   # rename per mirror
+
+# Template from the netfree-github-mirror skill. Copies files that the user's network blocks (e.g. NetFree blocks
+# huggingface.co downloads) into a GitHub Release of this repo, where the user's PC can download them.
+# Fill in TAG, TITLE, NOTES, FILES and the path under on.push.paths (this file's own path), commit to
+# .github/workflows/, push. The push of this file runs it (any branch); workflow_dispatch works once it's on the
+# default branch. Big files are split into 500 MB parts; manifest.txt lists: <name> <size> <sha256> <part,part,...>
+
+on:
+  push:
+    paths: [.github/workflows/mirror-my-files-v1.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: my-files-v1
+      TITLE: Mirrored files
+      NOTES: Files mirrored for networks that block the original source. Check each file against manifest.txt.
+      # One per line: <asset-name> <url>. Pin versions / commit hashes in the URLs. Credit licenses in NOTES.
+      FILES: |
+        example.txt https://raw.githubusercontent.com/github/gitignore/main/Python.gitignore
+    steps:
+      - name: Download the files
+        run: |
+          set -euo pipefail
+          mkdir dl && cd dl
+          while read -r name url; do
+            [ -z "${name:-}" ] && continue
+            curl -fsSL --retry 5 -o "$name" "$url"
+          done <<< "$FILES"
+          ls -la
+
+      - name: Split big files and write manifest.txt
+        run: |
+          set -euo pipefail
+          cd dl
+          : > ../manifest.txt
+          for f in *; do
+            size=$(stat -c %s "$f"); sha=$(sha256sum "$f" | cut -d' ' -f1)
+            if [ "$size" -gt 524288000 ]; then
+              split -b 500M -d -a 2 "$f" "$f.part"
+              rm "$f"
+              parts=$(ls "$f".part* | paste -sd, -)
+            else
+              parts="$f"
+            fi
+            echo "$f $size $sha $parts" >> ../manifest.txt
+          done
+          mv ../manifest.txt .
+          cat manifest.txt
+
+      - name: Publish the release
+        run: |
+          set -euo pipefail
+          cd dl
+          gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "$TITLE" --notes "$NOTES" ./*

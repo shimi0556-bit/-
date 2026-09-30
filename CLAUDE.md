@@ -7,6 +7,13 @@ A personal playground repo: vendored tools/apps and Claude Code skills. See `REA
 - Whenever you build or update a game in this repo (any self-contained game, e.g. an HTML/JS game like `reversi-game/`), always send the playable file(s) to the user for download via the `SendUserFile` tool — in addition to committing and pushing it to the repo. Do this every time, not just on first creation; re-send after meaningful updates to a game the user is actively iterating on.
 - After creating any HTML presentation, inject Edit Mode:
   `python3 .claude/skills/deck-edit-mode/scripts/inject_editor.py <deck.html>`
+- **The user's own computer is behind NetFree** (Israeli filtered internet). Some downloads are blocked there
+  (`HTTP 418 Blocked by NetFree`, or an empty error) even though they work in this cloud container — e.g. file
+  downloads from huggingface.co and binary files from raw.githubusercontent.com; GitHub *release* downloads and PyPI
+  go through. Whenever something the user installs or runs on their PC needs a download — and whenever such a download
+  fails — use the `netfree-github-mirror` skill: mirror the files into a GitHub Release of this repo with a GitHub
+  Actions workflow and download from there (resumable, sha256-checked). Test with its fake-NetFree server before
+  telling the user to run anything. Reply to the user in Hebrew.
 
 ## Wiki
 
