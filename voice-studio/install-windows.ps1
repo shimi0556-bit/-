@@ -63,22 +63,30 @@ function Install-VoiceStudio {
                                              'https://releases.astral.sh/github/uv/releases/download/0.12.21/uv-x86_64-pc-windows-msvc.zip'), $true),
             @('PyPI index',                @('https://pypi.org/simple/six/'), $true),
             @('PyPI packages (binary)',    @('https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl'), $true),
-            @('Hugging Face models',       @('https://huggingface.co/ResembleAI/chatterbox/resolve/main/ve.pt'), 'later')
+            @('GitHub release (models)',   @('https://github.com/shimi0556-bit/-/releases/download/voice-models-v1/ve.pt'), 'models'),
+            @('Hugging Face (models)',     @('https://huggingface.co/ResembleAI/chatterbox/resolve/main/ve.pt'), 'models')
         )
         if (Get-Command nvidia-smi -ErrorAction SilentlyContinue) {
             $checks += ,@('PyTorch CUDA builds', @('https://download.pytorch.org/whl/cu124/torch/'), $true)
         }
-        # third column: $true = needed to install, $false = has a workaround, 'later' = needed only to create speech
+        # third column: $true = needed to install, $false = has a workaround,
+        # 'models' = the voice models need either the GitHub release or Hugging Face
         Write-Host 'Checking internet access ...'
         $blocked = @()
-        $hfBlocked = $null
+        $modelsOk = $false
+        $hfResult = 'OK'
         foreach ($c in $checks) {
             $r = ''
             foreach ($url in $c[1]) {   # a check passes if any of its URLs works
                 $r = Test-Url $url
                 if ($r -eq 'OK') { break }
             }
-            if ($r -ne 'OK' -and $c[2] -eq 'later') { $hfBlocked = $r; $r = "$r  (installing anyway - see the note at the end)" }
+            if ($c[2] -eq 'models') {
+                if ($r -eq 'OK') { $modelsOk = $true }
+                elseif ($modelsOk) { $r = "$r  (ok: the models come from the GitHub release instead)" }
+                else { $r = "$r  (will try the next source)" }
+                if ($c[0] -like 'Hugging Face*') { $hfResult = $r }
+            }
             elseif ($r -ne 'OK' -and -not $c[2]) { $r = "$r  (ok: will use the text copies instead)" }
             Write-Host ("  {0,-27} {1}" -f $c[0], $r)
             if ($r -ne 'OK' -and $c[2] -eq $true) { $blocked += $c[0] }
@@ -93,7 +101,9 @@ function Install-VoiceStudio {
             Write-Host 'releases.astral.sh, pypi.org, files.pythonhosted.org, huggingface.co, hf.co, download.pytorch.org'
             throw 'Blocked downloads - see the list above. Nothing else was changed.'
         }
-        return $hfBlocked   # $null, or the Hugging Face error text (needed only to create speech)
+        if ($modelsOk) { return $null }
+        if (-not $hfResult -or $hfResult -eq 'OK') { $hfResult = 'blocked' }
+        return $hfResult   # the voice models can't be downloaded from anywhere: installing anyway, with a note
     }
 
     # Download one repo file. If a binary download is blocked (antivirus / filters sometimes allow text but not
@@ -133,7 +143,7 @@ function Install-VoiceStudio {
                "To install elsewhere, run first:  `$env:VOICE_STUDIO_DIR = 'C:\some\other\folder'")
     }
 
-    $hfBlocked = Test-Network
+    $modelsBlocked = Test-Network
     Write-Host ''
     Write-Host "Installing Claude Voice Studio into $dir"
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
@@ -181,10 +191,11 @@ function Install-VoiceStudio {
         }
     }
 
-    if ($hfBlocked) {
+    if ($modelsBlocked) {
         Write-Host ''
-        Write-Host 'Installed - but Hugging Face is blocked on this computer, and the voice models (~3 GB) come from there.' -ForegroundColor Yellow
-        if ($hfBlocked -match 'NetFree') {
+        Write-Host 'Installed - but the voice models (~3.5 GB) could not be downloaded: both the GitHub release and' -ForegroundColor Yellow
+        Write-Host 'Hugging Face are blocked on this computer.' -ForegroundColor Yellow
+        if ($modelsBlocked -match 'NetFree') {
             Write-Host 'The block comes from NetFree. Ask NetFree to open these addresses:' -ForegroundColor Yellow
         } else {
             Write-Host 'Ask whoever controls the filter / antivirus to allow these addresses:' -ForegroundColor Yellow

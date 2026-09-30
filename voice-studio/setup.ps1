@@ -15,7 +15,7 @@ Set-Location -LiteralPath $PSScriptRoot
 $UvVersion = '0.12.21'
 $env:UV_HTTP_TIMEOUT = '300'   # large wheels (torch ~200 MB) on slow connections
 $env:UV_SYSTEM_CERTS = '1'     # trust the Windows certificate store (antivirus / filtered-internet HTTPS inspection)
-$DictaUrl = 'https://huggingface.co/spaces/thewh1teagle/add-diacritics-in-hebrew/resolve/main/dicta-1.0.int8.onnx'
+$ModelsRelease = 'https://github.com/shimi0556-bit/-/releases/download/voice-models-v1'
 $OnWindows = $env:OS -eq 'Windows_NT'
 
 function Invoke-Checked {
@@ -109,20 +109,75 @@ $wheel = Get-ChildItem -Path (Join-Path $PSScriptRoot 'vendor') -Filter 'chatter
 if (-not $wheel) { throw 'vendor\chatterbox_tts-*.whl is missing' }
 Invoke-Checked $uv @('pip', 'install', '--python', $py, '--no-deps', '--reinstall-package', 'chatterbox-tts', $wheel.FullName)
 
-# 5. Hebrew niqqud model
+# 5. Voice models (~3.5 GB), from this repo's GitHub release "voice-models-v1" (a copy of the Hugging Face files,
+#    made by .github/workflows/voice-models-release.yml, for networks such as NetFree that block huggingface.co).
+#    Resumable: re-running continues partial downloads. Each file is checked against the sha256 in the manifest.
+#    If the release can't be reached, voice.py falls back to Hugging Face on first use.
 $modelDir = Join-Path $PSScriptRoot 'models'
-$dicta = Join-Path $modelDir 'dicta-1.0.int8.onnx'
-New-Item -ItemType Directory -Force -Path $modelDir | Out-Null
-if (-not (Test-Path -LiteralPath $dicta) -or (Get-Item -LiteralPath $dicta).Length -lt 100MB) {
-    Write-Host '[5/5] Downloading the Hebrew niqqud model (~300 MB) ...'
-    try {
-        Get-File -Urls @($DictaUrl) -OutFile $dicta
-    } catch {
-        # Not fatal: it comes from Hugging Face like the voice models, and voice.py fetches it on first use.
-        Write-Host '  Could not download it now (Hugging Face blocked?). The app will try again on first use.'
+$ttsDir = Join-Path $modelDir 'chatterbox'
+$partsDir = Join-Path $modelDir 'download-parts'   # parts wait here until their file is verified
+New-Item -ItemType Directory -Force -Path $ttsDir, $partsDir | Out-Null
+
+$curl = Get-Command curl.exe -CommandType Application -ErrorAction SilentlyContinue   # Windows 10+; resumes downloads
+if (-not $curl -and -not $OnWindows) { $curl = Get-Command curl -CommandType Application -ErrorAction SilentlyContinue }
+
+function Save-Asset([string]$url, [string]$outFile) {
+    if ($curl) {
+        & $curl.Source -fL --retry 5 --retry-delay 3 -C - --progress-bar -o $outFile $url
+        if ($LASTEXITCODE -ne 0) { throw "download failed (curl exit $LASTEXITCODE): $url" }
+    } else {
+        Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $outFile
     }
-} else {
-    Write-Host '[5/5] Hebrew niqqud model already downloaded'
+}
+
+Write-Host "[5/5] Voice models (~3.5 GB, one time) from GitHub ..."
+try {
+    $manifest = (Invoke-WebRequest -UseBasicParsing -Uri "$ModelsRelease/models-manifest.txt").Content
+    if ($manifest -is [byte[]]) { $manifest = [Text.Encoding]::ASCII.GetString($manifest) }
+    foreach ($line in ($manifest -split "`r?`n" | Where-Object { $_.Trim() })) {
+        $name, $size, $sha, $parts = $line.Trim() -split '\s+'
+        if ($name -like 'dicta-*') { $target = Join-Path $modelDir $name } else { $target = Join-Path $ttsDir $name }
+        if ((Test-Path -LiteralPath $target) -and (Get-Item -LiteralPath $target).Length -eq [int64]$size) {
+            Write-Host "  $name - already downloaded"
+            continue
+        }
+        $partList = @($parts -split ',')
+        Write-Host ("  {0} ({1:N0} MB, {2} part(s))" -f $name, ([int64]$size / 1MB), $partList.Count)
+        # Parts are 500 MB (the workflow's `split -b 500M`) except the last. Keep them until the whole file is
+        # verified, so an interrupted run resumes instead of starting over.
+        $partSize = [int64]524288000
+        for ($i = 0; $i -lt $partList.Count; $i++) {
+            $partFile = Join-Path $partsDir $partList[$i]
+            if ($partList.Count -eq 1) { $expected = [int64]$size }
+            elseif ($i -lt $partList.Count - 1) { $expected = $partSize }
+            else { $expected = [int64]$size - $partSize * ($partList.Count - 1) }
+            if ((Test-Path -LiteralPath $partFile) -and (Get-Item -LiteralPath $partFile).Length -eq $expected) { continue }
+            Save-Asset "$ModelsRelease/$($partList[$i])" $partFile
+        }
+        $tmp = "$target.download"
+        $out = [IO.File]::Create($tmp)
+        try {
+            foreach ($part in $partList) {
+                $in = [IO.File]::OpenRead((Join-Path $partsDir $part))
+                try { $in.CopyTo($out) } finally { $in.Close() }
+            }
+        } finally {
+            $out.Close()
+        }
+        $actual = (Get-FileHash -LiteralPath $tmp -Algorithm SHA256).Hash.ToLowerInvariant()
+        if ($actual -ne $sha) {
+            Remove-Item -LiteralPath $tmp
+            $partList | ForEach-Object { Remove-Item -LiteralPath (Join-Path $partsDir $_) -ErrorAction SilentlyContinue }
+            throw "$name is corrupted (sha256 mismatch) - run the installer again"
+        }
+        $partList | ForEach-Object { Remove-Item -LiteralPath (Join-Path $partsDir $_) -ErrorAction SilentlyContinue }
+        Move-Item -LiteralPath $tmp -Destination $target -Force
+    }
+    Remove-Item -LiteralPath $partsDir -Recurse -Force -ErrorAction SilentlyContinue
+    Write-Host '  all voice model files downloaded and verified'
+} catch {
+    Write-Host "  Could not get the models from GitHub: $($_.Exception.Message)"
+    Write-Host '  The app will try Hugging Face on first use instead. Running the installer again resumes the download.'
 }
 
 # Windows launchers. Generated here (not downloaded) because the jsDelivr mirror refuses to serve .bat files.
@@ -165,4 +220,3 @@ if ($OnWindows) {
     Write-Host '  Web UI:  .venv/bin/python app.py --inbrowser'
     Write-Host '  CLI:     .venv/bin/python voice.py speak "hello" -o hello.mp3'
 }
-Write-Host 'The first generation downloads ~3 GB of model weights (one time only).'

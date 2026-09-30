@@ -126,3 +126,24 @@ symlinked into `.claude/skills`). Written from scratch in this repo on top of op
     that answers everything with `418 Blocked by NetFree` via `HF_ENDPOINT`.
   - Until NetFree opens Hugging Face, the working path is generating in the cloud session (send the text/recording to
     Claude, get the audio back).
+
+### 2026-09-30 — models via a GitHub release (NetFree blocks huggingface.co downloads)
+- The user confirmed: huggingface.co *pages* open, but file downloads get NetFree's block page. GitHub release downloads
+  passed their check, so `.github/workflows/voice-models-release.yml` (runs on push of that file to the branch, or by
+  hand) downloads the pinned files on a GitHub runner — Chatterbox `ve.pt`, `t3_mtl23ls_v3.safetensors`, `s3gen.pt`,
+  `conds.pt`, `grapheme_mtl_merged_expanded_v1.json` @ `5bb1f6e`, `dicta-1.0.int8.onnx`, and dicta's
+  `tokenizer.json` @ `4dfc20b` as `dicta-tokenizer.json` — splits files > 500 MB, writes `models-manifest.txt`
+  (name size sha256 parts) and publishes release **`voice-models-v1`** (~3.5 GB). Licenses: Chatterbox MIT, ONNX
+  export MIT, DICTA model CC BY 4.0 (credited in the release notes). First run: ~2 min, success.
+- `setup.ps1` step 5 downloads from that release (curl.exe with resume when present, else IWR), keeps parts in
+  `models/download-parts/` until the joined file's sha256 matches, and falls back to Hugging Face-on-first-use if
+  the release is unreachable. The installer's network check passes the models if *either* source works.
+- `voice.py` loads from `models/chatterbox/` (`from_local`) when those files exist. Voice conversion is built from
+  `s3gen.pt` — verified identical to `s3gen.safetensors` tensor-for-tensor (plus one `tokenizer.window` buffer) —
+  saving a 1 GB download.
+- **Hidden network dependency found:** `dicta_onnx.OnnxDiacritizationModel.__init__` calls
+  `Tokenizer.from_pretrained('dicta-il/dictabert-large-char-menaked')` — a Hugging Face download on *every* start.
+  With HF blocked it raised and crashed `speak`. Now the tokenizer loads from `models/dicta-tokenizer.json` (module
+  attribute swapped for the duration of the constructor) and any niqqud failure is non-fatal.
+- Chatterbox's `ChineseCangjieConverter` also calls `hf_hub_download` at load time, but catches its own failure (only
+  matters for Chinese) — harmless when HF is blocked.
