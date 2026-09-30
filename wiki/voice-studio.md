@@ -114,3 +114,15 @@ symlinked into `.claude/skills`). Written from scratch in this repo on top of op
   - `UV_SYSTEM_CERTS=1` in setup (uv 0.12.21 otherwise uses its bundled roots and fails behind HTTPS inspection) and
     `truststore.inject_into_ssl()` in `voice.py` for Hugging Face downloads. The sandbox proxy doesn't inspect
     huggingface.co, so the inspection failure itself couldn't be reproduced here.
+- **Diagnosis from the user's run: their internet is NetFree** (Israeli filtered ISP; answers blocked requests with
+  `HTTP 418 Blocked by NetFree` and does HTTPS inspection with its own root cert — so `UV_SYSTEM_CERTS` / truststore
+  matter). Blocked: GitHub raw *binary* files (text copies fix it) and **huggingface.co** (the ~3 GB models + the
+  niqqud model). Allowed: raw text, GitHub releases, PyPI index + files.
+  - Hugging Face is now non-fatal: the installer finishes, skips auto-opening the UI and prints what to ask NetFree to
+    open (`huggingface.co`, `*.hf.co` — big files redirect to CDN hosts like `us.aws.cdn.hf.co` /
+    `cas-bridge.xethub.hf.co`). `setup.ps1` treats the niqqud download as optional and `voice.py` fetches it on first
+    use via `hf_hub_download(..., repo_type="space")`.
+  - `voice.py` turns Hub failures into `ModelDownloadError` (the UI shows it in Hebrew). Tested against a local server
+    that answers everything with `418 Blocked by NetFree` via `HF_ENDPOINT`.
+  - Until NetFree opens Hugging Face, the working path is generating in the cloud session (send the text/recording to
+    Claude, get the audio back).

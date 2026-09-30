@@ -63,22 +63,25 @@ function Install-VoiceStudio {
                                              'https://releases.astral.sh/github/uv/releases/download/0.12.21/uv-x86_64-pc-windows-msvc.zip'), $true),
             @('PyPI index',                @('https://pypi.org/simple/six/'), $true),
             @('PyPI packages (binary)',    @('https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl'), $true),
-            @('Hugging Face models',       @('https://huggingface.co/ResembleAI/chatterbox/resolve/main/ve.pt'), $true)
+            @('Hugging Face models',       @('https://huggingface.co/ResembleAI/chatterbox/resolve/main/ve.pt'), 'later')
         )
         if (Get-Command nvidia-smi -ErrorAction SilentlyContinue) {
             $checks += ,@('PyTorch CUDA builds', @('https://download.pytorch.org/whl/cu124/torch/'), $true)
         }
+        # third column: $true = needed to install, $false = has a workaround, 'later' = needed only to create speech
         Write-Host 'Checking internet access ...'
         $blocked = @()
+        $hfBlocked = $null
         foreach ($c in $checks) {
             $r = ''
             foreach ($url in $c[1]) {   # a check passes if any of its URLs works
                 $r = Test-Url $url
                 if ($r -eq 'OK') { break }
             }
-            if ($r -ne 'OK' -and -not $c[2]) { $r = "$r  (ok: will use the text copies instead)" }
+            if ($r -ne 'OK' -and $c[2] -eq 'later') { $hfBlocked = $r; $r = "$r  (installing anyway - see the note at the end)" }
+            elseif ($r -ne 'OK' -and -not $c[2]) { $r = "$r  (ok: will use the text copies instead)" }
             Write-Host ("  {0,-27} {1}" -f $c[0], $r)
-            if ($r -ne 'OK' -and $c[2]) { $blocked += $c[0] }
+            if ($r -ne 'OK' -and $c[2] -eq $true) { $blocked += $c[0] }
         }
         if ($blocked.Count -gt 0) {
             Write-Host ''
@@ -90,6 +93,7 @@ function Install-VoiceStudio {
             Write-Host 'releases.astral.sh, pypi.org, files.pythonhosted.org, huggingface.co, hf.co, download.pytorch.org'
             throw 'Blocked downloads - see the list above. Nothing else was changed.'
         }
+        return $hfBlocked   # $null, or the Hugging Face error text (needed only to create speech)
     }
 
     # Download one repo file. If a binary download is blocked (antivirus / filters sometimes allow text but not
@@ -129,7 +133,7 @@ function Install-VoiceStudio {
                "To install elsewhere, run first:  `$env:VOICE_STUDIO_DIR = 'C:\some\other\folder'")
     }
 
-    Test-Network
+    $hfBlocked = Test-Network
     Write-Host ''
     Write-Host "Installing Claude Voice Studio into $dir"
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
@@ -153,8 +157,8 @@ function Install-VoiceStudio {
     & $shell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $dir 'setup.ps1')
     if ($LASTEXITCODE -ne 0) { throw "Setup failed (exit $LASTEXITCODE). Scroll up for the error." }
 
+    $launcher = Join-Path $dir 'start-ui.bat'
     if ($onWindows) {
-        $launcher = Join-Path $dir 'start-ui.bat'
         try {
             $desktop = [Environment]::GetFolderPath('Desktop')
             $wsh = New-Object -ComObject WScript.Shell
@@ -175,6 +179,20 @@ function Install-VoiceStudio {
         } catch {
             Write-Host "Could not create the desktop shortcut: $($_.Exception.Message)"
         }
+    }
+
+    if ($hfBlocked) {
+        Write-Host ''
+        Write-Host 'Installed - but Hugging Face is blocked on this computer, and the voice models (~3 GB) come from there.' -ForegroundColor Yellow
+        if ($hfBlocked -match 'NetFree') {
+            Write-Host 'The block comes from NetFree. Ask NetFree to open these addresses:' -ForegroundColor Yellow
+        } else {
+            Write-Host 'Ask whoever controls the filter / antivirus to allow these addresses:' -ForegroundColor Yellow
+        }
+        Write-Host '    huggingface.co' -ForegroundColor Yellow
+        Write-Host '    *.hf.co   (the download servers, e.g. us.aws.cdn.hf.co / cas-bridge.xethub.hf.co)' -ForegroundColor Yellow
+        Write-Host 'After that, double-click "Claude Voice Studio" on the desktop - the first use downloads the models.' -ForegroundColor Yellow
+    } elseif ($onWindows) {
         Write-Host 'Opening the web UI (a console window stays open while it runs) ...'
         Start-Process -FilePath $launcher -WorkingDirectory $dir
     }

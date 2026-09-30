@@ -97,6 +97,9 @@ Optional QA (you can't listen): transcribe the output and compare to the text â€
   (it runs the same line). Make sure they paste into a real PowerShell window ("PS C:\...>" prompt) â€” once they
   pasted it into a game's log console, which ignores input and looks "stuck".
   Afterwards: the desktop shortcut or `start-ui.bat`; CLI via `voice.bat`.
+  The user's internet is **NetFree** (filtered; `418 Blocked by NetFree`): it blocks huggingface.co, so local speech
+  generation needs NetFree to open `huggingface.co` and `*.hf.co`. Until then, generate in this cloud session and send
+  the audio with `SendUserFile`.
 - **Linux/macOS:** `./setup.sh && .venv/bin/python app.py --inbrowser`.
 - If the branch in that URL gets merged/renamed, update the URL here, in `README.md` and the `$ref` default in
   `install-windows.ps1`. New files must be added to `files.txt` or the Windows installer won't fetch them.

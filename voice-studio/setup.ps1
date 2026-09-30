@@ -115,7 +115,12 @@ $dicta = Join-Path $modelDir 'dicta-1.0.int8.onnx'
 New-Item -ItemType Directory -Force -Path $modelDir | Out-Null
 if (-not (Test-Path -LiteralPath $dicta) -or (Get-Item -LiteralPath $dicta).Length -lt 100MB) {
     Write-Host '[5/5] Downloading the Hebrew niqqud model (~300 MB) ...'
-    Get-File -Urls @($DictaUrl) -OutFile $dicta
+    try {
+        Get-File -Urls @($DictaUrl) -OutFile $dicta
+    } catch {
+        # Not fatal: it comes from Hugging Face like the voice models, and voice.py fetches it on first use.
+        Write-Host '  Could not download it now (Hugging Face blocked?). The app will try again on first use.'
+    }
 } else {
     Write-Host '[5/5] Hebrew niqqud model already downloaded'
 }

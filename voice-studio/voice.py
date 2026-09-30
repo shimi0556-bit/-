@@ -62,6 +62,13 @@ class VoiceError(Exception):
     """A user-facing error (bad input, missing consent, unknown voice)."""
 
 
+class ModelDownloadError(VoiceError):
+    """The model files couldn't be downloaded from Hugging Face (blocked by a filter/antivirus, or offline)."""
+
+
+HF_HOSTS = "huggingface.co and *.hf.co"
+
+
 # ---------------------------------------------------------------- audio io
 
 def ffmpeg_exe() -> str:
@@ -133,15 +140,40 @@ def device() -> str:
 def enable_hebrew_niqqud() -> None:
     """Chatterbox adds Hebrew niqqud with dicta-onnx but calls Dicta() without the model path it
     needs, so it silently skips it. Inject a working instance so Hebrew gets vowels (much better
-    pronunciation)."""
+    pronunciation). Downloads the model on first use if setup couldn't."""
     if not DICTA_MODEL.exists():
-        print(f"[voice-studio] note: {DICTA_MODEL.name} missing — Hebrew will be read without niqqud. "
-              "Run setup.sh to download it.", file=sys.stderr)
-        return
+        try:
+            from huggingface_hub import hf_hub_download
+
+            print(f"[voice-studio] downloading {DICTA_MODEL.name} (~300 MB, one time) ...", file=sys.stderr)
+            hf_hub_download("thewh1teagle/add-diacritics-in-hebrew", DICTA_MODEL.name, repo_type="space",
+                            local_dir=DICTA_MODEL.parent)
+        except Exception as e:  # not fatal: speech still works, Hebrew just loses the niqqud boost
+            print(f"[voice-studio] note: could not download {DICTA_MODEL.name} ({type(e).__name__}) — "
+                  "Hebrew will be read without niqqud.", file=sys.stderr)
+            return
     from dicta_onnx import Dicta
     import chatterbox.models.tokenizers.tokenizer as tok
 
     tok._dicta = Dicta(str(DICTA_MODEL))
+
+
+def _from_hub(load):
+    """Run a from_pretrained() call, turning "couldn't reach Hugging Face" into a ModelDownloadError."""
+    import httpx
+    import requests
+    from huggingface_hub.errors import HfHubHTTPError, LocalEntryNotFoundError
+
+    try:
+        return load()
+    except (HfHubHTTPError, LocalEntryNotFoundError, httpx.HTTPError, requests.RequestException, ConnectionError) as e:
+        detail = str(e).strip().splitlines()[0] if str(e).strip() else type(e).__name__
+        err = ModelDownloadError(
+            "Could not download the voice models (~3 GB) from Hugging Face. If your internet is filtered "
+            f"(e.g. NetFree) or an antivirus blocks it, allow {HF_HOSTS} and try again. Details: {detail}"
+        )
+        err.detail = detail
+        raise err from e
 
 
 @functools.lru_cache(maxsize=1)
@@ -149,7 +181,7 @@ def load_tts():
     from chatterbox.mtl_tts import ChatterboxMultilingualTTS
 
     enable_hebrew_niqqud()
-    model = ChatterboxMultilingualTTS.from_pretrained(device=device(), t3_model="v3")
+    model = _from_hub(lambda: ChatterboxMultilingualTTS.from_pretrained(device=device(), t3_model="v3"))
     load_tts.default_conds = model.conds  # the built-in voice, restored when voice=None
     return model
 
@@ -158,7 +190,7 @@ def load_tts():
 def load_vc():
     from chatterbox.vc import ChatterboxVC
 
-    return ChatterboxVC.from_pretrained(device())
+    return _from_hub(lambda: ChatterboxVC.from_pretrained(device()))
 
 
 # ---------------------------------------------------------------- voices

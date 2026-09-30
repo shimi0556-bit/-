@@ -5,12 +5,15 @@ Run:  .venv/bin/python app.py --inbrowser     (Windows: double-click start-ui.ba
 Local only by default; pass --share for a temporary public Gradio link.
 """
 import argparse
+import os
 import tempfile
 from pathlib import Path
 
-import gradio as gr
+os.environ.setdefault("GRADIO_ANALYTICS_ENABLED", "False")  # no calls home (and nothing for a filter to block)
 
-import voice as vs
+import gradio as gr  # noqa: E402
+
+import voice as vs  # noqa: E402
 
 OUT_DIR = Path(tempfile.gettempdir()) / "voice-studio-ui"
 OUT_DIR.mkdir(exist_ok=True)
@@ -36,6 +39,10 @@ def _out(suffix=".wav"):
 def _run(fn, *args):
     try:
         return fn(*args)
+    except vs.ModelDownloadError as e:
+        raise gr.Error("לא הצלחתי להוריד את מודלי הקול (כ-3GB) מ-Hugging Face. אם האינטרנט מסונן (למשל נטפרי) "
+                       "או שאנטי-וירוס חוסם, צריך לבקש לפתוח את huggingface.co ואת hf.co* ולנסות שוב. "
+                       f"(פרטים טכניים: {getattr(e, 'detail', e)})")
     except vs.VoiceError as e:
         raise gr.Error(str(e))
 
