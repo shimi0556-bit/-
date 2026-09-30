@@ -8,6 +8,8 @@ A personal playground repo: vendored tools/apps and Claude Code skills. See `REA
 - After creating any HTML presentation, inject Edit Mode:
   `python3 .claude/skills/deck-edit-mode/scripts/inject_editor.py <deck.html>`
 
+- **Always use free tools** (no paid APIs or API keys) unless the user says otherwise. For voices/TTS use `python3 tools/tts.py` (edge-tts, free) — not ElevenLabs. Send generated audio to the user with `SendUserFile`.
+
 ## Wiki
 
 This repo keeps a persistent, Claude-maintained knowledge base under `wiki/` (pattern: [karpathy's LLM-wiki gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)). It exists so work on one project doesn't have to be re-discovered from scratch next session.
