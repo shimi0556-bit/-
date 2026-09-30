@@ -80,8 +80,8 @@ past voice authentication — and don't remove the watermark.
 | `voice.py` | CLI + library (`synthesize`, `add_voice`, `design_voice`, `convert`, `apply_effects`, ...) |
 | `app.py` | Gradio web UI (Hebrew RTL) on top of `voice.py` |
 | `setup.sh`, `requirements.txt` | Linux/macOS setup |
-| `install-windows.ps1`, `install-windows.bat`, `files.txt` | Windows installer (paste the line, or double-click the .bat) and the list of files it downloads (update it when adding files). It first checks every site it needs and stops with a list if antivirus or an internet filter blocks one; repo files fall back to the jsDelivr mirror |
-| `setup.ps1`, `setup.bat` | Windows setup (ASCII-only: PowerShell 5.1). It also writes the `start-ui.bat` (UI) and `voice.bat` (CLI) launchers — generated, not in git, because the jsDelivr mirror refuses `.bat` files |
+| `install-windows.ps1`, `install-windows.bat`, `files.txt` | Windows installer (paste the line, or double-click the .bat) and the list of files it downloads (update it when adding files). It first checks every site it needs and stops with a list if antivirus or an internet filter blocks one. `.whl`/`.wav` files have `.b64` text copies used when binary downloads are blocked |
+| `setup.ps1`, `setup.bat` | Windows setup (ASCII-only: PowerShell 5.1). It also writes the `start-ui.bat` (UI) and `voice.bat` (CLI) launchers (generated, not in git) |
 | `vendor/` | Chatterbox wheel built from commit `5de7a54` |
 | `presets/` | synthetic preset voices |
 | `samples/` | demo outputs |

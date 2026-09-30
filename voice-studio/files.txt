@@ -1,5 +1,7 @@
 # Files install-windows.ps1 downloads (paths relative to voice-studio/). Update when adding files.
-# No .bat files here: the jsDelivr mirror refuses them. setup.ps1 generates start-ui.bat and voice.bat.
+# .whl/.wav files also have a base64 text copy (<file>.b64) used when binary downloads are blocked. After changing one:
+#   for f in $(grep -E '\.(whl|wav)$' files.txt); do base64 -w 76 "$f" > "$f.b64"; done
+# setup.ps1 generates start-ui.bat and voice.bat.
 README.md
 requirements.txt
 voice.py

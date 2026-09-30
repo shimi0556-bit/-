@@ -26,20 +26,6 @@ function Install-VoiceStudio {
                (Test-Path -LiteralPath (Join-Path $path 'presets/narrator_deep/voice.json'))
     }
 
-    # jsDelivr caches which commit a branch points to for hours, so ask GitHub's plain git endpoint for the
-    # branch's current commit and request exactly that from the mirror. Falls back to the branch name.
-    function Resolve-MirrorRef {
-        $name = $ref -replace '^refs/heads/', ''
-        try {
-            $resp = Invoke-WebRequest -UseBasicParsing -Uri 'https://github.com/shimi0556-bit/-.git/info/refs?service=git-upload-pack'
-            $text = [Text.Encoding]::ASCII.GetString($resp.RawContentStream.ToArray())
-            $m = [regex]::Match($text, '([0-9a-f]{40}) ' + [regex]::Escape($ref) + '\n')
-            if ($m.Success) { return $m.Groups[1].Value }
-        } catch { }
-        return $name
-    }
-    $mirror = "https://cdn.jsdelivr.net/gh/shimi0556-bit/-@$(Resolve-MirrorRef)/voice-studio"
-
     function Get-ErrorText($err) {
         $e = $err.Exception
         $text = ''
@@ -71,28 +57,28 @@ function Install-VoiceStudio {
 
     function Test-Network {
         $checks = @(
-            @('GitHub raw files (text)',   "$base/files.txt", $false),
-            @('GitHub raw files (binary)', "$base/vendor/chatterbox_tts-0.1.7-py3-none-any.whl", $false),
-            @('jsDelivr mirror (binary)',  "$mirror/vendor/chatterbox_tts-0.1.7-py3-none-any.whl", $false),
-            @('GitHub releases (uv, Python)', 'https://github.com/astral-sh/uv/releases/download/0.12.21/uv-x86_64-pc-windows-msvc.zip', $true),
-            @('PyPI index',                'https://pypi.org/simple/six/', $true),
-            @('PyPI packages (binary)',    'https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl', $true),
-            @('Hugging Face models',       'https://huggingface.co/ResembleAI/chatterbox/resolve/main/ve.pt', $true)
+            @('GitHub raw files (text)',   @("$base/files.txt"), $true),
+            @('GitHub raw files (binary)', @("$base/vendor/chatterbox_tts-0.1.7-py3-none-any.whl"), $false),
+            @('GitHub releases (uv)',      @('https://github.com/astral-sh/uv/releases/download/0.12.21/uv-x86_64-pc-windows-msvc.zip',
+                                             'https://releases.astral.sh/github/uv/releases/download/0.12.21/uv-x86_64-pc-windows-msvc.zip'), $true),
+            @('PyPI index',                @('https://pypi.org/simple/six/'), $true),
+            @('PyPI packages (binary)',    @('https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl'), $true),
+            @('Hugging Face models',       @('https://huggingface.co/ResembleAI/chatterbox/resolve/main/ve.pt'), $true)
         )
         if (Get-Command nvidia-smi -ErrorAction SilentlyContinue) {
-            $checks += ,@('PyTorch CUDA builds', 'https://download.pytorch.org/whl/cu124/torch/', $true)
+            $checks += ,@('PyTorch CUDA builds', @('https://download.pytorch.org/whl/cu124/torch/'), $true)
         }
         Write-Host 'Checking internet access ...'
-        $results = @{}
+        $blocked = @()
         foreach ($c in $checks) {
-            $r = Test-Url $c[1]
-            $results[$c[0]] = $r
-            Write-Host ("  {0,-30} {1}" -f $c[0], $r)
-        }
-        $blocked = @($checks | Where-Object { $_[2] -and $results[$_[0]] -ne 'OK' } | ForEach-Object { $_[0] })
-        $rawOk = ($results['GitHub raw files (text)'] -eq 'OK') -and ($results['GitHub raw files (binary)'] -eq 'OK')
-        if (-not $rawOk -and $results['jsDelivr mirror (binary)'] -ne 'OK') {
-            $blocked += 'voice-studio files (both GitHub raw and the jsDelivr mirror)'
+            $r = ''
+            foreach ($url in $c[1]) {   # a check passes if any of its URLs works
+                $r = Test-Url $url
+                if ($r -eq 'OK') { break }
+            }
+            if ($r -ne 'OK' -and -not $c[2]) { $r = "$r  (ok: will use the text copies instead)" }
+            Write-Host ("  {0,-27} {1}" -f $c[0], $r)
+            if ($r -ne 'OK' -and $c[2]) { $blocked += $c[0] }
         }
         if ($blocked.Count -gt 0) {
             Write-Host ''
@@ -101,25 +87,32 @@ function Install-VoiceStudio {
             Write-Host 'Usual causes: antivirus web protection (e.g. Avast Web Shield / HTTPS scanning) or a filtered'
             Write-Host 'internet service. Allow these sites and run the installer again: github.com,'
             Write-Host 'raw.githubusercontent.com, objects.githubusercontent.com, release-assets.githubusercontent.com,'
-            Write-Host 'pypi.org, files.pythonhosted.org, huggingface.co, cdn.jsdelivr.net, download.pytorch.org'
+            Write-Host 'releases.astral.sh, pypi.org, files.pythonhosted.org, huggingface.co, hf.co, download.pytorch.org'
             throw 'Blocked downloads - see the list above. Nothing else was changed.'
         }
     }
 
-    # Download one repo file: GitHub raw first, then the jsDelivr mirror of the same branch.
+    # Download one repo file. If a binary download is blocked (antivirus / filters sometimes allow text but not
+    # binaries), fetch its base64 text copy (<file>.b64, kept in the repo next to it) and decode it.
     function Save-RepoFile([string]$rel, [string]$dest) {
-        $errors = @()
-        # the mirror sometimes fails the first request for a file it hasn't cached yet, so it gets a second try
-        foreach ($root in @($base, $mirror, $mirror)) {
+        try {
+            Invoke-WebRequest -UseBasicParsing -Uri "$base/$rel" -OutFile $dest
+            return
+        } catch {
+            $first = Get-ErrorText $_
+        }
+        if ($rel -match '\.(whl|wav)$') {
             try {
-                Invoke-WebRequest -UseBasicParsing -Uri "$root/$rel" -OutFile $dest
+                $b64 = (Invoke-WebRequest -UseBasicParsing -Uri "$base/$rel.b64").Content
+                if ($b64 -is [byte[]]) { $b64 = [Text.Encoding]::ASCII.GetString($b64) }
+                [IO.File]::WriteAllBytes($dest, [Convert]::FromBase64String(($b64 -replace '\s', '')))
+                Write-Host "      (binary download blocked - used the text copy)"
                 return
             } catch {
-                $errors += "$root/$rel -> $(Get-ErrorText $_)"
-                if ($root -eq $mirror) { Start-Sleep -Seconds 3 }
+                throw "Could not download $rel`n  $base/$rel -> $first`n  $base/$rel.b64 -> $(Get-ErrorText $_)"
             }
         }
-        throw ("Could not download $rel`n  " + ($errors -join "`n  "))
+        throw "Could not download $rel`n  $base/$rel -> $first"
     }
 
     $dir = Join-Path $HOME 'claude-voice-studio'
