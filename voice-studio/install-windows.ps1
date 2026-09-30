@@ -26,7 +26,19 @@ function Install-VoiceStudio {
                (Test-Path -LiteralPath (Join-Path $path 'presets/narrator_deep/voice.json'))
     }
 
-    $mirror = "https://cdn.jsdelivr.net/gh/shimi0556-bit/-@$($ref -replace '^refs/heads/', '')/voice-studio"
+    # jsDelivr caches which commit a branch points to for hours, so ask GitHub's plain git endpoint for the
+    # branch's current commit and request exactly that from the mirror. Falls back to the branch name.
+    function Resolve-MirrorRef {
+        $name = $ref -replace '^refs/heads/', ''
+        try {
+            $resp = Invoke-WebRequest -UseBasicParsing -Uri 'https://github.com/shimi0556-bit/-.git/info/refs?service=git-upload-pack'
+            $text = [Text.Encoding]::ASCII.GetString($resp.RawContentStream.ToArray())
+            $m = [regex]::Match($text, '([0-9a-f]{40}) ' + [regex]::Escape($ref) + '\n')
+            if ($m.Success) { return $m.Groups[1].Value }
+        } catch { }
+        return $name
+    }
+    $mirror = "https://cdn.jsdelivr.net/gh/shimi0556-bit/-@$(Resolve-MirrorRef)/voice-studio"
 
     function Get-ErrorText($err) {
         $e = $err.Exception
