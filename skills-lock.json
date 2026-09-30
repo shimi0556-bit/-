@@ -388,7 +388,7 @@
       "source": "./claude-skills",
       "sourceType": "local",
       "skillPath": "voice-studio/SKILL.md",
-      "computedHash": "5f62eb5123505be54a877d6bca8a3515cea991312744feaa7cdb2159581acfa3"
+      "computedHash": "c91e12a68302ad2c58cf6c81f2f1fd693aa6632b19048aeaf27a35463c5a8320"
     }
   }
 }

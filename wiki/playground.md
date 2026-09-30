@@ -7,7 +7,7 @@ The repo's front door: `index.html` at the root is a Hebrew (RTL) launcher that 
 - **Games (9):** Shimotron Rally (featured), chess, reversi, go, generals, neon snake, Strike Lane bowling, ABYSS submarine, SkyHawk.
 - **Courses (7):** VS Code, PowerPoint, Excel, Gmail, Windows, Canva, Obsidian.
 - **Tools (4):** Shimotron editor, guitar-fx-mixer, Claude Spark Engine, the `deck-edit-mode` demo deck.
-- Left out because they need a build step, a server or API keys: `tuning-numbers`, `virtual-typewriter`, `blitzai`, `nano-banana-ui`, `gods-eye-view`, `claude-demo-video`. `effects-yuv-ai` is left out too: it's hoodini's brand catalog, with analytics and social links.
+- Left out because they need a build step, a server or API keys: `tuning-numbers`, `virtual-typewriter`, `blitzai`, `nano-banana-ui`, `gods-eye-view`, `claude-demo-video`, `voice-studio` (Python + ~3 GB of models). `effects-yuv-ai` is left out too: it's hoodini's brand catalog, with analytics and social links.
 
 ## How it works
 

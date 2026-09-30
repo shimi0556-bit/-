@@ -438,7 +438,7 @@ def watermark_score(path) -> float:
 
 
 def list_voices() -> list[dict]:
-    rows = [{"name": "default", "kind": "built-in", "seconds": None, "consent": "", "description": "built-in voice"}]
+    rows = [{"name": "default", "kind": "built-in", "seconds": None, "consent": "", "description": "Chatterbox's own voice"}]
     for d in _profiles():
         meta = json.loads((d / "voice.json").read_text(encoding="utf-8")) if (d / "voice.json").exists() else {}
         rows.append({"name": d.name, "kind": "preset" if d.parent == PRESETS_DIR.resolve() else "saved",

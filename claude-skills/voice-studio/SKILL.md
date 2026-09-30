@@ -70,7 +70,8 @@ and `convert`.
 - `--cfg 0-1` (default 0.5): lower = slower, calmer pacing; use ~0.3 for fast-talking reference speakers, `0` if the
   output inherits the reference's accent in another language.
 - `--seed N` makes a take repeatable; change it to get a different read of the same line.
-- Hebrew gets automatic niqqud (Dicta model in `models/`). For a word read wrong, write it with niqqud yourself.
+- Hebrew gets automatic niqqud (Dicta model in `models/`). If a word comes out wrong, first re-roll `--seed`;
+  if it's still wrong (a homograph like שר), write that word with niqqud yourself.
 
 ## 5. Speed & delivery
 

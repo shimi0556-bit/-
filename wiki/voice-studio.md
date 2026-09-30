@@ -53,8 +53,12 @@ symlinked into `.claude/skills`). Written from scratch in this repo on top of op
   - A 230-char Hebrew story in one chunk: 2 words off ("היום אני שר" came out wrong) — Hebrew homographs get the
     wrong niqqud sometimes. Chunk size lowered to 200 chars; for a misread word, write it with niqqud by hand.
   - `detect`: generated mp3 → 1.00, the real LibriSpeech recording → 0.00 (watermark survives mp3).
-  - `app.py` driven headless with `gradio_client`: effects, clone (+ dropdown refresh), consent/filename validation.
+  - `app.py` driven headless with `gradio_client`: speak, effects, clone (+ dropdown refresh), consent/filename
+    validation; screenshot in Playwright Chromium confirmed the RTL layout.
+  - `samples/voice-tour.mp3` (34 s, 9 lines across all voices + robot/radio effects + English): 8/9 lines exact on the
+    first take; `narrator_deep` slurred "קריין" with seed 7 and was re-taken with seed 11 (exact). Takeaway: when a
+    word comes out wrong, re-roll the seed before rewriting the text.
 - **Consent guard:** cloning requires `--consent self|permission|synthetic` (stored in `voice.json`); the skill tells
   Claude to refuse cloning public figures / non-consenting people / deception and never to strip the watermark.
 - **Open:** no GPU here, so long narration is slow (≈10 min per minute of audio). `app.py` uses Gradio 6.8, where
-  `css` goes to `launch()`, not `Blocks()`; it was only exercised headless, never looked at in a real browser.
+  `css` goes to `launch()`, not `Blocks()`. Microphone recording in the UI wasn't tested (no mic in the sandbox).
