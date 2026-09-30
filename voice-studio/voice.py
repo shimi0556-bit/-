@@ -44,6 +44,11 @@ HERE = Path(__file__).resolve().parent
 VOICES_DIR = Path(os.environ.get("VOICE_STUDIO_VOICES", HERE / "voices"))  # your voices (git-ignored)
 PRESETS_DIR = HERE / "presets"  # synthetic voices shipped with the repo
 DICTA_MODEL = HERE / "models" / "dicta-1.0.int8.onnx"
+DICTA_TOKENIZER = HERE / "models" / "dicta-tokenizer.json"  # else dicta-onnx fetches it from Hugging Face on every start
+# Model files downloaded by the Windows installer from this repo's GitHub release (for networks that block
+# huggingface.co, e.g. NetFree). When all are present, nothing is fetched from Hugging Face.
+LOCAL_MODELS = HERE / "models" / "chatterbox"
+LOCAL_TTS_FILES = ("ve.pt", "t3_mtl23ls_v3.safetensors", "s3gen.pt", "grapheme_mtl_merged_expanded_v1.json", "conds.pt")
 SR = 24000  # Chatterbox output sample rate
 
 LANGS = ("ar da de el en es fi fr he hi it ja ko ms nl no pl pt ru sv sw tr zh").split()
@@ -152,10 +157,25 @@ def enable_hebrew_niqqud() -> None:
             print(f"[voice-studio] note: could not download {DICTA_MODEL.name} ({type(e).__name__}) — "
                   "Hebrew will be read without niqqud.", file=sys.stderr)
             return
-    from dicta_onnx import Dicta
     import chatterbox.models.tokenizers.tokenizer as tok
+    import dicta_onnx.model as dicta_model
+    from dicta_onnx import Dicta
 
-    tok._dicta = Dicta(str(DICTA_MODEL))
+    real_tokenizer = dicta_model.Tokenizer
+    try:
+        if DICTA_TOKENIZER.exists():  # load dicta-onnx's tokenizer from disk instead of Tokenizer.from_pretrained()
+            class _LocalTokenizer:
+                @staticmethod
+                def from_pretrained(_name):
+                    return real_tokenizer.from_file(str(DICTA_TOKENIZER))
+
+            dicta_model.Tokenizer = _LocalTokenizer
+        tok._dicta = Dicta(str(DICTA_MODEL))
+    except Exception as e:  # not fatal: speech still works, Hebrew just loses the niqqud boost
+        print(f"[voice-studio] note: Hebrew niqqud unavailable ({type(e).__name__}) — reading without it.",
+              file=sys.stderr)
+    finally:
+        dicta_model.Tokenizer = real_tokenizer
 
 
 def _from_hub(load):
@@ -176,12 +196,19 @@ def _from_hub(load):
         raise err from e
 
 
+def local_models_ready() -> bool:
+    return all((LOCAL_MODELS / f).exists() for f in LOCAL_TTS_FILES)
+
+
 @functools.lru_cache(maxsize=1)
 def load_tts():
     from chatterbox.mtl_tts import ChatterboxMultilingualTTS
 
     enable_hebrew_niqqud()
-    model = _from_hub(lambda: ChatterboxMultilingualTTS.from_pretrained(device=device(), t3_model="v3"))
+    if local_models_ready():
+        model = ChatterboxMultilingualTTS.from_local(LOCAL_MODELS, device(), t3_model="v3")
+    else:
+        model = _from_hub(lambda: ChatterboxMultilingualTTS.from_pretrained(device=device(), t3_model="v3"))
     load_tts.default_conds = model.conds  # the built-in voice, restored when voice=None
     return model
 
@@ -190,6 +217,18 @@ def load_tts():
 def load_vc():
     from chatterbox.vc import ChatterboxVC
 
+    if local_models_ready():
+        # ChatterboxVC.from_local wants s3gen.safetensors (another 1 GB); s3gen.pt holds the same weights
+        # (verified tensor-for-tensor; it has one extra buffer), so build the VC model from it instead.
+        import torch
+        from chatterbox.models.s3gen import S3Gen
+
+        dev = device()
+        s3gen = S3Gen()
+        s3gen.load_state_dict(torch.load(LOCAL_MODELS / "s3gen.pt", map_location="cpu", weights_only=True), strict=False)
+        s3gen.to(dev).eval()
+        ref_dict = torch.load(LOCAL_MODELS / "conds.pt", map_location="cpu")["gen"]
+        return ChatterboxVC(s3gen, dev, ref_dict=ref_dict)
     return _from_hub(lambda: ChatterboxVC.from_pretrained(device()))
 
 
