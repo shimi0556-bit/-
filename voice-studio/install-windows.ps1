@@ -15,7 +15,22 @@ function Install-VoiceStudio {
 
     $ref = 'refs/heads/claude/exciting-cannon-7hsu15'
     if ($env:VOICE_STUDIO_REF) { $ref = $env:VOICE_STUDIO_REF }
-    $base = "https://raw.githubusercontent.com/shimi0556-bit/-/$ref/voice-studio"
+
+    # Pin every download to the branch's current commit: raw.githubusercontent.com caches branch URLs for ~5 min per
+    # edge server, so right after a push a branch URL can mix old and new files. Commit URLs never go stale.
+    # GitHub's plain git endpoint lists the branch's commit (no API rate limits); the branch name is the fallback.
+    function Resolve-Commit {
+        try {
+            $resp = Invoke-WebRequest -UseBasicParsing -Uri 'https://github.com/shimi0556-bit/-.git/info/refs?service=git-upload-pack'
+            $text = [Text.Encoding]::ASCII.GetString($resp.RawContentStream.ToArray())
+            $m = [regex]::Match($text, '([0-9a-f]{40}) ' + [regex]::Escape($ref) + '\n')
+            if ($m.Success) { return $m.Groups[1].Value }
+        } catch {
+            Write-Host "  (could not look up the latest version - using the branch name: $($_.Exception.Message))"
+        }
+        return $ref
+    }
+    $base = "https://raw.githubusercontent.com/shimi0556-bit/-/$(Resolve-Commit)/voice-studio"
     $marker = '.claude-voice-studio'
     $onWindows = $env:OS -eq 'Windows_NT'
 
