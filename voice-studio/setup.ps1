@@ -45,7 +45,7 @@ Write-Host '== voice-studio setup =='
 
 # 1. uv
 $uv = $null
-$cmd = Get-Command uv -ErrorAction SilentlyContinue
+$cmd = Get-Command uv -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
 if ($cmd) { $uv = $cmd.Source }
 if (-not $uv) {
     $toolsDir = Join-Path $PSScriptRoot 'tools'
@@ -118,8 +118,12 @@ $ttsDir = Join-Path $modelDir 'chatterbox'
 $partsDir = Join-Path $modelDir 'download-parts'   # parts wait here until their file is verified
 New-Item -ItemType Directory -Force -Path $ttsDir, $partsDir | Out-Null
 
-$curl = Get-Command curl.exe -CommandType Application -ErrorAction SilentlyContinue   # Windows 10+; resumes downloads
-if (-not $curl -and -not $OnWindows) { $curl = Get-Command curl -CommandType Application -ErrorAction SilentlyContinue }
+# curl.exe ships with Windows 10+ and resumes downloads. Take the first match only: PATH can hold several
+# (e.g. Git for Windows bundles its own curl.exe), and an array here would break the call below.
+$curl = Get-Command curl.exe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+if (-not $curl -and -not $OnWindows) {
+    $curl = Get-Command curl -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+}
 
 function Save-Asset([string]$url, [string]$outFile) {
     if ($curl) {
