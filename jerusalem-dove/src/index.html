@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>יונת ירושלים</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@700;900&family=Rubik:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root { --gold:#f2c14e; --gold2:#ffe7a3; --ink:#1d140b; --glass:rgba(24,16,10,.42); --line:rgba(255,226,170,.35); }
+* { box-sizing:border-box; margin:0; padding:0; }
+html,body { height:100%; overflow:hidden; background:#1a120b; color:#fff7e6; font-family:Rubik, 'Segoe UI', Arial, sans-serif; user-select:none; -webkit-user-select:none; touch-action:none; }
+#game canvas { display:block; }
+.hidden { display:none !important; }
+.glass { background:var(--glass); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border:1px solid var(--line); border-radius:18px; box-shadow:0 10px 40px rgba(0,0,0,.25); }
+
+#loading { position:fixed; inset:0; display:grid; place-items:center; background:radial-gradient(circle at 50% 60%,#5a3a1e,#150d07); font:800 28px 'Frank Ruhl Libre',serif; color:var(--gold2); z-index:50; }
+
+/* Menu */
+#menu { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; z-index:20;
+  background:linear-gradient(180deg,rgba(20,10,4,.15),rgba(20,10,4,.0) 40%,rgba(20,10,4,.55)); padding:16px; text-align:center; }
+#menu h1 { font:900 clamp(54px,11vw,128px)/0.95 'Frank Ruhl Libre',serif; letter-spacing:1px;
+  background:linear-gradient(180deg,#fff8dc 10%,#f7cf5b 55%,#b9770f); -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter:drop-shadow(0 4px 18px rgba(120,60,0,.55)); }
+#menu .sub { font-size:clamp(15px,2.4vw,20px); color:#ffe9c2; text-shadow:0 2px 10px rgba(0,0,0,.6); max-width:620px; line-height:1.5; }
+#skins { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+.skin { font:600 15px Rubik,sans-serif; color:#fff5e0; padding:9px 14px 9px 16px; border-radius:40px; border:1px solid var(--line); background:var(--glass); backdrop-filter:blur(8px); cursor:pointer; display:flex; gap:8px; align-items:center; transition:transform .15s, border-color .15s; }
+.skin:hover { transform:translateY(-2px); }
+.skin.on { border-color:var(--gold); box-shadow:0 0 0 2px rgba(242,193,78,.4) inset; }
+.skin.locked { opacity:.55; cursor:not-allowed; }
+.sw { width:20px; height:20px; border-radius:50%; border:2px solid rgba(255,255,255,.7); }
+#play { font:800 24px Rubik,sans-serif; padding:14px 54px; border-radius:60px; border:0; cursor:pointer; color:#3a2200;
+  background:linear-gradient(180deg,#fff0b8,#f2c14e 60%,#d99a1f); box-shadow:0 8px 30px rgba(242,160,40,.5), inset 0 -3px 0 rgba(0,0,0,.15); transition:transform .15s; }
+#play:hover { transform:scale(1.05); }
+.keys { font-size:14px; color:#ffe9c2; opacity:.9; line-height:1.9; padding:10px 18px; }
+kbd { font:600 12px Rubik; background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); border-radius:6px; padding:1px 7px; margin:0 2px; }
+#glbNote { font-size:12px; opacity:.7; }
+
+/* HUD */
+#hud { position:fixed; inset:0; pointer-events:none; z-index:10; }
+#missions { position:absolute; top:16px; right:16px; padding:12px 16px; min-width:220px; }
+#missions .t { font-size:12px; letter-spacing:.5px; color:var(--gold2); opacity:.85; margin-bottom:6px; }
+#letters { display:flex; gap:6px; direction:rtl; font:900 30px 'Frank Ruhl Libre',serif; }
+#letters span { width:34px; text-align:center; color:rgba(255,255,255,.25); transition:all .4s; }
+#letters span.got { color:var(--gold); text-shadow:0 0 14px rgba(255,190,60,.9); transform:scale(1.15); }
+#race { margin-top:8px; font:600 15px Rubik; color:#9fe8ff; }
+#minimap { position:absolute; left:16px; bottom:16px; width:190px; height:190px; border-radius:50%; border:3px solid rgba(255,226,170,.6); box-shadow:0 8px 30px rgba(0,0,0,.4); background:#6d5a3e; }
+#gauges { position:absolute; right:16px; bottom:16px; padding:12px 18px; display:flex; gap:20px; align-items:flex-end; }
+.g { text-align:center; }
+.g b { display:block; font:800 30px Rubik; font-variant-numeric:tabular-nums; line-height:1; }
+.g small { font-size:11px; opacity:.75; }
+#stamBox { width:120px; height:8px; border-radius:6px; background:rgba(255,255,255,.18); overflow:hidden; margin-top:6px; }
+#stam { height:100%; width:100%; background:linear-gradient(90deg,#ffe08a,#f2a93b); transition:width .1s; }
+#stam.low { background:#ff6b4a; }
+#place { position:absolute; top:22px; left:50%; transform:translate(-50%,-20px); opacity:0; font:800 22px 'Frank Ruhl Libre',serif; padding:8px 22px; transition:all .5s; white-space:nowrap; }
+#place.show { opacity:1; transform:translate(-50%,0); }
+#toast { position:absolute; top:78px; left:50%; transform:translateX(-50%) scale(.9); opacity:0; padding:10px 20px; font-size:17px; transition:all .35s; max-width:90vw; text-align:center; }
+#toast.show { opacity:1; transform:translateX(-50%) scale(1); }
+#topBtns { position:absolute; top:16px; left:16px; display:flex; gap:8px; pointer-events:auto; }
+.ib { width:44px; height:44px; border-radius:50%; font-size:19px; cursor:pointer; color:#fff; }
+/* Touch controls */
+#touch { display:none; }
+@media (pointer:coarse) {
+  #touch { display:block; }
+  #stick { position:absolute; left:26px; bottom:230px; width:130px; height:130px; border-radius:50%; pointer-events:auto; }
+  #knob { position:absolute; left:40px; top:40px; width:50px; height:50px; border-radius:50%; background:rgba(255,236,190,.7); }
+  .tb { position:absolute; width:78px; height:78px; border-radius:50%; font:800 15px Rubik; color:#fff; pointer-events:auto; }
+  #btnFlap { right:24px; bottom:130px; } #btnBoost { right:112px; bottom:118px; }
+  #gauges { bottom:auto; top:120px; }
+  .keys.desk { display:none; }
+}
+@media (max-width:600px) { #minimap { width:130px; height:130px; } #missions { min-width:0; padding:8px 12px; } #letters { font-size:22px; } #letters span { width:22px; } }
+/* Overlays */
+.overlay { position:fixed; inset:0; display:grid; place-items:center; z-index:30; background:rgba(20,10,4,.45); }
+.card { padding:28px 34px; text-align:center; display:flex; flex-direction:column; gap:14px; align-items:center; max-width:92vw; }
+.card h2 { font:900 42px 'Frank Ruhl Libre',serif; color:var(--gold2); }
+.btn { font:700 18px Rubik; padding:10px 30px; border-radius:40px; border:1px solid var(--line); background:rgba(255,255,255,.12); color:#fff; cursor:pointer; }
+.btn.primary { background:linear-gradient(180deg,#fff0b8,#f2c14e); color:#3a2200; border:0; }
+</style>
+</head>
+<body>
+<div id="game"></div>
+<div id="loading">בונה את ירושלים…</div>
+
+<div id="menu" class="hidden">
+  <h1>יונת ירושלים</h1>
+  <p class="sub">טוסו כיונה מעל העיר העתיקה בשקיעה — אספו את שבע אותיות <b>ירושלים</b> הפזורות ליד המקומות המפורסמים, ועברו במסלול הטבעות סביב החומות.</p>
+  <div id="skins"></div>
+  <button id="play">המריאו ✦</button>
+  <div class="keys glass desk">
+    <kbd>W</kbd><kbd>S</kbd> טיפוס / צלילה &nbsp;·&nbsp; <kbd>A</kbd><kbd>D</kbd> פנייה &nbsp;·&nbsp; <kbd>Shift</kbd> האצה &nbsp;·&nbsp; <kbd>רווח</kbd> משק כנפיים<br>
+    <kbd>C</kbd> מצלמה &nbsp;·&nbsp; גרירת עכבר – הסתכלות &nbsp;·&nbsp; <kbd>M</kbd> שקט &nbsp;·&nbsp; <kbd>P</kbd> עצירה
+  </div>
+  <div id="glbNote">טיפ: גררו קובץ GLB לחלון כדי להחליף את מודל היונה</div>
+</div>
+
+<div id="hud" class="hidden">
+  <div id="missions" class="glass">
+    <div class="t">אספו את אותיות העיר</div>
+    <div id="letters"></div>
+    <div id="race" class="hidden"></div>
+  </div>
+  <div id="place" class="glass"></div>
+  <div id="toast" class="glass"></div>
+  <canvas id="minimap" width="220" height="220"></canvas>
+  <div id="gauges" class="glass">
+    <div class="g"><b id="alt">0</b><small>גובה (מ')</small></div>
+    <div class="g"><b id="spd">0</b><small>קמ"ש</small><div id="stamBox"><div id="stam"></div></div></div>
+  </div>
+  <div id="topBtns"><button id="pauseBtn" class="ib glass">⏸</button><button id="mute" class="ib glass">🔊</button></div>
+  <div id="touch">
+    <div id="stick" class="glass"><div id="knob"></div></div>
+    <button id="btnFlap" class="tb glass">כנפיים</button>
+    <button id="btnBoost" class="tb glass">האצה</button>
+  </div>
+</div>
+
+<div id="pause" class="overlay hidden"><div class="card glass"><h2>הפסקה</h2><button id="resume" class="btn primary">המשך לטוס</button><button id="toMenu" class="btn">לתפריט</button></div></div>
+<div id="win" class="overlay hidden"><div class="card glass">
+  <h2>ירושלים של זהב ✦</h2>
+  <p>אספת את כל שבע האותיות! נפתחה היונה הסודית — <b>יונת הזהב</b>. בחרו בה בתפריט.</p>
+  <button id="keepFlying" class="btn primary">להמשיך לטוס</button>
+</div></div>
+
+<!--GAME_SCRIPT-->
+</body>
+</html>

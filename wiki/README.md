@@ -28,6 +28,7 @@ A persistent, Claude-maintained knowledge base for this repo, following the patt
 | [`claude-spark-pack.md`](claude-spark-pack.md) | [`claude-spark-pack/`](../claude-spark-pack) |
 | [`effects-yuv-ai.md`](effects-yuv-ai.md) | [`effects-yuv-ai/`](../effects-yuv-ai) |
 | [`gods-eye-view.md`](gods-eye-view.md) | [`gods-eye-view/`](../gods-eye-view) |
+| [`jerusalem-dove.md`](jerusalem-dove.md) | [`jerusalem-dove/`](../jerusalem-dove) |
 | [`logan-cli.md`](logan-cli.md) | [`logan-cli/`](../logan-cli) |
 | [`nano-banana-ui.md`](nano-banana-ui.md) | [`nano-banana-ui/`](../nano-banana-ui) |
 | [`obsidian-course.md`](obsidian-course.md) | [`obsidian-course/`](../obsidian-course) |
