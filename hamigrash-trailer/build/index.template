@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="he" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>ערוץ המגרש · טריילר</title>
+    <script src="assets/vendor/gsap.min.js"></script>
+    <style>
+/*FONTS*/
+      :root {
+        --court: #22507a;
+        --court-deep: #1b4366;
+        --court-glow: #2f6a9c;
+        --line: #f2f4ee;
+        --line-soft: rgba(242, 244, 238, 0.78);
+        --ball: #d8eb4a;
+        --ink: #0d1e2e;
+        --apron: #2c6a4f;
+        --display: "Karantina", "League Gothic", sans-serif;
+        --body: "IBM Plex Sans Hebrew", "Montserrat", sans-serif;
+        --mono: "IBM Plex Mono", "JetBrains Mono", monospace;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--ink); }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: var(--body); color: var(--line); direction: rtl; }
+      bdi { unicode-bidi: isolate; }
+
+      /* Scenes (catalog scene template: scene 1 visible, 2+ revealed by GSAP) */
+      .scene { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: hidden; background: var(--court); }
+      #s1 { z-index: 1; }
+      #s2, #s3, #s4, #s5, #s6 { opacity: 0; }
+      #s2 { z-index: 2; } #s3 { z-index: 3; } #s4 { z-index: 4; } #s5 { z-index: 5; } #s6 { z-index: 6; }
+
+      /* Shared background treatment: glow + ghost type + faint court paint */
+      .glow { position: absolute; width: 1400px; height: 1400px; left: -160px; top: 260px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(47, 106, 156, 0.95) 0%, rgba(34, 80, 122, 0) 68%); }
+      .ghost { position: absolute; font-family: var(--display); font-weight: 700; font-size: 520px; line-height: 0.8;
+        color: rgba(242, 244, 238, 0.13); white-space: nowrap; }
+      .paint { position: absolute; inset: 0; width: 1080px; height: 1920px; }
+      .paint .p { fill: none; stroke: rgba(242, 244, 238, 0.22); stroke-width: 5; }
+
+      /* Headline stack pieces */
+      .eyebrow { font-family: var(--body); font-weight: 600; font-size: 44px; color: var(--ball); letter-spacing: 0.02em; }
+      .display { font-family: var(--display); font-weight: 700; line-height: 0.86; }
+      .soft { color: var(--line-soft); }
+
+      /* ---------- Scene 1: cold open ---------- */
+      #s1 .court { position: absolute; inset: 0; width: 1080px; height: 1920px; }
+      #s1 .court .ln { fill: none; stroke: var(--line); stroke-width: 7; stroke-linecap: square; }
+      #s1-center { position: absolute; left: 0; top: 700px; width: 1080px; height: 460px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+      #s1-hello { display: block; padding: 0 22px; background: var(--court); font-size: 50px; font-weight: 600; margin-bottom: 18px; }
+      #s1-title { display: flex; gap: 0.22em; padding: 0 26px; background: var(--court); font-size: 172px; }
+      #s1-title .w { display: block; }
+      #s1-sub { display: block; margin-top: 26px; padding: 6px 22px; background: var(--court); font-size: 40px; max-width: 860px; text-align: center; }
+      #s1-chip { position: absolute; top: 1382px; left: 0; width: 1080px; display: flex; justify-content: center; }
+      #s1-chip span { display: block; background: var(--ball); color: var(--ink); font-weight: 600; font-size: 38px; padding: 10px 30px; }
+
+      /* ---------- Monitor (scenes 2 and 3) ---------- */
+      .monitor { position: absolute; left: 60px; width: 960px; height: 600px; border: 8px solid var(--line); background: var(--ink); overflow: hidden; }
+      .monitor .cam { position: absolute; inset: 0; width: 100%; height: 100%; }
+      .monitor img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+      .monitor .tag { position: absolute; top: 18px; left: 18px; font-family: var(--mono); font-weight: 700; font-size: 26px; color: var(--ink);
+        background: var(--ball); padding: 4px 12px; direction: ltr; }
+      .chip { display: inline-block; background: var(--ball); color: var(--ink); font-weight: 600; font-size: 40px; padding: 8px 26px; }
+
+      /* ---------- Scene 2: main event ---------- */
+      #s2-chip { position: absolute; top: 300px; right: 108px; }
+      #s2-mon { top: 390px; }
+      #s2-title { position: absolute; top: 1030px; right: 100px; width: 880px; font-size: 196px; text-align: right; transform-origin: 100% 50%; }
+      #s2-stats { position: absolute; top: 1262px; left: 108px; width: 864px; display: grid; grid-template-columns: repeat(3, 1fr);
+        border-top: 6px solid var(--line); border-bottom: 6px solid var(--line); }
+      #s2-stats .st { padding: 22px 16px 24px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+      #s2-stats .st + .st { border-right: 6px solid var(--line); }
+      #s2-stats b { font-family: var(--mono); font-weight: 700; font-size: 108px; line-height: 1; color: var(--ball); font-variant-numeric: tabular-nums; }
+      #s2-stats span { font-size: 34px; font-weight: 600; text-align: center; }
+
+      /* ---------- Scene 3: tonight's board (fixed anchor) ---------- */
+      #s3-head { position: absolute; top: 292px; right: 108px; left: 108px; display: flex; align-items: flex-end; justify-content: space-between; }
+      #s3-head h2 { font-size: 150px; }
+      #s3-count { font-family: var(--mono); font-weight: 700; font-size: 60px; color: var(--ball); direction: ltr; margin-bottom: 18px; }
+      #s3-mon { top: 470px; }
+      #s3-mon img { opacity: 0; }
+      #s3-mon img.first { opacity: 1; }
+      #s3-lt { position: absolute; top: 1118px; left: 60px; width: 960px; height: 250px; background: var(--ink); display: flex; }
+      #s3-lt .flag { width: 88px; background: var(--ball); }
+      #s3-lt .slot { position: relative; flex: 1; }
+      #s3-lt .label { position: absolute; top: 24px; right: 36px; font-size: 34px; font-weight: 600; color: var(--ball); }
+      #s3-lt .state { position: absolute; top: 70px; right: 36px; left: 30px; opacity: 0; }
+      #s3-lt .state.first { opacity: 1; }
+      #s3-lt .state .nm { display: block; font-family: var(--display); font-weight: 700; font-size: 118px; line-height: 0.9; transform-origin: 100% 50%; }
+      #s3-lt .state .ds { display: block; margin-top: 6px; font-size: 38px; color: var(--line-soft); }
+
+      /* ---------- Scene 4: replays ---------- */
+      #s4 { background: var(--ink); }
+      #s4 .shot { position: absolute; inset: 0; width: 1080px; height: 1920px; opacity: 0; }
+      #s4 .shot.first { opacity: 1; }
+      #s4 .shot img { width: 1080px; height: 1920px; object-fit: cover; display: block; }
+      #s4-shade { position: absolute; left: 0; top: 1180px; width: 1080px; height: 740px;
+        background: linear-gradient(to bottom, rgba(13, 30, 46, 0) 0%, rgba(13, 30, 46, 0.9) 45%, rgba(13, 30, 46, 0.96) 100%); }
+      #s4-bug { position: absolute; top: 300px; right: 108px; display: flex; align-items: center; gap: 16px; background: var(--ball); color: var(--ink);
+        font-weight: 600; font-size: 42px; padding: 10px 26px 10px 22px; }
+      #s4-bug svg { width: 46px; height: 46px; display: block; }
+      #s4-flash { position: absolute; inset: 0; background: var(--line); opacity: 0; }
+      #s4-lt { position: absolute; top: 1330px; right: 108px; left: 108px; height: 230px; }
+      #s4-lt .state { position: absolute; inset: 0; opacity: 0; }
+      #s4-lt .state.first { opacity: 1; }
+      #s4-lt .nm { display: block; font-family: var(--display); font-weight: 700; font-size: 150px; line-height: 0.88; }
+      #s4-lt .ds { display: block; margin-top: 8px; font-size: 40px; font-weight: 600; }
+
+      /* ---------- Scene 5: league table ---------- */
+      #s5-head { position: absolute; top: 262px; right: 108px; left: 108px; }
+      #s5-head h2 { font-size: 150px; }
+      #s5-head p { margin-top: 10px; font-size: 36px; }
+      #s5-table { position: absolute; top: 540px; left: 108px; width: 864px; }
+      #s5-table .row { display: grid; grid-template-columns: 1fr 190px 150px; align-items: center; height: 88px; padding: 0 28px; }
+      #s5-table .row.h { height: 64px; background: var(--ink); font-size: 30px; font-weight: 600; color: var(--ball); }
+      #s5-table .row.r { font-size: 44px; font-weight: 600; background: var(--court-deep); }
+      #s5-table .row.r:nth-child(odd) { background: #1f4a70; }
+      #s5-table .num { font-family: var(--mono); font-weight: 700; font-size: 46px; text-align: center; font-variant-numeric: tabular-nums; direction: ltr; }
+      #s5-table .row.h .num { font-family: var(--body); font-size: 30px; font-weight: 600; }
+      #s5-tools { position: absolute; top: 1266px; left: 108px; width: 864px; }
+      #s5-tools p { font-size: 36px; font-weight: 600; color: var(--ball); margin-bottom: 18px; }
+      #s5-tools .chips { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      #s5-tools .chips span { display: block; border: 4px solid var(--line); padding: 14px 20px; font-size: 38px; font-weight: 600; text-align: center; }
+
+      /* ---------- Scene 6: final score ---------- */
+      #s6 .court { position: absolute; inset: 0; width: 1080px; height: 1920px; }
+      #s6 .court .ln { fill: none; stroke: rgba(242, 244, 238, 0.4); stroke-width: 7; }
+      #s6-kicker { position: absolute; top: 420px; left: 0; width: 1080px; text-align: center; }
+      #s6-board { position: absolute; top: 500px; left: 108px; width: 864px; height: 380px; background: var(--ink); border: 6px solid var(--line);
+        display: grid; grid-template-columns: repeat(3, 1fr); }
+      #s6-board .cell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+      #s6-board .cell + .cell { border-right: 6px solid var(--line); }
+      #s6-board b { display: inline-block; width: 150px; text-align: center; font-family: var(--mono); font-weight: 700; font-size: 176px; line-height: 1;
+        color: var(--ball); font-variant-numeric: tabular-nums; }
+      #s6-board span { font-size: 40px; font-weight: 600; }
+      #s6-title { position: absolute; top: 1010px; left: 0; width: 1080px; display: flex; justify-content: center; gap: 0.2em; font-size: 186px; }
+      #s6-title .w { display: block; }
+      #s6-tag { position: absolute; top: 1238px; left: 0; width: 1080px; text-align: center; font-size: 46px; font-weight: 600; }
+
+      /* ---------- Broadcast chrome (always on top) ---------- */
+      #chrome { position: absolute; inset: 0; z-index: 60; pointer-events: none; }
+      #bug { position: absolute; top: 196px; right: 108px; display: flex; align-items: center; gap: 18px; }
+      #live { display: flex; align-items: center; gap: 12px; background: var(--ball); color: var(--ink); font-weight: 600; font-size: 32px; padding: 6px 20px 6px 18px; }
+      #live i { display: block; width: 18px; height: 18px; border-radius: 50%; background: var(--ink); }
+      #chan { font-family: var(--display); font-weight: 700; font-size: 60px; line-height: 1; }
+      #clock { position: absolute; top: 200px; left: 108px; font-family: var(--mono); font-weight: 700; font-size: 34px; background: var(--ink);
+        padding: 6px 16px; direction: ltr; font-variant-numeric: tabular-nums; }
+      #ticker { position: absolute; left: 0; top: 1600px; width: 1080px; height: 84px; background: var(--ink); border-top: 5px solid var(--ball); overflow: hidden; }
+      #tick-tab { position: absolute; right: 108px; top: 1542px; height: 58px; padding: 0 22px; background: var(--ball); color: var(--ink);
+        font-family: var(--display); font-weight: 700; font-size: 54px; line-height: 58px; }
+      #ticker .viewport { position: absolute; left: 0; top: 0; width: 1080px; height: 79px; overflow: hidden; direction: ltr; }
+      #track { position: absolute; left: 0; top: 0; height: 79px; display: flex; width: max-content; }
+      #track .copy { direction: rtl; white-space: nowrap; font-size: 36px; font-weight: 600; line-height: 79px; padding-left: 12px; }
+      #track .copy em { font-style: normal; color: var(--ball); padding: 0 18px; }
+
+      /* ---------- Transition blocks + end fade ---------- */
+      .wipe { position: absolute; top: 0; left: 1080px; width: 1080px; height: 1920px; z-index: 40; }
+      #wipe-a { background: var(--ball); }
+      #wipe-b { background: var(--ink); }
+      #endfade { position: absolute; inset: 0; z-index: 80; background: var(--ink); opacity: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="30" data-width="1080" data-height="1920">
+
+      <!-- Scene 1: cold open -->
+      <div class="scene" id="s1">
+        <div class="glow" data-layout-ignore id="s1-glow"></div>
+        <div class="ghost" data-layout-ignore aria-hidden="true" id="s1-ghost" style="top: 1250px; right: -60px;">שידור</div>
+        <svg class="court" viewBox="0 0 1080 1920">
+          <rect class="ln" id="c-bound" x="84" y="330" width="912" height="1200" />
+          <path class="ln" id="c-half" d="M 84 930 L 996 930" />
+          <circle class="ln" id="c-circle" cx="540" cy="930" r="250" />
+          <rect class="ln" id="c-key-top" x="360" y="330" width="360" height="230" />
+          <rect class="ln" id="c-key-bot" x="360" y="1300" width="360" height="230" />
+          <path class="ln" id="c-arc-top" d="M 360 560 A 180 180 0 0 0 720 560" />
+          <path class="ln" id="c-arc-bot" d="M 360 1300 A 180 180 0 0 1 720 1300" />
+        </svg>
+        <div id="s1-center">
+          <span id="s1-hello" class="soft">ערב טוב,</span>
+          <h1 id="s1-title" class="display"><span class="w">אנחנו</span><span class="w">על</span><span class="w">המגרש</span></h1>
+          <span id="s1-sub">כל המשחקים, הקורסים והכלים של שימי</span>
+        </div>
+        <div id="s1-chip"><span>שידור מיוחד</span></div>
+      </div>
+
+      <!-- Scene 2: main event -->
+      <div class="scene" id="s2">
+        <div class="glow" data-layout-ignore id="s2-glow" style="top: 120px;"></div>
+        <div class="ghost" data-layout-ignore aria-hidden="true" id="s2-ghost" style="top: 1480px; left: -40px;">ראלי</div>
+        <div id="s2-chip" class="chip">המשחק המרכזי של הערב</div>
+        <div class="monitor" id="s2-mon">
+          <div class="cam" id="s2-cam" data-layout-allow-overflow><img src="assets/shots/shimotron-race.jpg" alt="" /></div>
+          <span class="tag">CAM 1</span>
+        </div>
+        <h2 id="s2-title" class="display">שימוטרון ראלי</h2>
+        <div id="s2-stats">
+          <div class="st"><b>7</b><span>איים בים אחד</span></div>
+          <div class="st"><b>6</b><span>סוגי מרוצים</span></div>
+          <div class="st"><b>6</b><span>סוגי מכוניות</span></div>
+        </div>
+      </div>
+
+      <!-- Scene 3: tonight's board -->
+      <div class="scene" id="s3">
+        <div class="glow" data-layout-ignore id="s3-glow" style="top: 600px; left: -300px;"></div>
+        <div id="s3-head"><h2 class="display">הלוח של הערב</h2><span id="s3-count">1/4</span></div>
+        <div class="monitor" id="s3-mon">
+          <img class="first" id="s3-i0" src="assets/shots/chess.jpg" alt="" />
+          <img id="s3-i1" src="assets/shots/reversi.jpg" alt="" />
+          <img id="s3-i2" src="assets/shots/go.jpg" alt="" />
+          <img id="s3-i3" src="assets/shots/generals.jpg" alt="" />
+          <span class="tag">CAM 2</span>
+        </div>
+        <div id="s3-lt">
+          <div class="slot">
+            <span class="label">עכשיו על המגרש</span>
+            <div class="state first" id="s3-t0"><span class="nm">שחמט</span><span class="ds">נגד המחשב או נגד חבר</span></div>
+            <div class="state" id="s3-t1"><span class="nm">רברסי</span><span class="ds">5 רמות קושי למחשב</span></div>
+            <div class="state" id="s3-t2"><span class="nm">גו</span><span class="ds">לוחות 9×9 עד 19×19</span></div>
+            <div class="state" id="s3-t3"><span class="nm">ג׳נרלים</span><span class="ds">כיבוש שטחים עם ערפל קרב</span></div>
+          </div>
+          <div class="flag"></div>
+        </div>
+      </div>
+
+      <!-- Scene 4: replays -->
+      <div class="scene" id="s4">
+        <div class="shot first" id="s4-i0" data-layout-allow-overflow><img src="assets/shots/bowling-v.jpg" alt="" /></div>
+        <div class="shot" id="s4-i1" data-layout-allow-overflow><img src="assets/shots/snake-v.jpg" alt="" /></div>
+        <div class="shot" id="s4-i2" data-layout-allow-overflow><img src="assets/shots/abyss-v.jpg" alt="" /></div>
+        <div class="shot" id="s4-i3" data-layout-allow-overflow><img src="assets/shots/skyhawk-v.jpg" alt="" /></div>
+        <div id="s4-shade"></div>
+        <div id="s4-flash" data-layout-ignore></div>
+        <div id="s4-bug">
+          <svg viewBox="0 0 46 46"><g id="s4-spin" style="transform-origin: 23px 23px;"><path d="M 23 6 A 17 17 0 1 1 7.5 16" fill="none" stroke="#0d1e2e" stroke-width="6" /><path d="M 2 9 L 12 20 L 16 6 Z" fill="#0d1e2e" /></g></svg>
+          <span>שידור חוזר</span>
+        </div>
+        <div id="s4-lt">
+          <div class="state first" id="s4-t0"><span class="nm">סטרייק ליין</span><span class="ds">באולינג עם פיזיקה של 10 פינים</span></div>
+          <div class="state" id="s4-t1"><span class="nm">נחש ניאון</span><span class="ds">נחש בתלת־ממד, עם זוהר וצלילים</span></div>
+          <div class="state" id="s4-t2"><span class="nm"><bdi>ABYSS</bdi></span><span class="ds">צלילה עד מעמקי צ׳לנג׳ר</span></div>
+          <div class="state" id="s4-t3"><span class="nm"><bdi>SkyHawk</bdi></span><span class="ds">טיסת מסוק מסן פרנסיסקו ללונדון</span></div>
+        </div>
+      </div>
+
+      <!-- Scene 5: league table -->
+      <div class="scene" id="s5">
+        <div class="glow" data-layout-ignore id="s5-glow" style="top: 300px; left: -420px;"></div>
+        <div class="ghost" data-layout-ignore aria-hidden="true" id="s5-ghost" style="top: 1480px; right: -30px;">ליגה</div>
+        <div id="s5-head"><h2 class="display">טבלת הקורסים</h2><p class="soft">כל קורס: 3 שלבים, בוחנים, מבחן מסכם ותעודה</p></div>
+        <div id="s5-table">
+          <div class="row h"><span>קורס</span><span class="num">שיעורים</span><span class="num">שלבים</span></div>
+          <div class="row r"><span><bdi>VS Code</bdi></span><span class="num">22</span><span class="num">3</span></div>
+          <div class="row r"><span><bdi>PowerPoint</bdi></span><span class="num">22</span><span class="num">3</span></div>
+          <div class="row r"><span><bdi>Canva</bdi></span><span class="num">22</span><span class="num">3</span></div>
+          <div class="row r"><span><bdi>Excel</bdi></span><span class="num">21</span><span class="num">3</span></div>
+          <div class="row r"><span><bdi>Gmail</bdi></span><span class="num">21</span><span class="num">3</span></div>
+          <div class="row r"><span><bdi>Windows</bdi></span><span class="num">21</span><span class="num">3</span></div>
+          <div class="row r"><span><bdi>Obsidian</bdi></span><span class="num">21</span><span class="num">3</span></div>
+        </div>
+        <div id="s5-tools">
+          <p>ועל הספסל, 4 כלים:</p>
+          <div class="chips"><span>עורך שימוטרון</span><span>גיטרה <bdi>FX</bdi></span><span>מנוע ניצוצות</span><span>מצגת עם מצב עריכה</span></div>
+        </div>
+      </div>
+
+      <!-- Scene 6: final score -->
+      <div class="scene" id="s6">
+        <div class="glow" data-layout-ignore id="s6-glow" style="top: 420px;"></div>
+        <svg class="court" viewBox="0 0 1080 1920">
+          <circle class="ln" id="f-circle" cx="540" cy="1110" r="330" />
+          <path class="ln" id="f-half" d="M 0 1110 L 1080 1110" />
+        </svg>
+        <div id="s6-kicker" class="eyebrow">תוצאת הערב</div>
+        <div id="s6-board">
+          <div class="cell"><b id="n-games">0</b><span>משחקים</span></div>
+          <div class="cell"><b id="n-courses">0</b><span>קורסים</span></div>
+          <div class="cell"><b id="n-tools">0</b><span>כלים</span></div>
+        </div>
+        <h2 id="s6-title" class="display"><span class="w">המגרש</span><span class="w">של</span><span class="w">שימי</span></h2>
+        <div id="s6-tag">בוחרים כרטיס, ומשחקים.</div>
+      </div>
+
+      <!-- Broadcast chrome -->
+      <div id="chrome">
+        <div id="bug"><span id="live"><i></i>שידור חי</span><span id="chan" class="display">ערוץ המגרש</span></div>
+        <div id="clock">20:00:00</div>
+        <div id="tick-tab">מבזק</div>
+        <div id="ticker">
+          <div class="viewport">
+            <div id="track" data-layout-allow-overflow>
+              <div class="copy">9 משחקים<em>·</em>7 קורסים<em>·</em>4 כלים<em>·</em>הכול נפתח ישר מהדפדפן<em>·</em>שימוטרון ראלי: 7 איים במשחק אחד<em>·</em><bdi>SkyHawk</bdi>: מסן פרנסיסקו ללונדון<em>·</em><bdi>ABYSS</bdi>: עד מעמקי צ׳לנג׳ר<em>·</em></div>
+              <div class="copy">9 משחקים<em>·</em>7 קורסים<em>·</em>4 כלים<em>·</em>הכול נפתח ישר מהדפדפן<em>·</em>שימוטרון ראלי: 7 איים במשחק אחד<em>·</em><bdi>SkyHawk</bdi>: מסן פרנסיסקו ללונדון<em>·</em><bdi>ABYSS</bdi>: עד מעמקי צ׳לנג׳ר<em>·</em></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wipe" id="wipe-a" data-layout-ignore></div>
+      <div class="wipe" id="wipe-b" data-layout-ignore></div>
+      <div id="endfade" data-layout-ignore></div>
+
+      <!-- Sound: bundled offline SFX library via media-use -->
+      <audio id="sfx-chime" src=".media/audio/sfx/sfx_004.mp3" data-start="0.45" data-duration="2.5" data-volume="0.45"></audio>
+      <audio id="sfx-wipe-1" src=".media/audio/sfx/sfx_001.mp3" data-start="3.72" data-duration="0.6" data-volume="0.75"></audio>
+      <audio id="sfx-slam-1" src=".media/audio/sfx/sfx_002.mp3" data-start="4.85" data-duration="2.1" data-volume="0.8"></audio>
+      <audio id="sfx-wipe-2" src=".media/audio/sfx/sfx_001.mp3" data-start="9.32" data-duration="0.6" data-volume="0.75"></audio>
+      <audio id="sfx-wipe-3" src=".media/audio/sfx/sfx_001.mp3" data-start="15.12" data-duration="0.6" data-volume="0.75"></audio>
+      <audio id="sfx-riser" src=".media/audio/sfx/sfx_003.mp3" data-start="17.32" data-duration="10" data-volume="0.4"></audio>
+      <audio id="sfx-wipe-4" src=".media/audio/sfx/sfx_001.mp3" data-start="20.72" data-duration="0.6" data-volume="0.75"></audio>
+      <audio id="sfx-wipe-5" src=".media/audio/sfx/sfx_001.mp3" data-start="25.92" data-duration="0.6" data-volume="0.75"></audio>
+      <audio id="sfx-slam-2" src=".media/audio/sfx/sfx_002.mp3" data-start="27.35" data-duration="2.1" data-volume="0.85"></audio>
+    </div>
+
+    <script>
+      (function () {
+        const tl = gsap.timeline({ paused: true });
+        const DUR = 30;
+
+        // Scene windows and handoffs (T = transition start)
+        const T1 = 3.75, T2 = 9.35, T3 = 15.15, T4 = 20.75, T5 = 25.95;
+
+        // ---- Staggered colour blocks (css-cover.md), right-to-left sweep for RTL ----
+        function blocks(T, from, to) {
+          const first = T === T1;
+          tl.fromTo("#wipe-a", { x: 0 }, { x: -1080, duration: 0.25, ease: "power3.inOut", immediateRender: first }, T);
+          tl.fromTo("#wipe-b", { x: 0 }, { x: -1080, duration: 0.25, ease: "power3.inOut", immediateRender: first }, T + 0.06);
+          tl.set(from, { opacity: 0 }, T + 0.22);
+          tl.set(to, { opacity: 1 }, T + 0.22);
+          tl.to("#wipe-a", { x: -2160, duration: 0.25, ease: "power3.inOut" }, T + 0.28);
+          tl.to("#wipe-b", { x: -2160, duration: 0.25, ease: "power3.inOut" }, T + 0.34);
+        }
+
+        // ---- Chrome: live bug, clock, ticker ----
+        tl.fromTo("#bug", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 0.3);
+        tl.fromTo("#live", { scale: 0.4 }, { scale: 1, duration: 0.5, ease: "back.out(2.2)" }, 0.45);
+        tl.fromTo("#live i", { opacity: 1 }, { opacity: 0.25, duration: 0.5, ease: "sine.inOut", yoyo: true, repeat: Math.max(0, Math.floor((DUR - 1) / 0.5) - 1) }, 1);
+        tl.fromTo("#clock", { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 0.4);
+        const clockEl = document.getElementById("clock");
+        const clk = { s: 0 };
+        tl.to(clk, { s: DUR, duration: DUR, ease: "none", onUpdate: () => {
+          const s = Math.floor(clk.s);
+          clockEl.textContent = "20:00:" + String(s).padStart(2, "0");
+        } }, 0);
+        tl.fromTo("#ticker", { yPercent: 120 }, { yPercent: 0, duration: 0.5, ease: "power3.out" }, 0.6);
+        tl.fromTo("#tick-tab", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "back.out(1.6)" }, 0.85);
+        tl.fromTo("#track", { xPercent: -50 }, { xPercent: 0, duration: DUR, ease: "none" }, 0);
+
+        // ---- Scene 1: cold open (logo-assemble-lockup: outline draws on → wordmark) ----
+        document.querySelectorAll("#s1 .court .ln, #s6 .court .ln").forEach((p) => {
+          const len = p.getTotalLength();
+          p.style.strokeDasharray = String(len);
+          p.style.strokeDashoffset = String(len);
+        });
+        tl.to("#c-bound", { strokeDashoffset: 0, duration: 1.1, ease: "power2.inOut" }, 0.15);
+        tl.to("#c-half", { strokeDashoffset: 0, duration: 0.7, ease: "power2.out" }, 0.35);
+        tl.to("#c-circle", { strokeDashoffset: 0, duration: 0.9, ease: "power2.out" }, 0.55);
+        tl.to(["#c-key-top", "#c-key-bot"], { strokeDashoffset: 0, duration: 0.7, ease: "power2.out" }, 0.75);
+        tl.to(["#c-arc-top", "#c-arc-bot"], { strokeDashoffset: 0, duration: 0.6, ease: "power2.out" }, 0.95);
+        tl.fromTo("#s1-hello", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 1.0);
+        tl.fromTo("#s1-title .w", { opacity: 0, y: 90 }, { opacity: 1, y: 0, duration: 0.55, ease: "expo.out", stagger: 0.12 }, 1.15);
+        tl.fromTo("#s1-sub", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 1.85);
+        tl.fromTo("#s1-chip span", { scale: 0 }, { scale: 1, duration: 0.5, ease: "back.out(1.8)" }, 2.25);
+        tl.fromTo("#s1-glow", { scale: 0.9, opacity: 0.6 }, { scale: 1.08, opacity: 1, duration: 3.6, ease: "sine.inOut" }, 0);
+        tl.fromTo("#s1-ghost", { x: 0 }, { x: -90, duration: 3.9, ease: "none" }, 0);
+
+        // ---- T1 → Scene 2: main event (device-surface-showcase: held monitor + push) ----
+        blocks(T1, "#s1", "#s2");
+        const S2 = T1 + 0.22;
+        tl.fromTo("#s2-chip", { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, S2 + 0.08);
+        tl.fromTo("#s2-mon", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.6, ease: "power3.out" }, S2 + 0.12);
+        tl.fromTo("#s2-cam", { scale: 1 }, { scale: 1.14, duration: T2 - S2, ease: "none" }, S2);
+        tl.fromTo("#s2-title", { opacity: 0, scale: 1.35 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power4.out" }, 4.85);
+        tl.fromTo("#s2-stats", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power1.out" }, 5.2);
+        tl.fromTo("#s2-stats .st", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.5, ease: "back.out(1.4)", stagger: 0.12 }, 5.25);
+        tl.fromTo("#s2-glow", { scale: 1, x: 0 }, { scale: 1.1, x: 60, duration: T2 - S2, ease: "sine.inOut" }, S2);
+        tl.fromTo("#s2-ghost", { x: 0 }, { x: 120, duration: T2 - S2, ease: "none" }, S2);
+
+        // ---- T2 → Scene 3: tonight's board (fixed-anchor-cycle, steady stepping) ----
+        blocks(T2, "#s2", "#s3");
+        const S3 = T2 + 0.22;
+        tl.fromTo("#s3-head", { opacity: 0, y: -30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, S3 + 0.05);
+        tl.fromTo("#s3-mon", { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, S3 + 0.1);
+        tl.fromTo("#s3-lt", { opacity: 0, x: 80 }, { opacity: 1, x: 0, duration: 0.5, ease: "power4.out" }, S3 + 0.2);
+        const counter = document.getElementById("s3-count");
+        const swaps = [11.0, 12.4, 13.8];
+        swaps.forEach((t, i) => {
+          tl.set("#s3-i" + i, { opacity: 0 }, t);
+          tl.set("#s3-i" + (i + 1), { opacity: 1 }, t);
+          tl.set("#s3-t" + i, { opacity: 0 }, t);
+          tl.set("#s3-t" + (i + 1), { opacity: 1 }, t);
+          tl.fromTo("#s3-t" + (i + 1) + " .nm", { scale: 1.16 }, { scale: 1, duration: 0.3, ease: "back.out(2)", immediateRender: false }, t);
+          tl.set(counter, { textContent: (i + 2) + "/4" }, t);
+        });
+        tl.fromTo("#s3-glow", { scale: 1 }, { scale: 1.12, duration: T3 - S3, ease: "sine.inOut" }, S3);
+
+        // ---- T3 → Scene 4: replays (vertical push, accent transition) ----
+        tl.to("#s3", { y: -1920, duration: 0.5, ease: "power3.inOut" }, T3);
+        tl.fromTo("#s4", { y: 1920, opacity: 1 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.inOut" }, T3);
+        tl.set("#s3", { opacity: 0 }, T3 + 0.5);
+        const S4 = T3 + 0.5;
+        const cuts = [16.55, 17.95, 19.35];
+        tl.fromTo("#s4-bug", { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, T3 + 0.35);
+        tl.fromTo("#s4-spin", { rotation: 0 }, { rotation: -720, duration: T4 - T3, ease: "none" }, T3);
+        tl.fromTo("#s4-lt", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, T3 + 0.45);
+        const starts = [T3, ...cuts];
+        starts.forEach((t, i) => {
+          const end = i < 3 ? cuts[i] : T4;
+          tl.fromTo("#s4-i" + i + " img", { scale: 1.0 }, { scale: 1.08, duration: end - t, ease: "none" }, t);
+        });
+        cuts.forEach((t, i) => {
+          tl.fromTo("#s4-flash", { opacity: 0 }, { opacity: 0.85, duration: 0.06, ease: "none", immediateRender: false }, t - 0.06);
+          tl.set("#s4-i" + i, { opacity: 0 }, t);
+          tl.set("#s4-i" + (i + 1), { opacity: 1 }, t);
+          tl.set("#s4-t" + i, { opacity: 0 }, t);
+          tl.set("#s4-t" + (i + 1), { opacity: 1 }, t);
+          tl.to("#s4-flash", { opacity: 0, duration: 0.18, ease: "power2.out" }, t);
+          tl.fromTo("#s4-t" + (i + 1) + " .nm", { x: 70, opacity: 0 }, { x: 0, opacity: 1, duration: 0.35, ease: "power4.out", immediateRender: false }, t + 0.02);
+        });
+
+        // ---- T4 → Scene 5: league table (grid-card-assemble, vertical list cascade) ----
+        blocks(T4, "#s4", "#s5");
+        const S5 = T4 + 0.22;
+        tl.fromTo("#s5-head h2", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.5, ease: "expo.out" }, S5 + 0.05);
+        tl.fromTo("#s5-head p", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power1.out" }, S5 + 0.3);
+        tl.fromTo("#s5-table .row.h", { opacity: 0, scaleX: 0.6 }, { opacity: 1, scaleX: 1, duration: 0.4, ease: "power3.out" }, S5 + 0.35);
+        tl.fromTo("#s5-table .row.r", { opacity: 0, x: 120 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out", stagger: 0.07 }, S5 + 0.5);
+        tl.fromTo("#s5-tools p", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, 23.0);
+        tl.fromTo("#s5-tools .chips span", { scale: 0 }, { scale: 1, duration: 0.45, ease: "back.out(1.7)", stagger: 0.1 }, 23.15);
+        tl.fromTo("#s5-glow", { scale: 1 }, { scale: 1.12, duration: T5 - S5, ease: "sine.inOut" }, S5);
+        tl.fromTo("#s5-ghost", { x: 0 }, { x: -100, duration: T5 - S5, ease: "none" }, S5);
+
+        // ---- T5 → Scene 6: final score (dataviz-countup + titlecard-reveal) ----
+        blocks(T5, "#s5", "#s6");
+        const S6 = T5 + 0.22;
+        tl.to("#f-half", { strokeDashoffset: 0, duration: 0.7, ease: "power2.out" }, S6 + 0.05);
+        tl.to("#f-circle", { strokeDashoffset: 0, duration: 0.9, ease: "power2.out" }, S6 + 0.15);
+        tl.fromTo("#s6-kicker", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, S6 + 0.05);
+        tl.fromTo("#s6-board", { opacity: 0, scaleY: 0.6 }, { opacity: 1, scaleY: 1, duration: 0.45, ease: "power3.out" }, S6 + 0.12);
+        const COUNT_AT = S6 + 0.3, COUNT_DUR = 0.9;
+        [["n-games", 9], ["n-courses", 7], ["n-tools", 4]].forEach(([id, target]) => {
+          const el = document.getElementById(id);
+          const st = { v: 0 };
+          tl.to(st, { v: target, duration: COUNT_DUR, ease: "power2.out", onUpdate: () => { el.textContent = String(Math.round(st.v)); } }, COUNT_AT);
+          tl.fromTo(el, { scale: 0.45 }, { scale: 1, duration: COUNT_DUR, ease: "power2.out" }, COUNT_AT);
+        });
+        tl.fromTo("#s6-title .w", { opacity: 0, y: 80 }, { opacity: 1, y: 0, duration: 0.55, ease: "expo.out", stagger: 0.12 }, 27.45);
+        tl.fromTo("#s6-tag", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 27.95);
+        tl.fromTo("#s6-glow", { scale: 0.95, opacity: 0.7 }, { scale: 1.1, opacity: 1, duration: DUR - S6, ease: "sine.inOut" }, S6);
+        tl.fromTo("#endfade", { opacity: 0 }, { opacity: 1, duration: 0.55, ease: "power1.in" }, 29.4);
+
+        window.__timelines["main"] = tl;
+      })();
+    </script>
+  </body>
+</html>

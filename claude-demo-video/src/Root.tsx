@@ -6,6 +6,7 @@ import { Scene2Coding } from "./scenes/Scene2Coding";
 import { Scene3Reasoning } from "./scenes/Scene3Reasoning";
 import { Scene4Tools } from "./scenes/Scene4Tools";
 import { Scene5Outro } from "./scenes/Scene5Outro";
+import { LogoIntro } from "./kiln/LogoIntro";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -60,6 +61,16 @@ export const RemotionRoot: React.FC = () => {
         width={1920}
         height={1080}
       />
+      <Folder name="KILN-Brand">
+        <Composition
+          id="KILN-LogoIntro"
+          component={LogoIntro}
+          durationInFrames={90}
+          fps={30}
+          width={1920}
+          height={1080}
+        />
+      </Folder>
     </>
   );
 };

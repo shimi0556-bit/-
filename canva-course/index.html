@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>קורס Canva מלא — ממתחילים ועד מקצוענים</title>
+<style>
+  :root{
+    --brand:#8B3DFF;
+    --brand-dark:#6B1FD6;
+    --brand-light:#F3E8FF;
+    --blue:#1A73E8;
+    --ink:#232323;
+    --muted:#666;
+    --paper:#FAFAFA;
+    --card:#FFFFFF;
+    --border:#E7E1F5;
+    --green:#1E8E3E;
+    --green-bg:#E6F4EA;
+    --red:#C23B22;
+    --red-bg:#FCEAE6;
+    --radius:14px;
+    --sidebar-w:300px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Segoe UI","Heebo","Arial Hebrew","Arial",sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    line-height:1.65;
+  }
+  a{color:var(--blue);}
+  h1,h2,h3,h4{line-height:1.3; margin:0 0 .5em;}
+  ::selection{background:var(--brand-light);}
+
+  /* Layout */
+  .app{display:flex; min-height:100vh;}
+  .sidebar{
+    width:var(--sidebar-w); flex:0 0 var(--sidebar-w);
+    background:#1F1533; color:#EDE7F6;
+    position:sticky; top:0; height:100vh; overflow-y:auto;
+    padding:18px 16px 40px;
+  }
+  .sidebar .brand{
+    display:flex; align-items:center; gap:10px; margin-bottom:16px;
+    padding:4px 2px;
+  }
+  .brand .logo{
+    width:34px;height:34px;border-radius:8px;
+    background:linear-gradient(135deg,var(--brand),#00C4CC);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;color:#fff;font-size:18px;flex:none;
+  }
+  .brand .name{font-weight:700; font-size:15px;}
+  .brand .sub{font-size:11.5px; color:#B3A6CC;}
+
+  .progress-wrap{margin:10px 2px 18px;}
+  .progress-label{display:flex; justify-content:space-between; font-size:12px; color:#C0B4DC; margin-bottom:5px;}
+  .progress-bar{height:8px; background:#332448; border-radius:99px; overflow:hidden;}
+  .progress-fill{height:100%; background:linear-gradient(90deg,var(--brand),#00C4CC); width:0%; transition:width .4s ease;}
+
+  .search{
+    width:100%; padding:8px 10px; border-radius:9px; border:1px solid #3E2C59;
+    background:#2A1D40; color:#EDE7F6; font-size:13px; margin-bottom:14px;
+  }
+  .search::placeholder{color:#8977A8;}
+
+  .nav-group{margin-bottom:6px;}
+  .nav-group > summary{
+    cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px;
+    padding:9px 8px; border-radius:9px; font-weight:700; font-size:13.5px;
+    color:#EDE7F6;
+  }
+  .nav-group > summary::-webkit-details-marker{display:none;}
+  .nav-group > summary:hover{background:#2A1D40;}
+  .nav-group[open] > summary .chev{transform:rotate(90deg);}
+  .chev{transition:transform .15s; font-size:11px; color:#C0B4DC;}
+  .nav-group .badge{
+    margin-inline-start:auto; font-size:10.5px; color:#C0B4DC;
+    background:#2A1D40; padding:1px 7px; border-radius:99px;
+  }
+  .nav-links{list-style:none; margin:2px 0 10px; padding-inline-start:6px; border-inline-start:1px dashed #3E2C59;}
+  .nav-links li{margin:1px 0;}
+  .nav-links a{
+    display:flex; align-items:center; gap:7px; text-decoration:none;
+    color:#D5CBEC; font-size:13px; padding:6px 10px; border-radius:8px;
+  }
+  .nav-links a:hover{background:#2A1D40; color:#fff;}
+  .nav-links a.active{background:var(--brand); color:#fff; font-weight:600;}
+  .nav-links .dot{
+    width:15px;height:15px;border-radius:50%;border:1.5px solid #6E5C8F;flex:none;
+    font-size:10px; display:flex; align-items:center; justify-content:center; color:transparent;
+  }
+  .nav-links a.done .dot{background:var(--green); border-color:var(--green); color:#fff;}
+  .extra-links{margin-top:14px; padding-top:14px; border-top:1px solid #3E2C59;}
+  .extra-links a{
+    display:flex; align-items:center; gap:8px; text-decoration:none; color:#D5CBEC;
+    font-size:13px; padding:7px 10px; border-radius:8px;
+  }
+  .extra-links a:hover{background:#2A1D40; color:#fff;}
+  .extra-links a.active{background:var(--brand); color:#fff;}
+
+  /* Main */
+  .main{flex:1; min-width:0; padding:34px 40px 90px; max-width:900px; margin:0 auto;}
+  .section{display:none; animation:fade .25s ease;}
+  .section.active{display:block;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+
+  .crumb{font-size:12.5px; color:var(--muted); margin-bottom:6px;}
+  .lesson-title{font-size:28px; font-weight:800; margin-bottom:4px;}
+  .lesson-meta{font-size:13px; color:var(--muted); margin-bottom:22px; display:flex; gap:14px; align-items:center;}
+
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+    padding:20px 22px; margin-bottom:18px;
+  }
+  .card h3{font-size:16px; color:var(--brand-dark); margin-bottom:8px;}
+  .content-body p{margin:0 0 12px;}
+  .content-body ul{margin:0 0 12px; padding-inline-start:22px;}
+  .content-body li{margin-bottom:6px;}
+  .content-body strong{color:var(--brand-dark);}
+  code, kbd{
+    background:#F3EFFA; border:1px solid var(--border); border-radius:5px;
+    padding:1px 6px; font-size:.92em; font-family:Consolas,"Courier New",monospace;
+  }
+  kbd{box-shadow:0 1.5px 0 var(--border);}
+
+  .tip-box{
+    background:var(--brand-light); border:1px solid #E0C9FA; border-radius:12px;
+    padding:14px 16px; margin:14px 0; font-size:14px;
+  }
+  .tip-box b{color:var(--brand-dark);}
+  .try-box{
+    background:#E3FAFB; border:1px solid #B9EEF0; border-radius:12px;
+    padding:14px 16px; margin:14px 0; font-size:14px;
+  }
+  .try-box b{color:#0B8A90;}
+
+  .quiz{background:#FDFBFF; border:1.5px dashed #D6BCF5;}
+  .quiz h3{margin-bottom:12px;}
+  .quiz .q{font-weight:600; margin-bottom:10px;}
+  .quiz .opts{display:flex; flex-direction:column; gap:8px;}
+  .quiz button.opt{
+    text-align:right; padding:10px 14px; border-radius:9px; border:1px solid var(--border);
+    background:#fff; cursor:pointer; font-size:14px; font-family:inherit;
+  }
+  .quiz button.opt:hover{border-color:var(--brand);}
+  .quiz button.opt.correct{background:var(--green-bg); border-color:var(--green); color:var(--green);}
+  .quiz button.opt.wrong{background:var(--red-bg); border-color:var(--red); color:var(--red);}
+  .quiz button.opt:disabled{cursor:default;}
+  .quiz .explain{margin-top:10px; font-size:13.5px; color:var(--muted); display:none;}
+  .quiz .explain.show{display:block;}
+
+  .lesson-footer{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    margin-top:28px; padding-top:18px; border-top:1px solid var(--border);
+  }
+  .btn{
+    display:inline-flex; align-items:center; gap:6px; cursor:pointer; border:none;
+    border-radius:10px; padding:10px 16px; font-size:14px; font-weight:600; font-family:inherit;
+    text-decoration:none;
+  }
+  .btn-primary{background:var(--brand); color:#fff;}
+  .btn-primary:hover{background:var(--brand-dark);}
+  .btn-outline{background:#fff; border:1px solid var(--border); color:var(--ink);}
+  .btn-outline:hover{border-color:var(--brand);}
+  .btn-ghost{background:transparent; color:var(--muted); border:none; font-size:13px;}
+  .mark-done{display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--muted); cursor:pointer; user-select:none;}
+  .mark-done input{width:17px; height:17px; accent-color:var(--green); cursor:pointer;}
+
+  .hero{
+    background:linear-gradient(135deg,var(--brand),#00C4CC);
+    color:#fff; border-radius:20px; padding:44px 38px; margin-bottom:26px;
+  }
+  .hero h1{font-size:32px; margin-bottom:10px;}
+  .hero p{font-size:15.5px; max-width:640px; opacity:.95;}
+  .hero .stats{display:flex; gap:26px; margin-top:22px; flex-wrap:wrap;}
+  .hero .stat b{display:block; font-size:22px;}
+  .hero .stat span{font-size:12.5px; opacity:.9;}
+
+  .grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:20px 0;}
+  .grid-2{display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin:20px 0;}
+  .mini-card{
+    background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px;
+    cursor:pointer;
+  }
+  .mini-card:hover{border-color:var(--brand);}
+  .mini-card .n{font-size:12px; color:var(--muted);}
+  .mini-card .t{font-weight:700; font-size:14.5px; margin:3px 0;}
+  .mini-card .d{font-size:12.5px; color:var(--muted);}
+
+  table.cheat{width:100%; border-collapse:collapse; font-size:13.5px; margin-bottom:20px;}
+  table.cheat th, table.cheat td{border:1px solid var(--border); padding:8px 12px; text-align:right;}
+  table.cheat th{background:var(--brand-light); color:var(--brand-dark);}
+  table.cheat tr:nth-child(even){background:#FAFAFA;}
+
+  .cert-box{
+    background:var(--card); border:3px double var(--brand); border-radius:16px;
+    padding:40px; text-align:center; margin-top:10px;
+  }
+  .cert-box h2{font-size:26px; color:var(--brand-dark);}
+  .cert-name{font-size:24px; font-weight:800; margin:18px 0; border-bottom:2px solid var(--border); display:inline-block; padding-bottom:6px; min-width:280px;}
+  .cert-input{padding:10px 14px; border:1px solid var(--border); border-radius:9px; font-size:15px; width:280px; text-align:center; font-family:inherit;}
+
+  .topbar-mobile{display:none;}
+  @media (max-width:900px){
+    .app{flex-direction:column;}
+    .sidebar{
+      position:relative; height:auto; width:100%; flex:none;
+      display:none;
+    }
+    .sidebar.open{display:block;}
+    .topbar-mobile{
+      display:flex; align-items:center; justify-content:space-between;
+      background:#1F1533; color:#fff; padding:12px 16px; position:sticky; top:0; z-index:10;
+    }
+    .topbar-mobile button{background:var(--brand); color:#fff; border:none; border-radius:8px; padding:8px 12px; font-size:13px;}
+    .main{padding:24px 18px 70px;}
+    .grid-3{grid-template-columns:1fr;}
+    .grid-2{grid-template-columns:1fr;}
+    .hero{padding:28px 22px;}
+  }
+  @media print{
+    .sidebar,.topbar-mobile,.lesson-footer,.quiz{display:none !important;}
+    .section{display:block !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar-mobile">
+  <strong>🎨 קורס Canva</strong>
+  <button id="toggleSidebar">☰ תפריט</button>
+</div>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="logo">C</div>
+      <div>
+        <div class="name">קורס Canva מלא</div>
+        <div class="sub">ממתחילים ועד מקצוענים</div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-label"><span>התקדמות</span><span id="progressPct">0%</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <input type="text" class="search" id="searchBox" placeholder="🔍 חיפוש נושא בקורס...">
+
+    <nav id="navContainer"></nav>
+
+    <div class="extra-links">
+      <a href="#intro" data-route="intro">🏠 עמוד הבית</a>
+      <a href="#cheatsheet" data-route="cheatsheet">⌨️ דף קיצורים להדפסה</a>
+      <a href="#final-quiz" data-route="final-quiz">🎯 מבחן מסכם</a>
+      <a href="#certificate" data-route="certificate">🎓 תעודת סיום</a>
+    </div>
+  </aside>
+
+  <main class="main" id="mainContent">
+    <!-- rendered by JS -->
+  </main>
+</div>
+
+<script>
+/* ======================= COURSE DATA ======================= */
+const COURSE = [
+  {
+    id:"m1", title:"שלב 1 · מתחילים", icon:"🟢",
+    lessons:[
+      {
+        id:"m1l1", title:"הכרת הממשק",
+        content:`
+          <p>Canva הוא כלי עיצוב גרפי מבוסס-דפדפן (יש גם אפליקציית דסקטופ/נייד), עם ממשק גרירה-והשלכה שלא דורש ידע מקצועי בעיצוב. אזורי המסך העיקריים בעורך:</p>
+          <ul>
+            <li><strong>סרגל הצד השמאלי</strong> — לשוניות: Design (עיצובים ותבניות), Elements (אלמנטים גרפיים), Text (טקסט), Uploads (קבצים שהעליתם), Brand (ערכת מותג), ועוד.</li>
+            <li><strong>אזור הקנבס (Canvas)</strong> — מרכז המסך, השטח שבו בונים בפועל את העיצוב.</li>
+            <li><strong>סרגל הכלים העליון</strong> — פעולות על אלמנט נבחר (צבע, שכבות, יישור, אנימציה) ופעולות כלליות (File, Share, Download).</li>
+            <li><strong>חלונית העמודים</strong> — בתחתית, מציגה את כל העמודים בפרויקט (רלוונטי לעיצובים מרובי-עמודים כמו מצגות).</li>
+          </ul>
+        `,
+        tip:`אם לחצתם בטעות על אלמנט וקצת "התבלבלתם" — Ctrl+Z (בטל) עובד בכל שלב, בלי הגבלה על מספר הפעולות שאפשר לבטל.`,
+        quiz:{q:"היכן נמצאים האלמנטים הגרפיים (צורות, אייקונים, מדבקות) בעורך?", options:["בלשונית Elements בסרגל הצד השמאלי","רק דרך תפריט File","אין אפשרות כזו ב-Canva"], correct:0, explain:"לשונית Elements בסרגל הצד השמאלי מרכזת חיפוש והוספה של צורות, אייקונים, קווים ומדבקות."}
+      },
+      {
+        id:"m1l2", title:"יצירת עיצוב חדש",
+        content:`
+          <p>בדף הבית לוחצים "Create a design" ובוחרים אחת משתי דרכים:</p>
+          <ul>
+            <li><strong>גודל מותאם אישית (Custom size)</strong> — הזנת רוחב/גובה מדויק בפיקסלים/ס"מ/אינץ' — לפרויקט ייחודי.</li>
+            <li><strong>בחירה מתוך גדלים מוכנים</strong> — לפי סוג פרויקט: Instagram Post, Presentation, A4 Document, Business Card ועוד — כל אחד עם ממדים סטנדרטיים מובנים.</li>
+            <li>אחרי בחירת גודל, אפשר להתחיל מקנבס ריק לגמרי או לבחור אחת מאלפי תבניות (Templates) מוכנות לאותו גודל בדיוק.</li>
+          </ul>
+        `,
+        tip:`למתחילים מומלץ להתחיל מתבנית קיימת ולערוך אותה, ולא מקנבס ריק — קל יותר ללמוד עקרונות עיצוב מתוך משהו שכבר מאוזן.`,
+        quiz:{q:"מה ההבדל בין 'Custom size' לבחירה מגדלים מוכנים?", options:["אין הבדל","Custom size מאפשר הזנת ממדים מדויקים משלכם, הגדלים המוכנים כבר מותאמים לפלטפורמות נפוצות","Custom size זמין רק בגרסת Pro"], correct:1, explain:"Custom size נותן שליטה מלאה על הממדים; הגדלים המוכנים חוסכים זמן כי הם כבר מכוילים לפי דרישות פלטפורמות כמו אינסטגרם או מצגות."}
+      },
+      {
+        id:"m1l3", title:"עבודה עם טקסט",
+        content:`
+          <p>הוספת טקסט — לשונית Text בסרגל הצד, עם שלוש קטגוריות מוכנות: Heading (כותרת), Subheading (כותרת משנה), Body text (טקסט גוף), כל אחת בגודל/משקל שמתאים לתפקידה.</p>
+          <ul>
+            <li>לחיצה כפולה על תיבת טקסט נכנסת למצב עריכה; סימון טקסט חושף סרגל עיצוב: גופן, גודל, צבע, יישור, מרווח שורות.</li>
+            <li><strong>אפקטים לטקסט</strong> — לשונית Effects כשטקסט מסומן: צל, קו מתאר (Outline), ניאון, ועוד — בלחיצה אחת.</li>
+            <li>שינוי גופן דורש רק בחירה מהרשימה הנפתחת — Canva כולל מאות גופנים חינמיים מובנים.</li>
+          </ul>
+        `,
+        tip:`השתמשו בעקביות בלא יותר מ-2-3 גופנים בעיצוב אחד — עודף גופנים שונים גורם לתוצאה "רועשת" ולא מקצועית.`,
+        quiz:{q:"מה מציעות שלוש אפשרויות הטקסט המהירות (Heading/Subheading/Body)?", options:["שלוש שפות שונות","טקסט מעוצב מראש בגודל/משקל מתאים לתפקיד בהיררכיה","שלושה צבעים קבועים"], correct:1, explain:"הן מוסיפות תיבת טקסט מעוצבת מראש בגודל ומשקל שמתאימים לתפקידה (כותרת/כותרת משנה/גוף), כדי לשמור על היררכיה חזותית ברורה."}
+      },
+      {
+        id:"m1l4", title:"עבודה עם תמונות",
+        content:`
+          <p>שלוש דרכים עיקריות להכניס תמונה לעיצוב:</p>
+          <ul>
+            <li><strong>Uploads</strong> — העלאת תמונה מהמחשב, בגרירה ישירה או דרך כפתור Upload.</li>
+            <li><strong>חיפוש תמונות סטוק</strong> — לשונית Photos, מאגר עצום של תמונות (חלקן חינמיות, חלקן דורשות Pro).</li>
+            <li>גרירת תמונה מהצד ישירות לקנבס ממקמת אותה; גרירה לתוך מסגרת/פריים קיים "ממלאת" אותו אוטומטית.</li>
+          </ul>
+          <p>לאחר הוספה: גרירת פינת התמונה משנה גודל, לחיצה כפולה נכנסת למצב חיתוך (Crop) שמאפשר לבחור איזה חלק מהתמונה המקורית יוצג.</p>
+        `,
+        tip:`להחלפת תמונה בעיצוב קיים בלי לשבור את הפריסה — גררו תמונה חדשה בדיוק מעל התמונה הישנה; Canva תציע להחליף אותה במקום.`,
+        quiz:{q:"מה קורה כשגוררים תמונה חדשה בדיוק מעל תמונה קיימת בעיצוב?", options:["התמונה החדשה נמחקת אוטומטית","Canva מציעה להחליף את התמונה הישנה תוך שמירה על המיקום/גודל", "נוצר עותק כפול חופף"], correct:1, explain:"גרירה מעל תמונה קיימת מפעילה זיהוי חכם שמציע החלפה נקייה, בלי לשבש את הפריסה הקיימת."}
+      },
+      {
+        id:"m1l5", title:"אלמנטים גרפיים",
+        content:`
+          <p>לשונית Elements היא ספרייה עצומה של רכיבים ויזואליים מוכנים:</p>
+          <ul>
+            <li><strong>Shapes</strong> — צורות בסיסיות (ריבוע, עיגול, קו) הניתנות לשינוי צבע וגודל חופשי.</li>
+            <li><strong>Graphics/Icons</strong> — איורים ואייקונים בנושאים אינספור, רבים ניתנים לשינוי צבע בלחיצה.</li>
+            <li><strong>Stickers</strong> — אלמנטים דקורטיביים, לעיתים עם אנימציה מובנית.</li>
+            <li><strong>Frames</strong> — מסגרות צורניות (עיגול, כוכב וכו') שתמונה שנגררת לתוכן "נחתכת" אוטומטית לפי הצורה.</li>
+          </ul>
+        `,
+        tip:`חיפוש ממוקד (לדוגמה "arrow" או "confetti") מהיר בהרבה מגלילה חופשית — לשונית Elements כוללת שדה חיפוש עליון.`,
+        quiz:{q:"מה מיוחד ב-Frame לעומת Shape רגילה?", options:["אין הבדל","תמונה שנגררת לתוך Frame נחתכת אוטומטית לפי צורת המסגרת","Frame לא ניתן לשינוי גודל"], correct:1, explain:"Frame מתפקד כ'תבנית חיתוך' — תמונה שנגררת פנימה מתאימה את עצמה אוטומטית לצורת המסגרת, בלי חיתוך ידני."}
+      },
+      {
+        id:"m1l6", title:"שכבות ומיקום",
+        content:`
+          <p>כל אלמנט בעיצוב יושב על "שכבה" — אלמנטים שנוספו מאוחר יותר מכסים אלמנטים קודמים באותו מיקום:</p>
+          <ul>
+            <li><strong>סדר שכבות</strong> — לחיצה ימנית על אלמנט → Layer → Bring forward/backward, Bring to front/Send to back.</li>
+            <li><strong>יישור (Align)</strong> — בסימון כמה אלמנטים: יישור למרכז, לשוליים, פיזור שווה.</li>
+            <li><strong>קיבוץ (Group)</strong> — סימון כמה אלמנטים ו-Ctrl+G מאחד אותם לישות אחת שזזה יחד.</li>
+            <li><strong>נעילה (Lock)</strong> — מונעת הזזה בטעות של אלמנט רקע בזמן שעובדים מעליו.</li>
+          </ul>
+        `,
+        tip:`נעלו (Lock) תמיד את אלמנט הרקע לפני שעובדים על השכבות שמעליו — זה מונע גרירה בטעות שמזיזה את כל הרקע.`,
+        quiz:{q:"מה עושה 'Bring to front' על אלמנט?", options:["מגדיל את האלמנט","מזיז את האלמנט לשכבה העליונה ביותר, מעל כל היתר","מוחק את שאר האלמנטים"], correct:1, explain:"Bring to front מזיז את האלמנט הנבחר לחזית העיצוב, כך שהוא מכסה כל אלמנט אחר שבמיקום חופף."}
+      },
+      {
+        id:"m1l7", title:"שמירה, הורדה ושיתוף בסיסי",
+        content:`
+          <p>Canva שומרת אוטומטית כל שינוי בענן — אין כפתור "שמור" נפרד. לייצוא ושיתוף החוצה:</p>
+          <ul>
+            <li><strong>Download</strong> (כפתור עליון) — בחירת פורמט: PNG (עם/בלי רקע שקוף), JPG, PDF (סטנדרטי או להדפסה), ולפרויקטים מרובי-עמודים גם MP4/GIF.</li>
+            <li><strong>Share</strong> — קישור לצפייה או לעריכה משותפת, עם שליטה בהרשאות.</li>
+            <li>שם הפרויקט (בפינה השמאלית-עליונה) ניתן לעריכה בלחיצה — מומלץ לשנות משם ברירת המחדל כדי למצוא בקלות בעתיד.</li>
+          </ul>
+        `,
+        tip:`להדפסה — בחרו תמיד PDF Print (לא PNG) כדי לשמור על איכות ורזולוציה מקסימליות.`,
+        quiz:{q:"האם צריך ללחוץ על כפתור 'שמור' בעבודה ב-Canva?", options:["כן, בסוף כל עריכה","לא, השמירה אוטומטית לענן לאורך כל הזמן","רק בגרסת Pro"], correct:1, explain:"Canva שומרת אוטומטית לענן על כל שינוי — הורדה/שיתוף הם פעולות נפרדות ליצוא, לא לשמירה עצמה."}
+      }
+    ]
+  },
+  {
+    id:"m2", title:"שלב 2 · בינוני", icon:"🟡",
+    lessons:[
+      {
+        id:"m2l1", title:"ערכות צבעים וערכת מותג",
+        content:`
+          <p><strong>Brand Kit</strong> (לשונית Brand, חלק פתוח בחינם, מורחב ב-Pro) מרכז זהות עיצובית עקבית:</p>
+          <ul>
+            <li><strong>צבעי מותג</strong> — שמירת פלטת צבעים קבועה (קודי HEX) לשימוש חוזר בכל עיצוב.</li>
+            <li><strong>גופני מותג</strong> — הגדרת זוג גופנים (כותרת+גוף) שיוצע ראשון בכל פרויקט.</li>
+            <li><strong>לוגו</strong> — העלאת לוגו קבוע לגישה מהירה מכל עיצוב חדש.</li>
+            <li>שימוש ב-Brand Kit מבטיח שכל עיצוב (פוסט, מצגת, כרטיס ביקור) ישמור על אותה זהות חזותית בלי לזכור צבעים/גופנים בעל פה.</li>
+          </ul>
+        `,
+        tip:`הגדירו Brand Kit בהתחלת עבודה על פרויקט עסקי/ארגוני — זה חוסך המון זמן חיפוש צבע מדויק בכל עיצוב חדש.`,
+        quiz:{q:"מה שומר Brand Kit?", options:["רק תמונות שהועלו","צבעים, גופנים ולוגו קבועים לשימוש חוזר עקבי בכל עיצוב","היסטוריית עריכות בלבד"], correct:1, explain:"Brand Kit מרכז את אלמנטי הזהות הקבועים (צבעים/גופנים/לוגו) כדי שכל עיצוב חדש ישמור על אותו מיתוג."}
+      },
+      {
+        id:"m2l2", title:"עמודים מרובים ופרויקטים",
+        content:`
+          <p>עיצובים כמו מצגות או קטלוגים מכילים כמה עמודים בפרויקט אחד:</p>
+          <ul>
+            <li><strong>הוספת עמוד</strong> — כפתור + בתחתית חלונית העמודים.</li>
+            <li><strong>שכפול עמוד (Duplicate)</strong> — שומר את אותו עיצוב בסיס לעמוד הבא, נוח לרצף אחיד (למשל שקופיות מצגת).</li>
+            <li><strong>סידור מחדש</strong> — גרירת עמודים בחלונית התחתונה לשינוי סדר.</li>
+            <li><strong>מחיקת עמוד</strong> — לחיצה ימנית על תמונה ממוזערת → Delete.</li>
+          </ul>
+        `,
+        tip:`בבניית מצגת — שכפלו עמוד שכבר מעוצב טוב במקום ליצור עמוד חדש ריק בכל פעם, כדי לשמור על עיצוב אחיד לאורך כל המצגת.`,
+        quiz:{q:"מה היתרון בשכפול עמוד (Duplicate) על פני יצירת עמוד חדש ריק?", options:["אין הבדל","שומר על אותו עיצוב/פריסה בסיסיים, כך שקל לשמור על אחידות בין עמודים","שכפול עמוד זמין רק ב-Pro"], correct:1, explain:"שכפול שומר את המבנה העיצובי הקיים, כך שממשיכים לבנות על בסיס אחיד במקום להתחיל כל עמוד מאפס."}
+      },
+      {
+        id:"m2l3", title:"אנימציות ומעברים",
+        content:`
+          <p>שני סוגי אנימציה נפרדים ב-Canva:</p>
+          <ul>
+            <li><strong>אנימציית אלמנט</strong> — סימון אלמנט/טקסט → Animate בסרגל העליון: כניסה/הדגשה כמו Fade, Rise, Pan.</li>
+            <li><strong>מעבר בין עמודים (Page transitions)</strong> — בעיצובים מרובי-עמודים (למשל מצגת/וידאו), לחיצה על עמוד → Transition: איך עוברים מעמוד לעמוד.</li>
+            <li>אנימציית עמוד שלם (Animate this page) מפעילה תנועה על כל האלמנטים יחד באפקט אחיד.</li>
+          </ul>
+        `,
+        tip:`כמו במצגות אחרות — אנימציה מתונה ועקבית לאורך כל הפרויקט נראית מקצועית יותר מאשר אפקט שונה בכל עמוד.`,
+        quiz:{q:"מה ההבדל בין אנימציית אלמנט למעבר בין עמודים (Page Transition)?", options:["אין הבדל","אנימציית אלמנט חלה על רכיב בודד בתוך עמוד, מעבר עמודים חל על המעבר בין שני עמודים שלמים","מעבר עמודים זמין רק לתמונות"], correct:1, explain:"אנימציית אלמנט מפעילה תנועה על רכיב יחיד בתוך עמוד; Page Transition קובע איך המסך עובר מהעמוד הנוכחי לעמוד הבא."}
+      },
+      {
+        id:"m2l4", title:"גריד ופריסות",
+        content:`
+          <p>Canva מציעה כלים לפריסת תמונות מרובות בסדר מסודר בלי מדידה ידנית:</p>
+          <ul>
+            <li><strong>Grids</strong> (לשונית Elements → Grids) — תבניות רשת מוכנות לכמה תמונות יחד, כל משבצת פועלת כמו Frame.</li>
+            <li><strong>הצעות פריסה חכמות</strong> — לשונית Design, Canva מציעה פריסות (Layouts) מבוססות התוכן הקיים בעמוד.</li>
+            <li>שינוי גריד קיים — גרירת תמונה חדשה לתוך משבצת מחליפה את התוכן תוך שמירה על היחס והמיקום המדויקים.</li>
+          </ul>
+        `,
+        tip:`לפני שמנסים לסדר תמונות ידנית בעין — בדקו קודם אם יש Grid מוכן שמתאים; זה כמעט תמיד יותר מדויק ומהיר.`,
+        quiz:{q:"מה עושה Grid ב-Canva?", options:["מוסיף קווי עזר בלבד לצורך הדפסה","תבנית רשת מוכנה שכל משבצת בה פועלת כמו Frame לתמונה","משנה את גודל הקנבס"], correct:1, explain:"Grid הוא מבנה מוכן של כמה 'משבצות תמונה' יחד, כך שאפשר לגרור כמה תמונות לפריסה מסודרת בבת אחת."}
+      },
+      {
+        id:"m2l5", title:"עריכת תמונות מתקדמת",
+        content:`
+          <p>אחרי בחירת תמונה בקנבס, לשונית Edit image (בסרגל העליון) פותחת כלי עריכה מובנים:</p>
+          <ul>
+            <li><strong>Filters</strong> — סגנונות מוכנים בלחיצה אחת (Vintage, B&W ועוד).</li>
+            <li><strong>Adjust</strong> — בהירות, ניגודיות, רוויה, חדות, טמפרטורת צבע ידניות.</li>
+            <li><strong>Background Remover</strong> — הסרת רקע תמונה אוטומטית בלחיצה אחת (חלק מ-Pro, אך יש הגבלת שימוש חינמית).</li>
+            <li><strong>Effects</strong> — אפקטים כמו טשטוש, זוהר, מסגרת צבע.</li>
+          </ul>
+        `,
+        tip:`Background Remover עובד הכי טוב על תמונות עם ניגודיות ברורה בין הנושא לרקע — תוצאה פחות מדויקת אם הצבעים דומים מדי.`,
+        quiz:{q:"מה עושה כלי ה-Background Remover?", options:["מוחק את התמונה כולה","מסיר את רקע התמונה אוטומטית בלחיצה אחת","משנה את גודל התמונה"], correct:1, explain:"הכלי מזהה אוטומטית את הנושא המרכזי בתמונה ומסיר את הרקע סביבו, בלי צורך בעריכה ידנית מדויקת."}
+      },
+      {
+        id:"m2l6", title:"תבניות ועיצוב עקבי",
+        content:`
+          <p>ספריית התבניות (Templates) היא אחד היתרונות המרכזיים של Canva:</p>
+          <ul>
+            <li>חיפוש תבנית לפי סוג פרויקט או מילת מפתח, עם אלפי אפשרויות מוכנות ומעוצבות מקצועית.</li>
+            <li><strong>Magic Resize</strong> (Pro) — לוקח עיצוב קיים בגודל אחד (למשל פוסט Instagram) והתאמה אוטומטית לגדלים נוספים (Story, פוסטר) תוך שמירה על הרכיבים.</li>
+            <li>שמירת עיצוב כתבנית אישית — שימושי לארגונים שרוצים "שלד" קבוע (למשל תבנית מייל שבועי) לשימוש חוזר.</li>
+          </ul>
+        `,
+        tip:`Magic Resize חוסך המון זמן כשצריך את אותו עיצוב במספר גדלים לפלטפורמות שונות — במקום לבנות מחדש כל גודל בנפרד.`,
+        quiz:{q:"מה עושה Magic Resize?", options:["מוחק אלמנטים מיותרים","מתאים אוטומטית עיצוב קיים לגדלים נוספים תוך שמירה על התוכן","מגדיל את רזולוציית התמונה"], correct:1, explain:"Magic Resize לוקח פריסה קיימת ומשכפל/מתאים אותה אוטומטית לממדים חדשים, בלי לבנות כל גרסה מאפס."}
+      },
+      {
+        id:"m2l7", title:"שיתוף פעולה",
+        content:`
+          <p>Canva תומכת בעבודת צוות בזמן אמת, בדומה למסמכי Google:</p>
+          <ul>
+            <li><strong>Share for editing</strong> — הזמנת אנשים לערוך יחד; שינויים מופיעים בזמן אמת עם סמן צבעוני לכל משתמש.</li>
+            <li><strong>הערות (Comments)</strong> — לחיצה על אזור בעיצוב ← הוספת הערה ממוקדת, עם תיוג משתמשים (@שם).</li>
+            <li><strong>תיקיות וצוותים (Folders/Teams)</strong> — ארגון פרויקטים משותפים במקום אחד, עם הרשאות ברמת תיקייה.</li>
+            <li><strong>היסטוריית גרסאות</strong> — File → See version history, שחזור לגרסה קודמת של העיצוב.</li>
+          </ul>
+        `,
+        tip:`לפני שליחת עיצוב סופי לאישור — עברו על כל ההערות הפתוחות וסמנו אותן כ-Resolved, כדי לא לפספס בקשת תיקון.`,
+        quiz:{q:"מה מאפשרת תכונת ההיסטוריה (Version history)?", options:["רק לראות מי צפה בעיצוב","לחזור ולשחזר גרסה קודמת של העיצוב","למחוק תגובות ישנות"], correct:1, explain:"היסטוריית הגרסאות שומרת נקודות שמירה קודמות של העיצוב, כך שניתן לחזור אליהן אם שינוי מאוחר יותר פגע בתוצאה."}
+      }
+    ]
+  },
+  {
+    id:"m3", title:"שלב 3 · מקצוענים", icon:"🔴",
+    lessons:[
+      {
+        id:"m3l1", title:"קיצורי מקלדת ותפוקה",
+        content:`
+          <p>קיצורים לעבודה מהירה בעורך (רשימה מורחבת בדף הקיצורים בתפריט):</p>
+          <ul>
+            <li><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>Ctrl</kbd>+<kbd>V</kbd> — העתקה/הדבקה של אלמנט. <kbd>Ctrl</kbd>+<kbd>D</kbd> — שכפול מהיר.</li>
+            <li><kbd>Ctrl</kbd>+<kbd>G</kbd> — קיבוץ אלמנטים נבחרים. <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd> — פירוק קבוצה.</li>
+            <li><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd> — בטל/בצע שוב.</li>
+            <li><kbd>Alt</kbd>+<kbd>מקשי חץ</kbd> — הזזת אלמנט נבחר בקפיצות פיקסל בודד, לדיוק גבוה.</li>
+          </ul>
+        `,
+        tip:`לפרויקטים שחוזרים על עצמם (למשל פוסט שבועי) — שכפול (Ctrl+D) של עיצוב קודם מהיר בהרבה מבנייה מאפס.`,
+        quiz:{q:"מה עושה Alt+מקשי חץ על אלמנט נבחר?", options:["מוחק את האלמנט","מזיז אותו בקפיצות פיקסל בודד לדיוק גבוה","מסובב את האלמנט 90 מעלות"], correct:1, explain:"Alt+חצים מבצע הזזה עדינה בפיקסל בודד, שימושי ליישור מדויק שקשה להשיג בגרירת עכבר חופשית."}
+      },
+      {
+        id:"m3l2", title:"Canva Pro ותכונות מתקדמות",
+        content:`
+          <p>מנוי <strong>Canva Pro</strong> פותח יכולות מעבר לגרסה החינמית:</p>
+          <ul>
+            <li>גישה לכל ספריית האלמנטים/התמונות/הגופנים הפרימיום (ללא סימן "Pro" חסום).</li>
+            <li><strong>Brand Kit מלא</strong> — כמה ערכות מותג, לוגואים וגופנים מותאמים אישית מלאים (Upload font).</li>
+            <li><strong>Magic Resize</strong>, <strong>Background Remover</strong> ללא הגבלת שימוש.</li>
+            <li><strong>Content Planner</strong> — תזמון ופרסום ישיר לרשתות חברתיות מתוך Canva.</li>
+            <li><strong>אחסון ענן מורחב</strong> ותמיכה מהירה יותר.</li>
+          </ul>
+        `,
+        tip:`לפני שדרוג ל-Pro — בדקו אם יש תוכנית Pro חינמית לעמותות/מוסדות חינוך, ש-Canva מציעה במקרים רבים.`,
+        quiz:{q:"מה מוסיף בעיקר Canva Pro?", options:["רק שינוי צבע הממשק","גישה מלאה לספריית פרימיום, Brand Kit מתקדם, ותזמון פרסום (Content Planner)","אפשרות ליצור חשבון חדש"], correct:1, explain:"Pro פותח תוכן פרימיום ללא הגבלה, כלי מותג מתקדמים, ותזמון/פרסום ישיר לרשתות — מעבר לגרסה החינמית הבסיסית."}
+      },
+      {
+        id:"m3l3", title:"כלי Magic Studio (AI)",
+        content:`
+          <p>חבילת כלי בינה מלאכותית מובנים תחת השם Magic Studio:</p>
+          <ul>
+            <li><strong>Magic Write</strong> — עוזר כתיבה מבוסס AI שמייצר טקסט/רעיונות ישירות בתוך העורך.</li>
+            <li><strong>Magic Eraser</strong> — הסרת אובייקט ספציפי מתמונה תוך "מילוי" חכם של הרקע שנשאר.</li>
+            <li><strong>Magic Edit</strong> — סימון אזור בתמונה ותיאור טקסטואלי למה להחליף אותו — ה-AI מייצר תמונה חדשה במקום.</li>
+            <li><strong>Text to Image</strong> — יצירת תמונה חדשה לגמרי מתיאור טקסטואלי בלבד.</li>
+          </ul>
+        `,
+        tip:`כלי AI נותנים נקודת פתיחה מהירה — כמעט תמיד יש צורך בעריכה ידנית קלה אחריהם כדי להתאים בדיוק למה שרציתם.`,
+        quiz:{q:"מה עושה Magic Eraser?", options:["מוחק את כל העיצוב","מסיר אובייקט ספציפי מתמונה עם מילוי חכם של הרקע","מוחק טקסט בלבד"], correct:1, explain:"Magic Eraser מזהה ומסיר אובייקט נבחר מתוך תמונה, ומנסה למלא את השטח שהתפנה בצורה טבעית התואמת את הרקע סביבו."}
+      },
+      {
+        id:"m3l4", title:"אנימציה מתקדמת ווידאו",
+        content:`
+          <p>Canva כוללת עורך וידאו בסיסי-עד-בינוני, נגיש כמו כל עיצוב אחר:</p>
+          <ul>
+            <li>ציר זמן (Timeline) בתחתית המסך לעריכת וידאו — כל עמוד/קליפ מקבל אורך זמן משלו.</li>
+            <li>הוספת מוזיקת רקע מספריית האודיו המובנית, עם שליטה בעוצמה ובחיתוך.</li>
+            <li>מעברים בין קליפים (Transitions) באותה עקרון כמו בין עמודים במצגת.</li>
+            <li>ייצוא כווידאו MP4 באיכויות שונות דרך Download.</li>
+          </ul>
+        `,
+        tip:`לוידאו קצר לרשתות חברתיות — התחילו מתבנית מוכנה (Video Template) במקום ציר זמן ריק, זה חוסך המון עבודת תזמון ידנית.`,
+        quiz:{q:"היכן שולטים באורך הזמן של כל קליפ בעריכת וידאו ב-Canva?", options:["בלשונית Brand Kit","בציר הזמן (Timeline) בתחתית המסך","רק דרך הורדת הקובץ"], correct:1, explain:"ציר הזמן בתחתית מציג את כל הקליפים ברצף ומאפשר לגרור ולהתאים את משך הזמן של כל אחד בנפרד."}
+      },
+      {
+        id:"m3l5", title:"עבודה עם תבניות עסקיות",
+        content:`
+          <p>לצוותים וארגונים, Canva מציעה שכבת ניהול מעבר לעיצוב בודד:</p>
+          <ul>
+            <li><strong>Brand Templates</strong> — תבנית "נעולה חלקית" שחברי צוות יכולים למלא (טקסט/תמונות) בלי לשבור את המסגרת העיצובית שמנהל המותג קבע.</li>
+            <li><strong>ערכות רשתות חברתיות (Social Media Kits)</strong> — סט תבניות אחיד לכל הפלטפורמות בבת אחת.</li>
+            <li><strong>ניהול הרשאות צוות</strong> — קביעה מי יכול לערוך/לצפות/לפרסם, ברמת תיקייה או פרויקט.</li>
+          </ul>
+        `,
+        tip:`תבנית עם אלמנטים "נעולים" (Lock) חוסכת מחברי צוות לא-מעצבים לשבור בטעות את הפריסה — הם עורכים רק את מה שהותר.`,
+        quiz:{q:"מה מטרת 'Brand Template' עם אלמנטים נעולים?", options:["למנוע מכל שימוש בעיצוב","לאפשר לחברי צוות למלא תוכן בלי לשנות את המסגרת העיצובית הקבועה","להאט את זמן הטעינה"], correct:1, explain:"נעילת אלמנטי מסגרת (לוגו, פריסה) שומרת על עקביות מותגית, בזמן שחברי צוות עדיין יכולים לערוך את התוכן המשתנה (טקסט/תמונות)."}
+      },
+      {
+        id:"m3l6", title:"פרסום ותזמון תוכן",
+        content:`
+          <p><strong>Content Planner</strong> (חלק מ-Pro) מאפשר לתזמן ולפרסם ישירות מתוך Canva, בלי להוריד ולהעלות ידנית לכל רשת:</p>
+          <ul>
+            <li>חיבור חשבונות רשתות חברתיות (Instagram, Facebook, LinkedIn ועוד) פעם אחת.</li>
+            <li>תזמון פרסום לתאריך/שעה עתידיים ישירות מתוך העיצוב.</li>
+            <li>לוח שנה חזותי שמראה את כל התוכן המתוזמן קדימה, נוח לתכנון קמפיינים.</li>
+          </ul>
+        `,
+        tip:`תכננו תוכן שבועי-חודשי מראש בלוח השנה של Content Planner — עוזר לשמור על קצב פרסום עקבי בלי "לשכוח" יום.`,
+        quiz:{q:"מה עושה Content Planner?", options:["רק שומר טיוטות עיצוב","מאפשר לתזמן ולפרסם תוכן ישירות לרשתות חברתיות מתוך Canva","מוחק פוסטים ישנים"], correct:1, explain:"Content Planner מחבר לחשבונות רשתות חברתיות ומאפשר לתזמן פרסום ישיר של עיצובים, בלי תהליך הורדה-והעלאה ידני."}
+      },
+      {
+        id:"m3l7", title:"ייצוא מתקדם",
+        content:`
+          <p>מעבר להורדה בסיסית (שיעור 1.7), אפשרויות ייצוא מתקדמות ב-Download:</p>
+          <ul>
+            <li><strong>PDF Print</strong> — כולל סימוני חיתוך (Crop marks) ותוספת דימום (Bleed) לדפוס מקצועי.</li>
+            <li><strong>רקע שקוף (Transparent background)</strong> — זמין ל-PNG, שימושי ללוגואים/מדבקות שמוצבים על רקע אחר.</li>
+            <li><strong>Bulk create</strong> (Pro) — הזנת גיליון נתונים (כמו Excel) ליצירת עשרות עיצובים אוטומטית מתבנית אחת (למשל תעודות עם שמות משתנים).</li>
+            <li>איכות/רזולוציית ייצוא ניתנת לבחירה (רגילה/גבוהה) — חשוב במיוחד להדפסה.</li>
+          </ul>
+        `,
+        tip:`Bulk Create הוא כלי-על לעבודות כמו תעודות/כרטיסי שם בכמות — בונים תבנית אחת פעם אחת, ומזינים גיליון נתונים לייצור עשרות גרסאות בבת אחת.`,
+        quiz:{q:"מה עושה תכונת Bulk Create?", options:["מוחקת עיצובים ישנים בכמות","יוצרת אוטומטית עשרות עיצובים מתבנית אחת לפי גיליון נתונים","מגדילה את רזולוציית כל התמונות"], correct:1, explain:"Bulk Create מזינה נתונים (כמו רשימת שמות) לתוך תבנית אחת ומייצרת אוטומטית עיצוב נפרד לכל שורה בגיליון."}
+      },
+      {
+        id:"m3l8", title:"עקרונות עיצוב מקצועי והשוואה לכלים דומים",
+        content:`
+          <p>עקרונות שמבדילים עיצוב חובבני ממקצועי, ומקום Canva מול המתחרים:</p>
+          <ul>
+            <li><strong>היררכיה ברורה</strong> — כותרת בולטת, תוכן משני קטן ממנה, לא הכול באותו גודל/משקל.</li>
+            <li><strong>עקביות</strong> — אותם 2-3 צבעים וגופנים לאורך כל הפרויקט (Brand Kit עוזר כאן).</li>
+            <li><strong>שטח ריק (White Space)</strong> — לא למלא כל פיקסל; מרווח מגביר קריאות.</li>
+            <li><strong>Canva מול Adobe Express</strong> — שניהם כלי עיצוב מבוססי-תבניות עם ממשק דומה למדי; Canva חזקה יותר בספריית תבניות/אלמנטים ענקית ובכלי שיתוף-פעולה צוותי, Adobe Express משתלבת טוב יותר עם שאר מוצרי Adobe (Photoshop/Illustrator) למי שכבר בתוך האקוסיסטם הזה.</li>
+            <li><strong>Canva מול PowerPoint לעיצוב מצגות</strong> — PowerPoint נותן שליטה עיצובית מדויקת יותר ואנימציות מורכבות יותר; Canva מהירה יותר להגעה לתוצאה "יפה מהר" בזכות תבניות מוכנות, אך מוגבלת יותר בעריכה עדינה ברמת האובייקט הבודד.</li>
+          </ul>
+        `,
+        tip:`שאלו על כל עיצוב: "מה הדבר הראשון שהעין קולטת?" אם התשובה לא ברורה תוך שנייה — חסרה היררכיה, לא בעיה בצבעים.`,
+        quiz:{q:"מה ההבדל המעשי המרכזי בין Canva ל-Adobe Express?", options:["אין הבדל בפועל, זה אותו מוצר","Canva מציעה ספריית תבניות/אלמנטים גדולה יותר וכלי שיתוף-פעולה חזקים; Adobe Express משתלבת טוב יותר עם שאר מוצרי Adobe","Adobe Express לא תומך בתמונות בכלל"], correct:1, explain:"שניהם כלים דומים במבנה (עיצוב מבוסס-תבניות, ממשק גרירה-והשלכה), אך ההבדל המעשי הוא בגודל הספרייה/שיתוף הפעולה מול האינטגרציה לאקוסיסטם Adobe."}
+      }
+    ]
+  }
+];
+
+/* ======================= STATE ======================= */
+const STORAGE_KEY = "canva_course_progress_v1";
+const CERT_KEY = "canva_course_cert_name_v1";
+let state = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+const ALL_LESSONS = COURSE.flatMap(m => m.lessons.map(l => ({...l, moduleId:m.id, moduleTitle:m.title})));
+const TOTAL = ALL_LESSONS.length;
+
+/* ======================= RENDER SIDEBAR ======================= */
+const navContainer = document.getElementById("navContainer");
+COURSE.forEach((mod, idx) => {
+  const details = document.createElement("details");
+  details.className = "nav-group";
+  details.open = idx === 0;
+  const doneCount = () => mod.lessons.filter(l => state[l.id]).length;
+  details.innerHTML = `
+    <summary><span class="chev">▸</span> ${mod.icon} ${mod.title} <span class="badge" data-mod="${mod.id}">${doneCount()}/${mod.lessons.length}</span></summary>
+    <ul class="nav-links">
+      ${mod.lessons.map(l => `
+        <li><a href="#${l.id}" data-route="${l.id}"><span class="dot">✓</span>${l.title}</a></li>
+      `).join("")}
+    </ul>
+  `;
+  navContainer.appendChild(details);
+});
+
+function refreshBadges(){
+  COURSE.forEach(mod => {
+    const badge = navContainer.querySelector(`.badge[data-mod="${mod.id}"]`);
+    const doneCount = mod.lessons.filter(l => state[l.id]).length;
+    if(badge) badge.textContent = `${doneCount}/${mod.lessons.length}`;
+  });
+  document.querySelectorAll(".nav-links a").forEach(a => {
+    const id = a.dataset.route;
+    a.classList.toggle("done", !!state[id]);
+  });
+  const doneTotal = ALL_LESSONS.filter(l => state[l.id]).length;
+  const pct = Math.round((doneTotal/TOTAL)*100);
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("progressPct").textContent = pct + "%";
+}
+
+/* ======================= RENDER MAIN SECTIONS ======================= */
+const main = document.getElementById("mainContent");
+
+function lessonSectionHTML(l, i, arr){
+  const prev = arr[i-1];
+  const next = arr[i+1];
+  return `
+  <section class="section" id="sec-${l.id}" data-route="${l.id}">
+    <div class="crumb">${l.moduleTitle}</div>
+    <div class="lesson-title">${l.title}</div>
+    <div class="lesson-meta">
+      <label class="mark-done">
+        <input type="checkbox" data-lesson="${l.id}" ${state[l.id] ? "checked":""}>
+        סמן שיעור זה כהושלם
+      </label>
+    </div>
+    <div class="card content-body">${l.content}</div>
+    ${l.tip ? `<div class="tip-box">💡 <b>טיפ:</b> ${l.tip}</div>` : ""}
+    ${l.quiz ? renderQuiz(l.id, l.quiz) : ""}
+    <div class="lesson-footer">
+      ${prev ? `<a class="btn btn-outline" href="#${prev.id}" data-route="${prev.id}">→ ${prev.title}</a>` : `<span></span>`}
+      ${next ? `<a class="btn btn-primary" href="#${next.id}" data-route="${next.id}">${next.title} ←</a>` : `<a class="btn btn-primary" href="#final-quiz" data-route="final-quiz">למבחן המסכם ←</a>`}
+    </div>
+  </section>`;
+}
+
+function renderQuiz(lessonId, quiz){
+  return `
+  <div class="card quiz" id="quiz-${lessonId}">
+    <h3>🧠 בדקו את עצמכם</h3>
+    <div class="q">${quiz.q}</div>
+    <div class="opts">
+      ${quiz.options.map((opt,i) => `<button class="opt" data-idx="${i}">${opt}</button>`).join("")}
+    </div>
+    <div class="explain"></div>
+  </div>`;
+}
+
+/* Intro section */
+const introHTML = `
+<section class="section" id="sec-intro" data-route="intro">
+  <div class="hero">
+    <h1>🎨 קורס Canva מלא</h1>
+    <p>קורס אינטראקטיבי בעברית שמלווה אתכם משלבי הפתיחה הבסיסיים ביותר ועד טכניקות מקצועיות — Brand Kit, כלי AI (Magic Studio), עריכת וידאו, ותזמון פרסום. לומדים בקצב אישי, עם שאלות תרגול והתקדמות נשמרת בדפדפן.</p>
+    <div class="stats">
+      <div class="stat"><b>${COURSE.length}</b><span>שלבי לימוד</span></div>
+      <div class="stat"><b>${TOTAL}</b><span>שיעורים</span></div>
+      <div class="stat"><b>${TOTAL}</b><span>שאלות תרגול</span></div>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:10px;">מה תלמדו?</h3>
+  <div class="grid-3">
+    ${COURSE.map(m => `
+      <div class="mini-card" data-jump="${m.lessons[0].id}">
+        <div class="n">${m.icon} ${m.title}</div>
+        <div class="t">${m.lessons.length} שיעורים</div>
+        <div class="d">${m.lessons.map(l=>l.title).slice(0,3).join(" · ")}${m.lessons.length>3 ? " ...":""}</div>
+      </div>
+    `).join("")}
+  </div>
+
+  <div class="try-box">
+    <b>👉 איך לומדים כאן:</b> עברו שיעור-שיעור מהתפריט בצד, סמנו "הושלם" בסיום כל שיעור כדי לעקוב אחרי ההתקדמות בראש התפריט, וענו על שאלת התרגול. בסיום כל השלבים — גשו למבחן המסכם ולתעודת הסיום.
+  </div>
+
+  <div class="lesson-footer">
+    <span></span>
+    <a class="btn btn-primary" href="#${ALL_LESSONS[0].id}" data-route="${ALL_LESSONS[0].id}">בואו נתחיל ←</a>
+  </div>
+</section>`;
+
+/* Cheatsheet section */
+const shortcuts = [
+  ["העתקת אלמנט","Ctrl + C"],
+  ["הדבקת אלמנט","Ctrl + V"],
+  ["שכפול מהיר","Ctrl + D"],
+  ["קיבוץ אלמנטים","Ctrl + G"],
+  ["פירוק קבוצה","Ctrl + Shift + G"],
+  ["ביטול פעולה","Ctrl + Z"],
+  ["ביצוע שוב","Ctrl + Y"],
+  ["הזזה עדינה בפיקסל בודד","Alt + מקש חץ"],
+  ["מחיקת אלמנט נבחר","Delete"],
+  ["בחירת כל האלמנטים בעמוד","Ctrl + A"],
+  ["שכבה קדימה","Ctrl + ]"],
+  ["שכבה אחורה","Ctrl + ["],
+  ["הבאה לחזית","Ctrl + Shift + ]"],
+  ["שליחה לרקע","Ctrl + Shift + ["],
+  ["עמוד חדש","Ctrl + Enter"],
+  ["הורדת העיצוב","Ctrl + Shift + D"],
+];
+const cheatsheetHTML = `
+<section class="section" id="sec-cheatsheet" data-route="cheatsheet">
+  <div class="lesson-title">⌨️ דף קיצורי מקלדת — להדפסה</div>
+  <p class="lesson-meta">דף עזר מרוכז. אפשר להדפיס ישירות מהדפדפן (Ctrl+P) — עיצוב ההדפסה מותאם אוטומטית.</p>
+  <div class="card">
+    <table class="cheat">
+      <thead><tr><th>פעולה</th><th>קיצור</th></tr></thead>
+      <tbody>
+        ${shortcuts.map(([a,b]) => `<tr><td>${a}</td><td style="direction:ltr; text-align:left; font-family:Consolas,monospace;">${b}</td></tr>`).join("")}
+      </tbody>
+    </table>
+    <button class="btn btn-outline" onclick="window.print()">🖨️ הדפסת דף זה</button>
+  </div>
+</section>`;
+
+/* Final quiz section (uses all lesson quizzes) */
+function finalQuizHTML(){
+  const items = ALL_LESSONS.filter(l => l.quiz);
+  return `
+  <section class="section" id="sec-final-quiz" data-route="final-quiz">
+    <div class="lesson-title">🎯 מבחן מסכם</div>
+    <p class="lesson-meta">ענו נכון על לפחות 80% מהשאלות כדי "לעבור" את המבחן ולפתוח את תעודת הסיום.</p>
+    <div class="card" id="finalScoreCard" style="display:none;">
+      <h3>התוצאה שלכם</h3>
+      <div id="finalScoreText" style="font-size:18px; font-weight:700;"></div>
+    </div>
+    <div id="finalQuizList">
+      ${items.map((l,i) => `
+        <div class="card quiz" id="fq-${l.id}">
+          <h3>שאלה ${i+1} — ${l.moduleTitle} · ${l.title}</h3>
+          <div class="q">${l.quiz.q}</div>
+          <div class="opts">
+            ${l.quiz.options.map((opt,idx) => `<button class="opt" data-idx="${idx}">${opt}</button>`).join("")}
+          </div>
+          <div class="explain"></div>
+        </div>
+      `).join("")}
+    </div>
+    <div class="card">
+      <button class="btn btn-primary" id="submitFinalQuiz">📝 בדקו את המבחן</button>
+    </div>
+  </section>`;
+}
+
+/* Certificate section */
+const certificateHTML = `
+<section class="section" id="sec-certificate" data-route="certificate">
+  <div class="lesson-title">🎓 תעודת סיום</div>
+  <p class="lesson-meta">השלימו את כל השיעורים כדי לפתוח את התעודה, הזינו שם והדפיסו/שמרו כ-PDF.</p>
+  <div class="card" id="certGate">
+    <p id="certGateText"></p>
+  </div>
+  <div class="cert-box" id="certBox" style="display:none;">
+    <div style="font-size:34px;">🏆</div>
+    <h2>תעודת הצטיינות</h2>
+    <p>מוענקת בזאת ל</p>
+    <input type="text" class="cert-input" id="certNameInput" placeholder="הקלידו את שמכם המלא">
+    <p style="margin-top:18px;">על השלמה מוצלחת של<br><strong>קורס Canva מלא — ממתחילים ועד מקצוענים</strong></p>
+    <p style="color:var(--muted); font-size:13px; margin-top:16px;" id="certDate"></p>
+    <button class="btn btn-primary" style="margin-top:14px;" onclick="window.print()">🖨️ הדפסה / שמירה כ-PDF</button>
+  </div>
+</section>`;
+
+/* Assemble all sections */
+main.innerHTML = introHTML +
+  ALL_LESSONS.map((l,i,arr) => lessonSectionHTML(l,i,arr)).join("") +
+  cheatsheetHTML + finalQuizHTML() + certificateHTML;
+
+/* ======================= INTERACTIONS ======================= */
+
+// Quiz click handling (delegated)
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("button.opt");
+  if(!btn) return;
+  const quizCard = btn.closest(".quiz");
+  if(quizCard.dataset.answered) return;
+  quizCard.dataset.answered = "1";
+  const idx = parseInt(btn.dataset.idx,10);
+  const allOpts = quizCard.querySelectorAll("button.opt");
+  const lessonId = quizCard.id.replace("quiz-","").replace("fq-","");
+  const lessonData = ALL_LESSONS.find(l => l.id === lessonId);
+  const quizData = lessonData ? lessonData.quiz : null;
+  allOpts.forEach((b,i) => {
+    b.disabled = true;
+    if(quizData && i === quizData.correct) b.classList.add("correct");
+    else if(i === idx) b.classList.add("wrong");
+  });
+  const explain = quizCard.querySelector(".explain");
+  if(quizData){
+    explain.textContent = (idx === quizData.correct ? "✅ נכון! " : "❌ לא מדויק. ") + quizData.explain;
+    explain.classList.add("show");
+  }
+  quizCard.dataset.correct = (quizData && idx === quizData.correct) ? "1" : "0";
+
+  // auto-mark lesson done on correct answer (only for per-lesson quiz cards)
+  if(quizCard.id.startsWith("quiz-") && quizData && idx === quizData.correct){
+    markDone(lessonId, true);
+  }
+});
+
+// Mark-done checkboxes
+document.addEventListener("change", (e) => {
+  if(e.target.matches('input[type="checkbox"][data-lesson]')){
+    markDone(e.target.dataset.lesson, e.target.checked);
+  }
+});
+function markDone(id, val){
+  state[id] = val;
+  saveState();
+  refreshBadges();
+  document.querySelectorAll(`input[data-lesson="${id}"]`).forEach(cb => cb.checked = val);
+  updateCertGate();
+}
+
+// Final quiz submit
+document.addEventListener("click", (e) => {
+  if(e.target.id !== "submitFinalQuiz") return;
+  const cards = document.querySelectorAll("#finalQuizList .quiz");
+  let answered = 0, correct = 0;
+  cards.forEach(c => {
+    if(c.dataset.answered){ answered++; if(c.dataset.correct === "1") correct++; }
+  });
+  const total = cards.length;
+  const scoreCard = document.getElementById("finalScoreCard");
+  const scoreText = document.getElementById("finalScoreText");
+  scoreCard.style.display = "block";
+  const pct = total ? Math.round((correct/total)*100) : 0;
+  if(answered < total){
+    scoreText.innerHTML = `ענית על ${answered} מתוך ${total} שאלות. אנא ענו על כל השאלות לפני בדיקת הציון הסופי.`;
+  } else {
+    const pass = pct >= 80;
+    scoreText.innerHTML = `${correct}/${total} תשובות נכונות (${pct}%) — ${pass ? "🎉 עברתם בהצלחה! גשו לתעודת הסיום." : "כדאי לחזור על החומר ולנסות שוב."}`;
+    state["final_quiz_pass"] = pass;
+    saveState();
+    updateCertGate();
+  }
+  scoreCard.scrollIntoView({behavior:"smooth", block:"center"});
+});
+
+function updateCertGate(){
+  const doneTotal = ALL_LESSONS.filter(l => state[l.id]).length;
+  const allDone = doneTotal === TOTAL;
+  const gateText = document.getElementById("certGateText");
+  const certBox = document.getElementById("certBox");
+  const certGate = document.getElementById("certGate");
+  if(!gateText) return;
+  if(allDone){
+    certGate.style.display = "none";
+    certBox.style.display = "block";
+    const savedName = localStorage.getItem(CERT_KEY) || "";
+    const nameInput = document.getElementById("certNameInput");
+    nameInput.value = savedName;
+    document.getElementById("certDate").textContent = new Date().toLocaleDateString("he-IL");
+  } else {
+    certGate.style.display = "block";
+    certBox.style.display = "none";
+    gateText.textContent = `השלמתם ${doneTotal} מתוך ${TOTAL} שיעורים. סיימו את כל השיעורים (סימון "הושלם" בכל שיעור) כדי לפתוח את התעודה.`;
+  }
+}
+document.addEventListener("input", (e) => {
+  if(e.target.id === "certNameInput") localStorage.setItem(CERT_KEY, e.target.value);
+});
+
+/* ======================= ROUTER ======================= */
+function showRoute(route){
+  if(!route) route = "intro";
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  const target = document.getElementById("sec-" + route);
+  if(target) target.classList.add("active");
+  else document.getElementById("sec-intro").classList.add("active");
+
+  document.querySelectorAll("[data-route]").forEach(el => el.classList.remove("active"));
+  document.querySelectorAll(`[data-route="${route}"]`).forEach(el => el.classList.add("active"));
+
+  // auto-open the module containing this lesson
+  const modEntry = ALL_LESSONS.find(l => l.id === route);
+  if(modEntry){
+    const grp = [...document.querySelectorAll(".nav-group")].find(g => g.querySelector(`a[data-route="${route}"]`));
+    if(grp) grp.open = true;
+  }
+  window.scrollTo({top:0, behavior:"instant" in window ? "instant":"auto"});
+  if(route === "certificate" || route === "final-quiz") updateCertGate();
+
+  // close mobile sidebar after navigation
+  document.getElementById("sidebar").classList.remove("open");
+}
+
+// navigate() uses history.replaceState (not location.hash= or pushState)
+// so the back button always exits the course instead of stepping through
+// its own lesson history.
+function navigate(route){
+  history.replaceState(null, "", "#" + route);
+  showRoute(route);
+}
+
+document.addEventListener("click", (e) => {
+  const link = e.target.closest("[data-route]");
+  if(link && link.tagName === "A"){
+    e.preventDefault();
+    navigate(link.dataset.route);
+  }
+  const jump = e.target.closest("[data-jump]");
+  if(jump){
+    navigate(jump.dataset.jump);
+  }
+});
+window.addEventListener("hashchange", () => showRoute(location.hash.slice(1)));
+
+/* Mobile sidebar toggle */
+document.getElementById("toggleSidebar").addEventListener("click", () => {
+  document.getElementById("sidebar").classList.toggle("open");
+});
+
+/* Search filter */
+document.getElementById("searchBox").addEventListener("input", (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll(".nav-links li").forEach(li => {
+    const text = li.textContent.toLowerCase();
+    li.style.display = text.includes(q) ? "" : "none";
+  });
+  document.querySelectorAll(".nav-group").forEach(g => { if(q) g.open = true; });
+});
+
+/* Init */
+refreshBadges();
+showRoute(location.hash.slice(1) || "intro");
+</script>
+</body>
+</html>

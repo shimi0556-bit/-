@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>קורס שולחן העבודה בווינדוס מלא — ממתחילים ועד מקצוענים</title>
+<style>
+  :root{
+    --brand:#0078D4;
+    --brand-dark:#005A9E;
+    --brand-light:#E5F1FB;
+    --blue:#0078D4;
+    --ink:#232323;
+    --muted:#666;
+    --paper:#FAFAFA;
+    --card:#FFFFFF;
+    --border:#E1E4E8;
+    --green:#1E8E3E;
+    --green-bg:#E6F4EA;
+    --red:#C23B22;
+    --red-bg:#FCEAE6;
+    --radius:14px;
+    --sidebar-w:300px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Segoe UI","Heebo","Arial Hebrew","Arial",sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    line-height:1.65;
+  }
+  a{color:var(--blue);}
+  h1,h2,h3,h4{line-height:1.3; margin:0 0 .5em;}
+  ::selection{background:var(--brand-light);}
+
+  /* Layout */
+  .app{display:flex; min-height:100vh;}
+  .sidebar{
+    width:var(--sidebar-w); flex:0 0 var(--sidebar-w);
+    background:#1B2733; color:#EAF0F6;
+    position:sticky; top:0; height:100vh; overflow-y:auto;
+    padding:18px 16px 40px;
+  }
+  .sidebar .brand{
+    display:flex; align-items:center; gap:10px; margin-bottom:16px;
+    padding:4px 2px;
+  }
+  .brand .logo{
+    width:34px;height:34px;border-radius:8px;
+    background:linear-gradient(135deg,var(--brand),#50B0F0);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;color:#fff;font-size:18px;flex:none;
+  }
+  .brand .name{font-weight:700; font-size:15px;}
+  .brand .sub{font-size:11.5px; color:#A6B4C2;}
+
+  .progress-wrap{margin:10px 2px 18px;}
+  .progress-label{display:flex; justify-content:space-between; font-size:12px; color:#B3C1CE; margin-bottom:5px;}
+  .progress-bar{height:8px; background:#28394A; border-radius:99px; overflow:hidden;}
+  .progress-fill{height:100%; background:linear-gradient(90deg,var(--brand),#6FC3F7); width:0%; transition:width .4s ease;}
+
+  .search{
+    width:100%; padding:8px 10px; border-radius:9px; border:1px solid #34495C;
+    background:#22313F; color:#EAF0F6; font-size:13px; margin-bottom:14px;
+  }
+  .search::placeholder{color:#7E92A3;}
+
+  .nav-group{margin-bottom:6px;}
+  .nav-group > summary{
+    cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px;
+    padding:9px 8px; border-radius:9px; font-weight:700; font-size:13.5px;
+    color:#EAF0F6;
+  }
+  .nav-group > summary::-webkit-details-marker{display:none;}
+  .nav-group > summary:hover{background:#22313F;}
+  .nav-group[open] > summary .chev{transform:rotate(90deg);}
+  .chev{transition:transform .15s; font-size:11px; color:#B3C1CE;}
+  .nav-group .badge{
+    margin-inline-start:auto; font-size:10.5px; color:#B3C1CE;
+    background:#22313F; padding:1px 7px; border-radius:99px;
+  }
+  .nav-links{list-style:none; margin:2px 0 10px; padding-inline-start:6px; border-inline-start:1px dashed #34495C;}
+  .nav-links li{margin:1px 0;}
+  .nav-links a{
+    display:flex; align-items:center; gap:7px; text-decoration:none;
+    color:#CBD8E4; font-size:13px; padding:6px 10px; border-radius:8px;
+  }
+  .nav-links a:hover{background:#22313F; color:#fff;}
+  .nav-links a.active{background:var(--brand); color:#fff; font-weight:600;}
+  .nav-links .dot{
+    width:15px;height:15px;border-radius:50%;border:1.5px solid #5C7185;flex:none;
+    font-size:10px; display:flex; align-items:center; justify-content:center; color:transparent;
+  }
+  .nav-links a.done .dot{background:var(--green); border-color:var(--green); color:#fff;}
+  .extra-links{margin-top:14px; padding-top:14px; border-top:1px solid #34495C;}
+  .extra-links a{
+    display:flex; align-items:center; gap:8px; text-decoration:none; color:#CBD8E4;
+    font-size:13px; padding:7px 10px; border-radius:8px;
+  }
+  .extra-links a:hover{background:#22313F; color:#fff;}
+  .extra-links a.active{background:var(--brand); color:#fff;}
+
+  /* Main */
+  .main{flex:1; min-width:0; padding:34px 40px 90px; max-width:900px; margin:0 auto;}
+  .section{display:none; animation:fade .25s ease;}
+  .section.active{display:block;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+
+  .crumb{font-size:12.5px; color:var(--muted); margin-bottom:6px;}
+  .lesson-title{font-size:28px; font-weight:800; margin-bottom:4px;}
+  .lesson-meta{font-size:13px; color:var(--muted); margin-bottom:22px; display:flex; gap:14px; align-items:center;}
+
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+    padding:20px 22px; margin-bottom:18px;
+  }
+  .card h3{font-size:16px; color:var(--brand-dark); margin-bottom:8px;}
+  .content-body p{margin:0 0 12px;}
+  .content-body ul{margin:0 0 12px; padding-inline-start:22px;}
+  .content-body li{margin-bottom:6px;}
+  .content-body strong{color:var(--brand-dark);}
+  code, kbd{
+    background:#F1F3F5; border:1px solid var(--border); border-radius:5px;
+    padding:1px 6px; font-size:.92em; font-family:Consolas,"Courier New",monospace;
+  }
+  kbd{box-shadow:0 1.5px 0 var(--border);}
+
+  .tip-box{
+    background:var(--brand-light); border:1px solid #C7E0F4; border-radius:12px;
+    padding:14px 16px; margin:14px 0; font-size:14px;
+  }
+  .tip-box b{color:var(--brand-dark);}
+  .try-box{
+    background:#EAF7EF; border:1px solid #C3E6CE; border-radius:12px;
+    padding:14px 16px; margin:14px 0; font-size:14px;
+  }
+  .try-box b{color:var(--green);}
+
+  .quiz{background:#FBFDFE; border:1.5px dashed #B9D6EC;}
+  .quiz h3{margin-bottom:12px;}
+  .quiz .q{font-weight:600; margin-bottom:10px;}
+  .quiz .opts{display:flex; flex-direction:column; gap:8px;}
+  .quiz button.opt{
+    text-align:right; padding:10px 14px; border-radius:9px; border:1px solid var(--border);
+    background:#fff; cursor:pointer; font-size:14px; font-family:inherit;
+  }
+  .quiz button.opt:hover{border-color:var(--brand);}
+  .quiz button.opt.correct{background:var(--green-bg); border-color:var(--green); color:var(--green);}
+  .quiz button.opt.wrong{background:var(--red-bg); border-color:var(--red); color:var(--red);}
+  .quiz button.opt:disabled{cursor:default;}
+  .quiz .explain{margin-top:10px; font-size:13.5px; color:var(--muted); display:none;}
+  .quiz .explain.show{display:block;}
+
+  .lesson-footer{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    margin-top:28px; padding-top:18px; border-top:1px solid var(--border);
+  }
+  .btn{
+    display:inline-flex; align-items:center; gap:6px; cursor:pointer; border:none;
+    border-radius:10px; padding:10px 16px; font-size:14px; font-weight:600; font-family:inherit;
+    text-decoration:none;
+  }
+  .btn-primary{background:var(--brand); color:#fff;}
+  .btn-primary:hover{background:var(--brand-dark);}
+  .btn-outline{background:#fff; border:1px solid var(--border); color:var(--ink);}
+  .btn-outline:hover{border-color:var(--brand);}
+  .btn-ghost{background:transparent; color:var(--muted); border:none; font-size:13px;}
+  .mark-done{display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--muted); cursor:pointer; user-select:none;}
+  .mark-done input{width:17px; height:17px; accent-color:var(--green); cursor:pointer;}
+
+  .hero{
+    background:linear-gradient(135deg,var(--brand),#50B0F0);
+    color:#fff; border-radius:20px; padding:44px 38px; margin-bottom:26px;
+  }
+  .hero h1{font-size:32px; margin-bottom:10px;}
+  .hero p{font-size:15.5px; max-width:640px; opacity:.95;}
+  .hero .stats{display:flex; gap:26px; margin-top:22px; flex-wrap:wrap;}
+  .hero .stat b{display:block; font-size:22px;}
+  .hero .stat span{font-size:12.5px; opacity:.9;}
+
+  .grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:20px 0;}
+  .grid-2{display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin:20px 0;}
+  .mini-card{
+    background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px;
+    cursor:pointer;
+  }
+  .mini-card:hover{border-color:var(--brand);}
+  .mini-card .n{font-size:12px; color:var(--muted);}
+  .mini-card .t{font-weight:700; font-size:14.5px; margin:3px 0;}
+  .mini-card .d{font-size:12.5px; color:var(--muted);}
+
+  table.cheat{width:100%; border-collapse:collapse; font-size:13.5px; margin-bottom:20px;}
+  table.cheat th, table.cheat td{border:1px solid var(--border); padding:8px 12px; text-align:right;}
+  table.cheat th{background:var(--brand-light); color:var(--brand-dark);}
+  table.cheat tr:nth-child(even){background:#FAFAFA;}
+
+  .cert-box{
+    background:var(--card); border:3px double var(--brand); border-radius:16px;
+    padding:40px; text-align:center; margin-top:10px;
+  }
+  .cert-box h2{font-size:26px; color:var(--brand-dark);}
+  .cert-name{font-size:24px; font-weight:800; margin:18px 0; border-bottom:2px solid var(--border); display:inline-block; padding-bottom:6px; min-width:280px;}
+  .cert-input{padding:10px 14px; border:1px solid var(--border); border-radius:9px; font-size:15px; width:280px; text-align:center; font-family:inherit;}
+
+  .topbar-mobile{display:none;}
+  @media (max-width:900px){
+    .app{flex-direction:column;}
+    .sidebar{
+      position:relative; height:auto; width:100%; flex:none;
+      display:none;
+    }
+    .sidebar.open{display:block;}
+    .topbar-mobile{
+      display:flex; align-items:center; justify-content:space-between;
+      background:#1B2733; color:#fff; padding:12px 16px; position:sticky; top:0; z-index:10;
+    }
+    .topbar-mobile button{background:var(--brand); color:#fff; border:none; border-radius:8px; padding:8px 12px; font-size:13px;}
+    .main{padding:24px 18px 70px;}
+    .grid-3{grid-template-columns:1fr;}
+    .grid-2{grid-template-columns:1fr;}
+    .hero{padding:28px 22px;}
+  }
+  @media print{
+    .sidebar,.topbar-mobile,.lesson-footer,.quiz{display:none !important;}
+    .section{display:block !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar-mobile">
+  <strong>🖥️ קורס שולחן העבודה</strong>
+  <button id="toggleSidebar">☰ תפריט</button>
+</div>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="logo">W</div>
+      <div>
+        <div class="name">קורס שולחן העבודה בווינדוס</div>
+        <div class="sub">ממתחילים ועד מקצוענים</div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-label"><span>התקדמות</span><span id="progressPct">0%</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <input type="text" class="search" id="searchBox" placeholder="🔍 חיפוש נושא בקורס...">
+
+    <nav id="navContainer"></nav>
+
+    <div class="extra-links">
+      <a href="#intro" data-route="intro">🏠 עמוד הבית</a>
+      <a href="#cheatsheet" data-route="cheatsheet">⌨️ דף קיצורים להדפסה</a>
+      <a href="#final-quiz" data-route="final-quiz">🎯 מבחן מסכם</a>
+      <a href="#certificate" data-route="certificate">🎓 תעודת סיום</a>
+    </div>
+  </aside>
+
+  <main class="main" id="mainContent">
+    <!-- rendered by JS -->
+  </main>
+</div>
+
+<script>
+/* ======================= COURSE DATA ======================= */
+const COURSE = [
+  {
+    id:"m1", title:"שלב 1 · מתחילים", icon:"🟢",
+    lessons:[
+      {
+        id:"m1l1", title:"הכרת שולחן העבודה",
+        content:`
+          <p>שולחן העבודה (Desktop) הוא המסך הראשי שרואים אחרי ההתחברות לווינדוס — נקודת המוצא לכל עבודה במחשב.</p>
+          <ul>
+            <li><strong>אייקונים (סמלים)</strong> — קיצורי דרך לתוכניות, קבצים ותיקיות, מוצגים כתמונה קטנה + שם.</li>
+            <li><strong>רקע שולחן העבודה (Wallpaper)</strong> — התמונה או הצבע שברקע, ניתן להחלפה בקלות.</li>
+            <li><strong>לחיצה ימנית על הרקע</strong> — פותחת תפריט הקשר (Context Menu) עם אפשרויות כמו View, Sort by, New, Personalize.</li>
+            <li><strong>לחיצה כפולה על אייקון</strong> — פותחת את התוכנית/הקובץ שהוא מייצג. לחיצה בודדת רק מסמנת (בוחרת) אותו.</li>
+            <li><strong>פח המיחזור (Recycle Bin)</strong> — אייקון קבוע בפינת שולחן העבודה, מכיל קבצים שנמחקו ועדיין ניתנים לשחזור.</li>
+          </ul>
+        `,
+        tip:`אם שולחן העבודה נראה "עמוס" מדי — לחיצה ימנית → View → אפשר לבטל את הצגת האייקונים זמנית כדי לראות רק את הרקע.`,
+        quiz:{q:"מה ההבדל בין לחיצה בודדת ללחיצה כפולה על אייקון בשולחן העבודה?", options:["אין הבדל","לחיצה בודדת רק מסמנת את האייקון, לחיצה כפולה פותחת אותו","לחיצה כפולה מוחקת את האייקון"], correct:1, explain:"לחיצה בודדת בוחרת (מסמנת) את הפריט; רק לחיצה כפולה בפועל פותחת את התוכנית או הקובץ שמאחוריו."}
+      },
+      {
+        id:"m1l2", title:"שורת המשימות (Taskbar)",
+        content:`
+          <p>שורת המשימות היא הפס לרוחב תחתית המסך (בברירת מחדל), תמיד גלוי, ומרכז את כל הניווט השוטף:</p>
+          <ul>
+            <li><strong>כפתור Start</strong> — בקצה (בווינדוס 11 בד"כ במרכז), פותח את תפריט ההתחלה.</li>
+            <li><strong>תיבת חיפוש</strong> — חיפוש מיידי בתוכנות, קבצים והגדרות.</li>
+            <li><strong>אפליקציות מוצמדות (Pinned)</strong> — סמלי תוכנות קבועים לגישה מהירה בלחיצה אחת.</li>
+            <li><strong>אפליקציות פתוחות</strong> — כל תוכנית שרצה כרגע מופיעה כאן כדי לעבור אליה במהירות.</li>
+            <li><strong>מגש המערכת (System Tray)</strong> — בפינה הנגדית: שעון, עוצמת קול, Wi-Fi, סוללה, והתראות.</li>
+          </ul>
+        `,
+        tip:`לחיצה ימנית על תוכנית פתוחה בשורת המשימות מציעה אפשרויות מהירות כמו סגירה או פתיחת חלון חדש, בלי לעבור דרך התוכנית עצמה.`,
+        quiz:{q:"היכן נמצא בדרך כלל השעון ואייקוני ההתראות?", options:["בפינת מגש המערכת (System Tray) בקצה שורת המשימות","בתוך תפריט Start בלבד","על שולחן העבודה"], correct:0, explain:"מגש המערכת מרכז שעון, עוצמת קול, רשת והתראות בקצה שורת המשימות, נגיש תמיד בלי לפתוח תוכנית."}
+      },
+      {
+        id:"m1l3", title:"תפריט Start",
+        content:`
+          <p>תפריט ה-Start הוא שער הכניסה לכל התוכניות המותקנות במחשב, נפתח בלחיצה על כפתור Start או על מקש ה-Windows במקלדת.</p>
+          <ul>
+            <li><strong>אפליקציות מוצמדות</strong> — אריחים/סמלים שבחרתם לקבע לגישה מהירה.</li>
+            <li><strong>כל התוכניות (All apps)</strong> — רשימה אלפביתית מלאה של כל מה שמותקן.</li>
+            <li><strong>מומלצים לאחרונה</strong> — קבצים/תוכניות שנפתחו לאחרונה.</li>
+            <li><strong>כפתור Power</strong> — כיבוי, הפעלה מחדש (Restart), ומצב שינה (Sleep).</li>
+            <li>הקלדה ישירה בתוך תפריט Start מפעילה חיפוש מיידי — לא צריך ללחוץ קודם על תיבת חיפוש נפרדת.</li>
+          </ul>
+        `,
+        tip:`הדרך המהירה ביותר לפתוח כל תוכנית: לחצו על מקש Windows והתחילו להקליד את שמה — היא תופיע תוך שנייה.`,
+        quiz:{q:"מה הדרך המהירה ביותר למצוא תוכנית מותקנת דרך תפריט Start?", options:["לגלול ידנית ברשימה עד שמוצאים אותה","ללחוץ Windows ולהתחיל להקליד את השם","להתקין אותה מחדש"], correct:1, explain:"הקלדה ישירה בתפריט Start מפעילה חיפוש מיידי שמאתר את התוכנית תוך שבריר שנייה, מהיר בהרבה מגלילה ידנית."}
+      },
+      {
+        id:"m1l4", title:"פתיחה, סגירה והזזת חלונות",
+        content:`
+          <p>כל תוכנית פתוחה מוצגת בתוך "חלון" — מלבן עם שלושה כפתורים בפינה העליונה:</p>
+          <ul>
+            <li><strong>מזער (Minimize, קו תחתון)</strong> — מסתיר את החלון לשורת המשימות מבלי לסגור אותו.</li>
+            <li><strong>הגדל/שחזר (Maximize/Restore, ריבוע)</strong> — ממלא את כל המסך או חוזר לגודל הקודם.</li>
+            <li><strong>סגור (Close, X)</strong> — סוגר את התוכנית לגמרי.</li>
+            <li><strong>גרירה</strong> — לחיצה והחזקה על שורת הכותרת העליונה של החלון מזיזה אותו על המסך.</li>
+            <li><strong>שינוי גודל</strong> — גרירת קצה/פינה של החלון משנה את מידותיו.</li>
+            <li><kbd>Alt</kbd>+<kbd>Tab</kbd> — מעבר מהיר בין חלונות פתוחים.</li>
+          </ul>
+        `,
+        tip:`אם חלון "נתקע" מחוץ לגבולות המסך — לחצו Alt+רווח כדי לפתוח תפריט חלון נסתר, ואז בחרו Move והשתמשו בחצים.`,
+        quiz:{q:"מה עושה כפתור המזעור (Minimize) בחלון?", options:["סוגר את התוכנית לגמרי","מסתיר את החלון לשורת המשימות בלי לסגור אותו","מוחק את התוכן שבחלון"], correct:1, explain:"מזעור רק מסתיר את החלון זמנית — התוכנית ממשיכה לרוץ ברקע וניתן לפתוח אותה מחדש בלחיצה על שורת המשימות."}
+      },
+      {
+        id:"m1l5", title:"קבצים ותיקיות בשולחן העבודה",
+        content:`
+          <p>שולחן העבודה הוא בעצם תיקייה רגילה במחשב, ולכן אפשר לנהל בו קבצים ותיקיות ככל תיקייה אחרת:</p>
+          <ul>
+            <li><strong>יצירת תיקייה חדשה</strong> — לחיצה ימנית על הרקע → New → Folder.</li>
+            <li><strong>שינוי שם</strong> — לחיצה ימנית → Rename, או סימון הקובץ ולחיצה על <kbd>F2</kbd>.</li>
+            <li><strong>העתקה/הדבקה/גזירה</strong> — <kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>Ctrl</kbd>+<kbd>V</kbd> / <kbd>Ctrl</kbd>+<kbd>X</kbd>.</li>
+            <li><strong>מחיקה</strong> — מקש <kbd>Delete</kbd> מעביר לפח המיחזור; <kbd>Shift</kbd>+<kbd>Delete</kbd> מוחק לצמיתות (ללא אפשרות שחזור מהפח).</li>
+            <li><strong>שחזור מהפח</strong> — פתיחת Recycle Bin, לחיצה ימנית על הפריט → Restore.</li>
+          </ul>
+        `,
+        tip:`הימנעו מלשמור עשרות קבצים ישירות על שולחן העבודה — זה מאט לפעמים את הטעינה ומקשה למצוא דברים. תיקיות מסודרות עדיפות.`,
+        quiz:{q:"מה עושה Shift+Delete על קובץ, בהבדל מ-Delete רגיל?", options:["מעביר לפח המיחזור כרגיל","מוחק את הקובץ לצמיתות בלי לעבור דרך פח המיחזור","רק משנה את שם הקובץ"], correct:1, explain:"Delete רגיל מעביר לפח המיחזור וניתן לשחזר; Shift+Delete מדלג על הפח ומוחק לצמיתות מיידית."}
+      },
+      {
+        id:"m1l6", title:"חיפוש בווינדוס",
+        content:`
+          <p>חיפוש הוא אחד הכלים המהירים ביותר לאיתור כל דבר במחשב — קבצים, תוכניות, הגדרות ואפילו תוצאות אינטרנט:</p>
+          <ul>
+            <li>פתיחה — לחיצה על מקש <kbd>Windows</kbd>, או על סמל הזכוכית המגדלת בשורת המשימות.</li>
+            <li>התחלת הקלדה מציגה תוצאות בזמן אמת, ממוינות לפי רלוונטיות: תוכניות תמיד למעלה.</li>
+            <li>אפשר לסנן תוצאות לפי סוג: אפליקציות, מסמכים, תמונות, הגדרות, אינטרנט.</li>
+            <li>חיפוש עובד גם על תוכן בתוך מסמכים (לא רק שמות קבצים), תלוי בהגדרות האינדוקס.</li>
+          </ul>
+        `,
+        tip:`אפשר לפתוח תוכנית ישירות מתוצאת החיפוש בלחיצה על Enter, בלי לגעת בעכבר בכלל.`,
+        quiz:{q:"מה הדרך הכי מהירה לפתוח את החיפוש בווינדוס?", options:["ללחוץ על מקש Windows","לפתוח את File Explorer קודם","לגשת דרך לוח הבקרה"], correct:0, explain:"מקש Windows פותח ישירות את תיבת החיפוש/תפריט Start, המקום המהיר ביותר להתחיל להקליד חיפוש."}
+      },
+      {
+        id:"m1l7", title:"קיצורי דרך (Shortcuts)",
+        content:`
+          <p>קיצור דרך הוא "מצביע" קטן לקובץ או תוכנית אמיתיים במקום אחר במחשב — לא הקובץ המקורי עצמו:</p>
+          <ul>
+            <li>זיהוי חזותי — לרוב יש חץ קטן בפינה השמאלית-תחתונה של האייקון.</li>
+            <li>יצירה — לחיצה ימנית על קובץ/תוכנית → Create shortcut, ואז אפשר לגרור את הקיצור לשולחן העבודה.</li>
+            <li>מחיקת קיצור דרך <strong>לא</strong> מוחקת את הקובץ המקורי — רק את "המצביע" אליו.</li>
+            <li>שימושי כדי לגשת מהר לתוכניות/תיקיות נפוצות בלי לשכפל את הקובץ עצמו בכמה מקומות.</li>
+          </ul>
+        `,
+        tip:`אם קיצור דרך "שבור" (מציג שגיאה בפתיחה) — כנראה שהקובץ המקורי הוזז או נמחק; אפשר פשוט למחוק את הקיצור וליצור חדש.`,
+        quiz:{q:"מה קורה כשמוחקים קיצור דרך (shortcut) לתוכנית?", options:["התוכנית עצמה נמחקת מהמחשב","רק ה'מצביע' נמחק, התוכנית המקורית נשארת בדיוק כפי שהייתה","הקובץ עובר לפח המיחזור לצמיתות"], correct:1, explain:"קיצור דרך הוא רק הפניה לקובץ המקורי — מחיקתו לא נוגעת בקובץ/בתוכנית עצמם."}
+      }
+    ]
+  },
+  {
+    id:"m2", title:"שלב 2 · בינוני", icon:"🟡",
+    lessons:[
+      {
+        id:"m2l1", title:"ניהול חלונות מתקדם",
+        content:`
+          <p>כלים שהופכים עבודה עם כמה חלונות בו-זמנית לנוחה בהרבה:</p>
+          <ul>
+            <li><strong>Snap Layouts / Snap Assist</strong> — גרירת חלון לקצה או לפינת המסך "מצמידה" אותו אוטומטית לחצי/רבע מסך; ריחוף מעל כפתור ההגדלה מציג פריסות מוכנות.</li>
+            <li><strong>Task View</strong> (<kbd>Win</kbd>+<kbd>Tab</kbd>) — מציג את כל החלונות הפתוחים כתמונות ממוזערות לבחירה מהירה.</li>
+            <li><strong>שולחנות עבודה וירטואליים (Virtual Desktops)</strong> — יצירת "שולחן" נפרד לגמרי לעבודה/פרויקט, כדי להפריד למשל בין עבודה לפנאי בלי לבלבל בין חלונות.</li>
+            <li><kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>→</kbd>/<kbd>←</kbd> — מעבר בין שולחנות עבודה וירטואליים.</li>
+          </ul>
+        `,
+        tip:`שולחן עבודה וירטואלי נפרד לפרויקט זמני זה דרך מצוינת "לנקות ראש" — סוגרים את השולחן כשהפרויקט נגמר, בלי לחפש ולסגור כל חלון בנפרד.`,
+        quiz:{q:"מה עושה Task View (Win+Tab)?", options:["פותח תוכנית חדשה","מציג את כל החלונות הפתוחים כתמונות ממוזערות לבחירה מהירה","סוגר את כל החלונות"], correct:1, explain:"Task View מציג תצוגה חזותית של כל החלונות והשולחנות הווירטואליים הפתוחים, לבחירה מהירה בלי לחפש בשורת המשימות."}
+      },
+      {
+        id:"m2l2", title:"התאמה אישית של שולחן העבודה",
+        content:`
+          <p>Settings → Personalization מרכז את כל אפשרויות העיצוב האישי:</p>
+          <ul>
+            <li><strong>Background</strong> — תמונה בודדת, צבע אחיד, או מצגת שמתחלפת אוטומטית.</li>
+            <li><strong>Colors</strong> — צבע הדגשה (Accent Color) לכפתורים ולמסגרות חלונות, ומצב בהיר/כהה (Light/Dark Mode).</li>
+            <li><strong>Themes</strong> — חבילה שלמה של רקע+צבעים+צלילי מערכת+סמנים, ניתנת לשמירה והחלפה מהירה.</li>
+            <li><strong>Lock screen</strong> — עיצוב מסך הנעילה, נפרד מרקע שולחן העבודה עצמו.</li>
+          </ul>
+        `,
+        tip:`מצב כהה (Dark Mode) לא רק נראה טוב — הוא גם מפחית עומס על העיניים בעבודה בשעות החשוכות ולעיתים חוסך סוללה במסכי OLED.`,
+        quiz:{q:"מה כולל 'ערכת נושא' (Theme) בהגדרות ההתאמה האישית?", options:["רק את הרקע","חבילה שלמה: רקע, צבעים, צלילים וסמנים יחד","רק את גודל הגופן"], correct:1, explain:"ערכת נושא מאגדת כמה הגדרות עיצוב יחד (רקע, צבעים, צלילים, סמנים) לשמירה והחלפה כיחידה אחת."}
+      },
+      {
+        id:"m2l3", title:"סידור וארגון אייקונים",
+        content:`
+          <p>שליטה מדויקת במראה שולחן העבודה, דרך לחיצה ימנית על הרקע:</p>
+          <ul>
+            <li><strong>View</strong> — גודל אייקונים (גדול/בינוני/קטן), Auto arrange icons (סידור אוטומטי), Align icons to grid (יישור לרשת נסתרת).</li>
+            <li><strong>Sort by</strong> — מיון לפי שם, גודל, סוג פריט, או תאריך שינוי אחרון.</li>
+            <li><strong>Show desktop icons</strong> — הצגה/הסתרה זמנית של כל האייקונים בלי למחוק אותם.</li>
+            <li>גרירה חופשית של אייקון אפשרית רק כשה-Auto arrange כבוי.</li>
+          </ul>
+        `,
+        tip:`אם רוצים לצלם מסך "נקי" בלי אייקונים — Show desktop icons זמני זה מהיר יותר ממחיקה/הסתרה ידנית של כל אחד.`,
+        quiz:{q:"מה עושה אפשרות 'Auto arrange icons'?", options:["מוחקת אייקונים לא בשימוש","מסדרת אוטומטית את האייקונים בשורות/עמודות מסודרות, ומונעת גרירה חופשית","משנה את צבע האייקונים"], correct:1, explain:"Auto arrange שומרת על סידור קבוע ומסודר של האייקונים; כשהיא פעילה, לא ניתן לגרור אייקון למיקום חופשי על הרקע."}
+      },
+      {
+        id:"m2l4", title:"שורת המשימות המתקדמת",
+        content:`
+          <p>מעבר לבסיס (שיעור 1.2), לשורת המשימות יש עוד כמה יכולות:</p>
+          <ul>
+            <li><strong>Widgets</strong> — פאנל מידע מהיר (חדשות, מזג אוויר, יומן) שנפתח מסמל ייעודי בשורת המשימות.</li>
+            <li><strong>Action Center / Notification Center</strong> — מרכז את כל ההתראות האחרונות ומתגי הגדרות מהירים (Wi-Fi, Bluetooth, בהירות) במקום אחד.</li>
+            <li><strong>הצמדה/שחרור אפליקציה</strong> — לחיצה ימנית על סמל אפליקציה פתוחה → Pin to taskbar / Unpin.</li>
+            <li><strong>אייקוני System Tray נסתרים</strong> — חץ קטן שפותח רשימת סמלי רקע נוספים שלא תמיד מוצגים ישירות.</li>
+          </ul>
+        `,
+        tip:`אם שורת המשימות "מלאה מדי" — שחררו הצמדות שלא באמת משתמשים בהן; פחות סמלים = חיפוש מהיר יותר אחרי מה שכן צריך.`,
+        quiz:{q:"מה מרכז ה-Action Center / Notification Center?", options:["רק את שעון המערכת","התראות אחרונות ומתגי הגדרות מהירים (Wi-Fi, Bluetooth וכו') במקום אחד","רשימת כל הקבצים במחשב"], correct:1, explain:"Action Center מאגד התראות עדכניות יחד עם קיצורי גישה למתגי הגדרות נפוצים, לגישה מהירה בלי לפתוח את אפליקציית ההגדרות."}
+      },
+      {
+        id:"m2l5", title:"File Explorer מתקדם",
+        content:`
+          <p>File Explorer הוא תוכנית ניהול הקבצים המרכזית של ווינדוס, נפתחת ב-<kbd>Win</kbd>+<kbd>E</kbd>:</p>
+          <ul>
+            <li><strong>Quick Access</strong> — קיצורי דרך לתיקיות שמשתמשים בהן הכי הרבה, מוצג אוטומטית בסרגל הצד.</li>
+            <li><strong>תצוגות (Views)</strong> — Details (רשימה עם עמודות: גודל/תאריך/סוג), Large icons, List וכו׳ — לפי לשונית View.</li>
+            <li><strong>חיפוש בתוך Explorer</strong> — תיבת חיפוש בפינה מחפשת רק בתוך התיקייה הפתוחה (ותתי-התיקיות שלה).</li>
+            <li><strong>Properties</strong> (<kbd>Alt</kbd>+<kbd>Enter</kbd>) — פרטי קובץ מלאים: גודל, תאריך יצירה/שינוי, הרשאות.</li>
+            <li>סרגל הכתובת העליון ניתן ללחיצה על כל חלק בנתיב כדי לקפוץ ישירות לאותה תיקייה.</li>
+          </ul>
+        `,
+        tip:`הצמידו תיקיות עבודה קבועות ל-Quick Access (לחיצה ימנית על תיקייה → Pin to Quick access) כדי לחסוך ניווט חוזר בכל פעם.`,
+        quiz:{q:"מה עושה Quick Access ב-File Explorer?", options:["מוחק קבצים ישנים אוטומטית","מציג קיצורי דרך לתיקיות בשימוש תדיר בסרגל הצד","מצפין את כל הקבצים"], correct:1, explain:"Quick Access מרכז גישה מהירה לתיקיות המועדפות/הנפוצות ביותר, כך שלא צריך לנווט אליהן מחדש כל פעם."}
+      },
+      {
+        id:"m2l6", title:"קיצורי מקלדת ותפוקה",
+        content:`
+          <p>קיצורים שחוסכים עשרות קליקים ביום (רשימה מורחבת בדף הקיצורים בתפריט):</p>
+          <ul>
+            <li><kbd>Win</kbd>+<kbd>D</kbd> — הצגת/הסתרת שולחן העבודה מיידית.</li>
+            <li><kbd>Win</kbd>+<kbd>E</kbd> — פתיחת File Explorer. <kbd>Win</kbd>+<kbd>I</kbd> — פתיחת Settings.</li>
+            <li><kbd>Win</kbd>+<kbd>L</kbd> — נעילת המסך המיידית. <kbd>Win</kbd>+<kbd>R</kbd> — תיבת הרצת פקודה (Run).</li>
+            <li><kbd>Win</kbd>+<kbd>מקש חץ</kbd> — הצמדת החלון הפעיל לחצי/רבע מסך (Snap).</li>
+            <li><kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> — כלי גזירת מסך (Snipping) לצילום אזור נבחר.</li>
+          </ul>
+        `,
+        tip:`Win+L זו הרגל בטיחות בסיסי — נעלו את המסך בכל פעם שקמים מהמחשב, גם לרגע, במיוחד במקום עבודה משותף.`,
+        quiz:{q:"מה עושה הקיצור Win+D?", options:["פותח את File Explorer","מציג/מסתיר מיידית את שולחן העבודה","סוגר את כל התוכניות לצמיתות"], correct:1, explain:"Win+D ממזער (או משחזר) בבת אחת את כל החלונות הפתוחים כדי להראות את שולחן העבודה החשוף, בלי לסגור אף תוכנית."}
+      },
+      {
+        id:"m2l7", title:"הגדרות מערכת בסיסיות",
+        content:`
+          <p>ניהול המחשב מתבצע דרך שתי מערכות: <strong>Settings</strong> החדשה (<kbd>Win</kbd>+<kbd>I</kbd>) ו-<strong>Control Panel</strong> הישן יותר, שחלק מהאפשרויות בו עדיין לא הועברו ל-Settings:</p>
+          <ul>
+            <li><strong>Windows Update</strong> — עדכוני אבטחה ותכונות, מומלץ להשאיר פעיל אוטומטית.</li>
+            <li><strong>Apps</strong> — רשימת כל התוכניות המותקנות, עם אפשרות הסרה (Uninstall).</li>
+            <li><strong>System</strong> — מידע על המחשב, אחסון, מסכים, סוללה (למחשבים ניידים).</li>
+            <li>חיפוש בתוך Settings עצמה (תיבת חיפוש עליונה) הוא הדרך המהירה ביותר למצוא הגדרה ספציפית מבלי לנווט ידנית.</li>
+          </ul>
+        `,
+        tip:`לא מוצאים הגדרה ב-Settings? חפשו אותה גם ב-Control Panel — חלק מההגדרות המתקדמות עדיין קיימות רק שם.`,
+        quiz:{q:"מהי הדרך המהירה ביותר לפתוח את אפליקציית ההגדרות?", options:["Win+I","Win+E","Alt+F4"], correct:0, explain:"Win+I הוא קיצור המקלדת הישיר לפתיחת Settings, בלי לעבור דרך תפריט Start."}
+      }
+    ]
+  },
+  {
+    id:"m3", title:"שלב 3 · מקצוענים", icon:"🔴",
+    lessons:[
+      {
+        id:"m3l1", title:"חשבונות משתמש והרשאות",
+        content:`
+          <p>לכל מי שמשתמש במחשב יש חשבון נפרד, עם רמת הרשאה משלו:</p>
+          <ul>
+            <li><strong>חשבון Microsoft</strong> — מקושר לאימייל, מסנכרן הגדרות/קבצים בין מכשירים דרך OneDrive.</li>
+            <li><strong>חשבון מקומי (Local Account)</strong> — קיים רק על המחשב הזה, ללא סנכרון ענן.</li>
+            <li><strong>Administrator</strong> — הרשאה מלאה: התקנת תוכנות, שינוי הגדרות מערכת קריטיות.</li>
+            <li><strong>Standard User</strong> — הרשאה מוגבלת, לא יכול לבצע שינויים שמשפיעים על כל המחשב בלי אישור.</li>
+            <li><strong>User Account Control (UAC)</strong> — חלון האישור הצהוב/כחול שקופץ לפני פעולות רגישות, גם למנהל.</li>
+          </ul>
+        `,
+        tip:`למשתמשים שאינם מומחי מחשבים (למשל ילדים) — חשבון Standard מונע התקנות/שינויים לא רצויים בטעות, גם אם מישהו אחר ינהל את החשבון שלהם.`,
+        quiz:{q:"מה עושה User Account Control (UAC)?", options:["חוסם גישה לאינטרנט","מציג חלון אישור לפני פעולות רגישות שמשפיעות על המערכת","מוחק קבצים ישנים אוטומטית"], correct:1, explain:"UAC הוא שכבת ביטחון שמבקשת אישור מפורש (גם ממנהל) לפני פעולות שיכולות לשנות את המערכת באופן משמעותי."}
+      },
+      {
+        id:"m3l2", title:"אבטחה בסיסית של שולחן העבודה",
+        content:`
+          <p>שכבות הגנה מובנות בווינדוס:</p>
+          <ul>
+            <li><strong>Windows Defender (Microsoft Defender)</strong> — אנטי-וירוס והגנה מובנים, פעילים כברירת מחדל, נבדק ב-Settings → Privacy & Security.</li>
+            <li><strong>Windows Hello</strong> — כניסה בזיהוי פנים/טביעת אצבע/PIN במקום סיסמה מלאה, מהיר ובטוח יותר.</li>
+            <li><strong>נעילת מסך אוטומטית</strong> — Settings → Accounts → Sign-in options, קובע אחרי כמה זמן חוסר פעילות המסך ננעל.</li>
+            <li><strong>BitLocker</strong> — הצפנת הדיסק כולו, כך שגם אם המחשב נגנב, לא ניתן לקרוא את הקבצים בלי הסיסמה/מפתח.</li>
+          </ul>
+        `,
+        tip:`הגדירו PIN במקום סיסמה ל-Windows Hello — הוא מקומי למכשיר בלבד (לא נשלח לענן), ולכן לרוב גם בטוח יותר וגם נוח יותר יומיומית.`,
+        quiz:{q:"מה עושה BitLocker?", options:["מנקה קבצים זמניים","מצפין את כל הדיסק כדי שלא ניתן יהיה לקרוא ממנו נתונים בלי הרשאה","מאיץ את מהירות המחשב"], correct:1, explain:"BitLocker מצפין את כונן הדיסק ברמת המערכת, כך שגם אם הדיסק מוצא מהמחשב פיזית, הנתונים שעליו נשארים בלתי קריאים בלי מפתח ההצפנה."}
+      },
+      {
+        id:"m3l3", title:"ניהול ביצועים",
+        content:`
+          <p><strong>Task Manager</strong> (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Esc</kbd>) הוא כלי האבחון המרכזי לביצועי המחשב:</p>
+          <ul>
+            <li><strong>לשונית Processes</strong> — כל תוכנית/תהליך פעיל, כמה CPU/זיכרון/דיסק הוא צורך, עם אפשרות "End Task" לתוכנית שנתקעה.</li>
+            <li><strong>לשונית Startup apps</strong> — אילו תוכניות עולות אוטומטית עם המחשב; כיבוי תוכניות מיותרות כאן מאיץ הדלקה.</li>
+            <li><strong>לשונית Performance</strong> — גרפים בזמן אמת של עומס CPU, זיכרון, דיסק ורשת.</li>
+            <li><strong>Storage Sense</strong> (Settings → System → Storage) — ניקוי אוטומטי תקופתי של קבצים זמניים ופח המיחזור.</li>
+          </ul>
+        `,
+        tip:`תוכנית "תקועה" שלא מגיבה? Ctrl+Shift+Esc → סמנו אותה בלשונית Processes → End Task, במקום לכבות את כל המחשב.`,
+        quiz:{q:"איזה קיצור מקלדת פותח את Task Manager ישירות?", options:["Ctrl+Alt+Delete בלבד","Ctrl+Shift+Esc","Win+R"], correct:1, explain:"Ctrl+Shift+Esc פותח את Task Manager ישירות ומיידית, בלי לעבור דרך מסך הביניים של Ctrl+Alt+Delete."}
+      },
+      {
+        id:"m3l4", title:"גיבוי ושחזור",
+        content:`
+          <p>כלים למניעת אובדן קבצים ולחזרה למצב תקין:</p>
+          <ul>
+            <li><strong>File History</strong> — גיבוי אוטומטי תקופתי של תיקיות אישיות (מסמכים, תמונות) לכונן חיצוני.</li>
+            <li><strong>System Restore</strong> — "נקודת שחזור" של הגדרות המערכת (לא קבצים אישיים) לפני שינוי גדול, כדי לחזור אחורה אם משהו משתבש.</li>
+            <li><strong>OneDrive לשולחן העבודה</strong> — סנכרון אוטומטי של תיקיית שולחן העבודה/מסמכים לענן, כך שהקבצים נגישים גם ממכשיר אחר וגם משוחזרים אם המחשב אובד.</li>
+            <li>הבדל מהותי: File History/OneDrive מגבים <em>קבצים</em>; System Restore משחזר <em>הגדרות מערכת</em> בלבד.</li>
+          </ul>
+        `,
+        tip:`לפני התקנת תוכנה/דרייבר חדש וחשוד — צרו נקודת System Restore ידנית מראש, כך שאם משהו משתבש אפשר לחזור אחורה בקלות.`,
+        quiz:{q:"מה ההבדל בין System Restore ל-File History?", options:["אין הבדל","System Restore משחזר הגדרות מערכת, File History מגבה קבצים אישיים","File History משחזר רק סיסמאות"], correct:1, explain:"System Restore חוזר אחורה במצב הגדרות/תוכנות המערכת; File History שומר עותקים של קבצים אישיים לאורך זמן — שני כלים שונים למטרות שונות."}
+      },
+      {
+        id:"m3l5", title:"נגישות (Accessibility)",
+        content:`
+          <p>Settings → Accessibility (בעבר Ease of Access) מרכז כלים שהופכים את המחשב לנגיש יותר:</p>
+          <ul>
+            <li><strong>Magnifier</strong> — הגדלת אזורים במסך, מופעל ב-<kbd>Win</kbd>+<kbd>+</kbd>.</li>
+            <li><strong>Narrator</strong> — קורא מסך מובנה שמקריא טקסט וממשק בקול, לשימוש ללא ראייה.</li>
+            <li><strong>Contrast themes</strong> — ניגודיות גבוהה לטקסט וממשק, לקריאות טובה יותר.</li>
+            <li><strong>Sticky Keys / Filter Keys</strong> — עזרה למי שמתקשה ללחוץ על כמה מקשים בו-זמנית.</li>
+            <li><strong>כתוביות חיות (Live Captions)</strong> — תמלול אוטומטי בזמן אמת לכל אודיו שמתנגן במחשב.</li>
+          </ul>
+        `,
+        tip:`Win++‎ (Windows ומקש פלוס) מפעיל את Magnifier מיידית בכל מקום — שימושי גם לרגע זמני, לא רק כפתרון נגישות קבוע.`,
+        quiz:{q:"מה עושה Narrator?", options:["מגדיל את המסך","קורא מסך מובנה שמקריא טקסט וממשק בקול","מתקן שגיאות כתיב"], correct:1, explain:"Narrator הוא קורא המסך המובנה של ווינדוס — הוא מקריא בקול את התוכן והממשק כדי לאפשר שימוש במחשב ללא ראייה."}
+      },
+      {
+        id:"m3l6", title:"PowerShell ו-Command Prompt בסיס",
+        content:`
+          <p>מעבר לממשק הגרפי, ווינדוס כולל גם שורת פקודה טקסטואלית לפעולות מתקדמות:</p>
+          <ul>
+            <li><strong>Command Prompt (CMD)</strong> — שורת הפקודה הקלאסית, פקודות פשוטות כמו <code>dir</code> (רשימת קבצים), <code>cd</code> (מעבר תיקייה), <code>ipconfig</code> (פרטי רשת).</li>
+            <li><strong>PowerShell</strong> — כלי מודרני וחזק יותר, מבוסס אובייקטים ולא רק טקסט, מתאים לאוטומציה מתקדמת של המערכת.</li>
+            <li>פתיחה — חיפוש בתפריט Start, או לחיצה ימנית על כפתור Start (<kbd>Win</kbd>+<kbd>X</kbd>) לתפריט גישה מהירה עם קיצור ישיר.</li>
+            <li>שימושי למשתמש מתקדם: אבחון רשת מהיר, הרצת סקריפטים אוטומטיים, ותחזוקת מערכת שחוזרת על עצמה.</li>
+          </ul>
+        `,
+        tip:`אל תריצו פקודה שהעתקתם מהאינטרנט בלי להבין מה היא עושה — שורת פקודה יכולה לשנות/למחוק דברים במערכת בלי אזהרה נוספת.`,
+        quiz:{q:"מה ההבדל המרכזי בין PowerShell ל-Command Prompt הישן?", options:["אין הבדל בפועל","PowerShell מבוסס אובייקטים וחזק יותר לאוטומציה מתקדמת","CMD חדש יותר מ-PowerShell"], correct:1, explain:"PowerShell (מודרני יותר) עובד עם אובייקטים ולא רק פלט טקסט גולמי כמו CMD, מה שהופך אותו לגמיש בהרבה בסקריפטים ובאוטומציה."}
+      },
+      {
+        id:"m3l7", title:"טיפים לניהול מקצועי ו-Windows 10 מול Windows 11",
+        content:`
+          <p>עקרונות שמבדילים שולחן עבודה מאורגן משולחן "כאוטי":</p>
+          <ul>
+            <li><strong>תיקיות במקום ערימה</strong> — קבצי שולחן עבודה מסודרים בתיקיות נושא, לא עשרות קבצים בודדים חופשיים.</li>
+            <li><strong>ניקוי תקופתי</strong> — Storage Sense אוטומטי + מעבר ידני חודשי על קבצים ישנים לא רלוונטיים.</li>
+            <li><strong>כמה מסכים (Multiple Monitors)</strong> — Settings → System → Display לסידור מיקום יחסי בין מסכים, וגרירת Snap בין מסכים לעבודה יעילה.</li>
+            <li><strong>Windows 10 מול Windows 11</strong> — הבדל עיקרי בממשק: ב-Windows 11 כפתור Start ושורת המשימות ממורכזים (ולא בפינה השמאלית כמו ב-10), Snap Layouts מתקדם יותר, ותפריט לחיצה ימנית מקוצר עם אפשרות "Show more options" לתפריט המלא הישן. הפעולות והמושגים הבסיסיים (Start, Taskbar, File Explorer, Settings) זהים בשתי הגרסאות — רק המיקום והעיצוב החזותי משתנים.</li>
+          </ul>
+        `,
+        tip:`אם עברתם מ-Windows 10 ל-11 ומתגעגעים לתפריט הלחיצה הימנית הישן והמלא — הוא עדיין קיים, לחיצה על "Show more options" בתחתית התפריט הקצר חושפת אותו.`,
+        quiz:{q:"מהו ההבדל הבולט ביותר בממשק בין Windows 10 ל-Windows 11?", options:["ב-Windows 11 אין תפריט Start בכלל","ב-Windows 11 כפתור Start ושורת המשימות ממורכזים במקום בפינה השמאלית","הם זהים לחלוטין בממשק"], correct:1, explain:"השינוי החזותי הבולט ביותר ב-Windows 11 הוא מיקום כפתור Start ושורת המשימות במרכז התחתית, לעומת הפינה השמאלית ב-Windows 10 — המושגים הבסיסיים עצמם נשארו זהים."}
+      }
+    ]
+  }
+];
+
+/* ======================= STATE ======================= */
+const STORAGE_KEY = "windows_desktop_course_progress_v1";
+const CERT_KEY = "windows_desktop_course_cert_name_v1";
+let state = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+const ALL_LESSONS = COURSE.flatMap(m => m.lessons.map(l => ({...l, moduleId:m.id, moduleTitle:m.title})));
+const TOTAL = ALL_LESSONS.length;
+
+/* ======================= RENDER SIDEBAR ======================= */
+const navContainer = document.getElementById("navContainer");
+COURSE.forEach((mod, idx) => {
+  const details = document.createElement("details");
+  details.className = "nav-group";
+  details.open = idx === 0;
+  const doneCount = () => mod.lessons.filter(l => state[l.id]).length;
+  details.innerHTML = `
+    <summary><span class="chev">▸</span> ${mod.icon} ${mod.title} <span class="badge" data-mod="${mod.id}">${doneCount()}/${mod.lessons.length}</span></summary>
+    <ul class="nav-links">
+      ${mod.lessons.map(l => `
+        <li><a href="#${l.id}" data-route="${l.id}"><span class="dot">✓</span>${l.title}</a></li>
+      `).join("")}
+    </ul>
+  `;
+  navContainer.appendChild(details);
+});
+
+function refreshBadges(){
+  COURSE.forEach(mod => {
+    const badge = navContainer.querySelector(`.badge[data-mod="${mod.id}"]`);
+    const doneCount = mod.lessons.filter(l => state[l.id]).length;
+    if(badge) badge.textContent = `${doneCount}/${mod.lessons.length}`;
+  });
+  document.querySelectorAll(".nav-links a").forEach(a => {
+    const id = a.dataset.route;
+    a.classList.toggle("done", !!state[id]);
+  });
+  const doneTotal = ALL_LESSONS.filter(l => state[l.id]).length;
+  const pct = Math.round((doneTotal/TOTAL)*100);
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("progressPct").textContent = pct + "%";
+}
+
+/* ======================= RENDER MAIN SECTIONS ======================= */
+const main = document.getElementById("mainContent");
+
+function lessonSectionHTML(l, i, arr){
+  const prev = arr[i-1];
+  const next = arr[i+1];
+  return `
+  <section class="section" id="sec-${l.id}" data-route="${l.id}">
+    <div class="crumb">${l.moduleTitle}</div>
+    <div class="lesson-title">${l.title}</div>
+    <div class="lesson-meta">
+      <label class="mark-done">
+        <input type="checkbox" data-lesson="${l.id}" ${state[l.id] ? "checked":""}>
+        סמן שיעור זה כהושלם
+      </label>
+    </div>
+    <div class="card content-body">${l.content}</div>
+    ${l.tip ? `<div class="tip-box">💡 <b>טיפ:</b> ${l.tip}</div>` : ""}
+    ${l.quiz ? renderQuiz(l.id, l.quiz) : ""}
+    <div class="lesson-footer">
+      ${prev ? `<a class="btn btn-outline" href="#${prev.id}" data-route="${prev.id}">→ ${prev.title}</a>` : `<span></span>`}
+      ${next ? `<a class="btn btn-primary" href="#${next.id}" data-route="${next.id}">${next.title} ←</a>` : `<a class="btn btn-primary" href="#final-quiz" data-route="final-quiz">למבחן המסכם ←</a>`}
+    </div>
+  </section>`;
+}
+
+function renderQuiz(lessonId, quiz){
+  return `
+  <div class="card quiz" id="quiz-${lessonId}">
+    <h3>🧠 בדקו את עצמכם</h3>
+    <div class="q">${quiz.q}</div>
+    <div class="opts">
+      ${quiz.options.map((opt,i) => `<button class="opt" data-idx="${i}">${opt}</button>`).join("")}
+    </div>
+    <div class="explain"></div>
+  </div>`;
+}
+
+/* Intro section */
+const introHTML = `
+<section class="section" id="sec-intro" data-route="intro">
+  <div class="hero">
+    <h1>🖥️ קורס שולחן העבודה בווינדוס</h1>
+    <p>קורס אינטראקטיבי בעברית שמלווה אתכם משלבי הפתיחה הבסיסיים ביותר ועד טכניקות מקצועיות — ניהול חלונות מתקדם, אבטחה, ביצועים, גיבוי, נגישות ואפילו טעימה משורת הפקודה. לומדים בקצב אישי, עם שאלות תרגול והתקדמות נשמרת בדפדפן.</p>
+    <div class="stats">
+      <div class="stat"><b>${COURSE.length}</b><span>שלבי לימוד</span></div>
+      <div class="stat"><b>${TOTAL}</b><span>שיעורים</span></div>
+      <div class="stat"><b>${TOTAL}</b><span>שאלות תרגול</span></div>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:10px;">מה תלמדו?</h3>
+  <div class="grid-3">
+    ${COURSE.map(m => `
+      <div class="mini-card" data-jump="${m.lessons[0].id}">
+        <div class="n">${m.icon} ${m.title}</div>
+        <div class="t">${m.lessons.length} שיעורים</div>
+        <div class="d">${m.lessons.map(l=>l.title).slice(0,3).join(" · ")}${m.lessons.length>3 ? " ...":""}</div>
+      </div>
+    `).join("")}
+  </div>
+
+  <div class="try-box">
+    <b>👉 איך לומדים כאן:</b> עברו שיעור-שיעור מהתפריט בצד, סמנו "הושלם" בסיום כל שיעור כדי לעקוב אחרי ההתקדמות בראש התפריט, וענו על שאלת התרגול. בסיום כל השלבים — גשו למבחן המסכם ולתעודת הסיום.
+  </div>
+
+  <div class="lesson-footer">
+    <span></span>
+    <a class="btn btn-primary" href="#${ALL_LESSONS[0].id}" data-route="${ALL_LESSONS[0].id}">בואו נתחיל ←</a>
+  </div>
+</section>`;
+
+/* Cheatsheet section */
+const shortcuts = [
+  ["הצגת/הסתרת שולחן העבודה","Win + D"],
+  ["פתיחת File Explorer","Win + E"],
+  ["נעילת המסך","Win + L"],
+  ["פתיחת תיבת הרצת פקודה (Run)","Win + R"],
+  ["פתיחת Settings","Win + I"],
+  ["מעבר בין חלונות פתוחים","Alt + Tab"],
+  ["תצוגת כל החלונות (Task View)","Win + Tab"],
+  ["הצמדת חלון לצד המסך (Snap)","Win + מקש חץ"],
+  ["מעבר בין שולחנות עבודה וירטואליים","Win + Ctrl + חץ ימינה/שמאלה"],
+  ["גזירת צילום מסך (Snipping)","Win + Shift + S"],
+  ["פתיחת Task Manager","Ctrl + Shift + Esc"],
+  ["הגדלת מסך (Magnifier)","Win + פלוס (+)"],
+  ["שינוי שם קובץ/תיקייה נבחרים","F2"],
+  ["פרטי קובץ (Properties)","Alt + Enter"],
+  ["תפריט גישה מהירה למנהלי מערכת","Win + X"],
+  ["סגירת התוכנית הפעילה","Alt + F4"],
+  ["הפעלת/כיבוי Sticky Keys","Shift חמש פעמים ברצף"],
+];
+const cheatsheetHTML = `
+<section class="section" id="sec-cheatsheet" data-route="cheatsheet">
+  <div class="lesson-title">⌨️ דף קיצורי מקלדת — להדפסה</div>
+  <p class="lesson-meta">דף עזר מרוכז. אפשר להדפיס ישירות מהדפדפן (Ctrl+P) — עיצוב ההדפסה מותאם אוטומטית.</p>
+  <div class="card">
+    <table class="cheat">
+      <thead><tr><th>פעולה</th><th>קיצור</th></tr></thead>
+      <tbody>
+        ${shortcuts.map(([a,b]) => `<tr><td>${a}</td><td style="direction:ltr; text-align:left; font-family:Consolas,monospace;">${b}</td></tr>`).join("")}
+      </tbody>
+    </table>
+    <button class="btn btn-outline" onclick="window.print()">🖨️ הדפסת דף זה</button>
+  </div>
+</section>`;
+
+/* Final quiz section (uses all lesson quizzes) */
+function finalQuizHTML(){
+  const items = ALL_LESSONS.filter(l => l.quiz);
+  return `
+  <section class="section" id="sec-final-quiz" data-route="final-quiz">
+    <div class="lesson-title">🎯 מבחן מסכם</div>
+    <p class="lesson-meta">ענו נכון על לפחות 80% מהשאלות כדי "לעבור" את המבחן ולפתוח את תעודת הסיום.</p>
+    <div class="card" id="finalScoreCard" style="display:none;">
+      <h3>התוצאה שלכם</h3>
+      <div id="finalScoreText" style="font-size:18px; font-weight:700;"></div>
+    </div>
+    <div id="finalQuizList">
+      ${items.map((l,i) => `
+        <div class="card quiz" id="fq-${l.id}">
+          <h3>שאלה ${i+1} — ${l.moduleTitle} · ${l.title}</h3>
+          <div class="q">${l.quiz.q}</div>
+          <div class="opts">
+            ${l.quiz.options.map((opt,idx) => `<button class="opt" data-idx="${idx}">${opt}</button>`).join("")}
+          </div>
+          <div class="explain"></div>
+        </div>
+      `).join("")}
+    </div>
+    <div class="card">
+      <button class="btn btn-primary" id="submitFinalQuiz">📝 בדקו את המבחן</button>
+    </div>
+  </section>`;
+}
+
+/* Certificate section */
+const certificateHTML = `
+<section class="section" id="sec-certificate" data-route="certificate">
+  <div class="lesson-title">🎓 תעודת סיום</div>
+  <p class="lesson-meta">השלימו את כל השיעורים כדי לפתוח את התעודה, הזינו שם והדפיסו/שמרו כ-PDF.</p>
+  <div class="card" id="certGate">
+    <p id="certGateText"></p>
+  </div>
+  <div class="cert-box" id="certBox" style="display:none;">
+    <div style="font-size:34px;">🏆</div>
+    <h2>תעודת הצטיינות</h2>
+    <p>מוענקת בזאת ל</p>
+    <input type="text" class="cert-input" id="certNameInput" placeholder="הקלידו את שמכם המלא">
+    <p style="margin-top:18px;">על השלמה מוצלחת של<br><strong>קורס שולחן העבודה בווינדוס מלא — ממתחילים ועד מקצוענים</strong></p>
+    <p style="color:var(--muted); font-size:13px; margin-top:16px;" id="certDate"></p>
+    <button class="btn btn-primary" style="margin-top:14px;" onclick="window.print()">🖨️ הדפסה / שמירה כ-PDF</button>
+  </div>
+</section>`;
+
+/* Assemble all sections */
+main.innerHTML = introHTML +
+  ALL_LESSONS.map((l,i,arr) => lessonSectionHTML(l,i,arr)).join("") +
+  cheatsheetHTML + finalQuizHTML() + certificateHTML;
+
+/* ======================= INTERACTIONS ======================= */
+
+// Quiz click handling (delegated)
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("button.opt");
+  if(!btn) return;
+  const quizCard = btn.closest(".quiz");
+  if(quizCard.dataset.answered) return;
+  quizCard.dataset.answered = "1";
+  const idx = parseInt(btn.dataset.idx,10);
+  const allOpts = quizCard.querySelectorAll("button.opt");
+  const lessonId = quizCard.id.replace("quiz-","").replace("fq-","");
+  const lessonData = ALL_LESSONS.find(l => l.id === lessonId);
+  const quizData = lessonData ? lessonData.quiz : null;
+  allOpts.forEach((b,i) => {
+    b.disabled = true;
+    if(quizData && i === quizData.correct) b.classList.add("correct");
+    else if(i === idx) b.classList.add("wrong");
+  });
+  const explain = quizCard.querySelector(".explain");
+  if(quizData){
+    explain.textContent = (idx === quizData.correct ? "✅ נכון! " : "❌ לא מדויק. ") + quizData.explain;
+    explain.classList.add("show");
+  }
+  quizCard.dataset.correct = (quizData && idx === quizData.correct) ? "1" : "0";
+
+  // auto-mark lesson done on correct answer (only for per-lesson quiz cards)
+  if(quizCard.id.startsWith("quiz-") && quizData && idx === quizData.correct){
+    markDone(lessonId, true);
+  }
+});
+
+// Mark-done checkboxes
+document.addEventListener("change", (e) => {
+  if(e.target.matches('input[type="checkbox"][data-lesson]')){
+    markDone(e.target.dataset.lesson, e.target.checked);
+  }
+});
+function markDone(id, val){
+  state[id] = val;
+  saveState();
+  refreshBadges();
+  document.querySelectorAll(`input[data-lesson="${id}"]`).forEach(cb => cb.checked = val);
+  updateCertGate();
+}
+
+// Final quiz submit
+document.addEventListener("click", (e) => {
+  if(e.target.id !== "submitFinalQuiz") return;
+  const cards = document.querySelectorAll("#finalQuizList .quiz");
+  let answered = 0, correct = 0;
+  cards.forEach(c => {
+    if(c.dataset.answered){ answered++; if(c.dataset.correct === "1") correct++; }
+  });
+  const total = cards.length;
+  const scoreCard = document.getElementById("finalScoreCard");
+  const scoreText = document.getElementById("finalScoreText");
+  scoreCard.style.display = "block";
+  const pct = total ? Math.round((correct/total)*100) : 0;
+  if(answered < total){
+    scoreText.innerHTML = `ענית על ${answered} מתוך ${total} שאלות. אנא ענו על כל השאלות לפני בדיקת הציון הסופי.`;
+  } else {
+    const pass = pct >= 80;
+    scoreText.innerHTML = `${correct}/${total} תשובות נכונות (${pct}%) — ${pass ? "🎉 עברתם בהצלחה! גשו לתעודת הסיום." : "כדאי לחזור על החומר ולנסות שוב."}`;
+    state["final_quiz_pass"] = pass;
+    saveState();
+    updateCertGate();
+  }
+  scoreCard.scrollIntoView({behavior:"smooth", block:"center"});
+});
+
+function updateCertGate(){
+  const doneTotal = ALL_LESSONS.filter(l => state[l.id]).length;
+  const allDone = doneTotal === TOTAL;
+  const gateText = document.getElementById("certGateText");
+  const certBox = document.getElementById("certBox");
+  const certGate = document.getElementById("certGate");
+  if(!gateText) return;
+  if(allDone){
+    certGate.style.display = "none";
+    certBox.style.display = "block";
+    const savedName = localStorage.getItem(CERT_KEY) || "";
+    const nameInput = document.getElementById("certNameInput");
+    nameInput.value = savedName;
+    document.getElementById("certDate").textContent = new Date().toLocaleDateString("he-IL");
+  } else {
+    certGate.style.display = "block";
+    certBox.style.display = "none";
+    gateText.textContent = `השלמתם ${doneTotal} מתוך ${TOTAL} שיעורים. סיימו את כל השיעורים (סימון "הושלם" בכל שיעור) כדי לפתוח את התעודה.`;
+  }
+}
+document.addEventListener("input", (e) => {
+  if(e.target.id === "certNameInput") localStorage.setItem(CERT_KEY, e.target.value);
+});
+
+/* ======================= ROUTER ======================= */
+function showRoute(route){
+  if(!route) route = "intro";
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  const target = document.getElementById("sec-" + route);
+  if(target) target.classList.add("active");
+  else document.getElementById("sec-intro").classList.add("active");
+
+  document.querySelectorAll("[data-route]").forEach(el => el.classList.remove("active"));
+  document.querySelectorAll(`[data-route="${route}"]`).forEach(el => el.classList.add("active"));
+
+  // auto-open the module containing this lesson
+  const modEntry = ALL_LESSONS.find(l => l.id === route);
+  if(modEntry){
+    const grp = [...document.querySelectorAll(".nav-group")].find(g => g.querySelector(`a[data-route="${route}"]`));
+    if(grp) grp.open = true;
+  }
+  window.scrollTo({top:0, behavior:"instant" in window ? "instant":"auto"});
+  if(route === "certificate" || route === "final-quiz") updateCertGate();
+
+  // close mobile sidebar after navigation
+  document.getElementById("sidebar").classList.remove("open");
+}
+
+// navigate() uses history.replaceState (not location.hash= or pushState)
+// so the back button always exits the course instead of stepping through
+// its own lesson history.
+function navigate(route){
+  history.replaceState(null, "", "#" + route);
+  showRoute(route);
+}
+
+document.addEventListener("click", (e) => {
+  const link = e.target.closest("[data-route]");
+  if(link && link.tagName === "A"){
+    e.preventDefault();
+    navigate(link.dataset.route);
+  }
+  const jump = e.target.closest("[data-jump]");
+  if(jump){
+    navigate(jump.dataset.jump);
+  }
+});
+window.addEventListener("hashchange", () => showRoute(location.hash.slice(1)));
+
+/* Mobile sidebar toggle */
+document.getElementById("toggleSidebar").addEventListener("click", () => {
+  document.getElementById("sidebar").classList.toggle("open");
+});
+
+/* Search filter */
+document.getElementById("searchBox").addEventListener("input", (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll(".nav-links li").forEach(li => {
+    const text = li.textContent.toLowerCase();
+    li.style.display = text.includes(q) ? "" : "none";
+  });
+  document.querySelectorAll(".nav-group").forEach(g => { if(q) g.open = true; });
+});
+
+/* Init */
+refreshBadges();
+showRoute(location.hash.slice(1) || "intro");
+</script>
+</body>
+</html>

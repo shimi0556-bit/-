@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>המגרש של שימי</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Hebrew:wght@400;500;600&family=Karantina:wght@400;700&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --apron: #2c6a4f;
+    --court: #22507a;
+    --court-deep: #1b4366;
+    --line: #f2f4ee;
+    --line-soft: rgba(242, 244, 238, 0.74);
+    --line-faint: rgba(242, 244, 238, 0.26);
+    --ball: #d8eb4a;
+    --ink: #0d1e2e;
+    --display: "Karantina", "Secular One", "Arial Narrow", sans-serif;
+    --body: "IBM Plex Sans Hebrew", "Heebo", "Arial Hebrew", Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+    --paint: 3px;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { background: var(--apron); }
+  body { margin: 0; color: var(--line); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+  button { font: inherit; color: inherit; }
+  a { color: var(--ball); }
+  :focus-visible { outline: 3px solid var(--ball); outline-offset: 3px; }
+
+  .page { max-width: 1200px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); padding-block: clamp(18px, 4vw, 44px) 56px; }
+  .court { background: var(--court); border: var(--paint) solid var(--line); }
+
+  /* Centre court */
+  .hero { position: relative; padding-block: 28px 36px; text-align: center; }
+  .owner { position: absolute; inset-inline-start: clamp(14px, 3vw, 28px); top: 16px; margin: 0; font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; color: var(--line-soft); direction: ltr; }
+  .centre { position: relative; height: clamp(230px, 46vw, 360px); display: grid; place-items: center; margin-top: 18px; }
+  .halfline { position: absolute; inset-inline: 0; top: 50%; height: var(--paint); margin-top: calc(var(--paint) / -2); background: var(--line); transform-origin: center; animation: paint-line 700ms ease-out both; }
+  .circle { position: absolute; width: clamp(230px, 46vw, 360px); aspect-ratio: 1; max-width: 100%; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+  .circle circle { fill: none; stroke: var(--line); stroke-width: var(--paint); stroke-dasharray: 100; animation: paint-circle 900ms 150ms ease-out both; }
+  h1 { position: relative; margin: 0; padding-inline: 0.14em; background: var(--court); font-family: var(--display); font-weight: 700; font-size: clamp(84px, 17vw, 168px); line-height: 0.82; letter-spacing: 0.01em; }
+  .lede { max-width: 34em; margin: 22px auto 0; padding-inline: 16px; font-size: clamp(15px, 1.9vw, 17px); color: var(--line-soft); text-wrap: balance; }
+  @keyframes paint-line { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes paint-circle { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+
+  /* Scoreboard: three service boxes */
+  .score { display: grid; grid-template-columns: repeat(3, 1fr); border-top: var(--paint) solid var(--line); }
+  .score button { background: none; border: 0; padding: 14px 8px 16px; cursor: pointer; display: grid; gap: 2px; justify-items: center; }
+  .score button + button { border-inline-start: var(--paint) solid var(--line); }
+  .score b { font-family: var(--mono); font-weight: 500; font-size: clamp(30px, 5vw, 44px); line-height: 1; font-variant-numeric: tabular-nums; }
+  .score span { font-size: 13px; color: var(--line-soft); }
+  .score button:hover b { color: var(--ball); }
+
+  /* Zones */
+  .zone { border-top: var(--paint) solid var(--line); padding: clamp(18px, 3vw, 32px); }
+  .zone-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+  h2 { margin: 0; font-family: var(--display); font-weight: 700; font-size: clamp(44px, 6vw, 60px); line-height: 0.9; }
+  .zone-head p { flex-basis: 100%; margin: 0; color: var(--line-soft); font-size: 14px; }
+
+  /* Feature: Shimotron Rally */
+  .feature { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: clamp(18px, 3vw, 36px); align-items: center; }
+  .feature .shot { position: relative; display: block; width: 100%; padding: 0; border: var(--paint) solid var(--line); background: var(--ink); cursor: pointer; }
+  .feature .shot img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; }
+  .feature .shot:hover { border-color: var(--ball); }
+  .eyebrow { margin: 0 0 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: var(--ball); }
+  .feature h3 { margin: 0; font-family: var(--display); font-weight: 700; font-size: clamp(52px, 7vw, 76px); line-height: 0.88; text-wrap: balance; }
+  .feature p.desc { margin: 12px 0 14px; color: var(--line-soft); max-width: 34em; }
+  .play { display: inline-flex; align-items: center; gap: 10px; margin-top: 18px; padding: 10px 22px; background: var(--ball); color: var(--ink); border: 0; font-weight: 600; font-size: 16px; cursor: pointer; }
+  .play:hover { background: var(--line); }
+
+  /* Cards */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+  .card { position: relative; display: flex; flex-direction: column; padding: 0; text-align: start; background: var(--court-deep); border: 2px solid var(--line-faint); cursor: pointer; transition: border-color 160ms ease, transform 160ms ease; }
+  .card:hover { border-color: var(--ball); transform: translateY(-3px); }
+  .card img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: top; border-bottom: 2px solid var(--line-faint); background: var(--ink); }
+  .card .body { display: flex; flex-direction: column; gap: 6px; padding: 12px 16px 16px; flex: 1; }
+  .card .ttl { margin: 0; font-family: var(--display); font-weight: 700; font-size: 34px; line-height: 0.95; }
+  .card .desc { margin: 0; font-size: 14px; color: var(--line-soft); }
+  .note { margin: 2px 0 0; font-size: 12.5px; color: var(--line-soft); }
+  .note strong { color: var(--ball); font-weight: 600; }
+  .note code { font-family: var(--mono); font-size: 11.5px; color: var(--line); direction: ltr; unicode-bidi: isolate; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 6px; list-style: none; padding-inline: 0; margin-bottom: 0; }
+  .tags li { padding: 1px 8px; border: 1px solid var(--line-faint); font-size: 12px; color: var(--line-soft); }
+  .tags li.num { font-family: var(--mono); font-size: 11.5px; direction: rtl; }
+  .recent { position: absolute; top: 10px; inset-inline-start: 10px; padding: 2px 8px; background: var(--ball); color: var(--ink); font-size: 12px; font-weight: 600; }
+
+  footer { padding: 22px clamp(18px, 3vw, 32px) 26px; border-top: var(--paint) solid var(--line); font-size: 14px; color: var(--line-soft); }
+  footer p { margin: 0 0 6px; max-width: 60em; }
+  footer code { font-family: var(--mono); font-size: 12.5px; color: var(--line); direction: ltr; unicode-bidi: isolate; }
+
+  /* Player */
+  .player { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; background: var(--ink); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .player-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: calc(env(safe-area-inset-top, 0px) + 8px) 16px 8px; background: var(--court); border-bottom: var(--paint) solid var(--line); }
+  .player-bar h2 { font-size: 34px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ghost { background: none; border: 2px solid var(--line-faint); padding: 5px 14px; cursor: pointer; font-size: 14px; }
+  .ghost:hover { border-color: var(--ball); }
+  .player-bar a { font-size: 13px; }
+  .stage { position: relative; flex: 1; }
+  .stage iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; }
+  .loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--line-soft); font-size: 15px; }
+
+  @media (max-width: 760px) {
+    .feature { grid-template-columns: 1fr; }
+    .player-bar a { flex-basis: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .halfline, .circle circle { animation: none; }
+    .card { transition: none; }
+    .card:hover { transform: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page" dir="rtl" lang="he">
+  <main class="court">
+    <header class="hero">
+      <p class="owner">shimi0556-bit / -</p>
+      <div class="centre">
+        <span class="halfline"></span>
+        <svg class="circle" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="48.5" pathLength="100" vector-effect="non-scaling-stroke"/></svg>
+        <h1>המגרש</h1>
+      </div>
+      <p class="lede">כל המשחקים, הקורסים והכלים שנבנו בריפו של שימי, במקום אחד. בוחרים כרטיס, והוא נפתח כאן על המסך.</p>
+    </header>
+
+    <nav class="score" aria-label="קפיצה לאזור">
+      <button type="button" data-jump="games"><b id="n-games">0</b><span>משחקים</span></button>
+      <button type="button" data-jump="courses"><b id="n-courses">0</b><span>קורסים</span></button>
+      <button type="button" data-jump="tools"><b id="n-tools">0</b><span>כלים</span></button>
+    </nav>
+
+    <section class="zone" aria-labelledby="feature-title">
+      <div class="feature">
+        <button type="button" class="shot" data-open="shimotron-race" aria-label="לשחק בשימוטרון ראלי">
+          <img src="playground/thumbs/shimotron-race.jpg" alt="מפת העולם של שימוטרון ראלי: איים ירוקים בים כחול עם תוויות המסלולים">
+        </button>
+        <div>
+          <p class="eyebrow">המשחק הגדול בריפו</p>
+          <h3 id="feature-title">שימוטרון ראלי</h3>
+          <p class="desc">שבעה איים בים אחד, מחוברים בגשרים לעיר מרכזית. מרוצי מכוניות עם קופסאות הפתעה, אליפות וקריירה עם מוסך, וגם מרוצי סירות, צוללות, מטוסי פעלולים, מצנחי רחיפה וחלל עם שיגור רקטה. אפשר גם לשוטט חופשי ביבשה, בים ובאוויר.</p>
+          <ul class="tags"><li>תלת־ממד</li><li>נגד המחשב</li><li>שליטה במגע</li><li>נבנה בריפו</li></ul>
+          <button type="button" class="play" data-open="shimotron-race">למרוץ <span aria-hidden="true">←</span></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="zone" id="games" aria-labelledby="games-title">
+      <div class="zone-head"><h2 id="games-title">משחקים</h2></div>
+      <div class="grid" data-kind="game"></div>
+    </section>
+
+    <section class="zone" id="courses" aria-labelledby="courses-title">
+      <div class="zone-head">
+        <h2 id="courses-title">קורסים</h2>
+        <p>כל קורס בנוי משלושה שלבים, ממתחילים ועד מקצוענים, עם בוחן בסוף כל שיעור, דף קיצורים, מבחן מסכם ותעודה. ההתקדמות נשמרת בדפדפן.</p>
+      </div>
+      <div class="grid" data-kind="course"></div>
+    </section>
+
+    <section class="zone" id="tools" aria-labelledby="tools-title">
+      <div class="zone-head"><h2 id="tools-title">כלים ויצירה</h2></div>
+      <div class="grid" data-kind="tool"></div>
+    </section>
+
+    <footer>
+      <p>בריפו יש עוד פרויקטים שצריכים התקנה או מפתחות API, ולכן הם לא כאן: <code>tuning-numbers</code>, <code>virtual-typewriter</code>, <code>blitzai</code>, <code>nano-banana-ui</code>, <code>gods-eye-view</code>, <code>claude-demo-video</code>.</p>
+      <p>הקוד של הכול ב-<a href="https://github.com/shimi0556-bit/-" target="_blank" rel="noopener">github.com/shimi0556-bit/-</a></p>
+    </footer>
+  </main>
+</div>
+
+<div class="player" id="player" role="dialog" aria-modal="true" aria-labelledby="player-title" dir="rtl" lang="he" hidden>
+  <div class="player-bar">
+    <button type="button" class="ghost" id="close"><span aria-hidden="true">→</span> חזרה למגרש</button>
+    <h2 id="player-title"></h2>
+    <button type="button" class="ghost" id="fullscreen">מסך מלא</button>
+    <a id="direct" href="#">לא נטען? פתיחה ישירה</a>
+  </div>
+  <div class="stage">
+    <div class="loading" id="loading">טוען…</div>
+    <iframe id="frame" title="" allow="fullscreen; autoplay; gamepad"></iframe>
+  </div>
+</div>
+
+<script>
+(function () {
+  var ITEMS = [
+    { id: 'shimotron-race', kind: 'feature', title: 'שימוטרון ראלי', path: 'shimotron/dist/race.html' },
+    { id: 'chess', kind: 'game', title: 'שחמט', path: 'chess-game/index.html',
+      desc: 'נגד המחשב או נגד חבר. הדגשת מהלכים חוקיים, ביטול מהלך והיפוך לוח. המחשב זוכר עמדות ממשחקים קודמים.',
+      tags: ['נגד המחשב', 'שני שחקנים'] },
+    { id: 'reversi', kind: 'game', title: 'רברסי', path: 'reversi-game/index.html',
+      desc: 'חמש רמות קושי למחשב, רמזים למהלכים חוקיים, ביטול מהלך ובחירה בין שחור ללבן.',
+      tags: ['נגד המחשב', '5 רמות'] },
+    { id: 'go', kind: 'game', title: 'גו', path: 'go-game/index.html',
+      desc: 'לוחות 9×9, 13×13 ו-19×19, כל החוקים כולל איסור חזרה על עמדה, ספירת שטח בסוף, ויריב ממוחשב פשוט.',
+      tags: ['נגד המחשב', 'שני שחקנים'] },
+    { id: 'generals', kind: 'game', title: 'ג׳נרלים', path: 'generals-game/index.html',
+      desc: 'כיבוש שטחים בהשראת Generals.io: ערפל קרב, צבאות שגדלים בערים, ובוטים שמנסים לתפוס את הגנרל שלך.',
+      tags: ['אסטרטגיה', 'נגד בוטים'] },
+    { id: 'snake', kind: 'game', title: 'נחש ניאון', path: 'snake-3d-game/index.html',
+      desc: 'נחש בתלת־ממד עם זוהר, חלקיקים וצלילים. מקלדת או החלקה על המסך, שלוש רמות, והשיא נשמר.',
+      tags: ['תלת־ממד', 'שליטה במגע'] },
+    { id: 'bowling', kind: 'game', title: 'סטרייק ליין', path: 'bowling-3d/index.html',
+      desc: 'באולינג עם פיזיקה אמיתית של פינים, מד כוח, סיבוב לכדור וניקוד רשמי של 10 פריימים.',
+      tags: ['תלת־ממד', 'פיזיקה'] },
+    { id: 'abyss', kind: 'game', title: 'ABYSS', path: 'submarine-simulator/index.html',
+      desc: 'סימולטור צוללת: צלילה ממדף היבשת עד מעמקי צ׳לנג׳ר, בין שוניות וספינות טרופות, עם סונאר ולחץ מים על הגוף.',
+      tags: ['תלת־ממד', 'סימולטור'], online: true },
+    { id: 'skyhawk', kind: 'game', title: 'SkyHawk', path: 'skyhawk-flight-simulator/index.html',
+      desc: 'סימולטור טיסת מסוק מסן פרנסיסקו ללונדון, מאת Yuval Avidani.',
+      tags: ['תלת־ממד', 'סימולטור'], online: true },
+
+    { id: 'vscode', kind: 'course', title: 'VS Code', path: 'vscode-course/index.html', lessons: 22,
+      desc: 'מהתקנה ותוספים, דרך Git ו-IntelliSense, ועד דיבאגר, עבודה מרחוק ו-Live Share.' },
+    { id: 'powerpoint', kind: 'course', title: 'PowerPoint', path: 'powerpoint-course/index.html', lessons: 22,
+      desc: 'משקף ראשון ועד שקופית אב, אנימציות, Morph, מצב מציג ותבניות משלך.' },
+    { id: 'excel', kind: 'course', title: 'Excel', path: 'excel-course/index.html', lessons: 21,
+      desc: 'נוסחאות והפניות, טבלאות ציר ו-Power Query, ועד Power Pivot, DAX ו-VBA.' },
+    { id: 'gmail', kind: 'course', title: 'Gmail', path: 'gmail-course/index.html', lessons: 21,
+      desc: 'תוויות וחיפוש, מסננים ותזמון, אימות דו־שלבי, כינויים ו-Apps Script.' },
+    { id: 'windows', kind: 'course', title: 'Windows', path: 'windows-desktop-course/index.html', lessons: 21,
+      desc: 'שולחן העבודה ותפריט התחל, Snap Layouts ושולחנות וירטואליים, אבטחה, מנהל המשימות ו-PowerShell.' },
+    { id: 'canva', kind: 'course', title: 'Canva', path: 'canva-course/index.html', lessons: 22,
+      desc: 'העורך, טקסט ותמונות, ערכת מותג ואנימציות, כלי ה-AI של Magic Studio ווידאו.' },
+    { id: 'obsidian', kind: 'course', title: 'Obsidian', path: 'obsidian-course/index.html', lessons: 21,
+      desc: 'Vault וקישורים פנימיים, תגיות ותבניות, מפת הקשרים, Canvas ו-Dataview.' },
+
+    { id: 'shimotron-editor', kind: 'tool', title: 'עורך שימוטרון', path: 'shimotron/dist/index.html',
+      desc: 'המנוע שמאחורי הראלי, עם עורך מלא בעברית: שמיים חיים ומחזור יום ולילה, אוקיינוס, צמחייה בתנועה, חלקיקים ופיזיקה.',
+      tags: ['תלת־ממד', 'עורך'] },
+    { id: 'guitar', kind: 'tool', title: 'גיטרה FX', path: 'guitar-fx-mixer/index.html',
+      desc: 'מערכת אפקטים לגיטרה חשמלית: מגבר ורמקול, 20 אפקטים, טיונר, לופר, הקלטה ו-MIDI.',
+      note: 'כאן אין גישה למיקרופון. כדי לנגן, פתחו את <code>guitar-fx-mixer/index.html</code> מהריפו ב-Chrome.',
+      tags: ['אודיו'] },
+    { id: 'spark', kind: 'tool', title: 'מנוע ניצוצות', path: 'claude-spark-pack/spark.html',
+      desc: 'שישה "ניצוצות" לבניית אתרים קולנועיים עם Claude, בניאון כהה, עם תצוגה מקדימה לכל אחד.',
+      tags: ['השראה', 'אתרים'] },
+    { id: 'deck', kind: 'tool', title: 'מצגת עם מצב עריכה', path: 'decks/demo-presentation.html',
+      desc: 'דמו של מצב העריכה למצגות: גוררים, עורכים ומוסיפים אלמנטים ישר בדפדפן, בסגנון Canva.',
+      tags: ['מצגות'] }
+  ];
+
+  var byId = {};
+  ITEMS.forEach(function (it) { byId[it.id] = it; });
+
+  function readLast() { try { return localStorage.getItem('hub:last'); } catch (e) { return null; } }
+  function writeLast(id) { try { localStorage.setItem('hub:last', id); } catch (e) {} }
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  function render() {
+    var last = readLast();
+    ['game', 'course', 'tool'].forEach(function (kind) {
+      var grid = document.querySelector('.grid[data-kind="' + kind + '"]');
+      var list = ITEMS.filter(function (it) { return it.kind === kind; });
+      grid.textContent = '';
+      list.forEach(function (it) {
+        var card = el('button', 'card');
+        card.type = 'button';
+        card.setAttribute('data-open', it.id);
+        var img = el('img');
+        img.src = 'playground/thumbs/' + it.id + '.jpg';
+        img.alt = '';
+        img.loading = 'lazy';
+        card.appendChild(img);
+        if (it.id === last) card.appendChild(el('span', 'recent', 'נפתח לאחרונה'));
+        var body = el('span', 'body');
+        body.appendChild(el('span', 'ttl', kind === 'course' ? 'קורס ' + it.title : it.title));
+        body.appendChild(el('span', 'desc', it.desc));
+        if (it.note) { var note = el('span', 'note'); note.innerHTML = '<strong>שימו לב:</strong> ' + it.note; body.appendChild(note); }
+        if (it.online) body.appendChild(el('span', 'note', 'מהקובץ במחשב צריך אינטרנט: המשחק טוען את Three.js מהרשת.'));
+        var tags = el('ul', 'tags');
+        if (kind === 'course') {
+          tags.appendChild(el('li', 'num', it.lessons + ' שיעורים'));
+          tags.appendChild(el('li', null, '3 שלבים'));
+          tags.appendChild(el('li', null, 'תעודה בסוף'));
+        } else {
+          (it.tags || []).forEach(function (t) { tags.appendChild(el('li', null, t)); });
+        }
+        body.appendChild(tags);
+        card.appendChild(body);
+        grid.appendChild(card);
+      });
+    });
+    var games = ITEMS.filter(function (it) { return it.kind === 'game' || it.kind === 'feature'; }).length;
+    document.getElementById('n-games').textContent = games;
+    document.getElementById('n-courses').textContent = ITEMS.filter(function (it) { return it.kind === 'course'; }).length;
+    document.getElementById('n-tools').textContent = ITEMS.filter(function (it) { return it.kind === 'tool'; }).length;
+  }
+
+  var player = document.getElementById('player');
+  var frame = document.getElementById('frame');
+  var loading = document.getElementById('loading');
+  var fsBtn = document.getElementById('fullscreen');
+  var opener = null;
+
+  if (!document.fullscreenEnabled) fsBtn.hidden = true;
+
+  function open(id, from) {
+    var it = byId[id];
+    if (!it) return;
+    opener = from || null;
+    document.getElementById('player-title').textContent = it.kind === 'course' ? 'קורס ' + it.title : it.title;
+    frame.title = it.title;
+    document.getElementById('direct').href = it.path;
+    loading.hidden = false;
+    loading.textContent = id === 'shimotron-race' || id === 'shimotron-editor' ? 'טוען את שימוטרון… זה קובץ גדול, עוד רגע.' : 'טוען…';
+    frame.src = it.path;
+    player.hidden = false;
+    document.body.style.overflow = 'hidden';
+    document.getElementById('close').focus();
+    writeLast(id);
+  }
+
+  function close() {
+    if (player.hidden) return;
+    if (document.fullscreenElement) { try { document.exitFullscreen(); } catch (e) {} }
+    frame.src = 'about:blank';
+    player.hidden = true;
+    document.body.style.overflow = '';
+    render();
+    var back = opener && document.querySelector('[data-open="' + opener + '"]');
+    if (back) back.focus();
+  }
+
+  frame.addEventListener('load', function () {
+    if (frame.src && frame.src !== 'about:blank') { loading.hidden = true; frame.focus(); }
+  });
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-open]');
+    if (t) { open(t.getAttribute('data-open'), t.getAttribute('data-open')); return; }
+    var j = e.target.closest('[data-jump]');
+    if (j) {
+      var target = document.getElementById(j.getAttribute('data-jump'));
+      if (target) target.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    }
+  });
+  document.getElementById('close').addEventListener('click', close);
+  fsBtn.addEventListener('click', function () {
+    var p = frame.requestFullscreen ? frame.requestFullscreen() : null;
+    if (p && p.catch) p.catch(function () { fsBtn.hidden = true; });
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+
+  render();
+  var hash = (location.hash || '').slice(1);
+  if (byId[hash]) open(hash);
+})();
+</script>
+</body>
+</html>
