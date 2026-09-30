@@ -147,3 +147,13 @@ symlinked into `.claude/skills`). Written from scratch in this repo on top of op
   attribute swapped for the duration of the constructor) and any niqqud failure is non-fatal.
 - Chatterbox's `ChineseCangjieConverter` also calls `hf_hub_download` at load time, but catches its own failure (only
   matters for Chinese) — harmless when HF is blocked.
+- **End-to-end check (pwsh on Linux, fake `$HOME`):** the live installer with Hugging Face and GitHub raw binaries both
+  answering `418 Blocked by NetFree` → text copies used, 3.5 GB of models downloaded from the release (~1.5 min here)
+  and sha256-verified, then `speak` ran with HF still blocked (niqqud from the local tokenizer; Chatterbox's Cangjie
+  loader logs a harmless warning). Release files' sha256 also match the original HF files.
+- Two bugs this run caught: `Get-Command curl`/`uv` can return several matches (two curls on Linux; Git for Windows
+  adds a second `curl.exe`) → `Select-Object -First 1`; and raw.githubusercontent's ~5 min branch cache served a stale
+  `setup.ps1` right after a push → the installer now resolves the branch to its commit via
+  `https://github.com/shimi0556-bit/-.git/info/refs?service=git-upload-pack` and downloads from `/<sha>/`.
+- Still untested on real Windows + NetFree: whether NetFree lets these particular release assets through (the check
+  only proved it for uv's zip). The installer's network check now probes `ve.pt` from this release first.
