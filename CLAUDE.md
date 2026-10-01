@@ -4,6 +4,7 @@ A personal playground repo: vendored tools/apps and Claude Code skills. See `REA
 
 ## Repo-wide instructions
 
+- Talk to the user in Hebrew, and always ask questions in Hebrew (including the options in `AskUserQuestion`).
 - Whenever you build or update a game in this repo (any self-contained game, e.g. an HTML/JS game like `reversi-game/`), always send the playable file(s) to the user for download via the `SendUserFile` tool — in addition to committing and pushing it to the repo. Do this every time, not just on first creation; re-send after meaningful updates to a game the user is actively iterating on.
 - After creating any HTML presentation, inject Edit Mode:
   `python3 .claude/skills/deck-edit-mode/scripts/inject_editor.py <deck.html>`
