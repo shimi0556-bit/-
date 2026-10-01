@@ -14,7 +14,7 @@ A library that grows by one procedurally-modelled object a day, starting with ca
 
 | # | Model | Parts / triangles |
 |---|---|---|
-| 001 | Cadillac One "The Beast" (2018) | 234 / ~530K |
+| 001 | Cadillac One "The Beast" (2018) | 246 / ~610K |
 
 ## Notes
 
@@ -25,3 +25,9 @@ A library that grows by one procedurally-modelled object a day, starting with ca
   - Armour layers 6–12 mm behind the door skin z-fought through it as vertical streaks. Fixed by moving them to ≥ 20 mm and raising the camera near plane to 0.05. Rule: keep stacked shells ≥ 8 mm apart.
   - Rear headrests poked through the backlight. Fixed with a formal, upright backlight (`BL_TOP -1.38`, `BACK -1.69`) and seats moved forward, which also gives the Beast's thick C-pillar.
   - Open: on very distant views one faint streak can remain on the rear door in SwiftShader (16-bit depth). It doesn't show on a real GPU.
+- **2026-10-01, round 2 (user feedback on #001):** the user found the steering wheel inside the driver's seat, too many plain geometric shapes (the seats especially), missing buttons, and the wheel crest looking like it floated.
+  - Fixed by rebuilding the interior: shallower dash (rear face x 0.755), wheel at (0.60, 1.20), seats and partition (x -0.21) moved so nothing intersects.
+  - Added kit tools: `G.soft` (sculpted rounded box with a deform function and smooth normals across face seams), `M.quilted` (pleats, double stitching and perforations as colour + bump canvas maps), `K.panel` (real 3D buttons, knobs, rockers and guarded toggles with one backlit label texture per panel).
+  - Gave the wheel hub a solid pilot through the centre bore and a flat-topped cap with the crest in a bezel.
+  - Found that the dash's extrude bevel had grown its outline 2 cm and buried the screens; fixed with `bevelOffset`.
+  - These lessons are now in BUILD_GUIDE.md under the pitfalls.

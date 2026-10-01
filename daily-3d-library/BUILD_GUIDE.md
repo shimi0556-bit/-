@@ -42,6 +42,8 @@ Kit cheat-sheet (`engine/kit.js`):
 |---|---|
 | Named, documented part (hover/list/isolate/explode) | `part(parent, { he, en, mat, desc }, { pos, rot })`. Nest parts for sub-assemblies |
 | Material | `M.paint(c)`, `M.chrome()`, `M.aluminum()`, `M.castIron()`, `M.rubber()`, `M.tire()`, `M.leather(c)`, `M.fabric(c)`, `M.carpet(c)`, `M.wood()`, `M.glass(c, opacity)`, `M.lens(c)`, `M.decal(tex)`, `M.screen(tex)` … (cached and shared) |
+| Organic shapes (upholstery, pillows, housings, knobs) | `G.soft(w,h,d,{ r, seg, deform(p, n) })`: a subdivided rounded box you sculpt in normalised coordinates. Keeps 6 face groups, so `[mat×6]` arrays can put `M.quilted(color, 'u'|'v')` on the seating face only |
+| Buttons, switches, knobs | `K.panel(parent, { pos, normal, up, w, h, buttons: [{ x, y, w, h, kind: 'rect'|'round'|'knob'|'toggle'|'rocker', label, led }] })`: real 3D controls + backlit labels in one texture |
 | Primitives | `G.box(w,h,d,radius)`, `G.cyl(r1,r2,h,seg,axis)`, `G.lathe([[r,y]…],seg,axis)`, `G.tube(points,r)`, `G.torus`, `G.extrude(shape,depth,{bevel})`, `G.shape`, `G.roundRect`, `G.bolt(size)`, `G.hexNut`, `G.rivet`, `G.merge([...])`, `G.at(geo,pos,rot)` |
 | Body panels | write a section function `S(x, v) → Vector3`, then `surface(S, xs, vs, { skip, out, offset, thickness })`. Cut doors/hood/glass as patches of the same surface; share break points via `samples(a, b, step, breaks)` so holes and patches line up |
 | Many identical small parts | `instances(geo, mat, [{ pos, rot, scale }…])` (one draw call) |
@@ -71,6 +73,11 @@ What was modelled per system, the numbers used, sources, and open issues or know
 - **Check clearance against the hood and roof.** The first fan and the rear headrests poked through the body. Look at the side, top and cutaway shots.
 - **Dark paint needs the studio environment** (already in the viewer). Don't switch back to `RoomEnvironment`, which makes black paint look white.
 - **Pass a material array `[paint, M.black()]`** to solidified panels so their edges read as dark shut lines.
+- **No plain boxes for anything people sit on or touch.** The user rejected box seats as "geometric shapes". Use `G.soft` + `M.quilted` for upholstery, and `G.soft` for armrests, consoles, mirror housings and pillows.
+- **Controls need real buttons.** A cockpit without labelled buttons reads as unfinished. Use `K.panel` for the dashboard, wheel spokes, door armrests, seat sides, overhead and rear consoles.
+- **Check clearances between parts that face each other.** The steering wheel once sat inside the driver's cushion. Leave space for a person: lower wheel rim ≥ 4 cm above and ahead of the cushion front, seat backs clear of the partition.
+- **Nothing may float.** The wheel crest was a flat disc over a domed cap, so it looked like it hung in the air. Seat decals on flat faces or in a bezel, and close lathe profiles down to r = 0.
+- **`G.extrude` with a bevel grows the outline by the bevel size.** Pass `bevelOffset: -bevel` when other parts are positioned against that outline (the dash buried its own screens by 2 cm).
 
 ## 6. Verify
 

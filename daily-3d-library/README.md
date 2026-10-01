@@ -10,7 +10,7 @@ One object a day, modelled procedurally in Three.js down to the fasteners, as a 
 
 | # | Model | Date | Parts | Triangles |
 |---|---|---|---|---|
-| 001 | [Cadillac One “The Beast” (2018)](models/001-cadillac-one-the-beast/) — רכב השרד של נשיא ארה״ב | 2026-10-01 | 234 | ~530K |
+| 001 | [Cadillac One “The Beast” (2018)](models/001-cadillac-one-the-beast/) — רכב השרד של נשיא ארה״ב | 2026-10-01 | 246 | ~610K |
 
 The queue of upcoming objects is [`queue.json`](queue.json). Reorder or edit it freely: each daily run takes the first item that has no folder yet.
 

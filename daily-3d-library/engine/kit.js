@@ -61,6 +61,40 @@ const M = {
   matte: (c) => once('matte' + hexKey(c), () => std({ color: c, metalness: 0, roughness: 0.75 })),
   metal: (c, r = 0.35) => once('metal' + hexKey(c) + r, () => std({ color: c, metalness: 0.9, roughness: r })),
   emissive: (c, i = 1) => once('emis' + hexKey(c) + i, () => std({ color: c, emissive: c, emissiveIntensity: i, roughness: 0.4 })),
+  // upholstery with pleats, double stitching and perforations on the centre panel.
+  // dir 'v' = pleats run across the face's v axis (horizontal bands on a backrest), 'u' = the other way
+  quilted: (c = 0x15171c, dir = 'v', thread = '#9c8a62', pleats = 7) => once('quilt' + hexKey(c) + dir + thread + pleats, () => {
+    const base = new THREE.Color(c);
+    const draw = (bump) => (g, w, h) => {
+      const col = (k) => { const q = base.clone().multiplyScalar(k); return `rgb(${(q.r * 255) | 0},${(q.g * 255) | 0},${(q.b * 255) | 0})`; };
+      g.fillStyle = bump ? '#808080' : col(1); g.fillRect(0, 0, w, h);
+      const A = dir === 'v' ? w : h, B = dir === 'v' ? h : w; // A = across the pleats, B = along them
+      const at = (a, b, fn) => (dir === 'v' ? fn(a, b) : fn(b, a));
+      const p0 = 0.22 * A, p1 = 0.78 * A; // centre panel between the bolsters
+      for (let i = 0; i < pleats; i++) {
+        const b0 = (i / pleats) * B, b1 = ((i + 1) / pleats) * B;
+        for (let k = 0; k < 12; k++) { // rounded pleat profile
+          const t = k / 11, lift = Math.sin(t * Math.PI);
+          g.fillStyle = bump ? `rgb(${90 + lift * 120 | 0},${90 + lift * 120 | 0},${90 + lift * 120 | 0})` : col(0.82 + lift * 0.3);
+          at(p0, b0 + t * (b1 - b0), (x, y) => g.fillRect(x, y, dir === 'v' ? p1 - p0 : (b1 - b0) / 11 + 1, dir === 'v' ? (b1 - b0) / 11 + 1 : p1 - p0));
+        }
+        // perforations
+        g.fillStyle = bump ? '#202020' : col(0.45);
+        for (let a = p0 + 10; a < p1 - 6; a += 9) for (let bb = b0 + (b1 - b0) * 0.3; bb < b1 - (b1 - b0) * 0.25; bb += 8) at(a + ((bb / 8) % 2) * 4, bb, (x, y) => { g.beginPath(); g.arc(x, y, 1.3, 0, 7); g.fill(); });
+        // groove + double stitching between pleats
+        g.fillStyle = bump ? '#000' : col(0.35); at(p0, b0 - 1.5, (x, y) => g.fillRect(x, y, dir === 'v' ? p1 - p0 : 3, dir === 'v' ? 3 : p1 - p0));
+        if (!bump) { g.fillStyle = thread; for (const off of [-5, 4]) for (let a = p0; a < p1; a += 7) at(a, b0 + off, (x, y) => g.fillRect(x, y, dir === 'v' ? 4 : 1.6, dir === 'v' ? 1.6 : 4)); }
+      }
+      // bolster seams with double stitching
+      for (const a of [p0, p1]) {
+        g.fillStyle = bump ? '#000' : col(0.35); at(a - 2, 0, (x, y) => g.fillRect(x, y, dir === 'v' ? 4 : B, dir === 'v' ? B : 4));
+        if (!bump) { g.fillStyle = thread; for (const off of [-7, 6]) for (let bb = 0; bb < B; bb += 7) at(a + off, bb, (x, y) => g.fillRect(x, y, dir === 'v' ? 1.6 : 4, dir === 'v' ? 4 : 1.6)); }
+      }
+    };
+    const map = canvasTexture(512, 512, draw(false));
+    const bumpMap = canvasTexture(512, 512, draw(true), { linear: true });
+    return new THREE.MeshPhysicalMaterial({ map, bumpMap, bumpScale: 2.2, roughness: 0.58, sheen: 0.5, sheenColor: 0x555555, sheenRoughness: 0.55, name: 'עור מקופל עם תפרים כפולים' });
+  }),
   decal: (tex, o = {}) => phys({ map: tex, transparent: true, alphaTest: 0.05, roughness: o.roughness ?? 0.35, metalness: o.metalness ?? 0, clearcoat: o.clearcoat ?? 0.6, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, ...o.extra }),
   screen: (tex, i = 0.9) => std({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: i, roughness: 0.2, metalness: 0 }),
 };
@@ -183,9 +217,10 @@ const G = {
   },
   roundRectPath(w, h, r, cx = 0, cy = 0) { const s = G.roundRect(w, h, r, cx, cy); const p = new THREE.Path(); p.curves = s.curves; return p; },
   circlePath(r, cx = 0, cy = 0, cw = false) { const p = new THREE.Path(); p.absarc(cx, cy, r, 0, Math.PI * 2, cw); return p; },
-  // extrude a 2D shape (XY) by depth along +Z, centred on z=0
+  // extrude a 2D shape (XY) by depth along +Z, centred on z=0. A bevel grows the outline
+  // by `bevel` unless bevelOffset: -bevel keeps the outline where the shape says
   extrude(shape, depth, o = {}) {
-    const g = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: !!o.bevel, bevelSize: o.bevel || 0, bevelThickness: o.bevelT ?? o.bevel ?? 0, bevelSegments: o.bevelSeg ?? 3, curveSegments: o.curveSeg ?? 16, steps: o.steps ?? 1 });
+    const g = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: !!o.bevel, bevelSize: o.bevel || 0, bevelOffset: o.bevelOffset ?? 0, bevelThickness: o.bevelT ?? o.bevel ?? 0, bevelSegments: o.bevelSeg ?? 3, curveSegments: o.curveSeg ?? 16, steps: o.steps ?? 1 });
     g.translate(0, 0, -depth / 2);
     return g;
   },
@@ -211,6 +246,35 @@ const G = {
     g.applyMatrix4(m);
     return g;
   },
+};
+
+// average normals of vertices that share a position (rounded-box face seams)
+function smoothNormals(g) {
+  g.computeVertexNormals();
+  const pos = g.attributes.position, nor = g.attributes.normal, acc = new Map();
+  const key = (i) => `${Math.round(pos.getX(i) * 2e4)},${Math.round(pos.getY(i) * 2e4)},${Math.round(pos.getZ(i) * 2e4)}`;
+  for (let i = 0; i < pos.count; i++) { const k = key(i), a = acc.get(k) || [0, 0, 0]; a[0] += nor.getX(i); a[1] += nor.getY(i); a[2] += nor.getZ(i); acc.set(k, a); }
+  for (let i = 0; i < pos.count; i++) { const a = acc.get(key(i)), l = Math.hypot(a[0], a[1], a[2]) || 1; nor.setXYZ(i, a[0] / l, a[1] / l, a[2] / l); }
+  nor.needsUpdate = true;
+  return g;
+}
+
+// Sculpted ("soft") box: a finely subdivided rounded box pushed around by
+// deform(p, n), where n is the vertex position normalised to [-1, 1] on each
+// axis. Used for upholstery, pillows, housings: anything that shouldn't look
+// like a plain box. Keeps the 6 face groups (px, nx, py, ny, pz, nz), so a
+// material array can put e.g. quilted leather on just the seating face.
+G.soft = (w, h, d, o = {}) => {
+  const r = Math.min(o.r ?? 0.02, (w / 2) * 0.98, (h / 2) * 0.98, (d / 2) * 0.98);
+  const g = new RoundedBoxGeometry(w, h, d, o.seg ?? 5, r);
+  if (o.deform) {
+    const pos = g.attributes.position, p = new THREE.Vector3(), n = new THREE.Vector3();
+    for (let i = 0; i < pos.count; i++) {
+      p.fromBufferAttribute(pos, i); n.set(p.x / (w / 2), p.y / (h / 2), p.z / (d / 2));
+      o.deform(p, n); pos.setXYZ(i, p.x, p.y, p.z);
+    }
+  }
+  return smoothNormals(g);
 };
 
 // --------------------------------------------------------- param surfaces
@@ -425,6 +489,64 @@ function mirrorZ(obj) {
   return c;
 }
 
+// A control panel: plate + real 3D buttons, knobs and guarded toggle switches,
+// with crisp backlit labels drawn into one texture per panel.
+//   panel(parent, { pos, normal, up, w, h, plate, ink, buttons: [
+//     { x, y, w, h, d, kind: 'rect'|'round'|'knob'|'toggle'|'rocker', label, led: '#3f6', mat, color } ] })
+// x/y are metres in the panel plane (x = right as seen from the front, y = up).
+function panel(parent, o) {
+  const g = group(parent, { name: o.name || 'panel' });
+  const zA = V3(...o.normal).normalize(), yA = V3(...(o.up || [0, 1, 0]));
+  yA.addScaledVector(zA, -yA.dot(zA)).normalize();
+  const xA = yA.clone().cross(zA);
+  g.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(xA, yA, zA));
+  g.position.set(...o.pos);
+  const W = o.w, H = o.h, PD = o.depth ?? 0.004;
+  if (o.plate !== false) mesh(G.box(W, H, PD, Math.min(0.004, PD / 2), 1), o.plate || M.gloss(0x0b0b0c), { parent: g, pos: [0, 0, -PD / 2], name: 'plate', cast: false });
+  const caps = new Map();
+  const add = (mat, geo) => { if (!caps.has(mat)) caps.set(mat, []); caps.get(mat).push(geo); };
+  const ppm = Math.min(5000, 2048 / Math.max(W, H));
+  const mk = () => { const c = document.createElement('canvas'); c.width = Math.ceil(W * ppm); c.height = Math.ceil(H * ppm); return c; };
+  const capC = mk(), plateC = mk(), cg = capC.getContext('2d'), pg = plateC.getContext('2d');
+  let capDepth = 0.005, usedCap = false, usedPlate = false;
+  const cx = (x) => (x + W / 2) * ppm, cy = (y) => (H / 2 - y) * ppm;
+  const text = (ctx, s, x, y, size, color) => { ctx.fillStyle = color; ctx.font = `700 ${Math.max(6, size * ppm)}px Arial, Helvetica, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s, cx(x), cy(y)); };
+  const ink = o.ink || '#e3e7ee';
+  for (const b of o.buttons) {
+    const bw = b.w ?? 0.02, bh = b.h ?? bw, kind = b.kind || 'rect';
+    const capMat = b.mat || M.gloss(b.color ?? 0x141416);
+    if (kind === 'rect' || kind === 'round' || kind === 'rocker') {
+      const bd = b.d ?? 0.005; capDepth = bd;
+      const geo = kind === 'round' ? G.cyl(bw / 2, bw / 2, bd, 24, 'z') : G.box(bw, bh, bd, Math.min(0.003, bw / 3, bh / 3), 1);
+      if (kind === 'rocker') geo.rotateX(0.12);
+      add(capMat, G.at(geo, [b.x, b.y, bd / 2]));
+      if (b.label) { text(cg, b.label, b.x, b.y - (b.led ? bh * 0.12 : 0), Math.min(bh * 0.42, (bw / Math.max(2, b.label.length)) * 1.5), b.ink || ink); usedCap = true; }
+      if (b.led) { cg.fillStyle = b.led; const lw = bw * 0.36 * ppm, lh = Math.max(2, bh * 0.1 * ppm); cg.fillRect(cx(b.x) - lw / 2, cy(b.y + bh * 0.3) - lh / 2, lw, lh); usedCap = true; }
+    } else if (kind === 'knob') {
+      const bd = b.d ?? 0.016;
+      add(b.mat || M.satin(), G.at(G.cyl(bw / 2, bw / 2 * 0.93, bd, 32, 'z'), [b.x, b.y, bd / 2]));
+      add(M.gloss(0x111111), G.at(G.cyl(bw / 2 * 0.8, bw / 2 * 0.8, 0.0015, 24, 'z'), [b.x, b.y, bd + 0.0007]));
+      add(M.light(0xffffff, 0.6), G.at(G.box(0.0015, bw * 0.3, 0.001), [b.x, b.y + bw * 0.22, bd + 0.0016]));
+      if (b.label) { text(pg, b.label, b.x, b.y - bw / 2 - 0.006, 0.0055, b.ink || ink); usedPlate = true; }
+      (b.ticks || []).forEach((t, i, arr) => { const a = Math.PI * (0.75 - (1.5 * i) / Math.max(1, arr.length - 1)); text(pg, t, b.x + Math.cos(a) * (bw / 2 + 0.006), b.y + Math.sin(a) * (bw / 2 + 0.006), 0.004, b.ink || ink); usedPlate = true; });
+    } else if (kind === 'toggle') {
+      add(M.gloss(0x161618), G.at(G.box(0.018, 0.026, 0.004, 0.002, 1), [b.x, b.y, 0.002]));
+      add(M.chrome(), G.at(G.cyl(0.005, 0.005, 0.005, 16, 'z'), [b.x, b.y, 0.0065]));
+      const lever = G.merge([G.at(G.cyl(0.0022, 0.0022, 0.016, 10, 'y'), [0, 0.008, 0]), G.at(G.sphere(0.0034, 10, 8), [0, 0.016, 0])]);
+      lever.rotateX(1.05); add(M.chrome(), G.at(lever, [b.x, b.y, 0.008]));
+      // spring-loaded safety cover, flipped open
+      const cover = G.box(0.022, 0.03, 0.012, 0.002, 1); cover.translate(0, -0.015, 0.006); cover.rotateX(-1.25);
+      add(b.coverMat || M.lens(b.cover ?? 0xc8102e, 0.8), G.at(cover, [b.x, b.y + 0.015, 0.004]));
+      if (b.label) { text(pg, b.label, b.x, b.y - 0.02, 0.0048, b.ink || ink); usedPlate = true; }
+    }
+  }
+  for (const [mat, list] of caps) mesh(G.merge(list), mat, { parent: g, cast: false, name: 'controls' });
+  const labelMat = (c) => { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return new THREE.MeshStandardMaterial({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: 0.45, transparent: true, alphaTest: 0.2, roughness: 0.4, polygonOffset: true, polygonOffsetFactor: -2 }); };
+  if (usedCap) mesh(new THREE.PlaneGeometry(W, H), labelMat(capC), { parent: g, pos: [0, 0, capDepth + 0.0004], cast: false, name: 'labels' });
+  if (usedPlate) mesh(new THREE.PlaneGeometry(W, H), labelMat(plateC), { parent: g, pos: [0, 0, 0.0004], cast: false, name: 'labels' });
+  return g;
+}
+
 // animated toggles (doors, lights…) — viewer renders a button per toggle
 function toggle(id, info, apply, initial = 0) {
   registry.toggles.push({ id, ...info, apply, t: initial, target: initial, init: initial });
@@ -434,6 +556,6 @@ function onFrame(fn) { registry.frames.push(fn); }
 
 L3D.kit = {
   THREE, V3, clamp, lerp, smooth, rng, M, G, samples, surface, cap,
-  canvasTexture, textTexture, noiseTexture, mesh, group, part, instances, mirrorZ,
+  canvasTexture, textTexture, noiseTexture, mesh, group, part, instances, mirrorZ, panel, smoothNormals,
   toggle, onFrame, registry, mergeGeometries,
 };
