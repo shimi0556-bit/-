@@ -1,0 +1,23 @@
+{
+  "models": [
+    {
+      "id": "001-cadillac-one-the-beast",
+      "number": 1,
+      "date": "2026-10-01",
+      "dateHe": "1 באוקטובר 2026",
+      "category": "רכבים",
+      "title": "קדילק וואן — ״החיה״",
+      "titleEn": "Cadillac One — “The Beast” (2018)",
+      "subtitle": "רכב השרד המשוריין של נשיא ארצות הברית · הדור של 2018",
+      "description": "דגם תלת־ממד פרוצדורלי ומפורט של רכב השרד הנשיאותי האמריקאי: מרכב, דלתות שריון בעובי 20 ס״מ, זכוכית רב־שכבתית, מנוע דיזל V8, שלדת משאית, תא הנשיא ומערכות האבטחה. אפשר לפרק, לחתוך, לראות ברנטגן ולפתוח דלתות.",
+      "page": "models/001-cadillac-one-the-beast/index.html",
+      "thumb": "models/001-cadillac-one-the-beast/thumb.jpg",
+      "stats": {
+        "parts": 234,
+        "meshes": 1069,
+        "triangles": 529858,
+        "buildMs": 561
+      }
+    }
+  ]
+}
