@@ -92,6 +92,8 @@ window.L3D_MODEL = {
       return V3(x, y, s * z);
     };
     const outLow = (p, x) => V3(0, p.y - (Y0(x) + Y1(x)) / 2, p.z);
+    // a point `depth` inside the greenhouse skin (between the skin and the trim), right side
+    const inG = (x, v, depth) => { const p = gSec(x, v); return p.addScaledVector(V3(0, BELT - 0.2 - p.y, -p.z).normalize(), depth); };
     const outG = (p, x) => V3(0, p.y - BELT + 0.2, p.z);
 
     // point + outward normal on the body side at height y (s = side)
@@ -283,8 +285,8 @@ window.L3D_MODEL = {
       const discGeo = G.extrude(disc, 0.016, { bevel: 0.003, bevelSeg: 2, curveSeg: 12 });
       const barrelGeo = G.lathe([[0.3, -0.113], [0.297, -0.106], [RIM_R, -0.1], [0.279, -0.062], [0.271, -0.025], [0.271, 0.035], [0.279, 0.066], [RIM_R, 0.1], [0.297, 0.106], [0.3, 0.113]], 96, 'z');
       const flareGeo = G.lathe([[0.272, 0.078], [0.283, 0.09], [0.293, 0.104], [0.299, 0.112]], 96, 'z');
-      const hubGeo = G.lathe([[0.112, 0.06], [0.112, -0.02], [0.095, -0.06], [0.08, -0.07]], 48, 'z');
-      const capGeo = G.lathe([[0, 0.168], [0.03, 0.166], [0.06, 0.158], [0.082, 0.143], [0.096, 0.122], [0.104, 0.1], [0.106, 0.088]], 64, 'z');
+      const hubGeo = G.lathe([[0.08, -0.07], [0.095, -0.06], [0.109, -0.02], [0.109, 0.1], [0.104, 0.106], [0.0, 0.106]], 48, 'z');
+      const capGeo = G.lathe([[0.0, 0.104], [0.103, 0.104], [0.108, 0.108], [0.107, 0.116], [0.1, 0.128], [0.088, 0.141], [0.072, 0.151], [0.058, 0.156], [0.054, 0.1575], [0.0, 0.1575]], 64, 'z');
       const nutGeo = G.merge([
         G.at(G.cyl(0.0185, 0.0185, 0.022, 6, 'z'), [0, 0, 0.011]),
         G.at(G.cyl(0.024, 0.024, 0.005, 24, 'z'), [0, 0, 0.0025]),
@@ -321,8 +323,11 @@ window.L3D_MODEL = {
         instances(nutGeo, M.chrome(), Array.from({ length: 10 }, (_, i) => { const a = (i / 10) * Math.PI * 2; return { pos: [Math.cos(a) * 0.14288, Math.sin(a) * 0.14288, DISC_W + 0.011] }; }), { parent: nuts });
         const capP = part(wheel, { he: 'כיסוי רכזת עם סמל קדילק', en: 'Hub cover with Cadillac crest', mat: 'נירוסטה מלוטשת', desc: 'כיסוי הרכזת המרכזי, עם סמל קדילק צבעוני.' });
         capP.userData.explodeLocal = V3(0, 0, 0.7);
-        mesh(capGeo, M.chrome(), { parent: capP });
-        mesh(new THREE.CircleGeometry(0.045, 48), crestMat, { parent: capP, pos: [0, 0, 0.1685], name: 'crest' });
+        mesh(capGeo, M.aluminum(), { parent: capP, name: 'cap' });
+        mesh(G.torus(0.0505, 0.0035, 8, 48, Math.PI * 2, 'z'), M.chrome(), { parent: capP, pos: [0, 0, 0.158], name: 'crest bezel' });
+        mesh(G.cyl(0.0475, 0.0475, 0.0012, 48, 'z'), M.gloss(0x0b0b0c), { parent: capP, pos: [0, 0, 0.1581], name: 'crest backing' });
+        mesh(new THREE.CircleGeometry(0.046, 48), crestMat, { parent: capP, pos: [0, 0, 0.1589], name: 'crest' });
+        mesh(G.torus(0.1065, 0.0015, 4, 48, Math.PI * 2, 'z'), M.black(), { parent: capP, pos: [0, 0, 0.105], name: 'cap seam' });
         const ins = part(wheel, { he: 'טבעת ראן־פלאט', en: 'Run-flat insert', mat: 'פוליאוריתן/קבלר קשיח', desc: 'טבעת קשיחה בתוך הצמיג. אם האוויר יוצא, הצמיג נשען עליה והרכב ממשיך לנסוע מהר הרחק מהסכנה.' });
         mesh(insertGeo, M.plastic(0x2a2622, 0.7), { parent: ins });
       }
@@ -579,10 +584,10 @@ window.L3D_MODEL = {
         const head = part(en, { he: `ראש צילינדרים ${sideHe}`, en: 'Aluminium cylinder head', mat: 'אלומיניום', desc: '4 צילינדרים, 16 שסתומים. מזרקי הדלק נכנסים ישירות לתא הבעירה מלמעלה.' });
         mesh(G.box(ELEN - 0.04, 0.12, 0.24, 0.015), ALU, { parent: head, pos: at(s, 0.42).toArray(), rot: [s * Math.PI / 4, 0, 0] });
         const vc = part(en, { he: `מכסה שסתומים ${sideHe}`, en: 'Valve cover', mat: 'פלסטיק מחוזק + אטם גומי', desc: 'מכסה את גלי הנדנדות ואת 4 המזרקים של הגדה. מוחזק ב־10 ברגים.' });
-        mesh(G.box(ELEN - 0.08, 0.065, 0.2, 0.025), M.gloss(0x111214), { parent: vc, pos: at(s, 0.515).toArray(), rot: [s * Math.PI / 4, 0, 0] });
+        mesh(G.soft(ELEN - 0.08, 0.065, 0.2, { r: 0.025, seg: 4, deform: (q, n) => { q.y += 0.01 * (1 - n.z * n.z) * smooth(0, 1, n.y); } }), M.gloss(0x111214), { parent: vc, pos: at(s, 0.515).toArray(), rot: [s * Math.PI / 4, 0, 0] });
         const label = K.textTexture('DURAMAX', { font: '900 110px Arial, sans-serif', color: '#d8d8d8', letterSpacing: '6px' });
         const lm = mesh(new THREE.PlaneGeometry(0.34, 0.34 / label.aspect), M.decal(label.tex), { parent: vc, cast: false, name: 'DURAMAX lettering' });
-        lm.position.copy(at(s, 0.549));
+        lm.position.copy(at(s, 0.5595));
         // read left-to-right for someone standing beside the car on that side
         { const xa = V3(s, 0, 0), za = bank(s).d.clone(), ya = za.clone().cross(xa); lm.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(xa, ya, za)); }
         const vb = [];
@@ -934,13 +939,24 @@ window.L3D_MODEL = {
         const trim = part(door, { he: 'חיפוי פנימי', en: 'Door trim panel', mat: 'עור, עץ, כרום', desc: front ? 'חיפוי פנימי בעור עם מתגי חלונות ונעילה, ידית פנימית ומשענת יד.' : 'חיפוי עור לתא הנשיא: משענת יד רחבה, רמקול, מנורת אווירה ופס עץ.' });
         mesh(tr(surface(lowSec, samples(xb - 0.02, xa + 0.02, 0.05), samples(s * 0.34, s * 0.735, 0.03, [LV.shoulder, LV.cornerT].map((b) => s * b)), { out: outLow, offset: -0.165, thickness: 0.035 })), M.leather(0x14161b), { parent: trim, name: 'panel' });
         const inner = (x, y, depth) => { const q = sideAt(x, y, s); return q.p.clone().addScaledVector(q.n, -depth).sub(d.pivot); };
-        mesh(G.box(Math.abs(xb - xa) * 0.62, 0.05, 0.1, 0.02), M.leather(0x1a1c22), { parent: trim, pos: inner((xa + xb) / 2 - 0.03, 0.93, 0.24).toArray(), name: 'armrest' });
+        mesh(G.soft(Math.abs(xb - xa) * 0.62, 0.05, 0.1, { r: 0.02, seg: 4, deform: (q, n) => { q.y += 0.006 * (1 - n.x * n.x) * smooth(0, 1, n.y); } }), M.leather(0x1a1c22), { parent: trim, pos: inner((xa + xb) / 2 - 0.03, 0.93, 0.24).toArray(), name: 'armrest' });
         mesh(G.box(Math.abs(xb - xa) * 0.7, 0.025, 0.006), M.wood(), { parent: trim, pos: inner((xa + xb) / 2, 1.13, 0.2).toArray(), name: 'wood strip' });
         mesh(G.box(0.12, 0.02, 0.02, 0.008), M.chrome(), { parent: trim, pos: inner(front ? xb - 0.25 : xb - 0.22, 1.06, 0.215).toArray(), name: 'inner handle' });
         const spk = inner((xa + xb) / 2, 0.79, 0.203);
         mesh(G.cyl(0.07, 0.07, 0.006, 32, 'z'), new THREE.MeshStandardMaterial({ map: speakerTexture(K), metalness: 0.8, roughness: 0.4 }), { parent: trim, pos: spk.toArray(), rot: [Math.PI / 2 * 0, 0, 0], name: 'speaker grille' });
         mesh(G.box(0.03, 0.012, 0.03), glow(0xff2a1a, 0.6), { parent: trim, pos: inner(xa + 0.08, 0.63, 0.19).toArray(), name: 'door-open warning lamp' });
-        if (front && s < 0) { const sw = part(trim, { he: 'מתגי חלונות ונעילה', en: 'Window & lock switches', mat: 'פלסטיק + כרום', desc: 'רק החלון של הנהג נפתח — ורק כ־7.5 ס״מ, להעברת מסמכים או דיבור עם סוכן.' }); for (let i = 0; i < 4; i++) mesh(G.box(0.022, 0.008, 0.03, 0.004), M.gloss(0x111111), { parent: sw, pos: inner(xb - 0.2 - i * 0.03, 0.96, 0.27).toArray() }); }
+        // window / lock switches on the armrest (the driver gets the full cluster)
+        { const sw = part(trim, { he: front && s < 0 ? 'מתגי חלונות, נעילה ומראות (נהג)' : 'מתג חלון ונעילה', en: 'Window & lock switches', mat: 'פלסטיק + כרום', desc: front && s < 0 ? 'מכאן הנהג שולט בכל החלונות, בנעילה המרכזית ובמראות. רק החלון שלו נפתח — כ־7.5 ס״מ בלבד, להעברת מסמכים או דיבור עם סוכן.' : 'מתג חלון (החלון עצמו נעול ולא נפתח) ולחצן נעילה.' });
+          const ax = front ? xb - 0.24 : xb - 0.26, q = sideAt(ax, 0.962, s);
+          const pos = q.p.clone().addScaledVector(q.n, -0.245).sub(d.pivot);
+          const btns = front && s < 0
+            ? [...[0, 1, 2, 3].map((i) => ({ kind: 'rocker', x: -0.045 + (i % 2) * 0.03, y: i < 2 ? 0.014 : -0.016, w: 0.022, h: 0.026, d: 0.008, color: 0x18191c })),
+               { x: 0.025, y: 0.016, w: 0.026, h: 0.016, label: 'LOCK', color: 0x18191c }, { x: 0.025, y: -0.004, w: 0.026, h: 0.016, label: 'UNLK', color: 0x18191c },
+               { kind: 'round', x: 0.05, y: -0.024, w: 0.02, d: 0.006, color: 0x18191c }, { x: 0.052, y: 0.012, w: 0.016, h: 0.012, label: 'L R', color: 0x18191c }]
+            : [{ kind: 'rocker', x: -0.012, y: 0, w: 0.022, h: 0.026, d: 0.008, color: 0x18191c }, { x: 0.018, y: 0, w: 0.024, h: 0.016, label: 'LOCK', color: 0x18191c }];
+          const pw = front && s < 0 ? 0.13 : 0.06;
+          const g = K.panel(sw, { pos: pos.toArray(), normal: V3(0, 0.9, -s * 0.44).normalize().toArray(), up: [1, 0, 0], w: pw, h: 0.06, plate: M.gloss(0x0e0e10), buttons: btns });
+          mesh(G.box(pw + 0.006, 0.003, 0.064, 0.0015), M.chrome(), { parent: g, pos: [0, -0.0305, -0.001], rot: [Math.PI / 2, 0, 0], name: 'chrome surround' }); }
         // presidential seal on the rear doors
         if (!front) {
           const sp = sideAt((xa + xb) / 2 + 0.02, 0.92, s);
@@ -955,11 +971,11 @@ window.L3D_MODEL = {
           const mp = part(door, { he: `מראה צד ${s > 0 ? 'ימנית' : 'שמאלית'}`, en: 'Side mirror', mat: 'פלסטיק צבוע, זכוכית מראה, LED', desc: 'מראה מחוממת עם פנס איתות LED, נורית חירום אדומה־כחולה ופנס תאורת קרקע.' });
           const base = gSec(xb - 0.09, s * 0.96);
           const g = new THREE.Group(); g.position.copy(base.clone().sub(d.pivot)); mp.add(g);
-          mesh(G.box(0.12, 0.05, 0.06, 0.015), PAINT, { parent: g, pos: [0, 0, s * 0.02], name: 'sail' });
-          mesh(G.box(0.05, 0.04, 0.12, 0.012), PAINT, { parent: g, pos: [-0.01, 0.03, s * 0.09], name: 'arm' });
-          mesh(G.box(0.11, 0.155, 0.24, 0.045), PAINT, { parent: g, pos: [-0.01, 0.06, s * 0.22], name: 'housing' });
-          mesh(G.box(0.004, 0.13, 0.21, 0.02), M.reflector(), { parent: g, pos: [-0.067, 0.06, s * 0.22], name: 'mirror glass' });
-          mesh(G.box(0.012, 0.01, 0.17, 0.004), L.turn, { parent: g, pos: [0.047, 0.0, s * 0.24], name: 'turn repeater' });
+          mesh(G.soft(0.13, 0.05, 0.06, { r: 0.018, seg: 3, deform: (q, n) => { q.y *= 1 - 0.3 * smooth(-1, 1, n.x); } }), PAINT, { parent: g, pos: [0, 0, s * 0.02], name: 'sail' });
+          mesh(G.soft(0.05, 0.035, 0.13, { r: 0.015, seg: 3, deform: (q, n) => { q.y += 0.012 * smooth(-1, 1, n.z * s); } }), PAINT, { parent: g, pos: [-0.01, 0.03, s * 0.09], name: 'arm' });
+          mesh(G.soft(0.1, 0.155, 0.24, { r: 0.045, seg: 5, deform: (q, n) => { q.x += 0.028 * (1 - n.y * n.y) * (1 - n.z * n.z) * smooth(-0.2, 1, n.x); const k = 0.8 + 0.2 * smooth(-1, 1, n.z * s); q.y *= k; } }), PAINT, { parent: g, pos: [-0.012, 0.06, s * 0.22], name: 'housing' });
+          mesh(G.soft(0.004, 0.115, 0.19, { r: 0.0019, seg: 2, deform: (q, n) => { q.y *= 0.84 + 0.16 * smooth(-1, 1, n.z * s); } }), M.reflector(), { parent: g, pos: [-0.064, 0.06, s * 0.228], name: 'mirror glass' });
+          mesh(G.box(0.012, 0.008, 0.12, 0.003), L.turn, { parent: g, pos: [0.05, 0.003, s * 0.27], name: 'turn repeater' });
           mesh(G.box(0.012, 0.012, 0.035, 0.004), s > 0 ? L.red : L.blue, { parent: g, pos: [0.047, 0.11, s * 0.3], name: 'strobe' });
           mesh(G.box(0.03, 0.004, 0.03), L.plate, { parent: g, pos: [0.0, -0.018, s * 0.25], name: 'puddle lamp' });
         }
@@ -970,7 +986,13 @@ window.L3D_MODEL = {
     {
       const it = sys('interior');
       const F = CABIN_FLOOR;
-      const NAVY = 0x121722, BLACK = 0x0f1013, THREAD = 0x9c8a62;
+      const NAVY = 0x121722, BLACK = 0x0f1013, THREAD = '#9c8a62';
+      const PART_X = -0.21;   // armoured partition (centre line)
+      // rear face of the dashboard: x as a function of height (follows the dash profile below)
+      const dp = [[0.985, 1.262], [0.88, 1.258], [0.81, 1.246], [0.772, 1.215], [0.756, 1.16], [0.755, 1.07], [0.775, 0.975], [0.825, 0.885], [0.9, 0.82], [0.985, 0.8]];
+      const faceX = (y) => { for (let i = 3; i < 8; i++) { const [x0, y0] = dp[i], [x1, y1] = dp[i + 1]; if (y <= y0 && y >= y1) return lerp(x0, x1, (y0 - y) / (y0 - y1)); } return 0.76; };
+      const faceN = (y) => { const d = 0.01, a = faceX(y + d), b = faceX(y - d); return V3(-2 * d, a - b, 0).normalize(); }; // into the cabin
+      const faceUp = (y) => { const n = faceN(y); return V3(-n.y, n.x, 0).multiplyScalar(-1); };
       const strap = (parent, a, b, w = 0.045, mat = M.fabric(0x1a1a1d)) => {
         const A = V3(...a), B = V3(...b), d = B.clone().sub(A);
         const m = mesh(G.box(w, d.length(), 0.004), mat, { parent, name: 'belt webbing' });
@@ -983,153 +1005,255 @@ window.L3D_MODEL = {
         const pts = []; for (let i = 0; i <= turns * 12; i++) { const t = i / (turns * 12), a2 = t * turns * Math.PI * 2; pts.push(A.clone().addScaledVector(axis, t).addScaledVector(u, Math.cos(a2) * r).addScaledVector(v, Math.sin(a2) * r)); }
         return mesh(G.tube(pts, 0.0018, turns * 24, 5), M.plastic(0x0b0b0c), { parent, name: 'coiled cord' });
       };
-      // seat builder: local +x = the direction the occupant faces
+
+      // ---- sculpted seats: bolsters, lumbar, sagging centre, quilted panels, switches
+      const cushionDeform = (o) => (p, n) => {
+        const top = smooth(-0.3, 0.7, n.y), side = smooth(0.5, 0.93, Math.abs(n.z));
+        p.y += top * (side * (o.bolster ?? 0.04) * (1 - 0.45 * smooth(0.2, 1, n.x)) - 0.012 * (1 - side) * (1 - n.x * n.x) - 0.018 * smooth(0.6, 1, n.x) + 0.012 * n.x);
+        p.z *= 1 - 0.05 * smooth(0, 1, -n.x);
+      };
+      const backDeform = (o) => (p, n) => {
+        const front = smooth(-0.3, 0.7, n.x), side = smooth(0.5, 0.93, Math.abs(n.z));
+        p.x += front * (side * (o.bolster ?? 0.045) * (1 - 0.5 * smooth(0.55, 1, n.y)) + 0.02 * Math.exp(-Math.pow((n.y + 0.45) / 0.32, 2)) * (1 - side) - 0.006 * (1 - side));
+        p.x -= (1 - front) * 0.012 * (1 - n.z * n.z) * (1 - n.y * n.y);
+        p.x += 0.018 * Math.pow(smooth(0.4, 1, n.y), 2);
+        p.z *= 1 - 0.1 * smooth(0.3, 1, n.y);
+      };
+      const headDeform = (p, n) => { const front = smooth(-0.3, 0.7, n.x); p.x += front * 0.012 * (1 - n.y * n.y) * (1 - n.z * n.z) + 0.022 * n.z * n.z; };
+      // local frame: +x = the way the occupant faces, z = across the seat
       const seat = (o) => {
         const p = part(it, o.info, { pos: [o.x, F, o.z], rot: [0, o.face > 0 ? 0 : Math.PI, 0] });
-        const lth = M.leather(o.color), ch = o.h - F;
-        mesh(G.box(o.d * 0.7, ch - 0.12, o.w * 0.75, 0.02), M.darkSteel(), { parent: p, pos: [0, (ch - 0.12) / 2, 0], name: 'seat base' });
-        for (const dz of [-1, 1]) mesh(G.box(o.d * 0.95, 0.018, 0.03, 0.005), M.steel(), { parent: p, pos: [0, 0.009, dz * o.w * 0.33], name: 'seat rail' });
-        mesh(G.box(o.d, 0.12, o.w, 0.045), lth, { parent: p, pos: [0, ch - 0.06, 0], rot: [0, 0, 0.05], name: 'cushion' });
-        for (const sg of [-1, 1]) mesh(G.box(o.d * 0.95, 0.075, 0.075, 0.03), lth, { parent: p, pos: [0, ch - 0.005, sg * (o.w / 2 - 0.04)], name: 'side bolster' });
-        const stitch = M.leather(THREAD);
-        for (const sg of [-1, 1]) mesh(G.box(o.d * 0.86, 0.003, 0.004), stitch, { parent: p, pos: [0.0, ch + 0.003, sg * o.w * 0.2], rot: [0, 0, 0.05], name: 'stitching' });
-        for (let i = 0; i < 3; i++) mesh(G.box(0.004, 0.003, o.w * 0.4), stitch, { parent: p, pos: [-o.d * 0.3 + i * o.d * 0.3, ch + 0.003 - (i - 1) * 0.008, 0], name: 'cross stitching' });
-        const bk = new THREE.Group(); bk.position.set(-o.d / 2 + 0.04, ch - 0.05, 0); bk.rotation.z = o.lean; p.add(bk);
-        mesh(G.box(0.13, o.back, o.w, 0.045), lth, { parent: bk, pos: [-0.04, o.back / 2, 0], name: 'backrest' });
-        for (const sg of [-1, 1]) mesh(G.box(0.1, o.back * 0.82, 0.075, 0.03), lth, { parent: bk, pos: [0.01, o.back * 0.46, sg * (o.w / 2 - 0.04)], name: 'back bolster' });
-        for (const sg of [-1, 1]) mesh(G.box(0.004, o.back * 0.75, 0.004), stitch, { parent: bk, pos: [0.027, o.back * 0.46, sg * o.w * 0.2], name: 'stitching' });
-        if (o.head !== false) {
-          mesh(G.box(0.1, 0.17, o.w * 0.55, 0.04), lth, { parent: bk, pos: [-0.035, o.back + 0.13, 0], name: 'headrest' });
-          for (const sg of [-1, 1]) mesh(G.cyl(0.0055, 0.0055, 0.08, 8, 'y'), M.chrome(), { parent: bk, pos: [-0.04, o.back + 0.025, sg * o.w * 0.14], name: 'headrest post' });
+        const ch = o.h - F, bt = o.bt ?? 0.12, ct = o.ct ?? 0.13;
+        const lth = M.leather(o.color);
+        const only = (i, m) => [0, 1, 2, 3, 4, 5].map((k) => (k === i ? m : lth));
+        mesh(G.box(o.d * 0.72, ch - ct, o.w * 0.72, 0.015), M.darkSteel(), { parent: p, pos: [0, (ch - ct) / 2, 0], name: 'seat frame' });
+        for (const dz of [-1, 1]) {
+          mesh(G.box(o.d, 0.016, 0.034, 0.004), M.steel(), { parent: p, pos: [0, 0.008, dz * o.w * 0.32], name: 'seat track' });
+          for (const dx of [-1, 1]) mesh(G.bolt(0.006), M.steel(), { parent: p, pos: [dx * o.d * 0.45, 0.016, dz * o.w * 0.32], name: 'track bolt' });
         }
-        if (o.arm) for (const sg of o.arm) { mesh(G.box(o.d * 0.7, 0.05, 0.075, 0.02), lth, { parent: p, pos: [-0.04, ch + 0.1, sg * (o.w / 2 + 0.03)], name: 'armrest' }); mesh(G.box(o.d * 0.5, 0.12, 0.05, 0.01), lth, { parent: p, pos: [-0.06, ch + 0.03, sg * (o.w / 2 + 0.03)], name: 'armrest support' }); }
-        mesh(G.box(0.03, 0.025, 0.05, 0.006), M.gloss(0x111111), { parent: p, pos: [-o.d / 2 + 0.05, ch + 0.02, (o.buckle || 1) * (o.w / 2 + 0.03)], name: 'belt buckle' });
-        mesh(G.box(0.012, 0.012, 0.018, 0.003), M.plastic(0xb3121b), { parent: p, pos: [-o.d / 2 + 0.05, ch + 0.034, (o.buckle || 1) * (o.w / 2 + 0.03)], name: 'release button' });
+        mesh(G.cyl(0.028, 0.028, 0.09, 16, 'z'), M.darkSteel(), { parent: p, pos: [-o.d * 0.15, (ch - ct) * 0.45, 0], name: 'power-seat motor' });
+        mesh(G.soft(o.d, ct, o.w, { r: 0.04, seg: 6, deform: cushionDeform(o) }), only(2, M.quilted(o.color, 'u', THREAD, o.pleats ?? 6)), { parent: p, pos: [0, ch - ct / 2, 0], name: 'cushion' });
+        // outboard trim shield with the power-seat switches
+        if (o.side) {
+          mesh(G.soft(o.d * 0.86, ch - 0.06, 0.024, { r: 0.008, seg: 3 }), M.plastic(0x16171b, 0.5), { parent: p, pos: [0, (ch - 0.06) / 2 + 0.035, o.side * (o.w / 2 + 0.004)], name: 'side shield' });
+          K.panel(p, { name: 'seat switches', pos: [0.0, ch - 0.075, o.side * (o.w / 2 + 0.017)], normal: [0, 0, o.side], w: 0.17, h: 0.06, plate: false, buttons: [
+            { x: 0.03 * o.side, y: -0.008, w: 0.075, h: 0.016, d: 0.008, color: 0x1c1d21 },
+            { x: -0.035 * o.side, y: 0.004, w: 0.014, h: 0.044, d: 0.008, color: 0x1c1d21 },
+            { x: -0.064 * o.side, y: -0.004, w: 0.022, kind: 'round', d: 0.007, color: 0x1c1d21 },
+            ...['1', '2', 'M'].map((l, i) => ({ x: (0.0 + i * 0.017) * o.side, y: 0.019, w: 0.013, h: 0.01, d: 0.003, label: l, color: 0x232428 })),
+          ] });
+        }
+        const bk = new THREE.Group(); bk.position.set(-o.d / 2 + 0.04, ch - 0.04, 0); bk.rotation.z = o.lean; p.add(bk);
+        mesh(G.soft(bt, o.back, o.w, { r: Math.min(0.04, bt * 0.45), seg: 6, deform: backDeform(o) }), only(0, M.quilted(o.color, 'v', THREAD, o.pleats ? o.pleats + 1 : 7)), { parent: bk, pos: [0.025 - bt / 2, o.back / 2, 0], name: 'backrest' });
+        if (o.head !== false) {
+          mesh(G.soft(0.09, 0.17, o.w * 0.56, { r: 0.035, seg: 5, deform: headDeform }), only(0, M.quilted(o.color, 'v', THREAD, 3)), { parent: bk, pos: [-0.03, o.back + 0.12, 0], name: 'headrest' });
+          for (const sg of [-1, 1]) {
+            mesh(G.cyl(0.0055, 0.0055, 0.07, 8, 'y'), M.chrome(), { parent: bk, pos: [-0.035, o.back + 0.03, sg * o.w * 0.14], name: 'headrest post' });
+            mesh(G.cyl(0.01, 0.01, 0.012, 14, 'y'), M.plastic(0x111111), { parent: bk, pos: [-0.035, o.back + 0.004, sg * o.w * 0.14], name: 'post collar' });
+          }
+          mesh(G.box(0.008, 0.006, 0.01, 0.002), M.chrome(), { parent: bk, pos: [-0.035, o.back + 0.012, o.w * 0.14 + 0.012], name: 'headrest release' });
+        }
+        if (o.arm) for (const sg of o.arm) {
+          mesh(G.soft(o.d * 0.72, 0.06, 0.085, { r: 0.025, seg: 4, deform: (q, n) => { q.y += 0.008 * (1 - n.x * n.x) * smooth(0, 1, n.y); } }), lth, { parent: p, pos: [-0.05, ch + 0.11, sg * (o.w / 2 + 0.035)], name: 'armrest' });
+          mesh(G.soft(o.d * 0.5, 0.13, 0.06, { r: 0.015, seg: 3 }), lth, { parent: p, pos: [-0.07, ch + 0.03, sg * (o.w / 2 + 0.035)], name: 'armrest support' });
+        }
+        const bz = (o.buckle || 1) * (o.w / 2 + 0.03);
+        mesh(G.soft(0.035, 0.028, 0.05, { r: 0.008, seg: 3 }), M.gloss(0x111111), { parent: p, pos: [-o.d / 2 + 0.06, ch + 0.02, bz], name: 'belt buckle' });
+        mesh(G.box(0.012, 0.006, 0.02, 0.002), M.plastic(0xb3121b), { parent: p, pos: [-o.d / 2 + 0.06, ch + 0.035, bz], name: 'release button' });
         p.userData.bk = bk;
         return p;
       };
 
-      // ---- floor, tunnel, mats
+      // ---- floor, tunnel, mats, wheelhouses
       const floorP = part(it, { he: 'רצפה ושטיחים', en: 'Carpeted floor', mat: 'שטיח צמר סמיך', desc: 'שטיח עבה מעל לוח השריון של הרצפה, עם מנהרה לתיבת ההילוכים ושני שטיחונים רקומים בתא הנשיא.' });
       mesh(G.box(2.66, 0.012, 1.9, 0.004), M.carpet(NAVY), { parent: floorP, pos: [-0.35, F - 0.006, 0] });
-      mesh(G.box(0.95, 0.12, 0.3, 0.05), M.carpet(NAVY), { parent: floorP, pos: [0.5, F + 0.05, 0], name: 'transmission tunnel' });
+      mesh(G.soft(0.95, 0.12, 0.3, { r: 0.05, seg: 4 }), M.carpet(NAVY), { parent: floorP, pos: [0.5, F + 0.05, 0], name: 'transmission tunnel' });
       const sealT = sealTexture(K);
       for (const s of [1, -1]) {
-        mesh(G.box(0.42, 0.008, 0.5, 0.01), M.carpet(0x0c1018), { parent: floorP, pos: [-0.74, F + 0.004, s * 0.4], name: 'floor mat' });
-        mesh(new THREE.CircleGeometry(0.08, 40), M.decal(sealT, { clearcoat: 0, roughness: 0.9 }), { parent: floorP, pos: [-0.74, F + 0.009, s * 0.4], rot: [-Math.PI / 2, 0, -Math.PI / 2], cast: false, name: 'embroidered seal' });
+        mesh(G.soft(0.42, 0.01, 0.5, { r: 0.004, seg: 2 }), M.carpet(0x0c1018), { parent: floorP, pos: [-0.74, F + 0.005, s * 0.4], name: 'floor mat' });
+        mesh(new THREE.CircleGeometry(0.08, 40), M.decal(sealT, { clearcoat: 0, roughness: 0.9 }), { parent: floorP, pos: [-0.74, F + 0.0105, s * 0.4], rot: [-Math.PI / 2, 0, -Math.PI / 2], cast: false, name: 'embroidered seal' });
       }
-      // rear wheelhouses reach into the cabin behind the executive seats: carpeted humps
       const wh = part(it, { he: 'כיסויי בתי גלגלים אחוריים', en: 'Rear wheelhouse trims', mat: 'שטיח על פלדה', desc: 'הגלגלים האחוריים נכנסים לתוך תא הנשיא; הקשתות מכוסות בשטיח, משני צידי המושבים.' });
       const whShape = new THREE.Shape(); const R2 = ARCH_R + 0.035;
       whShape.moveTo(BACK + 0.02, F); whShape.lineTo(AXR + R2, F);
       for (let i = 0; i <= 24; i++) { const a = (i / 24) * Math.PI / 2; const x = AXR + Math.cos(a) * R2, y = FLOOR + Math.sin(a) * R2; if (x >= BACK + 0.02 && y >= F) whShape.lineTo(x, y); }
       whShape.lineTo(BACK + 0.02, FLOOR + Math.sqrt(R2 * R2 - Math.pow(BACK + 0.02 - AXR, 2)));
       for (const s of [1, -1]) { const g = G.extrude(whShape, 0.34, { bevel: 0.02 }); g.translate(0, 0, s * 0.8); mesh(g, M.carpet(NAVY), { parent: wh, name: 'wheelhouse hump' }); }
+
       // ---- seats: 2 front, 3 rear-facing jump seats, 2 executive seats
-      const fr = [];
-      for (const s of [1, -1]) fr.push(seat({ x: 0.3, z: s * 0.42, face: 1, w: 0.52, d: 0.48, h: 0.99, back: 0.6, lean: 0.24, color: BLACK, buckle: -s, info: { he: s < 0 ? 'מושב הנהג' : 'מושב המפקד', en: s < 0 ? 'Driver seat' : 'Detail-leader seat', mat: 'עור, קצף, מסגרת פלדה', desc: s < 0 ? 'הנהג הוא סוכן שירות חשאי שעבר הכשרה בנהיגת התחמקות — כולל סיבוב של 180° בנסיעה לאחור.' : 'כאן יושב ראש צוות האבטחה, עם מכשירי הקשר. הוא מחליט לאן ומתי לברוח.' } }));
-      for (const [i, z] of [[0, -0.52], [1, 0], [2, 0.52]]) seat({ x: -0.29, z, face: -1, w: 0.46, d: 0.34, h: 0.95, back: 0.45, lean: 0.1, color: NAVY, head: false, info: { he: `מושב מתקפל ${i + 1} (פונה לאחור)`, en: 'Rear-facing jump seat', mat: 'עור כחול כהה', desc: 'שלושה מושבים מתקפלים צמודים למחיצה, פונים לנשיא — לעוזרים, לרופא או לאורחים.' } });
-      const pres = seat({ x: -1.12, z: 0.385, face: 1, w: 0.54, d: 0.5, h: 0.98, back: 0.56, lean: 0.17, color: NAVY, arm: [-1], buckle: -1, info: { he: 'מושב הנשיא', en: 'The President’s seat (rear right)', mat: 'עור כחול כהה, תפרים בצבע זהב', desc: 'הנשיא יושב תמיד מאחור מימין. המושב מתכוונן חשמלית, עם חימום, אוורור ועיסוי.' } });
-      seat({ x: -1.12, z: -0.385, face: 1, w: 0.54, d: 0.5, h: 0.98, back: 0.56, lean: 0.17, color: NAVY, arm: [1], buckle: 1, info: { he: 'מושב אורח (אחורי שמאלי)', en: 'Guest seat (rear left)', mat: 'עור כחול כהה', desc: 'המושב לאורח המכובד — מנהיג זר, בן/בת זוג או ראש הסגל.' } });
-      mesh(new THREE.CircleGeometry(0.045, 40), M.decal(sealT, { clearcoat: 0, roughness: 0.8 }), { parent: pres.userData.bk, pos: [0.017, 0.56 + 0.13, 0], rot: [0, Math.PI / 2, 0], cast: false, name: 'embroidered seal' });
-      // seat belts (front + executive seats)
+      for (const s of [1, -1]) seat({ x: 0.25, z: s * 0.42, face: 1, w: 0.52, d: 0.46, h: 0.99, back: 0.6, lean: 0.14, color: BLACK, side: s, buckle: -s, info: { he: s < 0 ? 'מושב הנהג' : 'מושב המפקד', en: s < 0 ? 'Driver seat' : 'Detail-leader seat', mat: 'עור מקופל עם תפרים כפולים, קצף, מסגרת פלדה', desc: s < 0 ? 'הנהג הוא סוכן שירות חשאי שעבר הכשרה בנהיגת התחמקות — כולל סיבוב של 180° בנסיעה לאחור. מושב חשמלי עם זיכרון לשלושה נהגים.' : 'כאן יושב ראש צוות האבטחה, עם מכשירי הקשר ולוח המתגים של מערכות ההגנה. הוא מחליט לאן ומתי לברוח.' } });
+      for (const [i, z] of [[0, -0.52], [1, 0], [2, 0.52]]) seat({ x: -0.455, z, face: -1, w: 0.46, d: 0.3, h: 0.95, back: 0.44, lean: 0.08, bt: 0.07, ct: 0.1, bolster: 0.02, pleats: 4, color: NAVY, head: false, side: z === 0 ? 0 : -Math.sign(z), info: { he: `מושב מתקפל ${i + 1} (פונה לאחור)`, en: 'Rear-facing jump seat', mat: 'עור כחול כהה', desc: 'שלושה מושבים צמודים למחיצה ופונים לנשיא — לעוזרים, לרופא או לאורחים. הם דקים כדי להשאיר מקום לרגליים.' } });
+      const pres = seat({ x: -1.12, z: 0.385, face: 1, w: 0.54, d: 0.5, h: 0.98, back: 0.56, lean: 0.17, color: NAVY, side: 1, buckle: -1, info: { he: 'מושב הנשיא', en: 'The President’s seat (rear right)', mat: 'עור כחול כהה מקופל, תפרים כפולים בצבע זהב', desc: 'הנשיא יושב תמיד מאחור מימין. המושב מתכוונן חשמלית, עם חימום, אוורור ועיסוי, וסמל הנשיאות רקום על משענת הראש.' } });
+      seat({ x: -1.12, z: -0.385, face: 1, w: 0.54, d: 0.5, h: 0.98, back: 0.56, lean: 0.17, color: NAVY, side: -1, buckle: 1, info: { he: 'מושב אורח (אחורי שמאלי)', en: 'Guest seat (rear left)', mat: 'עור כחול כהה מקופל', desc: 'המושב לאורח המכובד — מנהיג זר, בן/בת זוג או ראש הסגל.' } });
+      mesh(new THREE.CircleGeometry(0.042, 40), M.decal(sealT, { clearcoat: 0, roughness: 0.8 }), { parent: pres.userData.bk, pos: [0.022, 0.56 + 0.12, 0], rot: [0, Math.PI / 2, 0], cast: false, name: 'embroidered seal' });
       for (const s of [1, -1]) {
-        const b = part(it, { he: `חגורת בטיחות ${s > 0 ? 'ימנית' : 'שמאלית'} קדמית`, en: 'Three-point belt', mat: 'פוליאסטר ארוג', desc: 'חגורת שלוש נקודות עם מותחן פירוטכני.' });
-        strap(b, [0.02, 1.58, s * 0.8], [0.22, 1.02, s * 0.2]); strap(b, [0.22, 1.02, s * 0.2], [0.12, 0.98, s * 0.66]);
-        mesh(G.box(0.04, 0.06, 0.03, 0.008), M.plastic(0x222222), { parent: b, pos: [0.02, 1.58, s * 0.8], name: 'D-ring' });
+        const b = part(it, { he: `חגורת בטיחות קדמית ${s > 0 ? 'ימנית' : 'שמאלית'}`, en: 'Three-point belt', mat: 'פוליאסטר ארוג', desc: 'חגורת שלוש נקודות עם מותחן פירוטכני ומגביל עומס.' });
+        strap(b, [0.0, 1.58, s * 0.8], [0.17, 1.02, s * 0.2]); strap(b, [0.17, 1.02, s * 0.2], [0.06, 0.98, s * 0.66]);
+        mesh(G.soft(0.04, 0.065, 0.03, { r: 0.01, seg: 3 }), M.plastic(0x222222), { parent: b, pos: [0.0, 1.58, s * 0.8], name: 'D-ring' });
+        mesh(G.soft(0.05, 0.03, 0.02, { r: 0.008, seg: 3 }), M.satin(), { parent: b, pos: [0.17, 1.02, s * 0.2], name: 'latch plate' });
       }
 
       // ---- dashboard
-      const dash = part(it, { he: 'לוח מחוונים', en: 'Dashboard', mat: 'עור תפור, עץ, אלומיניום', desc: 'לוח מחוונים בסגנון אסקלייד, מותאם לשירות החשאי: מכשירי קשר מוצפנים, מסכי ניווט ומתגים למערכות ההגנה.' });
-      const dp = [[0.985, 1.262], [0.75, 1.255], [0.66, 1.235], [0.615, 1.19], [0.605, 1.1], [0.64, 0.98], [0.72, 0.86], [0.85, 0.8], [0.985, 0.8]];
-      mesh(G.extrude(G.shape(dp), 1.74, { bevel: 0.02, bevelSeg: 3 }), M.leather(BLACK), { parent: dash, name: 'dash body' });
-      mesh(G.box(0.012, 0.035, 1.6, 0.006), M.wood(), { parent: dash, pos: [0.6, 1.13, 0], name: 'wood inlay' });
-      mesh(G.box(0.006, 0.004, 1.6), M.satin(), { parent: dash, pos: [0.603, 1.11, 0], name: 'aluminium accent' });
-      for (const z of [-0.72, -0.15, 0.15, 0.72]) {
-        mesh(G.box(0.02, 0.05, 0.13, 0.008), M.black(), { parent: dash, pos: [0.612, 1.18, z], name: 'air vent' });
-        for (let i = 0; i < 4; i++) mesh(G.box(0.022, 0.003, 0.12), M.satin(), { parent: dash, pos: [0.608, 1.164 + i * 0.011, z], name: 'vent louvre' });
+      const dash = part(it, { he: 'לוח מחוונים', en: 'Dashboard', mat: 'עור תפור, עץ אגוז, אלומיניום', desc: 'לוח מחוונים בסגנון אסקלייד, מותאם לשירות החשאי: מכשירי קשר מוצפנים, מסכי ניווט ומתגים למערכות ההגנה.' });
+      mesh(G.extrude(G.shape(dp), 1.72, { bevel: 0.02, bevelOffset: -0.02, bevelSeg: 3 }), M.leather(BLACK), { parent: dash, name: 'dash body' });
+      for (const [z0, z1] of [[-0.86, -0.66], [-0.2, -0.16], [0.16, 0.86]]) mesh(G.soft(0.012, 0.03, z1 - z0, { r: 0.005, seg: 2 }), M.wood(), { parent: dash, pos: [faceX(1.125) - 0.004, 1.125, (z0 + z1) / 2], name: 'walnut inlay' });
+      for (const [z0, z1] of [[-0.86, -0.66], [0.16, 0.86]]) mesh(G.box(0.004, 0.003, z1 - z0), M.satin(), { parent: dash, pos: [faceX(1.105) - 0.004, 1.105, (z0 + z1) / 2], name: 'aluminium accent' });
+      instances(G.box(0.0035, 0.0012, 0.0015), M.leather(0x9c8a62), Array.from({ length: 220 }, (_, i) => ({ pos: [0.79, 1.2365, -0.86 + i * 0.0078], rot: [0, 0, -0.62] })), { parent: dash, cast: false });
+      for (const z of [-0.74, -0.12, 0.12, 0.74]) {
+        const y = 1.198, x = faceX(y);
+        mesh(G.soft(0.024, 0.05, 0.13, { r: 0.01, seg: 3 }), M.gloss(0x0c0c0d), { parent: dash, pos: [x - 0.004, y, z], name: 'air vent' });
+        for (let i = 0; i < 4; i++) mesh(G.box(0.02, 0.0025, 0.118), M.satin(), { parent: dash, pos: [x - 0.012, y - 0.016 + i * 0.011, z], rot: [0, 0, 0.15], name: 'vent louvre' });
+        mesh(G.box(0.01, 0.012, 0.012, 0.003), M.satin(), { parent: dash, pos: [x - 0.02, y, z], name: 'vent tab' });
       }
       const glove = part(dash, { he: 'תא כפפות', en: 'Glovebox', mat: 'עור', desc: 'בתא הכפפות: מפות, ערכת עזרה ראשונה וציוד קשר גיבוי.' });
-      mesh(G.box(0.012, 0.12, 0.36, 0.01), M.leather(BLACK), { parent: glove, pos: [0.646, 1.0, 0.48] });
-      mesh(G.box(0.012, 0.015, 0.06, 0.004), M.chrome(), { parent: glove, pos: [0.638, 1.05, 0.48], name: 'latch' });
-      // instrument cluster
+      mesh(G.soft(0.014, 0.1, 0.36, { r: 0.006, seg: 2 }), M.leather(BLACK), { parent: glove, pos: [faceX(1.0) - 0.006, 1.0, 0.5] });
+      mesh(G.soft(0.012, 0.014, 0.07, { r: 0.004, seg: 2 }), M.chrome(), { parent: glove, pos: [faceX(1.03) - 0.014, 1.03, 0.5], name: 'latch' });
+      // instrument cluster under a stitched hood
       const cl = part(dash, { he: 'לוח שעונים דיגיטלי', en: 'Digital instrument cluster', mat: 'מסך TFT', desc: 'מד מהירות, מד סיבובים, טמפרטורת מנוע ולחץ אוויר בצמיגים — כולל התראה אם צמיג עבר למצב ראן־פלאט.' });
-      mesh(G.box(0.1, 0.06, 0.4, 0.02), M.leather(BLACK), { parent: cl, pos: [0.66, 1.25, -0.42], name: 'cowl hood' });
-      mesh(new THREE.PlaneGeometry(0.36, 0.13), M.screen(clusterTexture(K), 1.1), { parent: cl, pos: [0.636, 1.165, -0.42], rot: [0, -Math.PI / 2, 0], cast: false, name: 'screen' });
-      cl.children[cl.children.length - 1].rotateX(-0.25);
-      // centre stack
+      const EYE = V3(0.2, 1.48, -0.42), SC = V3(0.771, 1.268, -0.42);
+      mesh(G.soft(0.09, 0.15, 0.42, { r: 0.03, seg: 4, deform: (q, n) => { q.x -= 0.012 * smooth(0, 1, n.y) * (1 - n.z * n.z); } }), M.leather(BLACK), { parent: cl, pos: [0.83, 1.255, -0.42], name: 'binnacle' });
+      mesh(G.soft(0.12, 0.03, 0.44, { r: 0.012, seg: 4, deform: (q, n) => { q.y += 0.008 * (1 - n.z * n.z); q.x -= 0.01 * n.z * n.z; } }), M.leather(BLACK), { parent: cl, pos: [0.79, 1.345, -0.42], name: 'cowl hood' });
+      const bez = mesh(G.soft(0.36, 0.135, 0.012, { r: 0.008, seg: 2 }), M.gloss(0x080808), { parent: cl, pos: SC.clone().add(V3(0.007, -0.002, 0)).toArray(), name: 'bezel' }); bez.lookAt(EYE);
+      const scr = mesh(new THREE.PlaneGeometry(0.34, 0.12), M.screen(clusterTexture(K), 1.1), { parent: cl, pos: SC.toArray(), cast: false, name: 'screen' }); scr.lookAt(EYE);
+      // centre stack: secure-comms screen, climate panel, hazard
       const cs = part(dash, { he: 'מסך מרכזי ומערכת קשר', en: 'Centre stack — secure comms', mat: 'מסך מגע + כפתורים', desc: 'מסך שמחובר לרשתות הקשר המוצפנות של השירות החשאי ושל הבית הלבן, עם ניווט ותמונת מצב של השיירה.' });
-      mesh(new THREE.PlaneGeometry(0.26, 0.15), M.screen(commsTexture(K), 1), { parent: cs, pos: [0.611, 1.07, 0], rot: [0, -Math.PI / 2, 0], cast: false, name: 'screen' });
-      mesh(G.box(0.01, 0.17, 0.28, 0.008), M.gloss(0x0a0a0a), { parent: cs, pos: [0.616, 1.07, 0], name: 'bezel' });
-      instances(G.box(0.008, 0.014, 0.028, 0.003), M.gloss(0x161616), Array.from({ length: 12 }, (_, i) => ({ pos: [0.625, 0.96 - Math.floor(i / 6) * 0.022, -0.1 + (i % 6) * 0.04] })), { parent: cs });
-      for (const z of [-0.14, 0.14]) mesh(G.cyl(0.02, 0.02, 0.02, 24, 'x'), M.satin(), { parent: cs, pos: [0.628, 0.95, z], name: 'climate knob' });
-      // steering
-      const sw = part(it, { he: 'הגה', en: 'Steering wheel & column', mat: 'עור, עץ, אלומיניום', desc: 'הגה עור עם קטע עץ עליון וסמל קדילק. על הזרועות: כפתורי קשר ובקרת שיוט.' });
-      mesh(G.tube([[0.8, 0.98, -0.42], [0.66, 1.03, -0.42], [0.56, 1.075, -0.42]], 0.03, 12, 12), M.plastic(0x101010), { parent: sw, name: 'column shroud' });
-      const wg = new THREE.Group(); wg.position.set(0.52, 1.1, -0.42); wg.rotation.z = -0.42; sw.add(wg);
-      mesh(G.torus(0.185, 0.016, 12, 64, Math.PI * 1.35, 'x'), M.leather(BLACK), { parent: wg, rot: [Math.PI * 0.825, 0, 0], name: 'rim (leather)' });
-      mesh(G.torus(0.185, 0.0165, 12, 32, Math.PI * 0.65, 'x'), M.wood(), { parent: wg, rot: [Math.PI * 0.175, 0, 0], name: 'rim (wood)' });
-      for (const a of [0, Math.PI, -Math.PI / 2]) { const sp = mesh(G.box(0.02, 0.15, 0.04, 0.01), M.satin(), { parent: wg, name: 'spoke' }); sp.position.set(0, Math.sin(a) * 0.1, Math.cos(a) * 0.1); sp.rotation.x = -a + Math.PI / 2; }
-      mesh(G.cyl(0.06, 0.065, 0.05, 32, 'x'), M.leather(BLACK), { parent: wg, pos: [0.005, 0, 0], name: 'airbag hub' });
-      mesh(new THREE.CircleGeometry(0.022, 32), M.decal(crestTexture(K)), { parent: wg, pos: [-0.022, 0.005, 0], rot: [0, -Math.PI / 2, 0], cast: false, name: 'crest' });
-      for (const sg of [-1, 1]) for (let i = 0; i < 3; i++) mesh(G.box(0.006, 0.012, 0.016, 0.003), M.gloss(0x1a1a1a), { parent: wg, pos: [-0.012, 0.012 - i * 0.018, sg * 0.1], name: 'spoke button' });
-      for (const sg of [-1, 1]) mesh(G.cyl(0.005, 0.005, 0.13, 8, 'z'), M.plastic(0x111111), { parent: sw, pos: [0.6, 1.06, -0.42 + sg * 0.07], rot: [0, 0, 0.3], name: 'stalk' });
+      mesh(G.soft(0.014, 0.17, 0.29, { r: 0.008, seg: 2 }), M.gloss(0x0a0a0a), { parent: cs, pos: [faceX(1.09) - 0.004, 1.09, 0], name: 'bezel' });
+      mesh(new THREE.PlaneGeometry(0.26, 0.15), M.screen(commsTexture(K), 1), { parent: cs, pos: [faceX(1.09) - 0.0115, 1.09, 0], rot: [0, -Math.PI / 2, 0], cast: false, name: 'screen' });
+      const clim = part(dash, { he: 'לוח מיזוג אוויר', en: 'Climate control panel', mat: 'אלומיניום + פלסטיק מבריק', desc: 'שני כפתורי טמפרטורה מסתובבים (נהג ונוסע), מצב אוטומטי, מזגן, הפשרת שמשות ומחזור אוויר — האוויר עובר דרך מסנן NBC.' });
+      { const y = 0.952, n = faceN(y); K.panel(clim, { pos: V3(faceX(y), y, 0).addScaledVector(n, 0.002).toArray(), normal: n.toArray(), up: faceUp(y).toArray(), w: 0.3, h: 0.072, plate: M.gloss(0x0d0d0f), buttons: [
+        { kind: 'knob', x: -0.118, y: 0.004, w: 0.034, d: 0.016, label: 'TEMP', ticks: ['LO', '72', 'HI'] },
+        { kind: 'knob', x: 0.118, y: 0.004, w: 0.034, d: 0.016, label: 'TEMP', ticks: ['LO', '72', 'HI'] },
+        { x: -0.066, y: 0.015, w: 0.04, h: 0.022, label: 'AUTO', led: '#3dff8a' }, { x: -0.022, y: 0.015, w: 0.04, h: 0.022, label: 'A/C', led: '#3dff8a' },
+        { x: 0.022, y: 0.015, w: 0.04, h: 0.022, label: 'MAX' }, { x: 0.066, y: 0.015, w: 0.04, h: 0.022, label: 'RECIRC', led: '#ffb43a' },
+        { x: -0.066, y: -0.014, w: 0.04, h: 0.022, label: 'FAN −' }, { x: -0.022, y: -0.014, w: 0.04, h: 0.022, label: 'FAN +' },
+        { x: 0.022, y: -0.014, w: 0.04, h: 0.022, label: 'DEF' }, { x: 0.066, y: -0.014, w: 0.04, h: 0.022, label: 'REAR' },
+      ] }); }
+      { const y = 1.2, n = faceN(y); K.panel(clim, { name: 'hazard', pos: V3(faceX(y), y, 0).addScaledVector(n, 0.002).toArray(), normal: n.toArray(), up: faceUp(y).toArray(), w: 0.05, h: 0.022, plate: M.gloss(0x0d0d0f), buttons: [{ x: 0, y: 0, w: 0.036, h: 0.016, label: '▲', color: 0x9b0f14, ink: '#fff' }] }); }
+      const lightsP = part(dash, { he: 'מתג אורות וערפל', en: 'Lighting switch', mat: 'אלומיניום', desc: 'בורר האורות של הנהג: כבוי, אוטומטי, אורות חניה ואורות דרך, ולחצני ערפל ותאורת לוח.' });
+      K.panel(lightsP, { pos: [faceX(1.07) - 0.002, 1.07, -0.75], normal: [-1, 0, 0], w: 0.1, h: 0.07, plate: M.gloss(0x0d0d0f), buttons: [
+        { kind: 'knob', x: -0.018, y: 0.002, w: 0.03, d: 0.014, label: 'LIGHTS', ticks: ['OFF', 'AUTO', 'PARK', 'ON'] },
+        { x: 0.03, y: 0.016, w: 0.028, h: 0.016, label: 'FOG', led: '#3dff8a' }, { x: 0.03, y: -0.006, w: 0.028, h: 0.016, label: 'DIM' }, { x: 0.03, y: -0.026, w: 0.028, h: 0.012, label: 'HUD' },
+      ] });
+      const start = part(dash, { he: 'כפתור התנעה', en: 'Engine start/stop button', mat: 'אלומיניום + LED', desc: 'כפתור התנעה בלחיצה. המנוע מניע רק כשהמפתח המוצפן של הנהג נמצא ברכב.' });
+      { const y = 1.03, n = faceN(y); K.panel(start, { pos: V3(faceX(y), y, -0.19).addScaledVector(n, 0.002).toArray(), normal: n.toArray(), up: faceUp(y).toArray(), w: 0.04, h: 0.04, plate: M.satin(), depth: 0.003, buttons: [{ kind: 'round', x: 0, y: 0, w: 0.03, d: 0.006, label: 'START', color: 0x101010, led: '#ff3b2f' }] }); }
+
+      // ---- steering wheel & column
+      const sw = part(it, { he: 'הגה', en: 'Steering wheel & column', mat: 'עור, עץ, אלומיניום', desc: 'הגה עור עם קטע עץ עליון וסמל קדילק. על הזרועות: כפתורי שמע, קשר ובקרת שיוט.' });
+      const WC = V3(0.6, 1.2, -0.42), TILT = 0.45, nD = V3(-Math.cos(TILT), Math.sin(TILT), 0); // nD: wheel normal, towards the driver
+      const colA = WC.clone().addScaledVector(nD, -0.05), colB = WC.clone().addScaledVector(nD, -0.26);
+      mesh(G.tube([colA, colB], 0.034, 4, 16), M.plastic(0x101010, 0.45), { parent: sw, name: 'column shroud' });
+      mesh(G.tube([WC.clone().addScaledVector(nD, -0.02), colA], 0.022, 2, 12), M.darkSteel(), { parent: sw, name: 'steering shaft' });
+      for (const sg of [-1, 1]) {
+        const base = WC.clone().addScaledVector(nD, -0.09).add(V3(0, 0, sg * 0.03));
+        mesh(G.tube([base, base.clone().add(V3(-0.02, -0.01, sg * 0.1)), base.clone().add(V3(-0.03, -0.02, sg * 0.15))], 0.0055, 8, 8), M.plastic(0x111111), { parent: sw, name: sg < 0 ? 'turn-signal stalk' : 'wiper stalk' });
+        mesh(G.sphere(0.009, 12, 8), M.plastic(0x1a1a1a), { parent: sw, pos: base.clone().add(V3(-0.03, -0.02, sg * 0.15)).toArray(), name: 'stalk tip' });
+      }
+      const wg = new THREE.Group(); wg.position.copy(WC); wg.rotation.z = -TILT; sw.add(wg);
+      mesh(G.torus(0.185, 0.017, 14, 72, Math.PI * 1.35, 'x'), M.leather(BLACK), { parent: wg, rot: [Math.PI * 0.825, 0, 0], name: 'rim (leather)' });
+      mesh(G.torus(0.185, 0.0175, 14, 36, Math.PI * 0.65, 'x'), M.wood(), { parent: wg, rot: [Math.PI * 0.175, 0, 0], name: 'rim (wood)' });
+      for (const a of [Math.PI * 0.175, Math.PI * 0.825]) mesh(G.torus(0.185, 0.0182, 10, 6, 0.012, 'x'), M.satin(), { parent: wg, rot: [a, 0, 0], name: 'wood/leather joint ring' });
+      for (const sg of [-1, 1]) mesh(G.soft(0.026, 0.06, 0.13, { r: 0.012, seg: 4, deform: (q, n) => { q.y -= 0.012 * n.z * n.z * sg * sg; } }), M.satin(), { parent: wg, pos: [0.006, -0.01, sg * 0.112], name: 'side spoke' });
+      mesh(G.soft(0.024, 0.12, 0.05, { r: 0.012, seg: 4, deform: (q, n) => { q.z *= 1 - 0.3 * smooth(-1, 1, -n.y); } }), M.satin(), { parent: wg, pos: [0.006, -0.11, 0], name: 'lower spoke' });
+      mesh(G.soft(0.05, 0.115, 0.135, { r: 0.022, seg: 5, deform: (q, n) => { q.x -= smooth(-0.3, 0.7, -n.x) * 0.012 * (1 - n.y * n.y) * (1 - n.z * n.z); } }), M.leather(BLACK), { parent: wg, pos: [0.004, 0, 0], name: 'airbag cover' });
+      mesh(new THREE.CircleGeometry(0.024, 32), M.decal(crestTexture(K)), { parent: wg, pos: [-0.0345, 0.006, 0], rot: [0, -Math.PI / 2, 0], cast: false, name: 'crest' });
+      for (const sg of [-1, 1]) K.panel(wg, { name: sg < 0 ? 'audio & phone buttons' : 'cruise buttons', pos: [-0.0075, -0.008, sg * 0.118], normal: [-1, 0, 0], w: 0.075, h: 0.042, plate: false, buttons: (sg < 0
+        ? [['VOL+', 0.011, -0.016], ['VOL−', -0.011, -0.016], ['MUTE', 0.011, 0.016], ['MIC', -0.011, 0.016]]
+        : [['SET', 0.011, -0.016], ['RES', -0.011, -0.016], ['ON', 0.011, 0.016], ['CAN', -0.011, 0.016]]).map(([l, y, x]) => ({ x, y, w: 0.026, h: 0.017, d: 0.004, label: l, color: 0x161617 })) });
+      // pedals
       const ped = part(it, { he: 'דוושות', en: 'Pedals', mat: 'אלומיניום + גומי', desc: 'דוושת בלם רחבה ודוושת גז. ברכב של 9 טון, הבלם מכויל לבלימת חירום חזקה במיוחד.' });
-      for (const [z, w, he] of [[-0.48, 0.09, 'brake'], [-0.33, 0.05, 'accelerator']]) { mesh(G.box(0.02, 0.09, w, 0.006), M.satin(), { parent: ped, pos: [0.86, 0.79, z], rot: [0, 0, 0.5], name: he + ' pedal' }); mesh(G.box(0.02, 0.2, 0.015), M.darkSteel(), { parent: ped, pos: [0.9, 0.9, z], name: he + ' arm' }); }
-      mesh(G.box(0.02, 0.1, 0.08, 0.006), M.satin(), { parent: ped, pos: [0.86, 0.79, -0.66], rot: [0, 0, 0.5], name: 'footrest' });
-      // front console with radio handsets on coiled cords
-      const fc = part(it, { he: 'קונסולה קדמית ומכשירי קשר', en: 'Front console & radio handsets', mat: 'עור, עץ, פלסטיק', desc: 'בין הנהג למפקד: בורר הילוכים ושתי שפופרות קשר מוצפן על כבלים מסולסלים — קשר ישיר לשאר רכבי השיירה.' });
-      mesh(G.box(0.55, 0.22, 0.26, 0.03), M.leather(BLACK), { parent: fc, pos: [0.33, F + 0.11, 0] });
-      mesh(G.box(0.5, 0.01, 0.22, 0.004), M.wood(), { parent: fc, pos: [0.33, F + 0.225, 0], name: 'wood top' });
-      mesh(G.merge([G.cyl(0.006, 0.008, 0.08, 10, 'y'), G.at(G.sphere(0.022, 16, 12), [0, 0.05, 0])]), M.leather(BLACK), { parent: fc, pos: [0.5, F + 0.27, 0], name: 'gear selector' });
-      for (const dz of [-0.06, 0.06]) mesh(G.cyl(0.035, 0.035, 0.004, 24, 'y'), M.black(), { parent: fc, pos: [0.38, F + 0.232, dz], name: 'cup holder' });
+      for (const [z, w, he] of [[-0.48, 0.09, 'brake'], [-0.33, 0.05, 'accelerator']]) {
+        mesh(G.soft(0.02, 0.09, w, { r: 0.008, seg: 3 }), M.satin(), { parent: ped, pos: [0.88, 0.8, z], rot: [0, 0, 0.5], name: he + ' pedal' });
+        for (let i = 0; i < 4; i++) mesh(G.box(0.004, 0.006, w * 0.8), M.rubber(), { parent: ped, pos: [0.875 - i * 0.008 * 0.48, 0.775 + i * 0.016, z], rot: [0, 0, 0.5], name: 'rubber rib' });
+        mesh(G.box(0.02, 0.2, 0.015, 0.004), M.darkSteel(), { parent: ped, pos: [0.92, 0.91, z], name: he + ' arm' });
+      }
+      mesh(G.soft(0.02, 0.1, 0.08, { r: 0.008, seg: 3 }), M.satin(), { parent: ped, pos: [0.88, 0.8, -0.66], rot: [0, 0, 0.5], name: 'footrest' });
+
+      // ---- front console: gear selector, Secret Service switch panel, handsets
+      const fc = part(it, { he: 'קונסולה קדמית ומכשירי קשר', en: 'Front console & radio handsets', mat: 'עור, עץ, פלסטיק', desc: 'בין הנהג למפקד: בורר הילוכים, לוח מתגי ההגנה ושתי שפופרות קשר מוצפן על כבלים מסולסלים — קשר ישיר לשאר רכבי השיירה.' });
+      mesh(G.soft(0.68, 0.23, 0.26, { r: 0.04, seg: 4, deform: (q, n) => { q.y += 0.01 * (1 - n.z * n.z) * smooth(0, 1, n.y); } }), M.leather(BLACK), { parent: fc, pos: [0.36, F + 0.115, 0], name: 'console body' });
+      mesh(G.soft(0.64, 0.01, 0.2, { r: 0.004, seg: 2 }), M.wood(), { parent: fc, pos: [0.36, F + 0.236, 0], name: 'walnut top' });
+      const gear = part(fc, { he: 'בורר הילוכים', en: 'Gear selector', mat: 'עור + כרום', desc: 'ידית ההילוכים של תיבת אליסון בעלת 6 ההילוכים, עם לחצן נעילה ונוריות P‑R‑N‑D.' });
+      mesh(G.lathe([[0.03, 0], [0.024, 0.02], [0.012, 0.035]], 24, 'y'), M.rubber(), { parent: gear, pos: [0.64, F + 0.241, 0], name: 'boot' });
+      mesh(G.merge([G.at(G.cyl(0.008, 0.009, 0.06, 12, 'y'), [0, 0.03, 0]), G.at(G.soft(0.05, 0.05, 0.04, { r: 0.018, seg: 4, deform: (q, n) => { q.x += 0.006 * n.y; } }), [0, 0.07, 0])]), M.leather(BLACK), { parent: gear, pos: [0.64, F + 0.25, 0], name: 'shift knob' });
+      mesh(G.box(0.006, 0.014, 0.02, 0.002), M.chrome(), { parent: gear, pos: [0.618, F + 0.33, 0], name: 'lock button' });
+      K.panel(gear, { pos: [0.585, F + 0.2415, 0], normal: [0, 1, 0], up: [1, 0, 0], w: 0.05, h: 0.03, plate: false, buttons: ['P', 'R', 'N', 'D'].map((l, i) => ({ x: -0.018 + i * 0.012, y: 0, w: 0.01, h: 0.012, d: 0.0015, label: l, color: 0x0d0d0d, ink: l === 'D' ? '#3dff8a' : '#9aa' })) });
+      const ss = part(fc, { he: 'לוח מתגי ההגנה של השירות החשאי', en: 'Secret Service defensive-systems switch panel', mat: 'אלומיניום אנודייז + מכסי בטיחות', desc: 'שמונה מתגים, כל אחד מתחת למכסה אדום קפיצי כדי שלא יופעלו בטעות: סירנה, אורות מהבהבים, כריזה, גז מדמיע, מסך עשן, כתם שמן, חמצן וכיבוי אש.' });
+      K.panel(ss, { pos: [0.47, F + 0.2425, 0], normal: [0, 1, 0], up: [1, 0, 0], w: 0.2, h: 0.17, plate: M.metal(0x2a2d31, 0.4), depth: 0.004, buttons: [
+        ...['SIREN', 'STROBE', 'PA', 'TEAR GAS'].map((l, i) => ({ kind: 'toggle', x: -0.072 + i * 0.048, y: 0.04, label: l })),
+        ...['SMOKE', 'OIL', 'O₂', 'FIRE'].map((l, i) => ({ kind: 'toggle', x: -0.072 + i * 0.048, y: -0.035, label: l, cover: i >= 2 ? 0xd9a400 : 0xc8102e })),
+      ] });
+      for (const dz of [-0.06, 0.06]) { mesh(G.cyl(0.033, 0.033, 0.001, 32, 'y'), M.black(), { parent: fc, pos: [0.32, F + 0.2418, dz], cast: false, name: 'cup holder well' }); mesh(G.torus(0.034, 0.0022, 6, 32, Math.PI * 2, 'y'), M.satin(), { parent: fc, pos: [0.32, F + 0.2425, dz], name: 'cup holder ring' }); }
       for (const dz of [-0.075, 0.075]) {
-        mesh(G.box(0.2, 0.04, 0.05, 0.018), M.plastic(0x0d0d0e), { parent: fc, pos: [0.18, F + 0.25, dz], name: 'radio handset' });
-        mesh(G.box(0.03, 0.006, 0.03), M.satin(), { parent: fc, pos: [0.15, F + 0.272, dz], name: 'push-to-talk' });
-        coil(fc, [0.09, F + 0.25, dz], [0.02, F + 0.17, dz * 1.2]);
+        mesh(G.soft(0.2, 0.038, 0.05, { r: 0.016, seg: 4, deform: (q, n) => { q.y += 0.008 * (1 - n.x * n.x); } }), M.plastic(0x0d0d0e), { parent: fc, pos: [0.17, F + 0.262, dz], name: 'radio handset' });
+        mesh(G.box(0.03, 0.005, 0.03, 0.002), M.satin(), { parent: fc, pos: [0.14, F + 0.285, dz], name: 'push-to-talk' });
+        instances(G.cyl(0.0014, 0.0014, 0.002, 6, 'y'), M.black(), Array.from({ length: 12 }, (_, i) => ({ pos: [0.235 + (i % 3) * 0.006, F + 0.283, dz - 0.009 + Math.floor(i / 3) * 0.006] })), { parent: fc, cast: false });
+        coil(fc, [0.07, F + 0.26, dz], [0.03, F + 0.17, dz * 1.2]);
       }
       const visor = part(it, { he: 'מגני שמש', en: 'Sun visors', mat: 'אלקנטרה', desc: 'מגני שמש עם מראת איפור מוארת.' });
-      for (const s of [1, -1]) mesh(G.box(0.16, 0.02, 0.36, 0.008), M.fabric(0x1d2028), { parent: visor, pos: [0.36, 1.69, s * 0.42], rot: [0, 0, -0.35], name: 'visor' });
+      for (const s of [1, -1]) {
+        mesh(G.soft(0.15, 0.022, 0.34, { r: 0.009, seg: 3 }), M.fabric(0x1d2028), { parent: visor, pos: [0.4, 1.706, s * 0.42], rot: [0, 0, -0.3], name: 'visor' });
+        mesh(G.box(0.08, 0.002, 0.12, 0.001), M.plastic(0x15161a), { parent: visor, pos: [0.4, 1.694, s * 0.42], rot: [0, 0, -0.3], name: 'vanity mirror cover' });
+      }
 
       // ---- partition
-      const part1 = part(it, { he: 'מחיצה משוריינת עם חלון', en: 'Armoured partition with privacy glass', mat: 'פלדה, עור, זכוכית שריון', desc: 'מפרידה בין תא הנהג לתא הנשיא. החלון שבה עשוי זכוכית שריון; אפשר להנמיך אותו או לדבר דרך האינטרקום.' });
-      mesh(G.box(0.08, BELT - F, 1.8, 0.02), M.leather(NAVY), { parent: part1, pos: [-0.06, (BELT + F) / 2, 0], name: 'lower bulkhead' });
+      const part1 = part(it, { he: 'מחיצה משוריינת עם חלון', en: 'Armoured partition with privacy glass', mat: 'פלדה, עור, זכוכית שריון', desc: 'מפרידה בין תא הנהג לתא הנשיא. החלון שבה עשוי זכוכית שריון ונפתח ונסגר חשמלית; אפשר לדבר דרך האינטרקום.' });
+      mesh(G.soft(0.08, BELT - F, 1.8, { r: 0.02, seg: 3 }), [M.leather(NAVY), M.quilted(NAVY, 'v', THREAD, 8), M.leather(NAVY), M.leather(NAVY), M.leather(NAVY), M.leather(NAVY)], { parent: part1, pos: [PART_X, (BELT + F) / 2, 0], name: 'lower bulkhead' });
       const glassShape = G.shape([[-0.88, BELT], [0.88, BELT], [0.77, 1.71], [-0.77, 1.71]]);
       const gwin = G.extrude(glassShape, 0.035); gwin.rotateY(Math.PI / 2);
-      mesh(gwin.clone().translate(-0.06, 0, 0), M.glass(0x0a0f12, 0.55), { parent: part1, name: 'privacy glass', cast: false });
+      mesh(gwin.clone().translate(PART_X, 0, 0), M.glass(0x0a0f12, 0.55), { parent: part1, name: 'privacy glass', cast: false });
       const pfr = G.shape([[-0.9, BELT - 0.01], [0.9, BELT - 0.01], [0.79, 1.73], [-0.79, 1.73]], [[[-0.86, BELT + 0.03], [0.86, BELT + 0.03], [0.755, 1.69], [-0.755, 1.69]]]);
-      const pfg = G.extrude(pfr, 0.06); pfg.rotateY(Math.PI / 2); pfg.translate(-0.06, 0, 0);
+      const pfg = G.extrude(pfr, 0.06); pfg.rotateY(Math.PI / 2); pfg.translate(PART_X, 0, 0);
       mesh(pfg, M.gloss(0x0b0b0c), { parent: part1, name: 'glass frame' });
-      mesh(G.box(0.012, 0.04, 0.12, 0.006), M.satin(), { parent: part1, pos: [-0.105, 1.32, 0], name: 'intercom' });
-      mesh(G.cyl(0.006, 0.006, 0.006, 12, 'x'), glow(0x2dff8a, 1), { parent: part1, pos: [-0.112, 1.33, 0.04], name: 'intercom LED' });
 
-      // ---- rear console: desk, sat-phone, panic button
-      const rc = part(it, { he: 'קונסולת הנשיא', en: 'Presidential centre console', mat: 'עץ אגוז, עור, אלומיניום', desc: 'בין שני המושבים האחוריים: טלפון לוויני, לוח בקרה עם כפתור מצוקה, מחזיקי כוסות ושולחן עבודה מתקפל.' });
-      mesh(G.box(0.52, 0.29, 0.2, 0.03), M.leather(NAVY), { parent: rc, pos: [-1.14, F + 0.145, 0] });
-      mesh(G.box(0.5, 0.012, 0.19, 0.005), M.wood(), { parent: rc, pos: [-1.14, F + 0.296, 0], name: 'walnut lid' });
-      mesh(new THREE.PlaneGeometry(0.16, 0.09), M.screen(panelTexture(K), 0.9), { parent: rc, pos: [-0.98, F + 0.305, 0], rot: [-Math.PI / 2, 0, -Math.PI / 2], cast: false, name: 'control panel' });
+      // ---- presidential console: buttons, panic button, sat-phone, desk
+      const rc = part(it, { he: 'קונסולת הנשיא', en: 'Presidential centre console', mat: 'עץ אגוז, עור, אלומיניום', desc: 'בין שני המושבים האחוריים: לוח כפתורים, כפתור מצוקה, טלפון לוויני, מחזיקי כוסות ושולחן עבודה מתקפל.' });
+      mesh(G.soft(0.52, 0.29, 0.2, { r: 0.04, seg: 4 }), M.leather(NAVY), { parent: rc, pos: [-1.14, F + 0.145, 0] });
+      mesh(G.soft(0.5, 0.012, 0.19, { r: 0.005, seg: 2 }), M.wood(), { parent: rc, pos: [-1.14, F + 0.296, 0], name: 'walnut lid' });
+      const rcp = part(rc, { he: 'לוח הכפתורים של הנשיא', en: 'Rear control buttons', mat: 'אלומיניום מוברש', desc: 'מיזוג נפרד לתא האחורי, חימום ועיסוי במושבים, מחיצת פרטיות, אינטרקום לנהג, תאורה ושולחן.' });
+      K.panel(rcp, { pos: [-0.945, F + 0.3025, 0], normal: [0, 1, 0], up: [1, 0, 0], w: 0.18, h: 0.09, plate: M.satin(), depth: 0.003, ink: '#20242a', buttons: [
+        ...['TEMP −', 'TEMP +', 'FAN', 'LIGHT'].map((l, i) => ({ x: -0.066 + i * 0.044, y: 0.02, w: 0.04, h: 0.03, label: l, color: 0x15171b, ink: '#e3e7ee' })),
+        ...['HEAT', 'MASSAGE', 'PRIVACY', 'DESK'].map((l, i) => ({ x: -0.066 + i * 0.044, y: -0.02, w: 0.04, h: 0.03, label: l, color: 0x15171b, ink: '#e3e7ee', led: i === 2 ? '#ffb43a' : null })),
+      ] });
       const panic = part(rc, { he: 'כפתור מצוקה', en: 'Panic button', mat: 'פלסטיק אדום', desc: 'לחיצה אחת מודיעה לכל השיירה ולמרכז הפיקוד שיש מצב חירום.' });
-      mesh(G.cyl(0.014, 0.016, 0.012, 20, 'y'), glow(0xd61a1a, 0.6), { parent: panic, pos: [-0.9, F + 0.308, 0.05] });
-      mesh(G.cyl(0.02, 0.02, 0.004, 20, 'y'), M.chrome(), { parent: panic, pos: [-0.9, F + 0.302, 0.05], name: 'bezel' });
+      mesh(G.cyl(0.014, 0.016, 0.012, 20, 'y'), glow(0xd61a1a, 0.6), { parent: panic, pos: [-1.035, F + 0.308, 0.0] });
+      mesh(G.cyl(0.021, 0.021, 0.005, 24, 'y'), M.chrome(), { parent: panic, pos: [-1.035, F + 0.302, 0.0], name: 'bezel' });
       const phone = part(rc, { he: 'טלפון לוויני מוצפן', en: 'Encrypted satellite phone', mat: 'פלסטיק מחוזק', desc: 'קו מאובטח שמחובר לבית הלבן, לפנטגון — ולפי הדיווחים גם לסגן הנשיא, בכל רגע ובכל מקום בעולם.' });
-      mesh(G.box(0.21, 0.035, 0.055, 0.016), M.plastic(0x101112), { parent: phone, pos: [-1.2, F + 0.32, 0] });
-      mesh(G.box(0.08, 0.004, 0.04, 0.004), M.screen(K.textTexture('SECURE', { font: '700 60px Arial', color: '#7dffb0', bg: '#04140a' }).tex, 0.8), { parent: phone, pos: [-1.2, F + 0.339, 0], name: 'display' });
+      mesh(G.soft(0.21, 0.035, 0.055, { r: 0.015, seg: 4, deform: (q, n) => { q.y += 0.007 * (1 - n.x * n.x); } }), M.plastic(0x101112), { parent: phone, pos: [-1.2, F + 0.32, 0] });
+      mesh(G.box(0.07, 0.003, 0.034, 0.001), M.screen(K.textTexture('SECURE', { font: '700 60px Arial', color: '#7dffb0', bg: '#04140a' }).tex, 0.8), { parent: phone, pos: [-1.17, F + 0.342, 0], name: 'display' });
+      instances(G.cyl(0.0035, 0.0035, 0.002, 10, 'y'), M.gloss(0x2a2c30), Array.from({ length: 12 }, (_, i) => ({ pos: [-1.215 - Math.floor(i / 3) * 0.011, F + 0.341, -0.011 + (i % 3) * 0.011] })), { parent: phone, cast: false });
       coil(phone, [-1.31, F + 0.32, 0], [-1.37, F + 0.3, 0.08], 10);
-      for (const dz of [-0.06, 0.06]) mesh(G.cyl(0.035, 0.035, 0.004, 24, 'y'), M.black(), { parent: rc, pos: [-1.33, F + 0.304, dz], name: 'cup holder' });
+      for (const dz of [-0.055, 0.055]) { mesh(G.cyl(0.031, 0.031, 0.001, 32, 'y'), M.black(), { parent: rc, pos: [-1.34, F + 0.3025, dz], cast: false, name: 'cup holder well' }); mesh(G.torus(0.032, 0.002, 6, 32, Math.PI * 2, 'y'), M.satin(), { parent: rc, pos: [-1.34, F + 0.303, dz], name: 'cup holder ring' }); }
       const desk = part(rc, { he: 'שולחן עבודה מתקפל', en: 'Fold-out desk', mat: 'עץ אגוז מצופה לכה', desc: 'שולחן עבודה שנפתח מהקונסולה — לחתימה על מסמכים בדרך.' });
-      const deskPivot = new THREE.Group(); deskPivot.position.set(-0.88, F + 0.3, 0.1); desk.add(deskPivot);
-      mesh(G.box(0.32, 0.012, 0.22, 0.006), M.wood(), { parent: deskPivot, pos: [-0.16, 0.0, -0.11], name: 'desk leaf' });
+      const deskPivot = new THREE.Group(); deskPivot.position.set(-0.9, F + 0.3, 0.1); desk.add(deskPivot);
+      mesh(G.soft(0.32, 0.012, 0.22, { r: 0.005, seg: 2 }), M.wood(), { parent: deskPivot, pos: [-0.16, 0.0, -0.11], name: 'desk leaf' });
       K.toggle('desk', { he: 'שולחן', key: 'k', seconds: 0.9 }, (t) => { deskPivot.rotation.x = -t * Math.PI * 0.5; deskPivot.position.y = F + 0.3 + t * 0.12; });
 
-      // ---- headliner + cabin lighting
+      // ---- headliner, overhead consoles, cabin lighting
       const hl = part(it, { he: 'תקרה ותאורת תא', en: 'Headliner & cabin lighting', mat: 'זמש כחול כהה', desc: 'תקרה מרופדת עם מנורות קריאה, תאורת אווירה וידיות אחיזה. מעליה: לוח השריון של הגג.' });
       mesh(surface(gSec, samples(WS_TOP + 0.02, BL_TOP - 0.03, 0.05), samples(-0.66, 0.66, 0.04, [0]), { out: outG, offset: -0.04, thickness: 0.01 }), M.fabric(0x1b2030), { parent: hl, name: 'headliner' });
       const cabinLamp = glow(0xffe9c4, 0.05);
-      for (const [x, z] of [[0.3, 0.35], [0.3, -0.35], [-1.05, 0.42], [-1.05, -0.42], [-0.45, 0]]) {
+      for (const [x, z] of [[0.3, 0.35], [0.3, -0.35], [-1.05, 0.42], [-1.05, -0.42], [-0.6, 0]]) {
         mesh(G.cyl(0.03, 0.03, 0.008, 24, 'y'), cabinLamp, { parent: hl, pos: [x, ROOF - 0.055, z], name: 'reading lamp' });
         mesh(G.torus(0.032, 0.004, 6, 24, Math.PI * 2, 'y'), M.satin(), { parent: hl, pos: [x, ROOF - 0.055, z], name: 'lamp bezel' });
       }
-      for (const s of [1, -1]) mesh(G.tube([[-0.25, 1.66, s * 0.76], [-0.3, 1.62, s * 0.78], [-0.55, 1.62, s * 0.78], [-0.6, 1.66, s * 0.76]], 0.01, 16, 8), M.plastic(0x1b2030), { parent: hl, name: 'grab handle' });
+      for (const s of [1, -1]) mesh(G.tube([[-0.4, 1.66, s * 0.76], [-0.45, 1.62, s * 0.78], [-0.7, 1.62, s * 0.78], [-0.75, 1.66, s * 0.76]], 0.01, 16, 8), M.plastic(0x1b2030), { parent: hl, name: 'grab handle' });
+      const ohF = part(hl, { he: 'קונסולת תקרה קדמית', en: 'Front overhead console', mat: 'פלסטיק + LED', desc: 'מעל הנהג והמפקד: מנורות מפה, תאורת תקרה, כפתור SOS ושליטה במחיצה ובאינטרקום.' });
+      mesh(G.soft(0.2, 0.03, 0.16, { r: 0.012, seg: 3 }), M.plastic(0x15171c, 0.5), { parent: ohF, pos: [0.3, ROOF - 0.06, 0] });
+      K.panel(ohF, { pos: [0.3, ROOF - 0.076, 0], normal: [0, -1, 0], up: [1, 0, 0], w: 0.14, h: 0.17, plate: false, buttons: [
+        ...['MAP', 'DOME', 'MAP'].map((l, i) => ({ x: -0.045 + i * 0.045, y: 0.05, w: 0.036, h: 0.022, label: l, color: 0x1c1e23 })),
+        ...['INTERCOM', 'PARTITION'].map((l, i) => ({ x: -0.032 + i * 0.064, y: 0.0, w: 0.055, h: 0.022, label: l, color: 0x1c1e23 })),
+        { x: 0, y: -0.05, w: 0.04, h: 0.026, label: 'SOS', color: 0x8b0d12, ink: '#fff' },
+      ] });
+      const ohR = part(hl, { he: 'קונסולת תקרה אחורית', en: 'Rear overhead console', mat: 'פלסטיק + LED', desc: 'מעל הנשיא: מנורות קריאה, אינטרקום לתא הנהג וכפתורי הרמה והורדה של חלון המחיצה.' });
+      mesh(G.soft(0.22, 0.03, 0.18, { r: 0.012, seg: 3 }), M.plastic(0x15171c, 0.5), { parent: ohR, pos: [-0.95, ROOF - 0.06, 0] });
+      K.panel(ohR, { pos: [-0.95, ROOF - 0.076, 0], normal: [0, -1, 0], up: [1, 0, 0], w: 0.16, h: 0.19, plate: false, buttons: [
+        ...['READ L', 'READ R'].map((l, i) => ({ x: -0.035 + i * 0.07, y: 0.06, w: 0.055, h: 0.024, label: l, color: 0x1c1e23 })),
+        ...['TALK', 'LISTEN'].map((l, i) => ({ x: -0.035 + i * 0.07, y: 0.02, w: 0.055, h: 0.024, label: l, color: 0x1c1e23, led: i === 1 ? '#3dff8a' : null })),
+        ...['GLASS ▲', 'GLASS ▼'].map((l, i) => ({ x: -0.035 + i * 0.07, y: -0.025, w: 0.055, h: 0.024, label: l, color: 0x1c1e23 })),
+        { x: 0, y: -0.065, w: 0.06, h: 0.022, label: 'AMBIENT', color: 0x1c1e23 },
+      ] });
+      const cp = part(hl, { he: 'חיפוי עמודי C', en: 'C-pillar trims', mat: 'זמש על פלסטיק', desc: 'חיפוי פנימי לעמודים האחוריים העבים. מאחוריו עוברים צינורות החמצן ומערכת הכיבוי אל התקרה.' });
+      for (const s2 of [1, -1]) mesh(surface(gSec, samples(BACK + 0.02, RD[1] - 0.005, 0.04), samples(s2 * 0.62, s2 * 0.995, 0.03), { out: outG, offset: -0.05, thickness: 0.012 }), M.fabric(0x1b2030), { parent: cp, name: 'C-pillar trim' });
       const cabinLight = new THREE.PointLight(0xffe2b8, 0, 3.2, 1.6); cabinLight.position.set(-0.6, 1.55, 0); hl.add(cabinLight);
       K.toggle('cabin', { he: 'תאורת תא', key: 'i', seconds: 0.4, night: true }, (t) => { cabinLamp.emissiveIntensity = 0.05 + t * 3; cabinLight.intensity = t * 2.5; });
     }
@@ -1171,13 +1295,13 @@ window.L3D_MODEL = {
         for (const dz of [-0.25, 0.15]) mesh(G.box(0.2, 0.012, 0.03), M.darkSteel(), { parent: ox, pos: [x, TF + 0.18, dz], name: 'tie-down strap' });
       }
       mesh(G.box(0.08, 0.06, 0.06, 0.01), M.brass(), { parent: ox, pos: [-1.93, TF + 0.2, 0.42], name: 'regulator' });
-      mesh(G.tube([[-1.93, TF + 0.23, 0.42], [-1.8, TF + 0.3, 0.5], [-1.62, 1.12, 0.64], [-1.4, 1.45, 0.7], [-1.15, ROOF - 0.08, 0.5], [-0.95, ROOF - 0.075, 0.42]], 0.008, 48, 8), M.plastic(0x2f7d3a), { parent: ox, name: 'supply hose' });
+      mesh(G.tube([V3(-1.93, TF + 0.23, 0.42), V3(-1.85, TF + 0.3, 0.6), V3(-1.74, 1.12, 0.82), ...[[-1.55, 0.93], [-1.4, 0.8], [-1.2, 0.62], [-0.95, 0.45]].map(([x, v]) => inG(x, v, 0.03))], 0.008, 64, 8), M.plastic(0x2f7d3a), { parent: ox, name: 'supply hose (inside the C-pillar trim)' });
       const fire = part(sc, { he: 'מערכת כיבוי אש', en: 'Fire-suppression system', mat: 'בלוני פלדה אדומים', desc: 'בלונים של חומר כיבוי שמחוברים בצנרת לתא הנוסעים, לתא המנוע ולמיכל הדלק — נפתחים אוטומטית תוך אלפיות שנייה.' });
       for (const z of [-0.3, 0.3]) {
         mesh(G.cyl(0.07, 0.07, 0.42, 28, 'z'), M.paintFlat(0xc0201f, 0.4), { parent: fire, pos: [-2.33, TF + 0.075, z * 0.9], name: 'agent bottle' });
         mesh(G.cyl(0.018, 0.018, 0.05, 12, 'y'), M.brass(), { parent: fire, pos: [-2.33, TF + 0.16, z * 0.9 + (z > 0 ? 0.15 : -0.15)], name: 'squib valve' });
       }
-      mesh(G.tube([[-2.33, TF + 0.19, 0.42], [-2.2, TF + 0.3, 0.62], [-1.75, 1.1, 0.74], [-1.6, 1.16, 0.8], [-1.35, 1.5, 0.78], [-1.1, ROOF - 0.08, 0.62], [0.6, ROOF - 0.075, 0.5]], 0.007, 80, 8), M.paintFlat(0xc0201f, 0.4), { parent: fire, name: 'cabin pipe' });
+      mesh(G.tube([V3(-2.33, TF + 0.19, 0.42), V3(-2.1, TF + 0.3, 0.66), V3(-1.76, 1.1, 0.85), ...[[-1.58, 0.95], [-1.42, 0.82], [-1.2, 0.66], [-0.6, 0.6], [0.0, 0.58], [0.6, 0.52]].map(([x, v]) => inG(x, v, 0.032))], 0.007, 96, 8), M.paintFlat(0xc0201f, 0.4), { parent: fire, name: 'cabin pipe (above the headliner)' });
       mesh(G.tube([[-2.33, TF + 0.19, -0.42], [-2.0, 0.78, -0.75], [0.0, 0.62, -0.82], [1.1, 0.95, -0.7], [1.6, 1.1, -0.5]], 0.007, 80, 8), M.paintFlat(0xc0201f, 0.4), { parent: fire, name: 'engine-bay pipe' });
       for (const [x, z] of [[0.6, 0.0], [-0.2, 0.0], [-0.9, 0.0], [1.6, -0.5], [1.9, 0.3]]) mesh(G.merge([G.cyl(0.012, 0.012, 0.012, 12, 'y'), G.at(G.cyl(0.02, 0.02, 0.003, 16, 'y'), [0, -0.007, 0])]), M.chrome(), { parent: fire, pos: [x, x > 1 ? 1.16 : ROOF - 0.065, z], name: 'discharge nozzle' });
       const med = part(sc, { he: 'מקרר רפואי עם מנות דם', en: 'Medical fridge — blood supply', mat: 'אלומיניום מבודד', desc: 'מקרר בטמפרטורה קבועה עם מנות דם מסוג הדם של הנשיא, למקרה של פציעה בדרך לבית החולים.' });
@@ -1351,20 +1475,16 @@ function clusterTexture(K) {
 // secure comms / convoy map on the centre screen
 function commsTexture(K) {
   return K.canvasTexture(640, 370, (g, w, h) => {
-    g.fillStyle = '#071019'; g.fillRect(0, 0, w, h);
-    g.strokeStyle = '#13324a'; g.lineWidth = 1; for (let x = 0; x < w; x += 32) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); } for (let y = 0; y < h; y += 32) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
-    g.strokeStyle = '#2f8fd8'; g.lineWidth = 6; g.beginPath(); g.moveTo(40, 320); g.bezierCurveTo(180, 300, 200, 160, 330, 150); g.bezierCurveTo(450, 140, 500, 80, 600, 60); g.stroke();
-    for (const [x, y, c] of [[250, 196, '#9aa4b2'], [292, 168, '#ffd24a'], [330, 150, '#9aa4b2'], [372, 146, '#9aa4b2']]) { g.fillStyle = c; g.beginPath(); g.arc(x, y, 9, 0, 7); g.fill(); }
-    g.fillStyle = 'rgba(4,10,16,.85)'; g.fillRect(0, 0, w, 44); g.fillStyle = '#7dffb0'; g.font = '700 22px Arial'; g.fillText('● SECURE  ·  STAGECOACH', 16, 29);
-    g.fillStyle = '#cfd6e2'; g.textAlign = 'right'; g.fillText('CONVOY 7 VEH', w - 16, 29);
+    g.fillStyle = '#122233'; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#1b3147'; for (let y = 60; y < h; y += 46) for (let x = 10; x < 470; x += 58) g.fillRect(x + ((y / 46) % 2) * 12, y, 44, 32);
+    g.strokeStyle = '#3c5d7a'; g.lineWidth = 8; g.beginPath(); g.moveTo(0, 210); g.lineTo(470, 120); g.moveTo(140, 44); g.lineTo(240, h); g.stroke();
+    g.strokeStyle = '#38a3ff'; g.lineWidth = 7; g.beginPath(); g.moveTo(30, 340); g.bezierCurveTo(140, 300, 190, 180, 290, 160); g.bezierCurveTo(360, 146, 400, 110, 460, 70); g.stroke();
+    for (const [x, y, c] of [[214, 214, '#cfd6e2'], [248, 186, '#ffd24a'], [282, 164, '#cfd6e2'], [318, 156, '#cfd6e2']]) { g.fillStyle = c; g.beginPath(); g.arc(x, y, 8, 0, 7); g.fill(); }
+    g.fillStyle = '#0a1520'; g.fillRect(470, 44, w - 470, h - 44);
+    g.font = '700 17px Arial'; g.textAlign = 'left';
+    ['CH1  SS DETAIL', 'CH2  WHCA', 'CH3  MOTORCADE', 'CH4  LEAD CAR', 'CH5  HOSPITAL'].forEach((t, i) => { g.fillStyle = i === 0 ? '#3dff8a' : '#a9b6c6'; g.fillText(t, 482, 82 + i * 40); });
+    g.fillStyle = '#0a1520'; g.fillRect(0, 0, w, 44); g.fillStyle = '#7dffb0'; g.font = '700 22px Arial'; g.fillText('● SECURE  ·  STAGECOACH', 16, 29);
+    g.fillStyle = '#e3e7ee'; g.textAlign = 'right'; g.fillText('ETA 07:58', w - 16, 29);
   });
 }
 
-// rear console control panel
-function panelTexture(K) {
-  return K.canvasTexture(400, 225, (g, w, h) => {
-    g.fillStyle = '#0a0d12'; g.fillRect(0, 0, w, h);
-    const labels = ['CLIMATE', 'LIGHTS', 'PRIVACY', 'INTERCOM', 'PHONE', 'O₂', 'SEAT', 'DESK'];
-    labels.forEach((l, i) => { const x = 16 + (i % 4) * 96, y = 24 + Math.floor(i / 4) * 92; g.fillStyle = '#18202b'; g.fillRect(x, y, 84, 72); g.fillStyle = i === 5 ? '#7dffb0' : '#c8a75a'; g.font = '700 16px Arial'; g.textAlign = 'center'; g.fillText(l, x + 42, y + 42); });
-  });
-}
