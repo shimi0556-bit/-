@@ -22,6 +22,7 @@ A persistent, Claude-maintained knowledge base for this repo, following the patt
 | [`agent.md`](agent.md) | [`agent/`](../agent) |
 | [`blitzai.md`](blitzai.md) | [`blitzai/`](../blitzai) |
 | [`claude-demo-video.md`](claude-demo-video.md) | [`claude-demo-video/`](../claude-demo-video) |
+| [`daily-3d-library.md`](daily-3d-library.md) | [`daily-3d-library/`](../daily-3d-library) |
 | [`claude-grok-mcp-bridge.md`](claude-grok-mcp-bridge.md) | [`claude-grok-mcp-bridge/`](../claude-grok-mcp-bridge) |
 | [`claude-hud.md`](claude-hud.md) | [`claude-hud/`](../claude-hud) |
 | [`claude-skills.md`](claude-skills.md) | [`claude-skills/`](../claude-skills) |

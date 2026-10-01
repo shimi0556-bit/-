@@ -1,0 +1,89 @@
+# Build guide: one model a day
+
+This is the procedure and quality bar for adding a model to the library. The daily routine follows it from top to bottom. `models/001-cadillac-one-the-beast/` is the reference implementation: read its `model.js` before writing a new one.
+
+## 1. Pick the object
+
+- Take the first item in `queue.json` whose `slug` has no folder in `models/` yet.
+- Folder: `models/<NNN>-<slug>/`, where NNN is the highest existing number + 1 (3 digits).
+- Date = today in Israel time (`TZ=Asia/Jerusalem date +%F`), plus a Hebrew date string for `dateHe` (e.g. `2 באוקטובר 2026`).
+
+## 2. Research (15–20 minutes, not more)
+
+Collect the real numbers before modelling: overall length / width / height, wheelbase and track, tyre size, engine layout, seating, notable mechanisms, colours, badges, lettering. Search the web, prefer manufacturer data and Wikipedia, and record every source in `meta.json → sources`. When something is unknown or classified, make a sensible engineering estimate and say so in `specNote`.
+
+## 3. Write the files
+
+### `meta.json`
+
+Copy the shape of `models/001-…/meta.json`:
+
+- `id`, `number`, `date`, `dateHe`, `category` (Hebrew), `title`, `titleEn`, `subtitle`, `description` (Hebrew), `accent` (UI accent colour that fits the object).
+- `systems`: 8–12 systems, each with `id`, Hebrew `he` + `desc`, a distinct `color`, `shell: true` for outer skins (ghosted in x-ray), and `explode` (`[x,y,z]` lift) + `spread` (radial multiplier) for the exploded view. Typical car systems: body, doors, glass, lights, insignia, wheels, brakes/suspension, chassis/drivetrain, engine, interior (+ anything special, like the Beast's armour and security).
+- `views`: 3–5 custom camera views (`pos`, `target`, optional `fov` for interior shots, optional `toggles` to open things first, e.g. `["hood"]`).
+- `specs` (Hebrew label/value pairs), `facts` (6–12 Hebrew one-liners; mark reported or uncertain claims as such), `sources`.
+
+### `model.js`
+
+```js
+window.L3D_MODEL = {
+  async build({ K, THREE, sys }) {
+    const { M, G, V3, mesh, part, surface, samples, instances } = K;
+    const body = sys('body');                                  // a system group from meta.json
+    const hood = part(body, { he: 'מכסה מנוע', en: 'Hood', mat: 'פלדה', desc: '…' });
+    mesh(G.box(1, 0.02, 1.6, 0.01), M.paint(0x07080b), { parent: hood, pos: [1.8, 1.2, 0] });
+  },
+};
+```
+
+Kit cheat-sheet (`engine/kit.js`):
+
+| Need | Use |
+|---|---|
+| Named, documented part (hover/list/isolate/explode) | `part(parent, { he, en, mat, desc }, { pos, rot })`. Nest parts for sub-assemblies |
+| Material | `M.paint(c)`, `M.chrome()`, `M.aluminum()`, `M.castIron()`, `M.rubber()`, `M.tire()`, `M.leather(c)`, `M.fabric(c)`, `M.carpet(c)`, `M.wood()`, `M.glass(c, opacity)`, `M.lens(c)`, `M.decal(tex)`, `M.screen(tex)` … (cached and shared) |
+| Primitives | `G.box(w,h,d,radius)`, `G.cyl(r1,r2,h,seg,axis)`, `G.lathe([[r,y]…],seg,axis)`, `G.tube(points,r)`, `G.torus`, `G.extrude(shape,depth,{bevel})`, `G.shape`, `G.roundRect`, `G.bolt(size)`, `G.hexNut`, `G.rivet`, `G.merge([...])`, `G.at(geo,pos,rot)` |
+| Body panels | write a section function `S(x, v) → Vector3`, then `surface(S, xs, vs, { skip, out, offset, thickness })`. Cut doors/hood/glass as patches of the same surface; share break points via `samples(a, b, step, breaks)` so holes and patches line up |
+| Many identical small parts | `instances(geo, mat, [{ pos, rot, scale }…])` (one draw call) |
+| Text / decals | `K.textTexture(text, opts)`, `K.canvasTexture(w, h, draw)` |
+| Moving parts | `K.toggle(id, { he, key, seconds, night }, (t) => …, initial)` adds a toolbar button + shortcut. `night: true` turns on in night mode |
+| Animation | `K.onFrame((time, dt) => …)` |
+| Explode a sub-part locally | `obj.userData.explodeLocal = V3(…)` |
+| A part that lives inside another system's assembly | `obj.userData.sysOverride = 'armor'` (e.g. door armour rides with the door) |
+
+### `README.md` (in the model folder)
+
+What was modelled per system, the numbers used, sources, and open issues or known simplifications.
+
+## 4. Quality bar: "down to the smallest detail"
+
+- **Real dimensions** in metres. Axes: +x forward, +y up, +z to the right (passenger side).
+- **At least 150 named parts** in the parts list, every system populated, every part with a Hebrew name and a one- or two-sentence Hebrew description (what it is, what it's made of, one interesting fact).
+- **Go down the scales:** body → panels → fasteners. Expect bolts, nuts, rivets, washers, clips, seals and gaskets, hoses and wiring, valve stems, stitching, lettering on tyres/engines/plates, lamp internals (LED cells, reflectors, lenses), interior switches and screens. Inside parts too, visible in the cutaway (pistons, armour layers, run-flat inserts …).
+- **Moving parts as toggles:** doors, hood, trunk, lights, plus anything special to the object.
+- **Budget:** ≤ 700K triangles, ≤ 1,500 meshes, build < 1.5 s. Rounded boxes cost ~600 triangles each, so use `THREE.BoxGeometry` or `instances` for anything repeated dozens of times. Keep lathes/tubes at sensible segment counts.
+
+## 5. Pitfalls already hit (don't repeat them)
+
+- **Text on mirrored parts reads backwards.** Build left/right copies with a side parameter `s = ±1`, or rotate 180°. Never use a negative scale for anything carrying text or decals.
+- **Layers closer than ~8 mm z-fight** (armour inside a door skin showed through as streaks). Keep stacked shells ≥ 8 mm apart.
+- **Emissive lights need their own material** (not the cached `M.*` ones), otherwise one toggle lights up everything sharing it.
+- **Check clearance against the hood and roof.** The first fan and the rear headrests poked through the body. Look at the side, top and cutaway shots.
+- **Dark paint needs the studio environment** (already in the viewer). Don't switch back to `RoomEnvironment`, which makes black paint look white.
+- **Pass a material array `[paint, M.black()]`** to solidified panels so their edges read as dark shut lines.
+
+## 6. Verify
+
+```bash
+python3 build.py --check                   # must print "ok" for the new model (no console errors)
+node tools/check.cjs --qa <NNN-slug>       # writes models/<id>/shots/*.png: front, side, rear, top, under, explode, xray, cut, open, night + custom views
+```
+
+Look at every QA shot (Read the PNGs). Fix anything floating, intersecting, upside-down or mirrored, then re-run. In the Claude Code sandbox Playwright is the global install. `check.cjs` fetches three.js with `curl` and serves it to the page, so it works behind the sandbox proxy.
+
+## 7. Publish
+
+1. `python3 build.py --check` once more, so `index.html`, `catalog.json`, `thumb.jpg` and `stats.json` are fresh.
+2. Add the model's row to the table in `README.md`, and a dated line under `## Notes` in `wiki/daily-3d-library.md` (what was built, anything surprising, open issues).
+3. Commit (`Add #NNN <name> to the daily 3D library`), push, and get it onto `main` as the routine instructs.
+4. Send the model's `index.html` to the user (`SendUserFile`), with a two-line Hebrew summary: what it is and how many parts it has.

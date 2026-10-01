@@ -11,6 +11,7 @@ const items = [
   ['generals','generals-game/index.html',3000],['snake','snake-3d-game/index.html',4000],['bowling','bowling-3d/index.html',5000],
   ['abyss','submarine-simulator/index.html',5000],['skyhawk','skyhawk-flight-simulator/index.html',5000],
   ['guitar','guitar-fx-mixer/index.html',2500],['spark','claude-spark-pack/spark.html',3500],['deck','decks/demo-presentation.html',2500],
+  ['library3d','daily-3d-library/models/001-cadillac-one-the-beast/index.html?shot=1',8000],
   ['vscode','vscode-course/index.html',2000],['powerpoint','powerpoint-course/index.html',2000],['excel','excel-course/index.html',2000],
   ['gmail','gmail-course/index.html',2000],['windows','windows-desktop-course/index.html',2000],['canva','canva-course/index.html',2000],
   ['obsidian','obsidian-course/index.html',2000],
