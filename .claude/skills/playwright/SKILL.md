@@ -145,3 +145,18 @@ Open only what you need:
 - Use `--headed` when a visual check will help.
 - When capturing artifacts in this repo, use `output/playwright/` and avoid introducing new top-level artifact folders.
 - Default to CLI commands and workflows, not Playwright test specs.
+
+## Behind the Claude Code cloud proxy (local lesson)
+
+In the cloud sandbox, outbound HTTPS goes through an agent proxy whose CA the bundled Chromium doesn't trust, so pages fail with `net::ERR_CERT_AUTHORITY_INVALID` (e.g. three.js from jsDelivr never loads and the page hangs). **Don't** set `ignoreHTTPSErrors` or disable TLS checks. Instead, route the requests and fetch them with `curl`, which trusts the proxy CA:
+
+```js
+await page.route(/^https?:\/\//, async (route) => {
+  const url = route.request().url();
+  if (!url.startsWith('https://cdn.jsdelivr.net/')) return route.abort();     // fonts etc. fall back
+  const file = path.join(os.tmpdir(), 'cdn-cache', url.replace(/[^a-z0-9.]+/gi, '_'));
+  if (!fs.existsSync(file)) execFileSync('curl', ['-sSfL', url, '-o', file]);
+  return route.fulfill({ path: file, contentType: 'application/javascript', headers: { 'access-control-allow-origin': '*' } });
+});
+```
+Working example: `daily-3d-library/tools/check.cjs`. WebGL pages render on SwiftShader there, so launch with `--use-angle=swiftshader --enable-unsafe-swiftshader` and give heavy scenes a no-render-loop shot mode.

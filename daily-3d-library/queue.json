@@ -2,36 +2,166 @@
   "about": "The build queue. Each daily run takes the first item whose slug has no folder in models/ yet (folder name = <3-digit number>-<slug>). Reorder, add or remove freely; the gallery shows the next few as 'coming up'.",
   "category": "רכבים",
   "items": [
-    { "slug": "cadillac-one-the-beast", "he": "קדילק וואן ״החיה״ — רכב הנשיא", "en": "Cadillac One “The Beast” (2018)" },
-    { "slug": "ford-model-t", "he": "פורד מודל T", "en": "Ford Model T (1908)" },
-    { "slug": "volkswagen-beetle", "he": "פולקסווגן חיפושית", "en": "Volkswagen Beetle (1963)" },
-    { "slug": "ferrari-f40", "he": "פרארי F40", "en": "Ferrari F40 (1987)" },
-    { "slug": "mercedes-300sl-gullwing", "he": "מרצדס 300SL ״כנפי שחף״", "en": "Mercedes-Benz 300 SL Gullwing (1954)" },
-    { "slug": "jeep-willys-mb", "he": "ג׳יפ וויליס", "en": "Willys MB Jeep (1942)" },
-    { "slug": "lamborghini-countach", "he": "למבורגיני קונטאש", "en": "Lamborghini Countach LP400 (1974)" },
-    { "slug": "porsche-911-carrera", "he": "פורשה 911 קאררה", "en": "Porsche 911 Carrera (964, 1989)" },
-    { "slug": "delorean-dmc-12", "he": "דלוריאן DMC‑12", "en": "DeLorean DMC-12 (1981)" },
-    { "slug": "ford-gt40", "he": "פורד GT40", "en": "Ford GT40 Mk II (1966)" },
-    { "slug": "land-rover-defender", "he": "לנד רובר דיפנדר 110", "en": "Land Rover Defender 110 (1990)" },
-    { "slug": "mini-cooper-classic", "he": "מיני קופר קלאסית", "en": "Austin Mini Cooper (1964)" },
-    { "slug": "bugatti-chiron", "he": "בוגאטי שירון", "en": "Bugatti Chiron (2016)" },
-    { "slug": "tesla-cybertruck", "he": "טסלה סייברטראק", "en": "Tesla Cybertruck (2023)" },
-    { "slug": "aston-martin-db5", "he": "אסטון מרטין DB5", "en": "Aston Martin DB5 (1963)" },
-    { "slug": "ford-mustang-1967", "he": "פורד מוסטנג פסטבק 1967", "en": "Ford Mustang Fastback (1967)" },
-    { "slug": "corvette-c2-stingray", "he": "שברולט קורבט סטינגריי", "en": "Chevrolet Corvette C2 Sting Ray (1963)" },
-    { "slug": "mclaren-f1", "he": "מקלארן F1", "en": "McLaren F1 (1992)" },
-    { "slug": "citroen-2cv", "he": "סיטרואן 2CV", "en": "Citroën 2CV (1960)" },
-    { "slug": "fiat-500-1957", "he": "פיאט 500 הקלאסית", "en": "Fiat 500 (1957)" },
-    { "slug": "mercedes-g-class", "he": "מרצדס G", "en": "Mercedes-Benz G-Class W463" },
-    { "slug": "toyota-land-cruiser-fj40", "he": "טויוטה לנד קרוזר FJ40", "en": "Toyota Land Cruiser FJ40 (1975)" },
-    { "slug": "shelby-cobra-427", "he": "שלבי קוברה 427", "en": "Shelby Cobra 427 (1965)" },
-    { "slug": "nissan-skyline-gtr-r34", "he": "ניסאן סקייליין GT‑R R34", "en": "Nissan Skyline GT-R R34 (1999)" },
-    { "slug": "lancia-stratos", "he": "לנצ׳יה סטרטוס", "en": "Lancia Stratos HF (1974)" },
-    { "slug": "rolls-royce-phantom", "he": "רולס־רויס פנטום", "en": "Rolls-Royce Phantom VIII (2017)" },
-    { "slug": "london-taxi-fx4", "he": "המונית הלונדונית FX4", "en": "Austin FX4 London Taxi (1958)" },
-    { "slug": "mclaren-mp4-4", "he": "מקלארן MP4/4 — מכונית פורמולה 1", "en": "McLaren MP4/4 F1 car (1988)" },
-    { "slug": "hummer-h1", "he": "האמר H1", "en": "Hummer H1 (1992)" },
-    { "slug": "popemobile", "he": "רכב האפיפיור", "en": "Popemobile (Mercedes G 500, 2007)" },
-    { "slug": "koenigsegg-jesko", "he": "קניגסג ייסקו", "en": "Koenigsegg Jesko (2019)" }
+    {
+      "slug": "cadillac-one-the-beast",
+      "he": "קדילק וואן ״החיה״ — רכב הנשיא",
+      "en": "Cadillac One “The Beast” (2018)"
+    },
+    {
+      "slug": "merkava-mk4",
+      "he": "טנק מרכבה סימן 4",
+      "en": "Merkava Mk 4M (IDF main battle tank)",
+      "note": "Requested by the user for the next daily run. A tank, not a car: categorise it as 'רכבים צבאיים'. Public information only. Signature features to get right: front-mounted engine and transmission pack (crew protection), a rear door for crew/medevac/infantry, a long wedge-shaped turret with modular armour plates and the bustle chains (ball-and-chain curtain under the turret rear), a 120 mm MG253 smoothbore gun with thermal sleeve and muzzle reference, Trophy ('מעיל רוח') active-protection radars and launchers on the turret sides, commander's and gunner's sights, a remote weapon station / machine guns, smoke-grenade launchers, side skirts, tracks with 6 road wheels per side, return rollers, front drive sprockets and rear idlers, external coil-spring suspension, crew hatches and periscopes, tow cables, antennas, IDF markings. Good toggles: turret traverse, gun elevation, hatches, rear door, tracks running (animated), Trophy on. Good views: commander's hatch, engine pack, inside the crew compartment."
+    },
+    {
+      "slug": "ford-model-t",
+      "he": "פורד מודל T",
+      "en": "Ford Model T (1908)"
+    },
+    {
+      "slug": "volkswagen-beetle",
+      "he": "פולקסווגן חיפושית",
+      "en": "Volkswagen Beetle (1963)"
+    },
+    {
+      "slug": "ferrari-f40",
+      "he": "פרארי F40",
+      "en": "Ferrari F40 (1987)"
+    },
+    {
+      "slug": "mercedes-300sl-gullwing",
+      "he": "מרצדס 300SL ״כנפי שחף״",
+      "en": "Mercedes-Benz 300 SL Gullwing (1954)"
+    },
+    {
+      "slug": "jeep-willys-mb",
+      "he": "ג׳יפ וויליס",
+      "en": "Willys MB Jeep (1942)"
+    },
+    {
+      "slug": "lamborghini-countach",
+      "he": "למבורגיני קונטאש",
+      "en": "Lamborghini Countach LP400 (1974)"
+    },
+    {
+      "slug": "porsche-911-carrera",
+      "he": "פורשה 911 קאררה",
+      "en": "Porsche 911 Carrera (964, 1989)"
+    },
+    {
+      "slug": "delorean-dmc-12",
+      "he": "דלוריאן DMC‑12",
+      "en": "DeLorean DMC-12 (1981)"
+    },
+    {
+      "slug": "ford-gt40",
+      "he": "פורד GT40",
+      "en": "Ford GT40 Mk II (1966)"
+    },
+    {
+      "slug": "land-rover-defender",
+      "he": "לנד רובר דיפנדר 110",
+      "en": "Land Rover Defender 110 (1990)"
+    },
+    {
+      "slug": "mini-cooper-classic",
+      "he": "מיני קופר קלאסית",
+      "en": "Austin Mini Cooper (1964)"
+    },
+    {
+      "slug": "bugatti-chiron",
+      "he": "בוגאטי שירון",
+      "en": "Bugatti Chiron (2016)"
+    },
+    {
+      "slug": "tesla-cybertruck",
+      "he": "טסלה סייברטראק",
+      "en": "Tesla Cybertruck (2023)"
+    },
+    {
+      "slug": "aston-martin-db5",
+      "he": "אסטון מרטין DB5",
+      "en": "Aston Martin DB5 (1963)"
+    },
+    {
+      "slug": "ford-mustang-1967",
+      "he": "פורד מוסטנג פסטבק 1967",
+      "en": "Ford Mustang Fastback (1967)"
+    },
+    {
+      "slug": "corvette-c2-stingray",
+      "he": "שברולט קורבט סטינגריי",
+      "en": "Chevrolet Corvette C2 Sting Ray (1963)"
+    },
+    {
+      "slug": "mclaren-f1",
+      "he": "מקלארן F1",
+      "en": "McLaren F1 (1992)"
+    },
+    {
+      "slug": "citroen-2cv",
+      "he": "סיטרואן 2CV",
+      "en": "Citroën 2CV (1960)"
+    },
+    {
+      "slug": "fiat-500-1957",
+      "he": "פיאט 500 הקלאסית",
+      "en": "Fiat 500 (1957)"
+    },
+    {
+      "slug": "mercedes-g-class",
+      "he": "מרצדס G",
+      "en": "Mercedes-Benz G-Class W463"
+    },
+    {
+      "slug": "toyota-land-cruiser-fj40",
+      "he": "טויוטה לנד קרוזר FJ40",
+      "en": "Toyota Land Cruiser FJ40 (1975)"
+    },
+    {
+      "slug": "shelby-cobra-427",
+      "he": "שלבי קוברה 427",
+      "en": "Shelby Cobra 427 (1965)"
+    },
+    {
+      "slug": "nissan-skyline-gtr-r34",
+      "he": "ניסאן סקייליין GT‑R R34",
+      "en": "Nissan Skyline GT-R R34 (1999)"
+    },
+    {
+      "slug": "lancia-stratos",
+      "he": "לנצ׳יה סטרטוס",
+      "en": "Lancia Stratos HF (1974)"
+    },
+    {
+      "slug": "rolls-royce-phantom",
+      "he": "רולס־רויס פנטום",
+      "en": "Rolls-Royce Phantom VIII (2017)"
+    },
+    {
+      "slug": "london-taxi-fx4",
+      "he": "המונית הלונדונית FX4",
+      "en": "Austin FX4 London Taxi (1958)"
+    },
+    {
+      "slug": "mclaren-mp4-4",
+      "he": "מקלארן MP4/4 — מכונית פורמולה 1",
+      "en": "McLaren MP4/4 F1 car (1988)"
+    },
+    {
+      "slug": "hummer-h1",
+      "he": "האמר H1",
+      "en": "Hummer H1 (1992)"
+    },
+    {
+      "slug": "popemobile",
+      "he": "רכב האפיפיור",
+      "en": "Popemobile (Mercedes G 500, 2007)"
+    },
+    {
+      "slug": "koenigsegg-jesko",
+      "he": "קניגסג ייסקו",
+      "en": "Koenigsegg Jesko (2019)"
+    }
   ]
 }

@@ -35,3 +35,7 @@ Follow the changed behavior's scope. Reuse the lead's existing reproduction and 
 ## Report
 
 Lead with the root cause or the measured bottleneck. Then files changed, baseline and post metrics, commands, screenshots, the broken path retested, and residual risks.
+
+## Local lessons
+
+Read `references/precision-and-headless.md` when you see streaks or flicker on layered or thin geometry, need to find which parts eat the triangle budget, or when headless or SwiftShader screenshots hang or time out.

@@ -4,7 +4,8 @@ This is the procedure and quality bar for adding a model to the library. The dai
 
 ## 1. Pick the object
 
-- Take the first item in `queue.json` whose `slug` has no folder in `models/` yet.
+- Take the first item in `queue.json` whose `slug` has no folder in `models/` yet. If the item has a `note`, it holds the user's wishes and the features that must be right for that object, so treat it as part of the brief.
+- Load the `boneh-dgamim-3d` skill first (`.claude/skills/boneh-dgamim-3d/SKILL.md`). It holds the method, the per-type anatomy checklists (car, tank, aircraft, ship, building, machine) and the QA routine this guide relies on.
 - Folder: `models/<NNN>-<slug>/`, where NNN is the highest existing number + 1 (3 digits).
 - Date = today in Israel time (`TZ=Asia/Jerusalem date +%F`), plus a Hebrew date string for `dateHe` (e.g. `2 באוקטובר 2026`).
 
