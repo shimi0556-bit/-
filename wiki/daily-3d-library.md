@@ -31,3 +31,4 @@ A library that grows by one procedurally-modelled object a day, starting with ca
   - Gave the wheel hub a solid pilot through the centre bore and a flat-topped cap with the crest in a bezel.
   - Found that the dash's extrude bevel had grown its outline 2 cm and buried the screens; fixed with `bevelOffset`.
   - These lessons are now in BUILD_GUIDE.md under the pitfalls.
+- **2026-10-01, round 3:** the user asked for the **Merkava Mk 4M tank** as the next daily model. It's at position 2 in `queue.json`, with a `note` listing the features that must be right: front engine, rear door, Trophy, tracks with 6 road wheels, turret chains, and others. BUILD_GUIDE now says to treat a queue `note` as part of the brief and to load the `boneh-dgamim-3d` skill first. Its tank checklist covers track links, sprockets and idlers, turret, gun and hatches, plus the toggles to build (turret traverse, gun elevation, running tracks).

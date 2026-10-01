@@ -53,3 +53,7 @@ Inspect package scripts, Vite config, base path, and public assets → gate debu
 ## Report
 
 Lead with the result and unresolved defects. Put the detailed commands, manifest, captures, motion evidence, controls exercised, issues fixed, and deployment notes in the project's evidence report. Include the harness decision and bot metrics when in scope. Return the artifact path to the lead; passing pixels and acknowledged state hooks do not establish aesthetic quality or successful gameplay by themselves.
+
+## Local lessons
+
+Read `references/eye-point-qa.md` before signing off any detailed model or interior. It holds the close-up shot plan (driver's seat, wheel, control panel) and the defect checklist (intersections, floating, primitive boxes, missing buttons, mirrored text, flicker, mobile).
