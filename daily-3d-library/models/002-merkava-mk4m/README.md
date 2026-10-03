@@ -38,6 +38,8 @@ After the first release the model was compared against photos of the real Mk 4 a
 
 - Firing (toggle `ירי` / key F, repeats every ~5 s while on): muzzle fireball + star flare + point light, 18 smoke puffs and 14 ground-dust puffs that expand and fade, a tracer streak, a recoil stroke of 0.4 m (barrel, sleeve, breech and muzzle parts slide back and return), and a synthesised Web Audio boom (noise + 95→24 Hz thump + crack, no files). Sprites are pooled, so repeated shots allocate nothing.
 
+- Round 10: the top run of the track sags between the return rollers; on firing the sprung hull and turret rock back on the springs (damped pitch about a pivot, tracks and wheels stay on the ground) and three APFSDS sabot petals peel off the dart; while driving, dust plumes rise behind both tracks.
+
 ## Upgrades over #001
 
 1. **Wear & dust paint** (`dusty()` in `model.js`): value-noise patches and fine grain in object space, and dust that fades in by world height, so the lower hull, skirts, wheels and tracks are dustier than the roof. Works on instanced meshes too. (The old build used flat `M.paint`.)

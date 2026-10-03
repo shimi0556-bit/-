@@ -16,7 +16,7 @@
         "parts": 258,
         "meshes": 1225,
         "triangles": 400316,
-        "buildMs": 585
+        "buildMs": 557
       }
     },
     {
@@ -35,7 +35,7 @@
         "parts": 246,
         "meshes": 1151,
         "triangles": 612682,
-        "buildMs": 1335
+        "buildMs": 1266
       }
     }
   ]
