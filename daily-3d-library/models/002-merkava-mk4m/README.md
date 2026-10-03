@@ -2,7 +2,7 @@
 
 The IDF's main battle tank, modelled procedurally in [`model.js`](model.js). Open [`index.html`](index.html).
 
-**243 named parts in 11 systems, ~1,030 meshes, ~340K triangles, no model or image files.**
+**251 named parts in 11 systems, ~1,030 meshes, ~370K triangles, no model or image files.**
 
 ## What's modelled
 
@@ -29,6 +29,8 @@ After the first release the model was compared against photos of the real Mk 4 a
 - the paint shader adds a cast-steel micro-bump (object-space noise, normal perturbed analytically, faded out with distance so it doesn't alias), paint chips that expose bare metal (lower roughness, higher metalness) and roughness variation;
 - armour modules have chamfered edges, skirts and sponsons have rounded edges, optics and weapon receivers use slightly rounded boxes;
 - every hatch lid has a rubber seal, a bolt ring, a grab handle, hinge barrels and a latch; deck panels have seams and bolt rows; sponsons have grab handles; skirts have hinge lugs.
+
+- Turret interior (second pass): roof ribs and a spall liner, red ceiling lamps (come on with the lights toggle), gunner eyepieces and thumb-trigger handles, traverse motor with pinion, elevation actuator, commander display with a live-looking screen, colour-coded harnesses and inner handrails. The remote weapon station has a lathed camera ball with lenses.
 
 ## Upgrades over #001
 

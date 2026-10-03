@@ -843,7 +843,7 @@ window.L3D_MODEL = {
 
     // ------------------------------------------------------------------ lamps (own materials: each toggles on its own)
     const lampMat = (c, i = 0.05) => new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: i, roughness: 0.25, metalness: 0, transparent: true, opacity: 0.92 });
-    const L = { head: lampMat(0xfff3cf), red: lampMat(0xff2a12), amber: lampMat(0xffa21a), ir: lampMat(0x9a1010), green: lampMat(0x33ff77) };
+    const L = { cabin: lampMat(0xff4a3a), head: lampMat(0xfff3cf), red: lampMat(0xff2a12), amber: lampMat(0xffa21a), ir: lampMat(0x9a1010), green: lampMat(0x33ff77) };
 
     // ================================================================== HULL
     const DECK_A = Math.atan2(-0.18, 1.55);                 // engine deck slopes down toward the nose
@@ -1446,7 +1446,16 @@ window.L3D_MODEL = {
       const rws = sub(tur, 'gun', { he: 'עמדת נשק נשלטת מרחוק (RWS)', en: 'Remote weapon station', mat: 'פלדה + מצלמות', desc: 'עמדת נשק קטנה שנשלטת מבפנים: המפקד יורה בלי לחשוף את ראשו. מצלמה ומקלע .50 או 7.62 מ״מ מאזנים זה את זה. מותקנת בצד שמאל.' }, { pos: [-0.05, TR + 0.02, -0.72] });
       put(G.cyl(0.2, 0.22, 0.1, 24, 'y'), OLIVE2, rws, [0, 0.05, 0], null, { name: 'ring base' });
       const rwsTop = new THREE.Group(); rwsTop.position.y = 0.1; rws.add(rwsTop);
-      put(RB(0.34, 0.2, 0.3), M.darkSteel(), rwsTop, [0, 0.1, 0]); put(G.cyl(0.015, 0.015, 0.6, 10, 'x'), STEEL, rwsTop, [0.35, 0.12, 0.05]); put(RB(0.08, 0.08, 0.1), BLACK, rwsTop, [0.18, 0.12, -0.1]); put(G.cyl(0.03, 0.03, 0.02, 14, 'x'), M.lens(0x86e0ff, 0.6), rwsTop, [0.225, 0.12, -0.1]);
+      put(G.soft(0.36, 0.2, 0.3, { r: 0.05, seg: 6 }), M.metal(0x34373b, 0.45), rwsTop, [0, 0.1, 0], null, { name: 'housing' });
+      put(G.cyl(0.03, 0.03, 0.3, 14, 'x'), mgMat, rwsTop, [0.4, 0.13, 0.06], null, { name: 'barrel' });
+      put(G.cyl(0.045, 0.045, 0.16, 16, 'x'), mgMat, rwsTop, [0.3, 0.13, 0.06]);
+      put(G.cyl(0.034, 0.025, 0.06, 14, 'x'), BLACK, rwsTop, [0.58, 0.13, 0.06]);
+      put(RB(0.14, 0.12, 0.1, 0.02), mgGreen, rwsTop, [-0.02, 0.09, 0.2]);
+      put(G.cyl(0.07, 0.07, 0.07, 22, 'y'), BLACK, rwsTop, [0.08, 0.26, -0.08]);
+      put(G.sphere(0.065, 18, 12), M.metal(0x23252a, 0.4), rwsTop, [0.1, 0.27, -0.08]);
+      put(G.cyl(0.04, 0.04, 0.02, 18, 'x'), M.lens(0x86e0ff, 0.65), rwsTop, [0.165, 0.27, -0.08]);
+      put(G.torus(0.042, 0.006, 8, 20, PI * 2, 'x'), M.darkChrome(), rwsTop, [0.176, 0.27, -0.08]);
+      put(G.cyl(0.03, 0.03, 0.02, 14, 'x'), M.lens(0xffd36a, 0.65), rwsTop, [0.17, 0.2, 0.0]);
       K.onFrame((time) => { if (speed > 0.05) rwsTop.rotation.y = Math.sin(time * 0.6) * 0.6 * Math.min(speed, 1); });
     }
 
@@ -1575,6 +1584,43 @@ window.L3D_MODEL = {
       void headGeo; void caseGeo;
     }
 
+    // ================================================================== TURRET INTERIOR DETAIL
+    {
+      const wall = M.metal(0x6f7266, 0.6), liner = M.fabric(0x3c4034);
+      const ib = sub(tur, 'crew', { he: 'שלד פנים הצריח וציפוי בידוד', en: 'Turret inner frame & liner', mat: 'פלדה + ציפוי סיבים נגד רסיסים', desc: 'צלעות חיזוק מתחת לגג, וציפוי סיבי שמונע מרסיסי שריון לעוף בתוך התא אחרי פגיעה (spall liner). הצבע בפנים בהיר כדי שהצוות יראה טוב.' });
+      for (const x of [-2.6, -2.0, -1.4, -0.8, -0.2, 0.4, 0.9, 1.4]) { const [bw, tw, yt] = stAt(x); put(B(0.05, 0.05, 2 * tw - 0.1), wall, ib, [x, yt - 0.05, 0]); }
+      for (const z of [-0.5, 0.0, 0.5]) put(B(2.7, 0.04, 0.05), wall, ib, [-1.5, roofY(-1.5) - 0.09, z]);
+      for (const sd of [1, -1]) for (const x of [-2.4, -1.5, -0.6, 0.3]) { const p0 = surfPt(sd, x, 0.35).addScaledVector(surfN(sd, x, 0.35), -0.06); put(B(0.5, 0.3, 0.02), liner, ib, p0.toArray(), [0, 0, 0]).rotation.x = 0; }
+      // ceiling lamps (come on with the lights toggle)
+      const lamps = sub(tur, 'crew', { he: 'פנסי תקרה (3)', en: 'Ceiling lamps (×3)', mat: 'פלסטיק + נורת LED', desc: 'שלושה פנסי תא עם מסנן אדום. אור אדום לא מסנוור ומשמר ראיית לילה של הצוות.' });
+      for (const [x, z] of [[-1.8, 0.0], [-0.4, -0.3], [0.8, 0.3]]) { put(G.cyl(0.05, 0.05, 0.03, 14, 'y'), BLACK, lamps, [x, roofY(x) - 0.12, z]); put(G.cyl(0.04, 0.04, 0.01, 14, 'y'), L.cabin, lamps, [x, roofY(x) - 0.14, z], null, { cast: false }); }
+      // gunner eyepieces + hand grips
+      const eye = sub(tur, 'optics', { he: 'עינית התותחן', en: 'Gunner eyepieces', mat: 'פלדה + גומי רך', desc: 'שתי עיניות עם כוסות גומי. התותחן רואה דרכן את תמונת היום או התרמית, ולכל אחת מכוונת עדשת אופטיקה נפרדת.' });
+      for (const dz of [-0.04, 0.04]) { put(G.cyl(0.035, 0.03, 0.08, 16, 'x'), BLACK, eye, [-0.42, 0.52, 0.45 + dz]); put(G.torus(0.032, 0.012, 8, 18, PI * 2, 'x'), M.rubber(), eye, [-0.47, 0.52, 0.45 + dz]); }
+      put(RB(0.12, 0.1, 0.2, 0.015), M.metal(0x34373b, 0.45), eye, [-0.34, 0.54, 0.45]);
+      const grip = sub(tur, 'crew', { he: 'ידיות כוונה ומפעילי הצריח', en: 'Gunner control handles', mat: 'פלסטיק מוקשה + גומי', desc: 'שתי ידיות תותחן עם הדק שנשלט באגודל: ידית שמאל מסובבת את הצריח, ימין מגביהה את התותח. עליהן כפתור לייזר ושמירת יעד.' });
+      for (const dz of [-0.17, 0.17]) { put(G.tube([V3(0.55, -0.45, 0.5 + dz), V3(0.55, -0.32, 0.5 + dz), V3(0.5, -0.24, 0.5 + dz)], 0.016, 14, 8), M.rubber(), grip); put(G.sphere(0.022, 12, 8), M.rubber(), grip, [0.5, -0.23, 0.5 + dz]); put(G.cyl(0.011, 0.011, 0.02, 10, 'x'), M.paintFlat(0xb02a22, 0.5), grip, [0.485, -0.22, 0.5 + dz]); }
+      // traverse + elevation drives
+      const dr = sub(tur, 'crew', { he: 'מנוע סיבוב הצריח ותיבת הילוכים', en: 'Traverse motor & gearbox', mat: 'אלומיניום יצוק + פלדה', desc: 'מנוע חשמלי ותיבה מסובבים גלגל שיניים קטן שמשתלב בטבעת המשוננת של הגוף. כך מסתובבים 65 טונות של צריח בדיוק של אלפית מעלה.' });
+      put(G.cyl(0.09, 0.09, 0.3, 22, 'y'), M.metal(0x4a4e55, 0.5), dr, [1.0, -0.4, -0.75]);
+      put(RB(0.2, 0.18, 0.2, 0.02), M.castAlu(), dr, [1.0, -0.62, -0.75]);
+      put(G.cyl(0.05, 0.05, 0.1, 18, 'y'), DSTEEL, dr, [1.0, -0.78, -0.75]);
+      instances(G.cyl(0.012, 0.012, 0.08, 6, 'y'), DSTEEL, Array.from({ length: 12 }, (_, k) => { const a = (k / 12) * PI * 2; return { pos: [1.0 + Math.cos(a) * 0.055, -0.86, -0.75 + Math.sin(a) * 0.055] }; }), { parent: dr });
+      put(G.tube([V3(0.9, -0.3, -0.75), V3(0.7, -0.2, -0.8), V3(0.4, -0.15, -0.85)], 0.012, 20, 6), M.rubber(), dr);
+      const el = sub(gunG, 'gun', { he: 'בוכנת הגבהה', en: 'Elevation actuator', mat: 'פלדה + שמן הידראולי', desc: 'בוכנה הידראולית שמגביהה את התותח סביב הטבעות. כשהגבהה מתכוונת, שני בוכנות מאזנות את המשקל.' });
+      put(G.cyl(0.032, 0.032, 0.5, 14, 'y'), M.metal(0x3d4147, 0.4), el, [-0.45, -0.31, -0.2]);
+      put(G.cyl(0.018, 0.018, 0.3, 12, 'y'), M.chrome(), el, [-0.45, -0.1, -0.2]);
+      // commander display + button panel below the cupola
+      const dsp = sub(tur, 'crew', { he: 'צג המפקד', en: 'Commander display', mat: 'LCD בבית פלדה', desc: 'צג שמציג את תמונת הכוונת הפנורמית, את מצב התחמושת ואת התראות מעיל רוח. אפשר להפעיל אותו גם בלילה במסנן אדום.' });
+      const sc = K.textTexture('RNG 2450\nAPFSDS  READY\nTRP: ARMED', { font: '700 64px monospace', color: '#7dffb0', bg: '#05100a', lineHeight: 80 });
+      put(RB(0.3, 0.2, 0.05, 0.01), BLACK, dsp, [-1.05, 0.38, 0.87], [0, PI / 2, 0]);
+      put(new THREE.PlaneGeometry(0.26, 0.26 / sc.aspect * 1.0), M.screen(sc.tex, 0.9), dsp, [-1.074, 0.38, 0.87], [0, -PI / 2, 0], { cast: false });
+      // wiring harnesses, handrails
+      const w2 = sub(tur, 'crew', { he: 'חבילות חיווט וידיות אחיזה פנימיות', en: 'Wiring & inner handrails', mat: 'נחושת בבידוד, צינור פלדה', desc: 'חבילות חוטים צבעוניות לאורך הדפנות וידיות אחיזה שהצוות נאחז בהן כשהצריח מסתובב או כשהטנק קופץ בשטח.' });
+      for (const sd of [1, -1]) put(G.tube([V3(-2.4, 0.5, sd * 0.9), V3(-1.2, 0.58, sd * 1.0), V3(0.0, 0.58, sd * 1.0), V3(1.0, 0.5, sd * 0.75)], 0.014, 40, 6), sd > 0 ? M.copper() : M.metal(0x7a2a24, 0.6), w2);
+      for (const [x, z] of [[-1.0, 0.95], [-1.0, -0.95], [0.2, 0.95], [0.2, -0.95]]) put(G.tube([V3(x - 0.1, 0.1, z), V3(x - 0.1, 0.1, z - Math.sign(z) * 0.07), V3(x + 0.1, 0.1, z - Math.sign(z) * 0.07), V3(x + 0.1, 0.1, z)], 0.01, 14, 6), STEEL, w2);
+    }
+
     // ================================================================== EQUIPMENT + MARKINGS
     {
       const cab = part(equipSys, { he: 'כבלי גרירה (2)', en: 'Tow cables (×2)', mat: 'כבל פלדה מצופה, עיניות מחושלות', desc: 'שני כבלי פלדה לגרירה עצמית ולחילוץ. שזורים מחוטי פלדה ומחוברים לעיניות בחוטם.' });
@@ -1615,7 +1661,7 @@ window.L3D_MODEL = {
       for (const p of pods) { p.pod.rotation.z = ease(t) * 0.85; p.hg.rotation.y = -p.s * ease(t) * 0.5; }
       L.green.emissiveIntensity = 0.05 + t * 2.4;
     });
-    K.toggle('lights', { he: 'פנסים', key: 'l', seconds: 0.4, night: true }, (t) => { L.head.emissiveIntensity = 0.05 + t * 3; L.red.emissiveIntensity = 0.05 + t * 2; });
+    K.toggle('lights', { he: 'פנסים', key: 'l', seconds: 0.4, night: true }, (t) => { L.head.emissiveIntensity = 0.05 + t * 3; L.red.emissiveIntensity = 0.05 + t * 2; L.cabin.emissiveIntensity = 0.05 + t * 2.5; });
     K.onFrame((time, dt) => { if (speed > 0.001) { travel += speed * dt; K.__updateTracks(); } });
     K.__updateTracks();
   },
