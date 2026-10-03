@@ -48,9 +48,10 @@ async function serveCdn(route) {
     if (QA) {
       const shots = path.join(dir, 'shots'); fs.mkdirSync(shots, { recursive: true });
       const views = await page.evaluate(() => Object.keys(window.L3D_META.views || {}));
+      const window_qa = (await page.evaluate(() => window.L3D_META.qa)) || {}; // optional per-model toggle lists for the 'open' / 'night' shots
       const plan = [
         ['front', {}], ['side', {}], ['rear', {}], ['top', {}], ['under', {}],
-        ['explode', { explode: 1 }], ['xray', { xray: true }], ['cut', { cut: 0.5 }], ['open', { toggles: ['doors', 'hood', 'trunk', 'flags'] }], ['night', { night: true, toggles: ['lights', 'cabin', 'siren', 'flags'] }],
+        ['explode', { explode: 1 }], ['xray', { xray: true }], ['cut', { cut: 0.5 }], ['open', { toggles: window_qa.open || ['doors', 'hood', 'trunk', 'flags'] }], ['night', { night: true, toggles: window_qa.night || ['lights', 'cabin', 'siren', 'flags'] }],
         ...views.map((v) => [v, {}]),
       ];
       for (const [name, o] of plan) {
