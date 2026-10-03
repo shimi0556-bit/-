@@ -15,8 +15,8 @@
       "stats": {
         "parts": 154,
         "meshes": 481,
-        "triangles": 416780,
-        "buildMs": 861
+        "triangles": 420677,
+        "buildMs": 896
       }
     },
     {
@@ -35,7 +35,7 @@
         "parts": 258,
         "meshes": 1225,
         "triangles": 400316,
-        "buildMs": 618
+        "buildMs": 614
       }
     },
     {
@@ -54,7 +54,7 @@
         "parts": 246,
         "meshes": 1151,
         "triangles": 612682,
-        "buildMs": 1166
+        "buildMs": 1208
       }
     }
   ]
