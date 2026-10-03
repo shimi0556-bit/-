@@ -1,8 +1,9 @@
-// Bakes every island's ground (height grid + splat map) for the offline build:
+// Bakes every island's ground (height grid + splat map) and menu map into the game:
 // opens dist/race.html in headless Chromium, lets the game build its islands,
 // then samples each island's final terrain (circuit, roads, city, trail all
-// carved in) and writes .ground/ground.json for `vite build --mode usb`.
-//   npm run usb   (builds, runs this, builds the usb bundle, packs)
+// carved in) and writes .ground/ground.json for the race and usb builds.
+//   npm run build (builds, runs this, builds the race again with it)
+//   npm run usb   (the same, then the usb bundle, then packs)
 // Needs Playwright with Chromium (npm i -g playwright && npx playwright install chromium);
 // CHROME_PATH picks a specific Chromium binary.
 import fs from 'node:fs';
@@ -38,7 +39,7 @@ tab.on('pageerror', (e) => errors.push(e.message));
 const t0 = Date.now();
 await tab.goto(pathToFileURL(page).href + '#low');
 try {
-  await tab.waitForFunction(() => window.shimotron?.game?.state === 'menu' && window.shimotron.game.islands?.size >= 7, null, { timeout: 900000 });
+  await tab.waitForFunction(() => window.shimotron?.game?.state === 'menu' && window.shimotron.game.islands?.size >= 7 && Object.keys(window.shimotron.game.previews).length >= 7, null, { timeout: 900000 });
 } catch (e) {
   console.error('the game did not finish loading', errors.join('\n'));
   await browser.close();
@@ -112,6 +113,18 @@ const islands = await tab.evaluate((B) => {
   }
   return out;
 }, SEGMENTS);
+// The menu's island maps, as the game draws them (relief + circuit).
+const previews = await tab.evaluate(() => Object.fromEntries(Object.entries(window.shimotron.game.previews).map(([id, im]) => {
+    // A canvas when drawn live, an image when this page already carried baked maps.
+    let cv = im;
+    if (!cv.toDataURL) {
+      cv = document.createElement('canvas');
+      cv.width = im.naturalWidth;
+      cv.height = im.naturalHeight;
+      cv.getContext('2d').drawImage(im, 0, 0);
+    }
+    return [id, cv.toDataURL('image/webp', 0.9)];
+  })));
 await browser.close();
 if (errors.length) console.warn('page errors:\n' + errors.join('\n'));
 
@@ -125,5 +138,7 @@ for (const [id, g] of Object.entries(islands)) {
   console.log(`  ${id.padEnd(7)} ${g.key.padEnd(24)} ${kb} KB`);
 }
 fs.mkdirSync(path.join(root, '.ground'), { recursive: true });
-fs.writeFileSync(path.join(root, '.ground', 'ground.json'), JSON.stringify({ source: sourceHash(root), segments: SEGMENTS, islands }));
-console.log(`.ground/ground.json: ${total} KB`);
+fs.writeFileSync(path.join(root, '.ground', 'ground.json'), JSON.stringify({ source: sourceHash(root), segments: SEGMENTS, islands, previews }));
+const pkb = Math.round(Object.values(previews).reduce((n, u) => n + u.length, 0) / 1024);
+console.log(`  menu maps ${pkb} KB`);
+console.log(`.ground/ground.json: ${total + pkb} KB`);

@@ -28,6 +28,7 @@ import { RaceUI } from './ui.js';
 import { ITEMS } from './Pickups.js';
 import { Podium } from './Podium.js';
 import { loadRealModels, warmRealModels } from './RealModels.js';
+import { bakedPreview } from './BakedGround.js';
 import { World, WORLD } from './World.js';
 import { SpaceScene } from './Space.js';
 import { Explore, ROAM } from './Explore.js';
@@ -373,11 +374,12 @@ class Game {
       if (!todo.length) return;
       const i = background && todo.includes(this._bgWant) ? this._bgWant : todo[0];
       const k = n - todo.length;
-      if (background) this._bgBusy = true;
+      // Building slows the menu's frames on purpose: no reason to drop its resolution (and resize every render target).
+      if (background) this._bgBusy = this.engine.quality.hold = true;
       try {
         await this._buildIsland(i, (p, t) => progress((k + p) / n, `${STAGES[i].name}: ${t}`, k, n, p), background);
       } finally {
-        if (background) this._bgBusy = false;
+        if (background) this._bgBusy = this.engine.quality.hold = false;
       }
     }
   }
@@ -396,6 +398,13 @@ class Game {
     for (const st of STAGES) {
       if (this.previews[st.id]) continue;
       await wait(30);
+      // Drawn at build time with the baked ground (same sources, so the same circuit).
+      const pre = this.plans[st.id] && (await bakedPreview(st.id));
+      if (pre) {
+        this.previews[st.id] = pre;
+        if (this.state === 'menu') this.ui.refreshPreviews();
+        continue;
+      }
       const terrain = new Terrain({}, { plaza: null, paths: [], island: st.island, size: st.size, seed: st.seed });
       let plan = this.plans[st.id];
       if (!plan) {
@@ -972,6 +981,17 @@ class Game {
       await this.loadIsland(index, (p, t) => this.ui.showLoader(t, p));
       this.ui.showLoader('מקמפל שיידרים…', 0.96);
       timing.step('ציור ראשון של האי (קימפול שיידרים)');
+      // Its shaders compile before the first frame draws it: in parallel where the browser can
+      // (KHR_parallel_shader_compile), instead of one by one inside a frame that freezes the page.
+      const drawing = eng._running;
+      if (drawing) eng.stop();
+      try {
+        await Promise.race([eng.renderer.compileAsync(eng.scene, eng.camera), wait(12000)]);
+      } catch {
+        /* the first frame compiles whatever is left */
+      } finally {
+        if (drawing) eng.start();
+      }
       await nextFrame();
     }
     timing.step('יצירת המכוניות והמירוץ');

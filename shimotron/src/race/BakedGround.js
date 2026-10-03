@@ -1,10 +1,12 @@
 import GROUND from 'virtual:shimotron-ground';
 
 /**
- * Pre-baked ground for the offline (USB) build: every island's height grid
- * and splat map, computed once at packaging time (tools/bake-ground.mjs) and
- * shipped inside the file, so starting the game skips the slowest part of
- * loading. Regular builds carry none (GROUND is null) and bake as before.
+ * Pre-baked ground: every island's height grid and splat map, computed once
+ * at build time (tools/bake-ground.mjs) and shipped inside the file, so
+ * starting the game skips the slowest part of loading. `npm run build` and
+ * `npm run usb` bake it in; a plain `npm run build:race` without a fresh bake
+ * carries none (GROUND is null) and the game bakes it live as before. The
+ * menu's island maps ride along as images.
  *
  * Heights are baked at the exact resolution the build draws terrain with
  * (GROUND.segments, the same at every quality level, so nothing is
@@ -14,6 +16,20 @@ import GROUND from 'virtual:shimotron-ground';
  * planes) and deflated. The splat map (sand, dirt, rock, reef) is 512² RGBA,
  * delta-coded per channel.
  */
+/** An island's menu map (relief + circuit), drawn at bake time; null when the build carries none. */
+export async function bakedPreview(id) {
+  const url = GROUND && GROUND.previews && GROUND.previews[id];
+  if (!url) return null;
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    return img;
+  } catch {
+    return null;
+  }
+}
+
 /** Terrain resolution of the baked ground (null in regular builds). */
 export const bakedSegments = GROUND ? GROUND.segments : null;
 
