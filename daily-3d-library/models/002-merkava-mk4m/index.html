@@ -969,7 +969,15 @@ window.L3D_MODEL = {
     let a1s = thTop; while (a1s <= tg.a) a1s += PI * 2;
     pathPts.push([IDL.x, IDL.y - IDL.r]);
     lineTo([IDL.x, IDL.y - IDL.r], P0); lineTo(P0, tg.p);
-    arcTo(SPR, SPR.r, tg.a, a1s); lineTo(t2, t1);
+    arcTo(SPR, SPR.r, tg.a, a1s);
+    { // top run with a little sag between the return rollers (real tracks hang between supports)
+      const sup = [1, 0.84, 0.62, 0.4, 0.18, 0], n = 160;
+      for (let i = 1; i <= n; i++) {
+        const f = 1 - i / n; let sag = 0;
+        for (let k = 0; k < sup.length - 1; k++) if (f <= sup[k] && f >= sup[k + 1]) { const u = (sup[k] - f) / (sup[k] - sup[k + 1]); sag = Math.sin(Math.PI * u) * (k === 0 ? 0.012 : 0.028); }
+        pathPts.push([lerp(t1[0], t2[0], f) - nTop[0] * sag, lerp(t1[1], t2[1], f) - nTop[1] * sag]);
+      }
+    }
     arcTo(IDL, IDL.r, thTop, 3 * PI / 2);
     const cum = [0]; for (let i = 1; i < pathPts.length; i++) cum.push(cum[i - 1] + Math.hypot(pathPts[i][0] - pathPts[i - 1][0], pathPts[i][1] - pathPts[i - 1][1]));
     const PLEN = cum[cum.length - 1] + Math.hypot(pathPts[0][0] - pathPts[pathPts.length - 1][0], pathPts[0][1] - pathPts[pathPts.length - 1][1]);
@@ -1722,7 +1730,14 @@ window.L3D_MODEL = {
       const parts = [];
       const add = (o) => { o.sprite.visible = true; parts.push(o); return o; };
       const flashLight = new THREE.PointLight(0xffa850, 0, 14, 1.6); scene.add(flashLight);
+      // APFSDS sabot: three petals peel away from the dart just after the muzzle
+      const petalGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.32, 10, 1, true, 0, (Math.PI * 2) / 3).rotateZ(Math.PI / 2);
+      const petals = [0, 1, 2].map((k) => { const m = new THREE.Mesh(petalGeo, new THREE.MeshStandardMaterial({ color: 0x6b6a5c, roughness: 0.6, metalness: 0.3, side: THREE.DoubleSide })); m.visible = false; scene.add(m); return m; });
       const tracer = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.6, 8).rotateZ(Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd9a0, transparent: true, opacity: 0, depthWrite: false })); tracer.visible = false; scene.add(tracer);
+      // pitch the sprung systems (everything but tracks + suspension) about a pivot near the hull centre
+      const sprung = ['hull', 'armor', 'turret', 'power', 'crew', 'equip'].map((id) => sys(id));
+      const pivot = V3(-0.3, 0.75, 0), rq = new THREE.Quaternion(), zAx = V3(0, 0, 1);
+      const rockSet = (ang) => { rq.setFromAxisAngle(zAx, ang); for (const g of sprung) { g.quaternion.copy(rq); g.position.copy(pivot).sub(pivot.clone().applyQuaternion(rq)); } };
       let age = 99, aud = null, firing = false, nextAt = 0, dir = V3(1, 0, 0), mpos = V3();
       const pool = []; // sprites are created once and reused by every shot
       for (let k = 0; k < 3; k++) pool.push({ s: mkSprite(flashTex, 0xffffff, THREE.AdditiveBlending, 1), k: 'flash' });
@@ -1750,10 +1765,19 @@ window.L3D_MODEL = {
           s.visible = a >= 0 && u < 1; s.material.opacity = clamp(o); s.scale.setScalar(sc);
         });
         flashLight.position.copy(mpos).addScaledVector(dir, 0.8); flashLight.intensity = a < 0.5 ? 60 * Math.exp(-a * 11) : 0;
+        petals.forEach((m, k) => {
+          const vis = a >= 0.01 && a < 0.7; m.visible = vis; if (!vis) return;
+          const ang = (k / 3) * Math.PI * 2 + 0.4, side = V3(0, Math.cos(ang), Math.sin(ang)).applyQuaternion(tracer.quaternion);
+          m.position.copy(mpos).addScaledVector(dir, 4 + a * 120).addScaledVector(side, a * 9 + 0.5 * a * a * 0).add(V3(0, -4.9 * a * a, 0));
+          m.quaternion.copy(tracer.quaternion); m.rotateX(ang); m.rotateZ(a * 25 * (k % 2 ? 1 : -1));
+        });
         const tr = a * 240; tracer.visible = a < 0.9 && a >= 0; tracer.material.opacity = clamp(1 - a / 0.9); tracer.position.copy(mpos).addScaledVector(dir, 2 + tr);
         // recoil: fast back, slow return
         const rc = a < 0.07 ? a / 0.07 : Math.pow(Math.max(0, 1 - (a - 0.07) / 0.95), 2);
         recoilG.position.x = -0.4 * rc;
+        // the hull rocks back on its springs and settles in a damped oscillation
+        const rock = a < 0 || a > 4 ? 0 : 0.014 * Math.exp(-a * 2.4) * Math.sin(a * 9.0);
+        rockSet(rock);
       };
       const boom = () => {
         try {
@@ -1773,10 +1797,30 @@ window.L3D_MODEL = {
       const fire = () => { setup(); age = 0; step(0); boom(); };
       K.toggle('fire', { he: 'ירי', key: 'f', seconds: 0.25 }, (t) => { const on = t > 0.6; if (on && !firing) { firing = true; if (age > 3.0) { fire(); nextAt = 0; } } if (!on) firing = false; });
       K.onFrame((time, dt) => {
-        if (age < 12) { age += dt; step(age); } else if (age < 99) { age = 99; pool.forEach((p) => { p.s.visible = false; }); tracer.visible = false; flashLight.intensity = 0; recoilG.position.x = 0; }
+        if (age < 12) { age += dt; step(age); } else if (age < 99) { age = 99; pool.forEach((p) => { p.s.visible = false; }); tracer.visible = false; flashLight.intensity = 0; recoilG.position.x = 0; rockSet(0); }
         if (firing && age >= 99 || (firing && age > 5.5)) fire();
       });
       K.__fire = { fire, at: (a) => { setup(); age = a; step(a); } };
+    }
+
+
+    // ================================================================== DRIVING DUST (behind the tracks while they run)
+    {
+      const tex = K.canvasTexture(128, 128, (g, w, h) => { for (let k = 0; k < 12; k++) { const x = w / 2 + (Math.sin(k * 7.1) * 0.5) * w * 0.3, y = h / 2 + (Math.cos(k * 3.7) * 0.5) * h * 0.3, r0 = w * (0.2 + 0.1 * Math.abs(Math.sin(k))); const r = g.createRadialGradient(x, y, 0, x, y, r0); r.addColorStop(0, 'rgba(255,255,255,0.32)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); } });
+      const puffs = Array.from({ length: 24 }, (_, i) => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: 0xb09a72, transparent: true, depthWrite: false, opacity: 0 })); sp.visible = false; scene.add(sp); return { sp, s: i % 2 ? 1 : -1, t0: (i >> 1) * 0.25, r: Math.abs(Math.sin(i * 12.9898)) }; });
+      let clock = 0;
+      K.onFrame((time, dt) => {
+        clock += dt; const on = speed > 0.3;
+        for (const p of puffs) {
+          const life = 3.0, u = ((clock - p.t0) % life + life) % life / life;
+          if (!on) { p.sp.visible = false; continue; }
+          p.sp.visible = true;
+          p.sp.position.set(-4.0 - u * 3.5 * Math.min(speed, 3) / 3, 0.15 + u * 0.9, p.s * (TZ + (p.r - 0.5) * 0.6 + u * 0.8 * p.s * 0.5));
+          p.sp.scale.setScalar(0.5 + u * 2.6);
+          p.sp.material.opacity = 0.45 * Math.sin(Math.PI * u) * Math.min(speed / 3, 1);
+          p.sp.material.rotation = p.r * 6 + u;
+        }
+      });
     }
 
     // ================================================================== TOGGLES + ANIMATION
