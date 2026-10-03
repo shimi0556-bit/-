@@ -191,11 +191,7 @@ class Game {
     engine.cameraRig.update(10);
     await progress(0.9, 'מקמפל שיידרים…');
     const unwarm = warmRealModels(engine.scene, materials);
-    try {
-      await Promise.race([engine.renderer.compileAsync(engine.scene, engine.camera), wait(12000)]);
-    } catch {
-      /* first frames compile whatever is left */
-    }
+    await this._compile(12000);
     unwarm();
     engine.atmosphere.update(0);
     engine.start();
@@ -245,6 +241,16 @@ class Game {
     } finally {
       this._bgWait = false;
       this._bgWant = null;
+    }
+  }
+
+  /** Compiles the scene's shaders ahead of drawing it (the first frames compile whatever is left). */
+  async _compile(ms) {
+    const eng = this.engine;
+    try {
+      await Promise.race([eng.renderer.compileAsync(eng.scene, eng.camera), wait(ms)]);
+    } catch {
+      /* optional */
     }
   }
 
@@ -980,19 +986,6 @@ class Game {
     if (!this.island || this.island.stage !== st || this.islandDirty) {
       await this.loadIsland(index, (p, t) => this.ui.showLoader(t, p));
       this.ui.showLoader('מקמפל שיידרים…', 0.96);
-      timing.step('ציור ראשון של האי (קימפול שיידרים)');
-      // Its shaders compile before the first frame draws it: in parallel where the browser can
-      // (KHR_parallel_shader_compile), instead of one by one inside a frame that freezes the page.
-      const drawing = eng._running;
-      if (drawing) eng.stop();
-      try {
-        await Promise.race([eng.renderer.compileAsync(eng.scene, eng.camera), wait(12000)]);
-      } catch {
-        /* the first frame compiles whatever is left */
-      } finally {
-        if (drawing) eng.start();
-      }
-      await nextFrame();
     }
     timing.step('יצירת המכוניות והמירוץ');
     this._endRace();
@@ -1032,11 +1025,17 @@ class Game {
       race = new CraftRace(this, this.island, { kind, laps: this.settings.laps, difficulty: this._difficulty(), roster: this._gridOrder(this.roster()), space: this.inSpace ? this.space : null });
     }
     this.race = race;
+    // One compile for the island and the race together, before the first frame draws them: the
+    // player's headlights change the number of lights, so compiling the island alone first would
+    // compile every shader twice. Ahead of drawing, browsers with KHR_parallel_shader_compile
+    // compile in parallel instead of one by one inside a frame that freezes the page.
     timing.step('קימפול שיידרים למירוץ');
+    const drawing = eng._running;
+    if (drawing) eng.stop();
     try {
-      await Promise.race([eng.renderer.compileAsync(eng.scene, eng.camera), wait(6000)]);
-    } catch {
-      /* optional */
+      await this._compile(12000);
+    } finally {
+      if (drawing) eng.start();
     }
     this.ui.hideLoader();
     this.ui.fade(0);
@@ -1093,7 +1092,6 @@ class Game {
         await this._preloadIslands((p, t) => this.ui.showLoader(`בונה את כל האיים · ${t}`, p));
       }
       await this.loadIsland(index, (p, t) => this.ui.showLoader(t, p));
-      await nextFrame();
     }
     this._endRace();
     this._showMap(false);
@@ -1105,10 +1103,13 @@ class Game {
       const [x, z] = this.world.toLocal(at.wx, at.wz);
       ex.spawn(at.kind, { x, y: at.y, z, yaw: at.yaw, speed: at.speed, onDeck: at.onDeck });
     } else ex.spawn(this.roamKind || 'car');
+    // As for a race: one compile with the vehicle (and its lights) in place, before the first frame.
+    const drawing = eng._running;
+    if (drawing) eng.stop();
     try {
-      await Promise.race([eng.renderer.compileAsync(eng.scene, eng.camera), wait(5000)]);
-    } catch {
-      /* optional */
+      await this._compile(12000);
+    } finally {
+      if (drawing) eng.start();
     }
     this.ui.hideLoader();
     this.ui.fade(0);
