@@ -1388,13 +1388,27 @@ window.L3D_MODEL = {
     // ================================================================== OPTICS + MACHINE GUNS (on the roof)
     {
       const gs = sub(tur, 'optics', { he: 'ראש כוונת התותחן', en: 'Gunner sight head', mat: 'פלדה + חלונות ברמה צבאית', desc: 'ראש הכוונת של התותחן, מייצב בשני צירים. בתוכו מצלמת יום, מצלמה תרמית (ראיית לילה) ומד טווח לייזר — תותחן מכוון וקולט יעד בעשרות קילומטרים.' }, { pos: [-0.12, TR + 0.02, 0.45] });
-      put(RB(0.38, 0.12, 0.36), OLIVE2, gs, [0, 0.06, 0], null, { name: 'base' });
-      put(RB(0.28, 0.18, 0.3), M.darkSteel(), gs, [0.0, 0.2, 0], null, { name: 'head' });
-      for (const [z, c] of [[-0.07, 0x86e0ff], [0.08, 0xffd36a]]) { put(G.cyl(0.045, 0.045, 0.02, 18, 'x'), M.metal(0x101214, 0.2), gs, [0.15, 0.2, z]); put(G.cyl(0.036, 0.036, 0.012, 18, 'x'), M.lens(c, 0.6), gs, [0.16, 0.2, z]); }
-      put(RB(0.3, 0.025, 0.34), OLIVE2, gs, [0.0, 0.31, 0], null, { name: 'hood' });
+      // gunner sight: armoured pedestal, rounded cast head, two lens barrels with bezels, laser window, hood with visor and a wiper
+      const lensGlass = (c) => M.lens(c, 0.65);
+      put(G.soft(0.4, 0.13, 0.38, { r: 0.04, seg: 6 }), OLIVE2, gs, [0, 0.065, 0], null, { name: 'pedestal' });
+      bolts(gs, Array.from({ length: 8 }, (_, k) => ({ pos: [(k % 2 ? 0.17 : -0.17), 0.13, -0.15 + (k >> 1) * 0.1] })), 0.01);
+      put(G.soft(0.3, 0.19, 0.32, { r: 0.06, seg: 8 }), M.metal(0x34373b, 0.45), gs, [0.0, 0.225, 0], null, { name: 'head' });
+      for (const [z, c, r] of [[-0.085, 0x86e0ff, 0.05], [0.085, 0xffd36a, 0.045]]) {
+        put(G.cyl(r + 0.012, r + 0.012, 0.05, 22, 'x'), BLACK, gs, [0.17, 0.225, z]);
+        put(G.torus(r + 0.012, 0.007, 8, 24, PI * 2, 'x'), M.darkChrome(), gs, [0.196, 0.225, z]);
+        put(G.cyl(r, r, 0.012, 22, 'x'), lensGlass(c), gs, [0.19, 0.225, z]);
+      }
+      put(RB(0.012, 0.035, 0.05, 0.005), M.lens(0xff3030, 0.6), gs, [0.162, 0.3, 0.0]);
+      put(RB(0.34, 0.025, 0.36, 0.008), OLIVE2, gs, [0.0, 0.333, 0], null, { name: 'hood' });
+      put(RB(0.12, 0.05, 0.38, 0.01), OLIVE2, gs, [0.17, 0.32, 0], null, { name: 'visor' });
+      put(G.tube([V3(0.2, 0.17, -0.16), V3(0.2, 0.2, -0.0), V3(0.2, 0.17, 0.16)], 0.004, 12, 5), BLACK, gs);
+      put(G.tube([V3(-0.1, 0.3, 0.16), V3(-0.12, 0.2, 0.22), V3(-0.15, 0.1, 0.19)], 0.008, 14, 6), M.rubber(), gs);
       const cs = sub(cup, 'optics', { he: 'מכ״ם פריסקופי של המפקד (CWS)', en: 'Commander panoramic sight', mat: 'פלדה, מערכת אופטית מייצבת', desc: 'כוונת פנורמית של המפקד על גג הכיפה. המפקד יכול להצביע על יעד, והתותח פונה אליו אוטומטית — מערכת ״צייד־הורג״ (hunter-killer).' });
-      put(RB(0.24, 0.2, 0.26), M.darkSteel(), cs, [0.38, 0.22, 0], null, { name: 'sight body' });
-      for (const z of [-0.06, 0.06]) { put(G.cyl(0.04, 0.04, 0.02, 18, 'x'), M.metal(0x101214, 0.2), cs, [0.51, 0.24, z]); put(G.cyl(0.032, 0.032, 0.012, 18, 'x'), M.lens(z > 0 ? 0xffd36a : 0x86e0ff, 0.6), cs, [0.52, 0.24, z]); }
+      put(G.soft(0.26, 0.2, 0.3, { r: 0.05, seg: 8 }), M.metal(0x34373b, 0.45), cs, [0.38, 0.23, 0], null, { name: 'sight body' });
+      put(G.cyl(0.07, 0.09, 0.08, 24, 'y'), DSTEEL, cs, [0.36, 0.09, 0], null, { name: 'stem' });
+      put(RB(0.28, 0.025, 0.32, 0.008), OLIVE2, cs, [0.38, 0.345, 0], null, { name: 'cover' });
+      for (const [z, c, r] of [[-0.075, 0x86e0ff, 0.043], [0.075, 0xffd36a, 0.043]]) { put(G.cyl(r + 0.01, r + 0.01, 0.05, 20, 'x'), BLACK, cs, [0.51, 0.24, z]); put(G.torus(r + 0.01, 0.006, 8, 22, PI * 2, 'x'), M.darkChrome(), cs, [0.535, 0.24, z]); put(G.cyl(r, r, 0.012, 20, 'x'), M.lens(c, 0.65), cs, [0.53, 0.24, z]); }
+      put(RB(0.012, 0.03, 0.045, 0.005), M.lens(0xff3030, 0.6), cs, [0.505, 0.3, 0]);
       const per = sub(cup, 'optics', { he: 'פריסקופי המפקד (8)', en: 'Commander periscopes (×8)', mat: 'זכוכית שריון בבית פלדה', desc: 'שמונה חלונות ראייה מסביב לכיפה. בכל אחד זכוכית רב־שכבתית חסינת רסיסים, וביחד הם נותנים תצפית של 360°.' });
       for (let i = 0; i < 8; i++) { const a = (i / 8) * PI * 2 + PI / 8; const g = new THREE.Group(); g.position.set(Math.cos(a) * 0.3, 0.2, Math.sin(a) * 0.3); g.rotation.y = -a; per.add(g); put(RB(0.1, 0.1, 0.12), BLACK, g); put(RB(0.012, 0.06, 0.1), M.glass(0x0a1a22, 0.7), g, [0.056, 0.0, 0]); put(RB(0.12, 0.014, 0.14), DSTEEL, g, [0, 0.055, 0]); }
       // loader periscope
