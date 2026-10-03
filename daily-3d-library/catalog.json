@@ -13,10 +13,10 @@
       "page": "models/002-merkava-mk4m/index.html",
       "thumb": "models/002-merkava-mk4m/thumb.jpg",
       "stats": {
-        "parts": 251,
-        "meshes": 1122,
-        "triangles": 370604,
-        "buildMs": 513
+        "parts": 254,
+        "meshes": 1176,
+        "triangles": 389088,
+        "buildMs": 552
       }
     },
     {
@@ -35,7 +35,7 @@
         "parts": 246,
         "meshes": 1151,
         "triangles": 612682,
-        "buildMs": 1165
+        "buildMs": 1184
       }
     }
   ]
