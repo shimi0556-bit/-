@@ -1,0 +1,180 @@
+#scn-widget {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 2147483000;
+  width: 300px;
+  max-width: 90vw;
+  background: #1e1f24;
+  color: #f1f1f3;
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  direction: rtl;
+  overflow: hidden;
+  border: 1px solid #34363f;
+}
+
+#scn-widget.scn-collapsed .scn-body {
+  display: none;
+}
+
+#scn-widget .scn-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: #15161a;
+  cursor: pointer;
+  user-select: none;
+  gap: 8px;
+}
+
+#scn-widget .scn-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: bold;
+}
+
+#scn-widget .scn-rec-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #666;
+  flex-shrink: 0;
+}
+
+#scn-widget.scn-recording .scn-rec-dot {
+  background: #ff3b30;
+  animation: scn-blink 1.2s infinite;
+}
+
+@keyframes scn-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+#scn-widget .scn-toggle {
+  background: none;
+  border: none;
+  color: #c7c9d1;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+#scn-widget .scn-body {
+  padding: 8px;
+}
+
+#scn-widget .scn-controls {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+#scn-widget .scn-btn {
+  flex: 1;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 4px;
+  font-size: 12px;
+  cursor: pointer;
+  background: #2b2d34;
+  color: #f1f1f3;
+}
+
+#scn-widget .scn-btn:hover {
+  background: #383a42;
+}
+
+#scn-widget .scn-btn.scn-record {
+  background: #ff3b30;
+  color: #fff;
+}
+
+#scn-widget .scn-btn.scn-record.scn-active {
+  background: #8b1a14;
+}
+
+#scn-widget .scn-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+  align-items: center;
+}
+
+#scn-widget .scn-tab {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #2b2d34;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  max-width: 110px;
+}
+
+#scn-widget .scn-tab.scn-active-tab {
+  background: #3b6ef5;
+}
+
+#scn-widget .scn-tab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#scn-widget .scn-tab-close {
+  opacity: 0.6;
+  font-size: 11px;
+}
+
+#scn-widget .scn-tab-close:hover {
+  opacity: 1;
+}
+
+#scn-widget .scn-add-tab {
+  background: #2b2d34;
+  border: none;
+  color: #f1f1f3;
+  border-radius: 6px;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
+#scn-widget .scn-note {
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  background: #101113;
+  color: #f1f1f3;
+  border: 1px solid #34363f;
+  border-radius: 8px;
+  padding: 6px 8px;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+#scn-widget .scn-pagehint {
+  margin-top: 6px;
+  font-size: 10px;
+  color: #9a9ca4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#scn-widget .scn-saved {
+  font-size: 10px;
+  color: #6fcf7a;
+  height: 12px;
+  margin-top: 2px;
+}

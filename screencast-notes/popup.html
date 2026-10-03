@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <title>Screencast Notes</title>
+  <style>
+    body {
+      width: 260px;
+      margin: 0;
+      padding: 14px;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #1e1f24;
+      color: #f1f1f3;
+      direction: rtl;
+    }
+    h1 {
+      font-size: 15px;
+      margin: 0 0 10px;
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    button {
+      flex: 1;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 6px;
+      font-size: 13px;
+      cursor: pointer;
+      background: #2b2d34;
+      color: #f1f1f3;
+    }
+    button:hover { background: #383a42; }
+    #record.active { background: #8b1a14; }
+    #record:not(.active) { background: #ff3b30; color: #fff; }
+    .status {
+      font-size: 11px;
+      color: #9a9ca4;
+      margin-top: 4px;
+    }
+    .hint {
+      font-size: 11px;
+      color: #9a9ca4;
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <h1>Screencast Notes</h1>
+  <div class="row">
+    <button id="record">⏺ הקלט מסך</button>
+  </div>
+  <div class="row">
+    <button id="screenshot">📷 צלם מסך</button>
+  </div>
+  <div class="status" id="status"></div>
+  <div class="hint">
+    פתק הערות מופיע בפינה השמאלית-תחתונה של כל דף. אפשר לפתוח בו כמה
+    לשוניות הערה, לעבור ביניהן באמצע הקלטה, וכשחוזרים לאותו דף הן יחכו שם.
+  </div>
+</body>
+<script src="popup.js"></script>
+</html>
