@@ -1,0 +1,9 @@
+{
+  "name": "mishmar",
+  "version": "0.1.0",
+  "description": "משמר: לוח בקרה בעברית לסשן (כלים, קבצים, זמן) ושומר שחוסם פקודות מסוכנות ועריכת קבצי סודות",
+  "author": {
+    "name": "shimi0556-bit"
+  },
+  "types": "./types/index.d.ts"
+}

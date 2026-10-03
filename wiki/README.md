@@ -25,6 +25,7 @@ A persistent, Claude-maintained knowledge base for this repo, following the patt
 | [`daily-3d-library.md`](daily-3d-library.md) | [`daily-3d-library/`](../daily-3d-library) |
 | [`claude-grok-mcp-bridge.md`](claude-grok-mcp-bridge.md) | [`claude-grok-mcp-bridge/`](../claude-grok-mcp-bridge) |
 | [`claude-hud.md`](claude-hud.md) | [`claude-hud/`](../claude-hud) |
+| [`claude-mods.md`](claude-mods.md) | [`claude-mods/`](../claude-mods) |
 | [`claude-skills.md`](claude-skills.md) | [`claude-skills/`](../claude-skills) |
 | [`claude-spark-pack.md`](claude-spark-pack.md) | [`claude-spark-pack/`](../claude-spark-pack) |
 | [`effects-yuv-ai.md`](effects-yuv-ai.md) | [`effects-yuv-ai/`](../effects-yuv-ai) |
