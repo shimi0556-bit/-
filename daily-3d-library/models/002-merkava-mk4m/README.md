@@ -2,7 +2,7 @@
 
 The IDF's main battle tank, modelled procedurally in [`model.js`](model.js). Open [`index.html`](index.html).
 
-**254 named parts in 11 systems, ~1,030 meshes, ~390K triangles, no model or image files.**
+**258 named parts in 11 systems, ~1,030 meshes, ~400K triangles, no model or image files.**
 
 ## What's modelled
 
@@ -17,7 +17,7 @@ The IDF's main battle tank, modelled procedurally in [`model.js`](model.js). Ope
 | Tracks | 2 × ~80 individual links (rubber pad, steel plate, end connectors, guide horns, pins) moving on a closed path; drive sprockets (2 rings × 14 teeth, bolt rings), final drives, rear idlers with tensioner arm and adjusting screw |
 | Suspension | 12 road wheels (dual rubber rims, steel discs, 20 nuts each), 12 trailing arms with pivots and bump stops, 12 external coil springs, 12 telescopic shocks, 8 return rollers |
 | Power pack | GD883 V12: crankcase, sump, two banks with 12 valve covers and bolts, exhaust manifolds, manifold, fuel-injection lines, twin turbos, cooling fan (spins while driving), radiator with 34 fins, mounts, air cleaner with 12 cyclones; RK325 transmission, torque converter, disc brakes, cross-drive shaft, fuel tank, 4 batteries, exhaust |
-| Crew | Turret basket with floor, slip ring and grating, 4 sculpted seats (soft-body cushions, backs, headrests, armrests, posts), 3 turret consoles with labelled buttons, knobs and guarded toggles, driver steering wheel, pedals, dashboard with labelled buttons, 3 radios with panels, ready rack (4 rounds), 32 rounds in racks in the rear hull, 3 fire bottles, NBC unit, stretchers |
+| Crew | Turret basket with floor, slip ring and grating, 4 sculpted seats (soft-body cushions, backs, headrests, armrests, posts), 3 turret consoles with labelled buttons, knobs and guarded toggles, driver steering wheel, pedals, dashboard with labelled buttons, 3 radios with panels, ready rack (4 rounds), 48 rounds in racks in the rear hull, 3 fire bottles, NBC unit, stretchers |
 | Equipment | Tow cables with eyes and clamps, shovel and sledge, 3 jerrycans, rear stowage boxes, 2 × 8 smoke launchers, mud flaps, tactical numbers on the turret, hull data plate |
 
 Toggles: turret traverse, gun elevation, hatches, rear door, side skirts, running tracks (every link, road wheel, sprocket and roller turns with the right speed; the engine fan spins), Trophy armed, lights (night mode turns them on).
@@ -34,6 +34,8 @@ After the first release the model was compared against photos of the real Mk 4 a
 
 - Final pass: driver compartment (tread-plate floor, liners, grab handle, eyepieces, belts), equipment with real shapes (jerrycans with cap, embossed X and carry handle; stowage boxes with lid, latches and handles), rear fenders with lips and flaps.
 
+- Firewall between engine and crew compartment with service hatch, partition beside the driver, aramid liners on the hull sides, harnesses, 4 centre-rack columns.
+
 ## Upgrades over #001
 
 1. **Wear & dust paint** (`dusty()` in `model.js`): value-noise patches and fine grain in object space, and dust that fades in by world height, so the lower hull, skirts, wheels and tracks are dustier than the roof. Works on instanced meshes too. (The old build used flat `M.paint`.)
@@ -47,6 +49,6 @@ Armour thicknesses, internal layout, ammunition arrangement and the exact radar/
 
 ## Known simplifications / open
 
-- The ammunition is 32 rounds in the rear racks + 4 ready rounds (the real tank carries ~48).
+- The ammunition is 48 rounds in the hull racks (side columns + centre racks) + 4 ready rounds in the turret.
 - The chain curtain is short (5 links) so the open rear door doesn't sweep through it.
 - The turret-mounted gun, optics and Trophy parts ride inside the turret group, so the exploded view lifts them together with the turret.
