@@ -96,6 +96,7 @@ function engineBeneath(on: On, ran: string[]) {
     return { result: 'ok' as never, text: 'ok' }
   })
   on('session.cwd', () => ({ value: '/r' }))
+  on('session.surfaces', () => ({ value: ['terminal'] as const }))
   on('ui.status', () => ({ value: undefined }))
   on('ui.toast', () => ({ value: undefined }))
   on('ui.open', () => ({ value: { isPlaced: true } as const }))
@@ -164,6 +165,8 @@ describe('the mod', () => {
     const summary = await mishmar($, '')
     expect(summary.text).toMatch(/3 קריאות לכלים/)
     expect(summary.text).toMatch(/⛔ 1 חסימות/)
+    expect(summary.text).toMatch(/1× src\/a\.ts/)
+    expect(summary.text).toMatch(/פאנל ב: טרמינל/)
 
     for (const surface of ['terminal', 'desktop', 'vscode', 'mobile'] as const) {
       const ui = await $.ui.mount({ plugin: 'mishmar', surface, component: 'Pane', requestId: 'mishmar', props: PANE_PROPS })

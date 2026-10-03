@@ -129,6 +129,38 @@ function summary(s: MishmarStats, isOn: boolean): string {
   ].join(' · ')
 }
 
+/** The whole dashboard as plain lines: what `/mishmar` prints, readable on every surface. */
+function report(s: MishmarStats, isOn: boolean, now: number, cwd: string): string {
+  const lines = [summary(s, isOn)]
+  const turn = s.lastTurnSeconds === null ? '' : ` · תור אחרון ${s.lastTurnSeconds} שנ׳`
+  lines.push(`⏱ ${sinceStart(s, now)} בסשן · ${s.turns} תורות${turn}`)
+
+  const tools = Object.entries(s.tools).sort((a, b) => b[1] - a[1])
+  if (tools.length > 0) {
+    lines.push('', `כלים: ${tools.slice(0, 8).map(([name, n]) => `${name} ${n}`).join(' · ')}`)
+  }
+  const files = s.files.slice(-5).reverse()
+  if (files.length > 0) {
+    lines.push('', 'קבצים אחרונים שנערכו:', ...files.map(f => `  ✏️ ${f.edits}× ${shortPath(f.path, cwd)}`))
+  }
+  const events = s.events.slice(-5).reverse()
+  if (events.length > 0) {
+    lines.push(
+      '',
+      'חסימות ואזהרות אחרונות:',
+      ...events.map(e => `  ${e.level === 'block' ? '⛔' : '⚠️'} ${e.tool}: ${oneLine(e.what, 60)} — ${e.reason}`),
+    )
+  }
+  return lines.join('\n')
+}
+
+const SURFACE_NAMES: Record<string, string> = {
+  terminal: 'טרמינל',
+  desktop: 'אפליקציית דסקטופ',
+  mobile: 'אפליקציית מובייל',
+  vscode: 'VS Code',
+}
+
 // ---------- the mod ----------
 
 export const register: Register = on => {
@@ -217,8 +249,12 @@ export const register: Register = on => {
 
     const opened = await $.ui.open({ id: PANE, title: TITLE })
     const s = await read($, stats)
-    const line = summary(s, await read($, isGuardOn))
-    return { text: opened.isPlaced ? line : `${line}\n(הלוח ממתין: ${opened.reason})` }
+    const text = report(s, await read($, isGuardOn), await $.clock.now(), await $.session.cwd())
+    const surfaces = (await $.session.surfaces()).map(name => SURFACE_NAMES[name] ?? name)
+    const where = opened.isPlaced
+      ? `הלוח המלא נפתח כפאנל ב: ${surfaces.join(', ') || 'אין מסך מחובר'}`
+      : `הלוח ממתין: ${opened.reason}`
+    return { text: `${text}\n\n(${where})` }
   })
 
   // The band above the prompt: one line of totals, once something has happened.
