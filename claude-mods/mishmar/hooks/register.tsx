@@ -473,9 +473,11 @@ export const register: Register = on => {
       await read($, env),
     )
     const surfaces = (await $.session.surfaces()).map(name => SURFACE_NAMES[name] ?? name)
-    const where = opened.isPlaced
-      ? `הלוח המלא נפתח כפאנל ב: ${surfaces.join(', ') || 'אין מסך מחובר'}`
-      : `הלוח ממתין: ${opened.reason}`
+    const where = !opened.isPlaced
+      ? `הלוח ממתין: ${opened.reason}`
+      : surfaces.length > 0
+        ? `הלוח המלא נפתח כפאנל ב: ${surfaces.join(', ')}`
+        : 'המסך שבו הסשן מוצג (למשל אפליקציית Claude) לא מציג פאנלים של מודים, לכן הלוח מוצג כאן כטקסט ובסרגל הצדדי'
     return { text: `${text}\n\n${sidebarLine(await read($, sidebar))}\n(${where})` }
   })
 
