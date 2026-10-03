@@ -14,6 +14,12 @@
       "note": "Requested by the user for the next daily run. A tank, not a car: categorise it as 'רכבים צבאיים'. Public information only. Signature features to get right: front-mounted engine and transmission pack (crew protection), a rear door for crew/medevac/infantry, a long wedge-shaped turret with modular armour plates and the bustle chains (ball-and-chain curtain under the turret rear), a 120 mm MG253 smoothbore gun with thermal sleeve and muzzle reference, Trophy ('מעיל רוח') active-protection radars and launchers on the turret sides, commander's and gunner's sights, a remote weapon station / machine guns, smoke-grenade launchers, side skirts, tracks with 6 road wheels per side, return rollers, front drive sprockets and rear idlers, external coil-spring suspension, crew hatches and periscopes, tow cables, antennas, IDF markings. Good toggles: turret traverse, gun elevation, hatches, rear door, tracks running (animated), Trophy on. Good views: commander's hatch, engine pack, inside the crew compartment."
     },
     {
+      "slug": "tesla-model-y",
+      "he": "טסלה מודל Y",
+      "en": "Tesla Model Y (Juniper, 2025)",
+      "note": "Requested by the user as the next daily model (after the Merkava). Electric crossover: no engine bay — a front trunk (frunk) instead, a flat battery pack in the floor (cells visible in the cutaway), front and rear drive units (motor + inverter + gearbox), the 2025 'Juniper' face with the full-width light bar and slim headlamps, the full-width rear light bar, the all-glass roof, flush door handles, the single central 15.4\" touchscreen and the rear 8\" screen, a yoke-free round steering wheel, Autopilot cameras (windshield trio, B-pillars, fenders, rear), charge port behind the left tail-lamp flap with the CCS/NACS connector, heat pump (octovalve), 19-20\" aero wheels. Good toggles: doors, frunk, power liftgate, charge-port flap + cable, lights, rear seats folding. Good views: frunk, cabin from the driver seat, battery cutaway, charge port."
+    },
+    {
       "slug": "ford-model-t",
       "he": "פורד מודל T",
       "en": "Ford Model T (1908)"
