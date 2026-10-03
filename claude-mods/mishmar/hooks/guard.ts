@@ -109,7 +109,7 @@ const PREFIXES = new Set(['sudo', 'doas', 'command', 'exec', 'nohup', 'time', 'n
 const OPTION_WITH_VALUE = new Set(['-u', '-g', '-n', '-I', '-P', '-L'])
 
 /** Drops `sudo`, `env X=1`, `xargs -0` and the like in front of the real command. */
-function unwrap(words: string[]): string[] {
+export function unwrap(words: string[]): string[] {
   let i = 0
   while (i < words.length) {
     const w = words[i] ?? ''

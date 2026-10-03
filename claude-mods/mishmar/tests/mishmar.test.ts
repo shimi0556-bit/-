@@ -2,7 +2,9 @@ import { describe, expect, mock, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 import type { On, RenderPropsOf } from 'claude-code'
 
+import { classify, classifyShell } from '../hooks/activity'
 import { checkCommand, checkPath } from '../hooks/guard'
+import { parseSidebarUrl, repoName, sessionUrlFrom, versionFrom } from '../hooks/sidebar'
 
 const level = (command: string) => checkCommand(command)?.level ?? null
 
@@ -225,5 +227,87 @@ describe('the band', () => {
     await band.press({ key: 'hide' })
     expect(await band.find({ type: 'Button', key: 'open' })).toBe(undefined)
     await band.unmount()
+  })
+})
+
+
+describe('activity log: what counts', () => {
+  test('GitHub through MCP, marking writes', () => {
+    expect(classify({ tool: 'mcp__github__create_pull_request', owner: 'o', repo: 'r', title: 'x', head: 'b', base: 'main' } as never)).toMatchObject({ kind: 'github', title: 'create_pull_request', isWrite: true })
+    expect(classify({ tool: 'mcp__github__pull_request_read', owner: 'o', repo: 'r', pullNumber: 30, method: 'get' } as never)).toMatchObject({ kind: 'github', isWrite: false })
+    expect(classify({ tool: 'mcp__github__list_branches', owner: 'o', repo: 'r' } as never)?.isWrite).toBe(false)
+    expect(classify({ tool: 'mcp__claude-code-remote__add_repo', owner: 'o', repo: 'r' } as never)?.kind).toBe('github')
+  })
+
+  test('git and gh in Bash, the push first', () => {
+    expect(classifyShell('git add -A && git commit -m x && git push -u origin b')).toMatchObject({ kind: 'github', title: 'git push -u origin b', isWrite: true })
+    expect(classifyShell('git fetch origin main')).toMatchObject({ kind: 'github', isWrite: false })
+    expect(classifyShell('gh pr create --title x')).toMatchObject({ kind: 'github', isWrite: true })
+    expect(classifyShell('git commit -q -m "msg"')).toMatchObject({ kind: 'git', isWrite: false })
+    expect(classifyShell('ls -la && npm test')).toBe(null)
+    expect(classifyShell('git status')).toBe(null)
+  })
+
+  test('skills, agents and plugins; ordinary tools stay out', () => {
+    expect(classify({ tool: 'Skill', tool_use_id: 't', skill: 'plugin-authoring' })).toMatchObject({ kind: 'skill', title: 'plugin-authoring' })
+    expect(classify({ tool: 'Agent', tool_use_id: 't', description: 'scan', prompt: 'p', subagent_type: 'Explore' })).toMatchObject({ kind: 'agent', title: 'Explore' })
+    expect(classify({ tool: 'mcp__Claude_Docs__batch' } as never)).toMatchObject({ kind: 'plugin', title: 'Claude_Docs · batch' })
+    expect(classify({ tool: 'Read', tool_use_id: 't', file_path: '/r/a' })).toBe(null)
+  })
+
+  test('side panel helpers', () => {
+    expect(repoName('http://local_proxy@127.0.0.1:1234/git/shimi0556-bit/-')).toBe('shimi0556-bit/-')
+    expect(repoName('git@github.com:owner/name.git')).toBe('owner/name')
+    expect(parseSidebarUrl('{"sidebarUrl":"https://claude.ai/artifact/B6fUb4eguz7tobFxAN25SG"}')).toBe('https://claude.ai/artifact/B6fUb4eguz7tobFxAN25SG')
+    expect(parseSidebarUrl('{"sidebarUrl":"https://evil.example/x"}')).toBe(null)
+    expect(parseSidebarUrl('not json')).toBe(null)
+    expect(sessionUrlFrom('cse_abc')).toBe('https://claude.ai/code/session_abc')
+    expect(sessionUrlFrom(undefined)).toBe('')
+    expect(versionFrom('{"id":"s","data":{},"version":7}')).toBe(7)
+    expect(versionFrom('No document "s" in collection "sessions".')).toBe(undefined)
+  })
+})
+
+describe('the side panel', () => {
+  test('session start sends the environment, then the log, to the artifact', async ($, on) => {
+    const clock = mock.clock(on)
+    mock.env(on, { HOME: '/home/u', CLAUDE_CODE_REMOTE: 'true', CLAUDE_CODE_REMOTE_ENVIRONMENT_TYPE: 'cloud_default', CLAUDE_CODE_ENTRYPOINT: 'remote', CLAUDE_CODE_REMOTE_SESSION_ID: 'cse_abc' })
+    const writes: { action: string; collection?: string; count?: number }[] = []
+    on('tool.call', (_$, e) => {
+      if (e.tool === 'ArtifactData') {
+        writes.push({ action: e.action, collection: e.collection, count: e.writes?.length })
+        return { result: 'ok' as never, text: e.action === 'get' ? 'No document "s1" in collection "sessions".' : 'committed' }
+      }
+      return { result: 'ok' as never, text: 'ok' }
+    })
+    on('session.start', (_$, e) => ({ cwd: e.cwd }))
+    on('session.cwd', () => ({ value: '/r' }))
+    on('session.id', () => ({ value: 's1' }))
+    on('session.version', () => ({ value: { version: '2.1.288' } }))
+    on('session.surfaces', () => ({ value: [] }))
+    on('command.register', () => ({ value: { command: 'mishmar' } }))
+    on('ui.status', () => ({ value: undefined }))
+    on('ui.toast', () => ({ value: undefined }))
+    on('ui.invalidate', () => ({ value: undefined }))
+    on('ui.open', () => ({ value: { isPlaced: true } as const }))
+    on('fs.read', () => ({ value: '{"sidebarUrl":"https://claude.ai/artifact/B6fUb4eguz7tobFxAN25SG"}' }))
+    on('process.run', (_$, e) => ({
+      value: { exitCode: 0, stdout: e.argv.includes('rev-parse') ? 'main\n' : 'https://github.com/o/r.git\n', stderr: '', isStdoutTruncated: false, isStderrTruncated: false },
+    }))
+
+    await $.session.start({ cwd: '/r', surface: null, isInteractive: false })
+    await $.tool.call({ tool: 'Bash', command: 'git push origin main' })
+    await $.tool.call({ tool: 'Skill', skill: 'plugin-authoring' })
+    await clock.advance(2_000)
+    await clock.settle()
+
+    expect(writes.map(w => w.action)).toEqual(['get', 'set', 'batch'])
+    expect(writes[1]?.collection).toBe('sessions')
+    expect(writes[2]?.count).toBe(2)
+
+    const report = await $.command.run({ command: 'mishmar', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: true, columns: 160 } })
+    expect(report.text).toMatch(/ענן \(cloud_default\) · o\/r · main/)
+    expect(report.text).toMatch(/\[GitHub\] git push origin main \(כתיבה\)/)
+    expect(report.text).toMatch(/2 פעולות נשלחו/)
   })
 })

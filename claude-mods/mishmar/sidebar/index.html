@@ -1,0 +1,270 @@
+<title>סרגל משמר</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Hebrew:wght@400;500;600;700&display=swap">
+<style>
+  /* Layout: one narrow column built to sit docked beside the conversation; summary (environment) first, then the live log. */
+  :root {
+    --bg: #f1f4f2; --panel: #ffffff; --fg: #15201c; --muted: #5a6964; --line: #d6dedb; --accent: #0b6e5f;
+    --ok: #1e8a4c; --crit: #c0362c; --warn: #a1660a;
+    --k-github: #5b3fd9; --k-git: #b4532a; --k-skill: #1f6fb2; --k-plugin: #a1660a; --k-agent: #9c2c77; --k-command: #4b5563;
+    --font-body: "IBM Plex Sans Hebrew", "Arial Hebrew", "Noto Sans Hebrew", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1412; --panel: #151d1a; --fg: #e3ebe8; --muted: #8ea09a; --line: #25312d; --accent: #4cc2a8;
+      --ok: #5bd08e; --crit: #ff7b6e; --warn: #f2b550;
+      --k-github: #a493ff; --k-git: #f08a5d; --k-skill: #6fb3f0; --k-plugin: #f2b550; --k-agent: #e58bc6; --k-command: #a7b0bb;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1412; --panel: #151d1a; --fg: #e3ebe8; --muted: #8ea09a; --line: #25312d; --accent: #4cc2a8;
+    --ok: #5bd08e; --crit: #ff7b6e; --warn: #f2b550;
+    --k-github: #a493ff; --k-git: #f08a5d; --k-skill: #6fb3f0; --k-plugin: #f2b550; --k-agent: #e58bc6; --k-command: #a7b0bb;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--font-body); }
+  .wrap { max-width: 640px; margin-inline: auto; padding-inline: 16px; padding-block: 14px 32px; display: grid; gap: 14px; }
+
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h1 { margin: 0; font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+  h1 svg { width: 22px; height: 22px; flex: none; }
+  .conn { font-size: 0.8rem; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+  .conn i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; }
+  .conn[data-state="live"] i { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 25%, transparent); }
+  .conn[data-state="error"] i { background: var(--crit); }
+
+  h2 { margin: 0 0 8px; font-size: 0.78rem; font-weight: 600; color: var(--muted); letter-spacing: 0.04em; }
+
+  .env { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .env-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .badge { font-size: 0.8rem; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+  .badge.local { background: color-mix(in srgb, var(--k-git) 14%, transparent); color: var(--k-git); }
+  .env dl { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; font-size: 0.88rem; }
+  .env dt { color: var(--muted); }
+  .env dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+  .mono { font-family: var(--font-mono); font-size: 0.82rem; direction: ltr; unicode-bidi: isolate; }
+  .env dd.mono { text-align: right; }
+  a { color: var(--accent); }
+  a:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .counts { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font: inherit; font-size: 0.82rem; border: 1px solid var(--line); background: var(--panel); color: var(--fg); padding: 3px 10px; border-radius: 999px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .chip b { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .chip .dot { width: 8px; height: 8px; border-radius: 2px; background: var(--c, var(--muted)); }
+  .chip[aria-pressed="true"] { border-color: var(--fg); }
+
+  .log { list-style: none; margin: 0; padding: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+  .log li { display: grid; grid-template-columns: 4px minmax(0, 1fr) auto; gap: 0 10px; padding: 9px 12px 9px 10px; border-top: 1px solid var(--line); }
+  .log li:first-child { border-top: 0; }
+  .stripe { grid-row: span 2; border-radius: 2px; background: var(--c); }
+  .row1 { display: flex; align-items: baseline; gap: 8px; min-width: 0; flex-wrap: wrap; }
+  .kind { font-size: 0.74rem; font-weight: 600; color: var(--c); letter-spacing: 0.02em; }
+  .title { min-width: 0; overflow-wrap: anywhere; }
+  .write { font-size: 0.7rem; font-weight: 600; color: var(--crit); border: 1px solid currentColor; border-radius: 4px; padding: 0 5px; }
+  .meta { grid-column: 3; grid-row: 1; font-size: 0.78rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; display: flex; gap: 6px; align-items: baseline; }
+  .st-ok { color: var(--ok); } .st-error, .st-denied { color: var(--crit); }
+  .detail { grid-column: 2 / 4; font-size: 0.82rem; color: var(--muted); overflow-wrap: anywhere; }
+
+  .empty { background: var(--panel); border: 1px dashed var(--line); border-radius: 10px; padding: 18px 16px; color: var(--muted); font-size: 0.9rem; }
+  .empty strong { color: var(--fg); display: block; margin-bottom: 4px; }
+  select { font: inherit; font-size: 0.82rem; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; max-width: 100%; }
+  footer { font-size: 0.78rem; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="wrap" dir="rtl" lang="he">
+  <header>
+    <h1>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 4.5 5.4v6.1c0 4.6 3.1 8.6 7.5 9.9 4.4-1.3 7.5-5.3 7.5-9.9V5.4L12 2.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m8.8 12.2 2.2 2.2 4.3-4.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      סרגל משמר
+    </h1>
+    <span class="conn" id="conn" data-state="wait"><i></i><span id="conn-text">מתחבר…</span></span>
+  </header>
+
+  <section aria-labelledby="env-h">
+    <h2 id="env-h">הסביבה של הסשן</h2>
+    <div class="env" id="env">
+      <div class="env-top"><span class="badge" id="env-badge">ממתין לסשן</span><select id="session-pick" aria-label="בחירת סשן" hidden></select></div>
+      <dl id="env-list">
+        <dt>ריפו</dt><dd class="mono">—</dd>
+        <dt>ענף</dt><dd class="mono">—</dd>
+        <dt>התחיל</dt><dd>—</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section aria-labelledby="log-h">
+    <h2 id="log-h">יומן פעולות</h2>
+    <div class="counts" id="counts" role="group" aria-label="סינון לפי סוג"></div>
+  </section>
+
+  <div id="log-area">
+    <div class="empty"><strong>עוד לא נרשמו פעולות.</strong>כאן יופיעו גישות של Claude ל-GitHub, פעולות git, שימוש בסקילים, בתוספים ובקונקטורים, וסוכנים שהופעלו. כל פעולה תופיע כאן ברגע שהיא קורית.</div>
+  </div>
+
+  <footer id="foot">היומן נכתב על ידי המוד משמר (mishmar) בתוך Claude Code.</footer>
+</div>
+
+<script>
+(() => {
+  const KINDS = {
+    github:  { label: 'GitHub',  color: 'var(--k-github)' },
+    git:     { label: 'git',     color: 'var(--k-git)' },
+    skill:   { label: 'סקיל',    color: 'var(--k-skill)' },
+    plugin:  { label: 'תוסף',    color: 'var(--k-plugin)' },
+    agent:   { label: 'סוכן',    color: 'var(--k-agent)' },
+    command: { label: 'פקודה',   color: 'var(--k-command)' },
+  };
+  const STATUS = { ok: ['✓', 'הצליח'], error: ['✗', 'נכשל'], denied: ['⛔', 'נחסם'] };
+  const ENTRY = { remote: 'Claude Code בענן (אתר / אפליקציה)', cli: 'טרמינל', 'claude-desktop': 'אפליקציית דסקטופ', 'sdk-ts': 'SDK', 'sdk-py': 'SDK' };
+
+  const $ = id => document.getElementById(id);
+  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+  const str = v => (typeof v === 'string' ? v : v == null ? '' : String(v));
+  const num = v => (typeof v === 'number' && isFinite(v) ? v : 0);
+
+  let db = null, sessions = [], current = null, events = [], filter = 'all', stopEvents = null;
+
+  const clock = ms => new Date(ms).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const stamp = ms => new Date(ms).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+  function setConn(state, text) {
+    $('conn').dataset.state = state;
+    $('conn-text').textContent = text;
+  }
+
+  function renderEnv() {
+    const s = sessions.find(x => x.id === current);
+    const badge = $('env-badge');
+    const list = $('env-list');
+    list.replaceChildren();
+    if (!s) { badge.textContent = 'ממתין לסשן'; badge.className = 'badge'; return; }
+    const isCloud = s.kind === 'cloud';
+    badge.textContent = isCloud ? `ענן · ${str(s.envType) || 'cloud'}` : 'מחשב מקומי';
+    badge.className = isCloud ? 'badge' : 'badge local';
+    const rows = [
+      ['נכנס דרך', ENTRY[str(s.entrypoint)] || str(s.entrypoint) || '—', false],
+      ['ריפו', str(s.repo) || '—', true],
+      ['ענף', str(s.branch) || '—', true],
+      ['תיקייה', str(s.cwd) || '—', true],
+      ['Claude Code', str(s.version) || '—', true],
+      ['התחיל', s.startedAt ? stamp(num(s.startedAt)) : '—', false],
+    ];
+    for (const [k, v, mono] of rows) {
+      list.append(el('dt', null, k));
+      list.append(el('dd', mono ? 'mono' : null, v));
+    }
+    const url = str(s.sessionUrl);
+    if (/^https:\/\/claude\.ai\//.test(url)) {
+      list.append(el('dt', null, 'הסשן'));
+      const dd = el('dd');
+      const a = el('a', null, 'פתיחה ב-claude.ai');
+      a.href = url; a.target = '_blank'; a.rel = 'noopener';
+      dd.append(a);
+      list.append(dd);
+    }
+    const pick = $('session-pick');
+    pick.hidden = sessions.length < 2;
+    if (!pick.hidden) {
+      pick.replaceChildren(...sessions.map(x => {
+        const o = el('option', null, `${x.kind === 'cloud' ? 'ענן' : 'מקומי'} · ${x.startedAt ? stamp(num(x.startedAt)) : x.id}`);
+        o.value = x.id; o.selected = x.id === current; return o;
+      }));
+    }
+  }
+
+  function renderCounts() {
+    const counts = {};
+    for (const e of events) counts[e.kind] = (counts[e.kind] || 0) + 1;
+    const box = $('counts');
+    box.replaceChildren();
+    const make = (key, label, n, color) => {
+      const b = el('button', 'chip');
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String(filter === key));
+      if (color) { b.style.setProperty('--c', color); b.append(el('span', 'dot')); }
+      b.append(el('span', null, label), el('b', null, String(n)));
+      b.addEventListener('click', () => { filter = filter === key && key !== 'all' ? 'all' : key; render(); });
+      box.append(b);
+    };
+    make('all', 'הכל', events.length);
+    for (const [key, k] of Object.entries(KINDS)) make(key, k.label, counts[key] || 0, k.color);
+  }
+
+  function renderLog() {
+    const area = $('log-area');
+    const shown = filter === 'all' ? events : events.filter(e => e.kind === filter);
+    if (shown.length === 0) {
+      const box = el('div', 'empty');
+      if (!db) {
+        box.append(el('strong', null, 'היומן החי לא זמין בתצוגה הזו.'), document.createTextNode('צריך לפתוח את הדף כשמחוברים לחשבון claude.ai.'));
+      } else if (!current) {
+        box.append(el('strong', null, 'עוד לא התחבר סשן.'), document.createTextNode('כשהמוד משמר נטען בסשן של Claude Code עם כתובת הסרגל, פרטי הסביבה יופיעו כאן.'));
+      } else {
+        box.append(el('strong', null, filter === 'all' ? 'עוד לא נרשמו פעולות בסשן הזה.' : `אין פעולות מסוג ${KINDS[filter]?.label ?? filter}.`),
+          document.createTextNode('גישות ל-GitHub, פעולות git, סקילים, תוספים וסוכנים יופיעו כאן ברגע שהן קורות.'));
+      }
+      area.replaceChildren(box);
+      return;
+    }
+    const ul = el('ul', 'log');
+    for (const e of shown) {
+      const k = KINDS[e.kind] || { label: str(e.kind), color: 'var(--muted)' };
+      const li = el('li');
+      li.style.setProperty('--c', k.color);
+      li.append(el('span', 'stripe'));
+      const row = el('div', 'row1');
+      row.append(el('span', 'kind', k.label), el('span', 'title mono', str(e.title)));
+      if (e.isWrite === true) row.append(el('span', 'write', 'כתיבה'));
+      li.append(row);
+      const meta = el('span', 'meta');
+      const st = STATUS[e.status];
+      if (st) { const s = el('span', `st-${e.status}`, st[0]); s.title = st[1]; s.setAttribute('aria-label', st[1]); meta.append(s); }
+      meta.append(el('span', null, e.at ? clock(num(e.at)) : ''));
+      li.append(meta);
+      if (str(e.detail)) li.append(el('div', 'detail', str(e.detail)));
+      ul.append(li);
+    }
+    area.replaceChildren(ul);
+  }
+
+  function render() { renderEnv(); renderCounts(); renderLog(); }
+
+  function pick(id) {
+    if (stopEvents) { stopEvents(); stopEvents = null; }
+    current = id; events = [];
+    if (db && id) {
+      stopEvents = db.collection(`sessions/${id}/events`).orderBy('at', 'desc').limit(300).onSnapshot(
+        snap => { events = snap.docs.map(d => ({ id: d.id, ...(d.data() || {}) })); render(); },
+        err => setConn('error', `שגיאה בקריאת היומן (${err.code})`),
+      );
+    }
+    render();
+  }
+
+  $('session-pick').addEventListener('change', ev => pick(ev.target.value));
+
+  async function boot() {
+    render();
+    for (let i = 0; i < 20 && !window.claude?.use; i++) await new Promise(r => setTimeout(r, 100));
+    if (!window.claude?.use) { setConn('wait', 'לא מחובר'); return; }
+    db = await window.claude.use('db');
+    if (!db) { setConn('wait', 'לא מחובר'); render(); return; }
+    setConn('live', 'חי');
+    db.collection('sessions').orderBy('startedAt', 'desc').limit(10).onSnapshot(
+      snap => {
+        sessions = snap.docs.map(d => ({ id: d.id, ...(d.data() || {}) }));
+        if (!current || !sessions.some(s => s.id === current)) pick(sessions[0]?.id ?? null);
+        else render();
+      },
+      err => setConn('error', `שגיאה בחיבור (${err.code})`),
+    );
+  }
+  boot();
+})();
+</script>
