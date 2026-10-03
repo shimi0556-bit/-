@@ -1209,9 +1209,9 @@ window.L3D_MODEL = {
     // ================================================================== TURRET
     const sub = (parent, sysId, info, o) => { const p = part(parent, info, o); p.userData.sysOverride = sysId; return p; };
     const faceRot = (n) => { const e = new THREE.Euler().setFromQuaternion(new THREE.Quaternion().setFromUnitVectors(V3(0, 1, 0), V3(...n).normalize())); return [e.x, e.y, e.z]; };
-    const TB = 0.04, TR = 0.68;                           // turret body bottom / main roof height (local y)
+    const TB = 0.04, TR = 0.76;                           // turret body bottom / main roof height (local y)
     // turret stations: [x, half-width at the bottom, half-width at the roof edge, roof height]. Sides lean inward ~35°.
-    const ST = [[-3.10, 0.90, 0.78, 0.60], [-2.95, 1.02, 0.86, 0.66], [-1.60, 1.42, 0.98, 0.68], [-0.40, 1.48, 1.02, 0.68], [0.50, 1.40, 0.98, 0.64], [1.20, 1.10, 0.80, 0.54], [1.70, 0.88, 0.66, 0.44], [2.10, 0.70, 0.56, 0.34]];
+    const ST = [[-3.10, 0.90, 0.78, 0.66], [-2.95, 1.02, 0.88, 0.74], [-1.60, 1.42, 1.02, 0.76], [-0.40, 1.48, 1.06, 0.76], [0.50, 1.40, 1.0, 0.70], [1.20, 1.10, 0.82, 0.58], [1.70, 0.88, 0.68, 0.46], [2.10, 0.70, 0.56, 0.34]];
     const stAt = (x) => {
       x = clamp(x, ST[0][0], ST[ST.length - 1][0]);
       for (let i = 0; i < ST.length - 1; i++) if (x <= ST[i + 1][0]) { const t = (x - ST[i][0]) / (ST[i + 1][0] - ST[i][0]); return [1, 2, 3].map((k) => lerp(ST[i][k], ST[i + 1][k], t)); }
@@ -1308,10 +1308,10 @@ window.L3D_MODEL = {
 
       // turret-mounted: cupola, loader hatch (hatches belong to the turret system)
       cup = part(tur, { he: 'כיפת המפקד', en: 'Commander cupola', mat: 'פלדת שריון יצוקה', desc: 'המפקד יושב מימין. מסביבו 8 פריסקופים ושמשות שריון, כך שיכול לצפות 360° בלי להוציא את הראש. אפשר גם לפתוח את הצוהר ולצאת החוצה.' }, { pos: [-0.9, TR + 0.02, 0.62] });
-      put(G.cyl(0.36, 0.4, 0.13, 36, 'y'), OLIVE, cup, [0, 0.065, 0]);
-      put(G.cyl(0.33, 0.33, 0.03, 36, 'y'), OLIVE2, cup, [0, 0.145, 0]);
-      put(G.torus(0.285, 0.012, 8, 40, PI * 2, 'y'), M.rubber(), cup, [0, 0.162, 0]);
-      bolts(cup, Array.from({ length: 16 }, (_, i) => { const a = (i / 16) * PI * 2; return { pos: [Math.cos(a) * 0.345, 0.16, Math.sin(a) * 0.345] }; }), 0.011);
+      put(G.lathe([[0.0, 0.0], [0.43, 0.0], [0.42, 0.04], [0.385, 0.1], [0.37, 0.15], [0.355, 0.17], [0.0, 0.17]], 48, 'y'), OLIVE, cup, [0, 0.0, 0], null, { name: 'cast body' });
+      put(G.torus(0.37, 0.022, 8, 48, PI * 2, 'y'), OLIVE2, cup, [0, 0.168, 0]);
+      put(G.torus(0.285, 0.012, 8, 40, PI * 2, 'y'), M.rubber(), cup, [0, 0.17, 0]);
+      bolts(cup, Array.from({ length: 16 }, (_, i) => { const a = (i / 16) * PI * 2; return { pos: [Math.cos(a) * 0.395, 0.1, Math.sin(a) * 0.395], rot: [0, 0, 0] }; }), 0.011);
       const cl = part(cup, { he: 'מכסה צוהר המפקד', en: 'Commander hatch lid', mat: 'פלדת שריון + אטם', desc: 'מכסה עגול על ציר אחורי עם אטם גומי נגד גז ואבק. כשהוא נסגר הצוות מבודד לגמרי, כולל מפני נשק כימי וביולוגי.' }, { pos: [-0.3, 0.17, 0] });
       put(G.cyl(0.29, 0.3, 0.045, 36, 'y'), OLIVE, cl, [0.3, 0.0, 0]);
       put(G.cyl(0.08, 0.1, 0.03, 20, 'y'), OLIVE2, cl, [0.3, 0.04, 0]);
@@ -1409,14 +1409,25 @@ window.L3D_MODEL = {
       put(G.lathe([[0.001, 0], [0.05, 0], [0.05, 0.03], [0.03, 0.05], [0.001, 0.055]], 18, 'y'), M.plastic(0x1c1d20, 0.6), ant, [-1.5, TR + 0.0, -0.15]);
 
       // machine guns on pintle rings + a small remote weapon station
+      const mgMat = M.metal(0x2b2d30, 0.5), mgGreen = M.plastic(0x3a4230, 0.6);
       const mg = (parent, info, pos, yaw, shield, postH) => {
         const m = sub(parent, 'gun', info, { pos, rot: [0, yaw, 0] });
-        put(G.cyl(0.015, 0.015, 0.7, 10, 'x'), STEEL, m, [0.5, 0.1, 0]); put(RB(0.5, 0.1, 0.07), M.darkSteel(), m, [0.0, 0.1, 0]); put(RB(0.22, 0.16, 0.1), M.plastic(0x38402e, 0.6), m, [0.0, -0.02, 0.1]);
-        put(G.cyl(0.02, 0.02, postH, 8, 'y'), STEEL, m, [-0.1, 0.05 - postH / 2, 0]);
-        if (shield) put(RB(0.025, 0.3, 0.42), OLIVE2, m, [0.2, 0.12, 0]);
+        put(RB(0.5, 0.11, 0.075, 0.012), mgMat, m, [0.02, 0.1, 0], null, { name: 'receiver' });
+        put(RB(0.16, 0.05, 0.08, 0.01), mgMat, m, [0.14, 0.17, 0], null, { name: 'feed cover' });
+        put(G.cyl(0.021, 0.021, 0.52, 14, 'x'), mgMat, m, [0.52, 0.105, 0], null, { name: 'barrel' });
+        put(G.cyl(0.032, 0.032, 0.34, 18, 'x'), mgMat, m, [0.4, 0.105, 0], null, { name: 'gas jacket' });
+        instances(G.torus(0.033, 0.004, 5, 16, PI * 2, 'x'), DSTEEL, Array.from({ length: 6 }, (_, i) => ({ pos: [0.26 + i * 0.055, 0.105, 0] })), { parent: m });
+        put(G.cyl(0.03, 0.022, 0.07, 14, 'x'), BLACK, m, [0.8, 0.105, 0], null, { name: 'flash hider' });
+        put(RB(0.22, 0.17, 0.11, 0.02), mgGreen, m, [-0.06, -0.02, 0.1], null, { name: 'ammo box' });
+        put(G.tube([V3(0.0, 0.08, 0.07), V3(0.02, 0.04, 0.1), V3(0.02, 0.0, 0.11)], 0.01, 12, 6), M.brass(), m);
+        put(RB(0.09, 0.045, 0.05, 0.01), mgMat, m, [-0.26, 0.1, 0], null, { name: 'rear sight block' });
+        put(G.tube([V3(-0.2, 0.04, 0.0), V3(-0.27, 0.0, 0.0), V3(-0.27, -0.06, 0.0)], 0.012, 12, 6), mgMat, m);
+        put(G.cyl(0.024, 0.03, postH, 12, 'y'), STEEL, m, [-0.1, 0.05 - postH / 2, 0]);
+        put(G.cyl(0.05, 0.05, 0.03, 18, 'y'), DSTEEL, m, [-0.1, 0.05, 0]);
+        if (shield) { put(RB(0.03, 0.34, 0.5, 0.012), OLIVE2, m, [0.3, 0.14, 0]); put(G.cyl(0.04, 0.04, 0.035, 14, 'x'), BLACK, m, [0.3, 0.105, 0]); bolts(m, [[0.17, -0.16], [0.17, 0.16], [-0.1, 0.16], [-0.1, -0.16]].map(([y, z]) => ({ pos: [0.318, y + 0.14, z], rot: [0, 0, -PI / 2] })), 0.011); }
         return m;
       };
-      mg(cup, { he: 'מקלע המפקד (7.62 מ״מ)', en: 'Commander MG (7.62 mm)', mat: 'פלדה', desc: 'מקלע MAG על טבעת מעל כיפת המפקד, ליריות הגנה קרובות.' }, [0.0, 0.32, -0.3], 0, false, 0.225);
+      mg(cup, { he: 'מקלע המפקד (7.62 מ״מ)', en: 'Commander MG (7.62 mm)', mat: 'פלדה', desc: 'מקלע MAG על טבעת מעל כיפת המפקד, ליריות הגנה קרובות. מוגן במגן שריון קטן.' }, [0.0, 0.32, -0.3], 0, true, 0.225);
       mg(ld, { he: 'מקלע הטען (7.62 מ״מ) עם מגן', en: 'Loader MG with shield', mat: 'פלדה + מגן שריון', desc: 'מקלע שני על ציר, מוגן בלוח שריון מרובע שמגן על ראש הטען.' }, [0.1, 0.23, -0.3], 0, true, 0.19);
       const rws = sub(tur, 'gun', { he: 'עמדת נשק נשלטת מרחוק (RWS)', en: 'Remote weapon station', mat: 'פלדה + מצלמות', desc: 'עמדת נשק קטנה שנשלטת מבפנים: המפקד יורה בלי לחשוף את ראשו. מצלמה ומקלע .50 או 7.62 מ״מ מאזנים זה את זה. מותקנת בצד שמאל.' }, { pos: [-0.05, TR + 0.02, -0.72] });
       put(G.cyl(0.2, 0.22, 0.1, 24, 'y'), OLIVE2, rws, [0, 0.05, 0], null, { name: 'ring base' });
