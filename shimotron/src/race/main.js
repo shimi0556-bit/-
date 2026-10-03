@@ -199,31 +199,55 @@ class Game {
     this.ui.hideLoader();
     this.toMenu();
     this._planAll();
-    // The islands themselves are built behind the menu, one after another, while the player chooses;
-    // starting anything first waits for the rest (_finishWorld), so the whole world is there before play.
-    this._bgBuild = this._preloadIslands((p, t, k, n) => {
+    // The islands themselves are built behind the menu, one after another, while the player chooses.
+    // A race waits only for its own island (built next if it is not ready yet); free roam waits for them all.
+    this._startBgBuild();
+  }
+
+  /** Builds the islands not built yet, one after another, while the menu is up (see _preloadIslands). */
+  _startBgBuild() {
+    if (this._bgBuild) return;
+    this._bgBuild = this._preloadIslands((p, t, k, n, ip) => {
       this._bgP = p;
       this._bgText = t;
-      if (this._bgWait) this.ui.showLoader(`משלים את בניית העולם · ${t}`, p);
+      if (this._bgWait && this._bgWant != null) this.ui.showLoader(t, ip);
+      else if (this._bgWait) this.ui.showLoader(`משלים את בניית העולם · ${t}`, p);
       else this.ui.buildStatus(this.state === 'menu' ? `בונה את האיים ברקע · ${k + 1}/${n}` : null);
       return nextFrame(); // a frame for the menu between steps
     }, true).catch((e) => console.error(e)).finally(() => {
       this._bgBuild = null;
+      this._bgBusy = false;
       this.ui.buildStatus(null);
     });
   }
 
-  /** Waits for the islands still being built in the background, with the loading screen showing what is left. */
-  async _finishWorld() {
+  /**
+   * Waits for the background build, with the loading screen showing what is
+   * left: for island `index` only (built next, ahead of the others), or with
+   * no index for the whole world.
+   */
+  async _finishWorld(index = null) {
     if (!this._bgBuild) return;
+    const id = index == null ? null : STAGES[index].id;
+    if (id && this.islands.has(id) && !this._bgBusy) return;
     this._bgWait = true;
+    this._bgWant = index;
     this.ui.buildStatus(null);
-    this.ui.showLoader(`משלים את בניית העולם · ${this._bgText || ''}`, this._bgP || 0);
+    this.ui.showLoader(id ? `${STAGES[index].name}…` : `משלים את בניית העולם · ${this._bgText || ''}`, id ? 0 : this._bgP || 0);
     try {
-      await this._bgBuild;
+      if (id) while (this._bgBuild && (this._bgBusy || !this.islands.has(id))) await wait(50);
+      else await this._bgBuild;
     } finally {
       this._bgWait = false;
+      this._bgWant = null;
     }
+  }
+
+  /** The background build may go on: in the menu, or while a loading screen waits for it. */
+  _bgMayBuild() {
+    if (this.state === 'menu') return true;
+    if (!this._bgWait) return false;
+    return this._bgWant == null || !this.islands.has(STAGES[this._bgWant].id);
   }
 
   // ------------------------------------------------------------- islands
@@ -250,7 +274,7 @@ class Game {
    * putting the other on, with the world shifted so it sits at the origin.
    */
   async loadIsland(index, progress) {
-    await this._finishWorld();
+    await this._finishWorld(index);
     const st = STAGES[index];
     if (this.islandDirty) this._clearIslands();
     if (this.island && this.island.stage === st) return this.island;
@@ -327,13 +351,26 @@ class Game {
     this.world.setFull(full);
   }
 
-  /** Builds every island not built yet, so travelling between them never waits. */
+  /**
+   * Builds every island not built yet, so travelling between them never waits.
+   * In the background it builds only while the menu is up (building changes
+   * the sky, the sea and the physics world, so never during play), and an
+   * island a loading screen is waiting for (_bgWant) goes first.
+   */
   async _preloadIslands(progress, background = false) {
-    const todo = STAGES.map((st, i) => i).filter((i) => !this.islands.has(STAGES[i].id));
-    for (let k = 0; k < todo.length; k++) {
-      const i = todo[k];
-      if (this.islands.has(STAGES[i].id)) continue;
-      await this._buildIsland(i, (p, t) => progress((k + p) / todo.length, `${STAGES[i].name}: ${t}`, k, todo.length), background);
+    const n = STAGES.length;
+    for (;;) {
+      if (background) while (!this._bgMayBuild()) await wait(200);
+      const todo = STAGES.map((st, i) => i).filter((i) => !this.islands.has(STAGES[i].id));
+      if (!todo.length) return;
+      const i = background && todo.includes(this._bgWant) ? this._bgWant : todo[0];
+      const k = n - todo.length;
+      if (background) this._bgBusy = true;
+      try {
+        await this._buildIsland(i, (p, t) => progress((k + p) / n, `${STAGES[i].name}: ${t}`, k, n, p), background);
+      } finally {
+        if (background) this._bgBusy = false;
+      }
     }
   }
 
@@ -446,6 +483,7 @@ class Game {
     this.engine.cameraRig = this._worldView();
     this.ui.showMenu({ selected: this.selected, champ: this.champ });
     if (this.carAudio) this.carAudio.mute(false);
+    if (this.world) this._startBgBuild(); // islands still missing (or rebuilt after a graphics change) carry on behind the menu
   }
 
   selectStage(i) {
