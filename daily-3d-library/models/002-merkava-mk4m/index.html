@@ -1346,11 +1346,12 @@ window.L3D_MODEL = {
     {
       const barrelMat = M.metal(0x2c2f33, 0.45);
       const mant = sub(gunG, 'gun', { he: 'מגן תותח (מנטלט)', en: 'Gun mantlet', mat: 'פלדת שריון יצוקה', desc: 'הגוש הכבד שמגן על פתח התותח בחזית הצריח. הוא נע יחד עם התותח ומשמש גם כשריון, והצורה שלו מסיטה פגזים כלפי מעלה.' });
-      put(sidePrism([[0.0, -0.2], [0.3, -0.16], [0.5, 0.0], [0.38, 0.3], [0.0, 0.3]], -0.5, 0.5), OLIVE2, mant, null, null, { name: 'mantlet block' });
-      put(sidePrism([[0.0, 0.3], [0.38, 0.3], [0.52, 0.12], [0.5, 0.0], [0.0, 0.0]], -0.58, -0.5), OLIVE, mant, null, null, { name: 'mantlet cheek L' });
-      put(sidePrism([[0.0, 0.3], [0.38, 0.3], [0.52, 0.12], [0.5, 0.0], [0.0, 0.0]], 0.5, 0.58), OLIVE, mant, null, null, { name: 'mantlet cheek R' });
-      put(G.cyl(0.13, 0.115, 0.16, 28, 'x'), M.rubber(), mant, [0.58, 0.0, 0.0], null, { name: 'dust boot' });
-      bolts(mant, [[-0.4, 0.1], [0.4, 0.1], [-0.4, -0.1], [0.4, -0.1], [-0.2, 0.2], [0.2, 0.2], [-0.3, 0.0], [0.3, 0.0]].map(([z, y]) => ({ pos: [0.3 + (y < 0.0 ? 0.0 : 0.0), y + 0.08, z], rot: [0, 0, -PI / 2 + 0.0] })), 0.013);
+      // cast mantlet: soft, fully rounded body (wider than tall, tapering forward) + a round collar around the barrel
+      put(G.soft(0.62, 0.4, 1.04, { r: 0.16, seg: 10, deform: (p, n) => { const f = (p.x + 0.5) * 0.5; p.y *= 1 - 0.25 * f; p.z *= 1 - 0.3 * f; return p; } }), OLIVE2, mant, [0.26, 0.06, 0], null, { name: 'mantlet body' });
+      put(G.cyl(0.19, 0.16, 0.26, 40, 'x'), OLIVE2, mant, [0.54, 0.0, 0], null, { name: 'barrel collar' });
+      put(G.torus(0.17, 0.02, 10, 40, PI * 2, 'x'), OLIVE, mant, [0.42, 0.0, 0]);
+      put(G.cyl(0.125, 0.11, 0.14, 28, 'x'), M.rubber(), mant, [0.7, 0.0, 0.0], null, { name: 'dust boot' });
+      bolts(mant, [[-0.4, 0.0], [0.4, 0.0], [-0.3, 0.2], [0.3, 0.2], [-0.3, -0.1], [0.3, -0.1]].map(([z, y]) => ({ pos: [0.2, y + 0.26, z * 0.9], rot: [0, 0, 0] })), 0.013);
       const tube = sub(gunG, 'gun', { he: 'קנה התותח', en: 'Gun barrel', mat: 'פלדת תותחים מצופה כרום', desc: 'קנה חלק באורך כ־5.5 מ׳ (מתוכם חלק בתוך הצריח). חלק, בלי חריצים, כי הפגז הוא חץ שמסתובב בעצמו מהמייצבים שבגופו.' });
       put(G.cyl(0.075, 0.066, GUN.len - 0.5, 36, 'x'), barrelMat, tube, [0.5 + (GUN.len - 0.5) / 2, 0, 0], null, { name: 'tube' });
       put(G.cyl(0.095, 0.095, 0.7, 28, 'x'), M.darkSteel(), tube, [0.35, 0, 0], null, { name: 'cradle sleeve' });
