@@ -731,9 +731,8 @@ window.L3D_MODEL = {
     const IDL = { x: -3.55, y: 0.50, r: 0.47 };// idler (rear)
     const WR = 0.395, WY = 0.45;              // road wheel radius / axle height
     const WX = [2.35, 1.38, 0.41, -0.56, -1.53, -2.50];
-    const SPONSON_Y = 1.40;                   // fender / sponson plate over the tracks
     const TUR_Y = ROOFY;                      // turret group origin height
-    const GUN = { x: 1.75, y: 0.46, len: 4.29 }; // trunnion in turret coordinates, barrel length
+    const GUN = { x: 1.80, y: 0.24, len: 4.24 }; // trunnion in turret coordinates, barrel length
 
     // ------------------------------------------------------------------ materials
     const mats = new Map();
@@ -743,45 +742,60 @@ window.L3D_MODEL = {
       if (mats.has(key)) return mats.get(key);
       const m = new THREE.MeshStandardMaterial({ color, roughness: o.r ?? 0.82, metalness: o.m ?? 0.12, side: THREE.DoubleSide, name: o.name || 'צבע צבאי מט עם אבק' });
       m.onBeforeCompile = (sh) => {
-        sh.uniforms.uDust = { value: o.dust ?? 0.45 };
+        sh.uniforms.uDust = { value: o.dust ?? 0.35 }; sh.uniforms.uBump = { value: o.bump ?? 0.009 };
         sh.vertexShader = sh.vertexShader
-          .replace('#include <common>', '#include <common>\nvarying vec3 vObj; varying float vWY;')
+          .replace('#include <common>', '#include <common>\nvarying vec3 vObj; varying float vWY; varying vec3 vNo; varying vec3 vVX; varying vec3 vVY; varying vec3 vVZ;')
           .replace('#include <begin_vertex>', `#include <begin_vertex>
-            vObj = position; vec4 dw = vec4(transformed, 1.0);
+            vObj = position; vNo = normal; vVX = normalMatrix * vec3(1.0, 0.0, 0.0); vVY = normalMatrix * vec3(0.0, 1.0, 0.0); vVZ = normalMatrix * vec3(0.0, 0.0, 1.0); vec4 dw = vec4(transformed, 1.0);
             #ifdef USE_INSTANCING
             dw = instanceMatrix * dw;
             #endif
             vWY = (modelMatrix * dw).y;`);
         sh.fragmentShader = sh.fragmentShader
           .replace('#include <common>', `#include <common>
-            varying vec3 vObj; varying float vWY; uniform float uDust;
-            float h31(vec3 p){ p = fract(p * 0.3183099 + vec3(0.1)); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
-            float vn(vec3 x){ vec3 i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f);
+            varying vec3 vObj; varying float vWY; varying vec3 vNo; varying vec3 vVX; varying vec3 vVY; varying vec3 vVZ; uniform float uDust; uniform float uBump;
+            float h31(vec3 p){ p = fract(p * 0.1031); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
+            float vn(vec3 x){ vec3 i = floor(x), f = fract(x); f = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
               return mix(mix(mix(h31(i), h31(i + vec3(1,0,0)), f.x), mix(h31(i + vec3(0,1,0)), h31(i + vec3(1,1,0)), f.x), f.y),
-                         mix(mix(h31(i + vec3(0,0,1)), h31(i + vec3(1,0,1)), f.x), mix(h31(i + vec3(0,1,1)), h31(i + vec3(1,1,1)), f.x), f.y), f.z); }`)
+                         mix(mix(h31(i + vec3(0,0,1)), h31(i + vec3(1,0,1)), f.x), mix(h31(i + vec3(0,1,1)), h31(i + vec3(1,1,1)), f.x), f.y), f.z); }
+            float vnf(float f){ float cell = 1.0 / f; float px = length(fwidth(vObj)); float fade = clamp(1.0 - px / (cell * 0.5), 0.0, 1.0); return mix(0.5, vn(vObj * f), fade); }
+            float vnp(vec3 p, float f){ float cell = 1.0 / f; float px = length(fwidth(vObj)); float fade = clamp(1.0 - px / (cell * 0.5), 0.0, 1.0); return mix(0.5, vn(p * f), fade); }
+            float bumpH(vec3 p){ return vnp(p, 420.0) * 0.45 + vnp(p, 90.0) * 0.35 + vnp(p, 25.0) * 0.2; }`)
           .replace('#include <color_fragment>', `#include <color_fragment>
-            float patch_ = vn(vObj * 5.0) * 0.6 + vn(vObj * 17.0) * 0.4;
-            float grain = vn(vObj * 160.0);
-            diffuseColor.rgb *= 0.9 + 0.2 * patch_ + 0.06 * (grain - 0.5);
+            float patch_ = vnf(5.0) * 0.6 + vnf(17.0) * 0.4;
+            float grain = vnf(160.0);
+            float chipV = smoothstep(0.82, 0.9, vnf(55.0) * 0.7 + vnf(210.0) * 0.3) * (0.35 + 0.65 * patch_);
+            diffuseColor.rgb *= 0.9 + 0.2 * patch_ + 0.12 * (grain - 0.5);
+            diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.16, 0.16, 0.17), chipV * 0.8);
             float dust = smoothstep(1.15, 0.05, vWY) * (0.25 + 0.75 * patch_);
-            diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.66, 0.58, 0.42), dust * uDust);`);
+            diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.50, 0.45, 0.35), dust * uDust);`)
+          .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+            roughnessFactor = clamp(roughnessFactor * (0.9 + 0.2 * patch_) - chipV * 0.35 + dust * 0.1, 0.05, 1.0);`)
+          .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>
+            metalnessFactor = mix(metalnessFactor, 0.85, chipV);`)
+          .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+            { float e = 0.0012; vec3 no = normalize(vNo);
+              vec3 g = vec3(bumpH(vObj + vec3(e, 0.0, 0.0)) - bumpH(vObj - vec3(e, 0.0, 0.0)), bumpH(vObj + vec3(0.0, e, 0.0)) - bumpH(vObj - vec3(0.0, e, 0.0)), bumpH(vObj + vec3(0.0, 0.0, e)) - bumpH(vObj - vec3(0.0, 0.0, e))) / (2.0 * e);
+              g -= no * dot(g, no);
+              normal = normalize(normal - uBump * (vVX * g.x + vVY * g.y + vVZ * g.z) * (1.0 - 0.8 * chipV)); }`);
       };
       m.customProgramCacheKey = () => 'l3d-dusty';
       mats.set(key, m);
       return m;
     };
-    const OLIVE = dusty(0x6b674f, { dust: 0.38 });                         // main hull / turret paint (IDF khaki-olive)
-    const OLIVE2 = dusty(0x5e5a45);                        // armour modules, a shade darker
+    const OLIVE = dusty(0x4e4b3b, { dust: 0.3 });                         // main hull / turret paint (IDF khaki-olive)
+    const OLIVE2 = dusty(0x46433a, { dust: 0.3 });                        // armour modules, a shade darker
     const SAND = dusty(0x8a7a58, { name: 'צבע חול (סיני)' });
     const CAMO_RUB = dusty(0x1c1c1b, { r: 0.95, m: 0, dust: 0.8, name: 'גומי שריון (חצאיות)' });
     const TRACK_M = dusty(0x2a2926, { r: 0.9, m: 0.4, dust: 0.6, name: 'פלדה + רפידות גומי מאובקות' });
-    const WHEEL_M = dusty(0x3a3a38, { r: 0.85, m: 0.5, dust: 0.6, name: 'פלדה וגומי מאובקים' });
-    const RUBBER = dusty(0x18181a, { r: 0.95, m: 0, dust: 0.6, name: 'גומי' });
+    const WHEEL_M = dusty(0x3a3a38, { r: 0.85, m: 0.5, dust: 0.35, name: 'פלדה וגומי מאובקים' });
+    const RUBBER = dusty(0x141416, { r: 0.95, m: 0, dust: 0.3, name: 'גומי' });
     const STEEL = M.steel(), DSTEEL = M.darkSteel(), CIRON = M.castIron(), BLACK = M.black();
     const MARK = M.paintFlat(0xe9e6da, 0.7);
 
     // ------------------------------------------------------------------ helpers
     const B = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+    const RB = (w, h, d, r = 0.008) => G.box(w, h, d, Math.min(r, Math.min(w, h, d) * 0.3), 2); // slightly rounded box for things people touch or see up close
     const put = (geo, mat, parent, pos, rot, o = {}) => { if (rot && !Array.isArray(rot)) { o = rot; rot = null; } return mesh(geo, mat, { parent, pos: pos || undefined, rot: rot || undefined, ...o }); };
     // plan-view polygon [[x, z], …] extruded upward from y0 to y1 (optional holes)
     const planPrism = (pts, y0, y1, holes = []) => {
@@ -813,6 +827,15 @@ window.L3D_MODEL = {
       return G.tube(pts, tube, n * 2, 6);
     };
 
+    // hatch lid furniture: rubber seal, bolt ring, grab handle, hinge barrels and a latch (lid disc centred at x = cx, top at y = top)
+    const lidDetails = (lid, cx, r, top = 0.025) => {
+      put(G.torus(r - 0.012, 0.011, 6, 44, PI * 2, 'y'), M.rubber(), lid, [cx, -top + 0.004, 0]);
+      bolts(lid, Array.from({ length: 10 }, (_, i) => { const a = (i / 10) * PI * 2; return { pos: [cx + Math.cos(a) * (r - 0.055), top, Math.sin(a) * (r - 0.055)] }; }), 0.009);
+      put(G.tube([V3(cx - 0.07, top, 0), V3(cx - 0.07, top + 0.045, 0), V3(cx + 0.07, top + 0.045, 0), V3(cx + 0.07, top, 0)], 0.009, 14, 6), STEEL, lid);
+      for (const z of [-0.1, 0.1]) put(G.cyl(0.02, 0.02, 0.07, 10, 'z'), DSTEEL, lid, [cx - r - 0.005, 0, z]);
+      put(RB(0.05, 0.03, 0.08, 0.006), DSTEEL, lid, [cx + r - 0.03, top, 0]);
+      put(G.cyl(0.014, 0.014, 0.03, 10, 'y'), STEEL, lid, [cx + r - 0.03, top + 0.02, 0]);
+    };
     const hullSys = sys('hull'), armorSys = sys('armor'), turretSys = sys('turret'), gunSys = sys('gun');
     const opticsSys = sys('optics'), trophySys = sys('trophy'), tracksSys = sys('tracks'), suspSys = sys('suspension');
     const powerSys = sys('power'), crewSys = sys('crew'), equipSys = sys('equip');
@@ -912,6 +935,7 @@ window.L3D_MODEL = {
       put(G.cyl(0.04, 0.04, 0.02, 14, 'y'), DSTEEL, lidPivot, [0.15, 0.06, 0.0]);
       const dper = part(lidPivot, { he: 'פריסקופי הנהג (3)', en: 'Driver periscopes (×3)', mat: 'זכוכית רב־שכבתית בתוך בית פלדה', desc: 'שלושה פריסקופים נותנים שדה ראייה של כ־120°. הקצה הפנימי של כל אחד נראה כמו מראה, והחיצוני מוגן בזכוכית שריון.' });
       for (const a of [-0.55, 0, 0.55]) { const g = new THREE.Group(); g.position.set(0.3 + Math.cos(a) * 0.2, 0.06, Math.sin(a) * 0.2); g.rotation.y = -a; dper.add(g); put(B(0.1, 0.09, 0.16), BLACK, g, [0, 0.04, 0]); put(B(0.012, 0.055, 0.13), M.glass(0x0a1a22, 0.7), g, [0.056, 0.04, 0]); put(B(0.11, 0.015, 0.17), DSTEEL, g, [0, 0.09, 0]); }
+      lidDetails(lidPivot, 0.3, 0.3, 0.045);
       hatches.push({ obj: lidPivot, axis: 'z', sign: 1, max: 1.35, id: 'driver' });
 
       // tow eyes (front), tow shackles (rear)
@@ -1072,32 +1096,56 @@ window.L3D_MODEL = {
 
     // ================================================================== SPONSONS, FENDERS, SKIRTS
     const skirts = [];
+    const SKY = 1.36;                                        // skirt hinge height
+    const SPA = Math.atan2(0.22, 0.81);                      // slope of the sponson plate (rises toward the hull)
+    const sponY = (az) => SKY + ((1.86 - az) / 0.81) * 0.22; // sponson surface height at |z| = az
+    const vTex = K.textTexture('V', { font: '900 260px "Arial Black", Arial', color: '#f1eee4', pad: 6 });
+    const plateTex = (n) => n;
+    void plateTex;
     for (const s of [1, -1]) {
-      const sp = part(hullSys, { he: `מדף צד (ספונסון) ${sideHe(s)}`, en: `Sponson shelf (${sideEn(s)})`, mat: 'פלדה בעובי 20 מ״מ + צלעות חיזוק', desc: 'משטח מעל הזחל. מכסה את החלק העליון של השרשרת ומשמש מדף לציוד ולכלי עבודה. תחתיו עוברים גלגלי התמיכה.' });
-      put(B(6.65, 0.05, 0.75), OLIVE, sp, [-0.38, SPONSON_Y, s * 1.425], null, { name: 'shelf plate' });
-      put(B(6.65, 0.14, 0.035), OLIVE2, sp, [-0.38, SPONSON_Y - 0.04, s * 1.785], null, { name: 'outer lip' });
-      instances(B(0.04, 0.035, 0.7), DSTEEL, Array.from({ length: 15 }, (_, i) => ({ pos: [-3.5 + i * 0.46, SPONSON_Y + 0.04, s * 1.425] })), { parent: sp });
-      bolts(sp, Array.from({ length: 26 }, (_, i) => ({ pos: [-3.5 + (i >> 1) * 0.5, SPONSON_Y + 0.025, s * (i % 2 ? 1.18 : 1.68)] })), 0.011);
-      const ff = part(hullSys, { he: `כנף קדמית ${sideHe(s)}`, en: `Front fender (${sideEn(s)})`, mat: 'פלדה עם שוליים מחוזקים', desc: 'כנף שמגינה על גלגל ההנעה מפני אבנים ובוץ. על שפתה הקדמית מותקן מגן בוץ מגומי.' });
-      put(B(1.18, 0.04, 0.78), OLIVE, ff, [3.4, 1.49, s * 1.425], [0, 0, -0.07], { name: 'fender plate' });
-      put(B(1.18, 0.12, 0.03), OLIVE2, ff, [3.4, 1.43, s * 1.795], [0, 0, -0.07], { name: 'fender lip' });
+      const sp = part(hullSys, { he: `מדף צד משופע (ספונסון) ${sideHe(s)}`, en: `Sloped sponson (${sideEn(s)})`, mat: 'פלדה בעובי 20 מ״מ + צלעות חיזוק', desc: 'לוח משופע שמחבר את דופן הגוף לראש החצאית. הוא מכסה את החלק העליון של הזחל, והשיפוע שלו מסיט פגזים ונותן לצוות מקום ללכת עליו.' });
+      put(G.box(6.65, 0.05, 0.84, 0.015, 2), OLIVE, sp, [-0.375, 1.445, s * 1.455], [s * SPA, 0, 0], { name: 'sponson plate' });
+      bolts(sp, Array.from({ length: 28 }, (_, i) => { const az = i % 2 ? 1.2 : 1.72; return { pos: [-3.45 + (i >> 1) * 0.47 + 0.24, sponY(az) + 0.027, s * az], rot: [s * SPA, 0, 0] }; }), 0.01);
+      const ff = part(hullSys, { he: `כנף קדמית ${sideHe(s)}`, en: `Front fender (${sideEn(s)})`, mat: 'פלדה עם שוליים מחוזקים', desc: 'כנף משופעת שמגינה על גלגל ההנעה מפני אבנים ובוץ, ויורדת קדימה בהמשך לקו הגוף. על שפתה הקדמית מותקן מגן בוץ מגומי.' });
+      put(G.box(1.33, 0.04, 0.78, 0.012, 2), OLIVE, ff, [3.35, 1.45, s * 1.425], [0, 0, -0.227], { name: 'fender plate' });
+      put(B(1.3, 0.11, 0.03), OLIVE2, ff, [3.35, 1.4, s * 1.795], [0, 0, -0.227], { name: 'fender lip' });
+      instances(G.bolt(0.01), DSTEEL, Array.from({ length: 8 }, (_, i) => ({ pos: [2.85 + (i >> 1) * 0.36, 1.45 + 0.027 + 0.227 * (3.35 - (2.85 + (i >> 1) * 0.36)) - 0.0, s * (i % 2 ? 1.18 : 1.68)], rot: [0, 0, -0.227] })), { parent: ff });
       const rf = part(hullSys, { he: `כנף אחורית ${sideHe(s)}`, en: `Rear fender (${sideEn(s)})`, mat: 'פלדה', desc: 'כנף קטנה מעל גלגל המתח האחורי.' });
       put(B(0.85, 0.04, 0.78), OLIVE, rf, [-3.93, 1.14, s * 1.425], null, { name: 'rear fender plate' });
-      // side skirts: 6 hinged plates per side (a toggle lifts them to show the running gear)
+      // side skirts: 6 hinged plates per side (a toggle lifts them to show the running gear); the first one is the long, chamfered front plate
       for (let i = 0; i < 6; i++) {
-        const x = -3.30 + 0.4875 + i * 0.995;
-        const sk = part(armorSys, { he: `חצאית שריון ${i + 1} ${sideHe(s)}`, en: `Side skirt ${i + 1} (${sideEn(s)})`, mat: 'פלדה + שכבת גומי מרוחקת', desc: 'לוחית שריון צד על ציר עליון. מגינה על הזחל והמתלים מפני נשק נגד טנקים קל, ואפשר להרים אותה לתחזוקה.' }, { pos: [x, SPONSON_Y - 0.01, s * SKZ] });
-        put(B(0.975, 1.10, 0.05), OLIVE2, sk, [0, -0.56, 0], null, { name: 'skirt plate' });
-        for (const y of [-0.3, -0.6, -0.9]) put(B(0.9, 0.03, 0.02), OLIVE, sk, [0, y, s * 0.035]);
-        instances(G.bolt(0.012), DSTEEL, [[-0.43, -0.1], [0.43, -0.1], [-0.43, -1.0], [0.43, -1.0], [0, -0.1], [0, -1.0]].map(([bx, by]) => ({ pos: [bx, by, s * 0.026], rot: [s * PI / 2, 0, 0] })), { parent: sk });
-        put(G.tube([V3(-0.09, -0.45, s * 0.03), V3(-0.09, -0.45, s * 0.075), V3(0.09, -0.45, s * 0.075), V3(0.09, -0.45, s * 0.03)], 0.01, 12, 6), STEEL, sk);
+        const front = i === 5, half = front ? 0.67 : 0.4875, x = front ? 2.33 : -2.815 + i * 0.995;
+        const sk = part(armorSys, { he: `חצאית שריון ${i + 1} ${sideHe(s)}${front ? ' (קדמית)' : ''}`, en: `Side skirt ${i + 1} (${sideEn(s)})${front ? ' front' : ''}`, mat: 'פלדה + שכבת גומי מרוחקת', desc: front ? 'החצאית הקדמית ארוכה יותר, והפינה התחתונה שלה חתוכה בשיפוע שעוקב אחרי עליית הזחל אל גלגל ההנעה. עליה מצויר הסימן הלבן של הפלוגה.' : 'לוחית שריון צד על ציר עליון. מגינה על הזחל והמתלים מפני נשק נגד טנקים קל, ואפשר להרים אותה לתחזוקה.' }, { pos: [x, SKY, s * SKZ] });
+        if (front) put(sidePrism([[-half, 0], [half, 0], [half, -0.5], [0.22, -1.08], [-half, -1.08]], -0.03, 0.03), OLIVE2, sk, null, null, { name: 'skirt plate' });
+        else put(G.box(2 * half, 1.08, 0.06, 0.014, 2), OLIVE2, sk, [0, -0.54, 0], null, { name: 'skirt plate' });
+        put(B(2 * half - 0.12, 0.012, 0.012), DSTEEL, sk, [0, -0.5, s * 0.032]);
+        put(B(2 * half - 0.04, 0.035, 0.02), OLIVE, sk, [0, -0.025, s * 0.04]);
+        instances(G.bolt(0.012), DSTEEL, [[-half + 0.06, -0.1], [half - 0.06, -0.1], [-half + 0.06, -0.95], [half - 0.06, -0.95], [0, -0.1], [0, -0.95]].map(([bx, by]) => ({ pos: [bx, by, s * 0.03], rot: [s * PI / 2, 0, 0] })), { parent: sk });
+        put(G.tube([V3(-0.09, -0.4, s * 0.03), V3(-0.09, -0.4, s * 0.075), V3(0.09, -0.4, s * 0.075), V3(0.09, -0.4, s * 0.03)], 0.01, 12, 6), STEEL, sk);
+        if (front) { const g = new THREE.Group(); g.rotation.y = s > 0 ? 0 : PI; g.position.set(-0.15, -0.55, s * 0.034); sk.add(g); put(new THREE.PlaneGeometry(0.5, 0.5 / vTex.aspect), M.decal(vTex.tex), g, [0, 0, 0], null, { cast: false }); }
         const flap = part(sk, { he: `מגן גומי תחתון ${i + 1} ${sideHe(s)}`, en: `Rubber flap ${i + 1} (${sideEn(s)})`, mat: 'גומי מחוזק בבד', desc: 'פס גומי בתחתית החצאית. מונע אבק, וסופג מכות כשהטנק גורר חול ואבנים.' });
-        put(B(0.975, 0.2, 0.02), CAMO_RUB, flap, [0, -1.2, 0]);
-        put(B(0.9, 0.012, 0.015), DSTEEL, flap, [0, -1.12, s * 0.014]);
+        put(G.box(front ? 0.84 : 2 * half, 0.18, 0.02, 0.008, 2), CAMO_RUB, flap, [front ? -0.25 : 0, -1.17, 0]);
         skirts.push(sk); sk.userData.s = s;
       }
       const hg = part(armorSys, { he: `פס צירים לחצאיות ${sideHe(s)}`, en: `Skirt hinge bar (${sideEn(s)})`, mat: 'פלדה מחוסמת', desc: 'ציר ארוך לאורך שולי המדף שעליו נתלות כל שש החצאיות.' });
-      put(G.cyl(0.018, 0.018, 6.0, 10, 'x'), STEEL, hg, [-0.38, SPONSON_Y - 0.01, s * SKZ]);
+      put(G.cyl(0.018, 0.018, 6.0, 10, 'x'), STEEL, hg, [-0.375, SKY, s * SKZ]);
+    }
+
+    // ================================================================== HULL + TURRET SMALL DETAILS
+    {
+      const dt = part(hullSys, { he: 'פנלים ותפרי סיפון המנוע', en: 'Engine-deck panel seams & bolts', mat: 'פלדה, ברגי ריתוך ובורגי פנל', desc: 'קווי המפגש בין לוחות הסיפון עם שורות ברגים. כל פנל נפתח לתחזוקה, ושורות הברגים נועדו לאטום מפני אבק וגז.' });
+      for (const x of [1.72, 2.25, 2.95, 3.32]) {
+        put(B(0.012, 0.005, 1.9), DSTEEL, dt, [x, deckY(x) + 0.003, 0], [0, 0, DECK_A]);
+        bolts(dt, Array.from({ length: 13 }, (_, i) => ({ pos: [x + 0.03, deckY(x + 0.03) + 0.002, -0.9 + i * 0.15], rot: [0, 0, DECK_A] })), 0.008);
+      }
+      const hd = part(hullSys, { he: 'ידיות אחיזה וטבעות קשירה (סיפון)', en: 'Deck grab handles & tie-down rings', mat: 'פלדה מחושלת', desc: 'ידיות לצוות שעולה על הגוף, וטבעות קשירה לכבלים ולציוד. כל אחת רתומה לקורה שמתחת ללוח.' });
+      for (const [x, z] of [[1.75, 0.92], [1.75, -0.92], [3.55, 0.66], [3.55, -0.66]]) { const h = new THREE.Group(); h.position.set(x, deckY(x) + 0.004, z); h.rotation.set(0, 0, DECK_A); hd.add(h); put(G.tube([V3(-0.07, 0, 0), V3(-0.07, 0.045, 0), V3(0.07, 0.045, 0), V3(0.07, 0, 0)], 0.009, 14, 6), STEEL, h); }
+      const sh = part(hullSys, { he: 'ידיות אחיזה על הספונסון (12)', en: 'Sponson grab handles (×12)', mat: 'פלדה מגולוונת', desc: 'ידיות לאורך שפת הספונסון שעליהן אוחזים כשעולים לצריח או מורידים ציוד.' });
+      for (const s of [1, -1]) for (let i = 0; i < 6; i++) { const x = -3.1 + i * 1.0, h = new THREE.Group(); h.position.set(x, sponY(1.76) + 0.02, s * 1.76); h.rotation.x = s * SPA; sh.add(h); put(G.tube([V3(-0.09, 0, 0), V3(-0.09, 0.05, 0), V3(0.09, 0.05, 0), V3(0.09, 0, 0)], 0.009, 14, 6), STEEL, h); }
+      const hl = part(armorSys, { he: 'לשוניות ציר וקפיצי נעילה לחצאיות', en: 'Skirt hinge lugs & hold-open springs', mat: 'פלדה מחוסמת', desc: 'לשוניות על ציר החצאית וקפיץ נעילה שמחזיק אותה סגורה בנסיעה ופתוחה בתחזוקה.' });
+      for (const s of [1, -1]) for (let i = 0; i < 6; i++) { const front = i === 5, x = front ? 2.33 : -2.815 + i * 0.995, half = front ? 0.67 : 0.4875; for (const dx of [-half + 0.1, half - 0.1]) { put(B(0.07, 0.05, 0.05), DSTEEL, hl, [x + dx, SKY + 0.01, s * (SKZ + 0.03)]); put(G.cyl(0.012, 0.012, 0.09, 8, 'z'), STEEL, hl, [x + dx, SKY + 0.01, s * (SKZ + 0.03)]); } }
+      const rg = part(hullSys, { he: 'ידיות אחיזה אחוריות (2)', en: 'Rear grab handles (×2)', mat: 'פלדה', desc: 'ידיות לצד הדלת האחורית לצוות שנכנס ויוצא בריצה.' });
+      for (const s of [1, -1]) put(G.tube([V3(-3.86, 0.8, s * 0.95), V3(-3.93, 0.8, s * 0.95), V3(-3.93, 1.3, s * 0.95), V3(-3.86, 1.3, s * 0.95)], 0.012, 16, 6), STEEL, rg);
     }
 
     // ================================================================== POWER PACK (front-right) + driver compartment (front-left)
@@ -1161,10 +1209,41 @@ window.L3D_MODEL = {
     // ================================================================== TURRET
     const sub = (parent, sysId, info, o) => { const p = part(parent, info, o); p.userData.sysOverride = sysId; return p; };
     const faceRot = (n) => { const e = new THREE.Euler().setFromQuaternion(new THREE.Quaternion().setFromUnitVectors(V3(0, 1, 0), V3(...n).normalize())); return [e.x, e.y, e.z]; };
-    const TB = 0.04, TR = 0.72;                           // turret body bottom / top (local y)
-    const slopeTop = (g) => { const p = g.attributes.position; for (let i = 0; i < p.count; i++) { if (p.getY(i) > TR - 0.01) p.setY(i, p.getY(i) - 0.22 * clamp((p.getX(i) - 1.0) / 1.1)); } g.computeVertexNormals(); return g; };
-    const OUT_R = [[-3.10, 0.92], [-2.85, 1.12], [-1.2, 1.38], [0.2, 1.38], [1.0, 1.13], [1.35, 1.02], [2.10, 0.66]];
-    const OUT = [...OUT_R, ...OUT_R.slice().reverse().map(([x, z]) => [x, -z])];
+    const TB = 0.04, TR = 0.68;                           // turret body bottom / main roof height (local y)
+    // turret stations: [x, half-width at the bottom, half-width at the roof edge, roof height]. Sides lean inward ~35°.
+    const ST = [[-3.10, 0.90, 0.78, 0.60], [-2.95, 1.02, 0.86, 0.66], [-1.60, 1.42, 0.98, 0.68], [-0.40, 1.48, 1.02, 0.68], [0.50, 1.40, 0.98, 0.64], [1.20, 1.10, 0.80, 0.54], [1.70, 0.88, 0.66, 0.44], [2.10, 0.70, 0.56, 0.34]];
+    const stAt = (x) => {
+      x = clamp(x, ST[0][0], ST[ST.length - 1][0]);
+      for (let i = 0; i < ST.length - 1; i++) if (x <= ST[i + 1][0]) { const t = (x - ST[i][0]) / (ST[i + 1][0] - ST[i][0]); return [1, 2, 3].map((k) => lerp(ST[i][k], ST[i + 1][k], t)); }
+      return ST[ST.length - 1].slice(1);
+    };
+    const roofY = (x) => stAt(x)[2];
+    // point on the sloping side of the turret: side = ±1, f = 0 (bottom) … 1 (roof edge)
+    const surfPt = (side, x, f) => { const [wb, wt, yt] = stAt(x); return V3(x, TB + f * (yt - TB), side * lerp(wb, wt, f)); };
+    const surfN = (side, x, f) => { const e = 0.01; const dx = surfPt(side, x + e, f).sub(surfPt(side, x - e, f)), dy = surfPt(side, x, f + e).sub(surfPt(side, x, f - e)); return dx.cross(dy).normalize().multiplyScalar(side); };
+    // quads → one BufferGeometry with flat normals oriented away from `inside`
+    const quadsGeo = (quads, inside) => {
+      const pos = [], nor = [];
+      for (let q of quads) {
+        const n = q[1].clone().sub(q[0]).cross(q[3].clone().sub(q[0])).normalize();
+        const c = q.reduce((a, v) => a.add(v), V3()).multiplyScalar(0.25);
+        if (inside && n.dot(c.sub(inside)) < 0) q = q.slice().reverse(), n.negate();
+        for (const i of [0, 1, 2, 0, 2, 3]) { pos.push(q[i].x, q[i].y, q[i].z); nor.push(n.x, n.y, n.z); }
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+      g.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(pos.length / 3 * 2), 2));
+      return g;
+    };
+    // a raised armour module on the sloping side: corners on the surface, pushed out by t along the normal
+    const modGeo = (side, xa, xb, fa, fb, t) => {
+      const c = [[xa, fa], [xb, fa], [xb, fb], [xa, fb]].map(([x, f]) => surfPt(side, x, f));
+      const n = surfN(side, (xa + xb) / 2, (fa + fb) / 2);
+      const cen = c.reduce((a, v) => a.add(v), V3()).multiplyScalar(0.25);
+      const o = c.map((p) => p.clone().addScaledVector(n, t).lerp(cen.clone().addScaledVector(n, t), 0.06));
+      const mid = c.reduce((a, v) => a.add(v), V3()).multiplyScalar(0.25).addScaledVector(n, -0.2);
+      return { geo: quadsGeo([o, [o[0], o[1], c[1], c[0]], [o[1], o[2], c[2], c[1]], [o[2], o[3], c[3], c[2]], [o[3], o[0], c[0], c[3]]], mid), n, o, c };
+    };
     const tur = part(turretSys, { he: 'צריח (מכלול)', en: 'Turret assembly', mat: 'פלדת שריון + מודולי שריון מרוחק', desc: 'הצריח של המרכבה ארוך ורחב, בצורת טריז. הוא מרוחק מקדמת הגוף כדי לשבת מעל תא הלחימה האחורי, והתא שמתחתיו משמש גם לתחמושת.' }, { pos: [RING.x, TUR_Y, 0] });
     // ---- turret shell, armour, hatches
     let cup, ld;
@@ -1178,55 +1257,57 @@ window.L3D_MODEL = {
       const base = part(tur, { he: 'חצאית הצריח', en: 'Turret skirt', mat: 'פלדת שריון', desc: 'הטבעת התחתונה של הצריח, מכסה את המסב ומונעת משברי פגזים לחדור ברווח שבין הצריח לגוף.' });
       put(G.cyl(RING.r + 0.07, RING.r + 0.07, 0.16, 48, 'y', true), OLIVE, base, [0, 0.08, 0]);
 
-      // shell: rear (flat roof) + front (sloped roof)
-      const shell = part(tur, { he: 'מעטפת הצריח', en: 'Turret shell', mat: 'פלדת שריון יצוקה ומרותכת', desc: 'המעטפת המרכזית של הצריח, בצורת טריז ארוך. החלק האחורי רחב ומכיל תחמושת ומכשירים, והחזית צרה ומשופעת כדי להסיט פגזים.' });
-      const rearPoly = [...OUT_R.slice(0, 5), ...OUT_R.slice(0, 5).reverse().map(([x, z]) => [x, -z])];
-      put(planPrism(rearPoly, TB, TR), OLIVE, shell, null, null, { name: 'rear body' });
-      const frontPoly = [[1.0, 1.13], [1.35, 1.02], [2.10, 0.66], [2.10, -0.66], [1.35, -1.02], [1.0, -1.13]];
-      put(slopeTop(planPrism(frontPoly, TB, TR)), OLIVE, shell, null, null, { name: 'front wedge' });
-      const insetPoly = (pts, k) => pts.map(([x, z]) => [x * k - 0.0, z * k]);
-      const roofP = part(tur, { he: 'לוח גג הצריח', en: 'Turret roof plate', mat: 'פלדת שריון, 40 מ״מ (הערכה)', desc: 'לוח הגג הדק יחסית, מוגן בשריון מרוחק מעליו. מעליו מורכבים הצוהרים, המשגרים והאנטנות.' });
-      put(planPrism(insetPoly(rearPoly, 0.965).map(([x, z]) => [x + (x - 1) * 0.0, z]), TR, TR + 0.05), OLIVE2, roofP, null, null, { name: 'roof rear' });
-      put(slopeTop(planPrism(insetPoly(frontPoly, 0.965).map(([x, z]) => [x, z]), TR, TR + 0.05)), OLIVE2, roofP, null, null, { name: 'roof front' });
-      // weld seam bead where the roof meets the shell
-      put(G.tube([...rearPoly.slice(0, 5), [1.0, 1.0]].map(([x, z]) => V3(x * 0.99, TR + 0.012, z * 0.97)), 0.006, 40, 5), DSTEEL, roofP);
-
-      // side + rear modular armour (bolted plates with visible bolts)
-      const mod = (edge, n, y0, y1, label) => {
-        for (const side of [1, -1]) {
-          const p0 = [edge[0][0], edge[0][1] * side], p1 = [edge[1][0], edge[1][1] * side];
-          for (let k = 0; k < n; k++) {
-            const a = [lerp(p0[0], p1[0], k / n), lerp(p0[1], p1[1], k / n)], b = [lerp(p0[0], p1[0], (k + 1) / n - 0.012), lerp(p0[1], p1[1], (k + 1) / n - 0.012)];
-            const sl = slabAlong(a, b, 0.045, 0.08, y0, y1, side);
-            const mp = part(armorSys, { he: `מודול שריון ${label} ${k + 1} ${sideHe(side)}`, en: `Armour module ${label} ${k + 1} (${sideEn(side)})`, mat: 'פלדה + שכבות קרמיקה ופולימר (הערכה)', desc: 'לוח שריון מודולרי בקופסת פלדה. אם נפגע, מחליפים רק אותו ולא את כל הצריח — עיקרון המודולריות של המרכבה.' });
-            tur.add(mp); mp.userData.sysOverride = 'armor';
-            put(sl.geo, OLIVE2, mp, sl.pos, sl.rot, { name: 'module box' });
-            const nrm = [sl.nx, 0, sl.nz], bl = [];
-            for (const u of [0.18, 0.5, 0.82]) for (const yy of [y0 + 0.05, y1 - 0.05]) bl.push({ pos: [sl.cx - 0 + (u - 0.5) * sl.L * Math.cos(sl.ang) + nrm[0] * 0.04, yy, sl.cz + (u - 0.5) * sl.L * Math.sin(sl.ang) + nrm[2] * 0.04], rot: faceRot(nrm) });
-            bolts(mp, bl, 0.012);
-            put(B(0.012, y1 - y0 - 0.08, 0.012), CIRON, mp, [sl.cx + nrm[0] * 0.04, (y0 + y1) / 2, sl.cz + nrm[2] * 0.04], sl.rot);
-          }
+      // shell: lofted between the bottom outline and the (narrower, lower) roof outline, so the sides lean inward
+      const shell = part(tur, { he: 'מעטפת הצריח', en: 'Turret shell', mat: 'פלדת שריון יצוקה ומרותכת', desc: 'המעטפת המרכזית של הצריח, בצורת טריז נמוך. הדפנות נוטות פנימה בכ־35° והגג משתפל קדימה, כדי להסיט פגזים כלפי מעלה.' });
+      {
+        const q = [], last = ST.length - 1;
+        for (let i = 0; i < last; i++) {
+          const [x0, b0, t0, y0] = ST[i], [x1, b1, t1, y1] = ST[i + 1];
+          q.push([V3(x0, TB, b0), V3(x1, TB, b1), V3(x1, y1, t1), V3(x0, y0, t0)]);
+          q.push([V3(x1, TB, -b1), V3(x0, TB, -b0), V3(x0, y0, -t0), V3(x1, y1, -t1)]);
+          q.push([V3(x0, y0, -t0), V3(x0, y0, t0), V3(x1, y1, t1), V3(x1, y1, -t1)]);
         }
-      };
-      mod([[-2.85, 1.12], [-1.2, 1.38]], 3, 0.1, 0.66, 'אחורי');
-      mod([[-1.2, 1.38], [0.2, 1.38]], 2, 0.1, 0.66, 'אמצעי');
-      mod([[0.2, 1.38], [1.35, 1.02]], 2, 0.1, 0.62, 'קדמי');
-      mod([[1.35, 1.02], [2.10, 0.66]], 1, 0.1, 0.46, 'לחי');
+        const [xf, bf, tf, yf] = ST[last], [xr, br, tr, yr] = ST[0];
+        q.push([V3(xf, TB, bf), V3(xf, TB, -bf), V3(xf, yf, -tf), V3(xf, yf, tf)]);
+        q.push([V3(xr, TB, -br), V3(xr, TB, br), V3(xr, yr, tr), V3(xr, yr, -tr)]);
+        put(quadsGeo(q, V3(-0.5, 0.3, 0)), OLIVE, shell, null, null, { name: 'lofted shell' });
+      }
+      // weld seams along the roof edge + roof panel lines
+      const roofP = part(tur, { he: 'גג הצריח (תפרי ריתוך וקווי פנלים)', en: 'Turret roof (weld seams & panel lines)', mat: 'פלדת שריון, 40 מ״מ (הערכה)', desc: 'הגג בנוי מלוחות מרותכים; תפרי הריתוך נראים כרצועות בולטות. הגג משתפל קדימה כדי להקטין את הסיכוי לפגיעה ישירה.' });
+      for (const sd of [1, -1]) put(G.tube(ST.map(([x, , t, y]) => V3(x, y + 0.004, sd * (t - 0.012))), 0.007, 50, 5), DSTEEL, roofP);
+      for (const x of [-2.2, -1.9, 0.0, 0.3]) put(B(0.014, 0.008, 2 * stAt(x)[1] - 0.06), DSTEEL, roofP, [x, roofY(x) + 0.004, 0]);
+      bolts(roofP, Array.from({ length: 40 }, (_, i) => { const x = -2.7 + (i >> 1) * 0.145; return { pos: [x, roofY(x) + 0.004, (i % 2 ? 1 : -1) * (stAt(x)[1] - 0.09)] }; }), 0.009);
+
+      // side + rear modular armour, following the slope: 2 rows at the rear and middle, 1 row at the front
+      const bx = [[-2.9, -2.1, 2], [-2.1, -1.3, 2], [-1.3, -0.5, 2], [-0.5, 0.3, 2], [0.3, 1.0, 1], [1.0, 1.55, 1], [1.55, 2.05, 1]];
+      let mi = 0;
+      for (const side of [1, -1]) {
+        for (const [xa, xb, rows] of bx) for (let r = 0; r < rows; r++) {
+          const fa = rows === 2 ? (r ? 0.54 : 0.09) : 0.11, fb = rows === 2 ? (r ? 0.93 : 0.51) : 0.9;
+          const m = modGeo(side, xa + 0.012, xb - 0.012, fa, fb, 0.07);
+          const mp = part(armorSys, { he: `מודול שריון ${++mi} ${sideHe(side)}`, en: `Armour module ${mi} (${sideEn(side)})`, mat: 'פלדה + שכבות קרמיקה ופולימר (הערכה)', desc: 'לוח שריון מודולרי בקופסת פלדה על דופן הצריח. אם נפגע, מחליפים רק אותו ולא את כל הצריח — עיקרון המודולריות של המרכבה.' });
+          tur.add(mp); mp.userData.sysOverride = 'armor';
+          put(m.geo, OLIVE2, mp, null, null, { name: 'module box' });
+          const bl = [];
+          for (const [u, w] of [[0.1, 0.12], [0.5, 0.12], [0.9, 0.12], [0.1, 0.88], [0.5, 0.88], [0.9, 0.88]]) { const p = m.o[0].clone().lerp(m.o[1], u).lerp(m.o[3].clone().lerp(m.o[2], u), w); bl.push({ pos: p.toArray(), rot: faceRot(m.n.toArray()) }); }
+          bolts(mp, bl, 0.011);
+        }
+      }
       // rear plate of the bustle
       const rp = part(tur, { he: 'לוח אחורי של הצריח', en: 'Bustle rear plate', mat: 'פלדת שריון', desc: 'הקיר האחורי של הצריח, שמגן על התחמושת והציוד. בדומה לדלת הגוף, הוא מחולק לפנלים שאפשר לפרק.' });
-      put(B(0.07, 0.68, 1.84), OLIVE, rp, [-3.135, 0.38, 0]);
-      for (let i = 0; i < 4; i++) put(B(0.03, 0.6, 0.04), OLIVE2, rp, [-3.18, 0.38, -0.69 + i * 0.46]);
-      bolts(rp, Array.from({ length: 16 }, (_, i) => ({ pos: [-3.176, 0.1 + (i % 2) * 0.56, -0.8 + (i >> 1) * 0.23], rot: [0, 0, PI / 2] })), 0.012);
+      put(B(0.05, 0.46, 1.5), OLIVE2, rp, [-3.125, 0.32, 0]);
+      for (let i = 0; i < 4; i++) put(B(0.03, 0.4, 0.04), OLIVE, rp, [-3.16, 0.32, -0.56 + i * 0.37]);
+      bolts(rp, Array.from({ length: 16 }, (_, i) => ({ pos: [-3.152, 0.14 + (i % 2) * 0.36, -0.7 + (i >> 1) * 0.2], rot: [0, 0, PI / 2] })), 0.011);
       // chain curtain under the bustle ("ball-and-chain")
       const ch = sub(tur, 'armor', { he: 'וילון שרשראות אחורי', en: 'Bustle chain curtain', mat: 'פלדה מגולוונת + משקולות', desc: 'כ־30 שרשראות עם כדורי משקל תלויות בחלקו האחורי של הצריח. הן מפעילות את תרמילי הנפץ של טילי נ״ט לפני שהם פוגעים בשריון. פתרון פשוט, זול ויעיל.' });
-      put(G.cyl(0.014, 0.014, 1.86, 10, 'z'), DSTEEL, ch, [-3.17, 0.14, 0]);
+      put(G.cyl(0.014, 0.014, 1.7, 10, 'z'), DSTEEL, ch, [-3.17, 0.14, 0]);
       const links = [], balls = [];
-      for (let c = 0; c < 31; c++) { const z = -0.9 + c * 0.06; for (let k = 0; k < 5; k++) links.push({ pos: [-3.17, 0.1 - k * 0.035, z], rot: [0, k % 2 ? 0 : PI / 2, 0], scale: 1 }); balls.push({ pos: [-3.17, 0.1 - 5 * 0.035 - 0.012, z] }); }
+      for (let c = 0; c < 29; c++) { const z = -0.84 + c * 0.06; for (let k = 0; k < 5; k++) links.push({ pos: [-3.17, 0.1 - k * 0.035, z], rot: [0, k % 2 ? 0 : PI / 2, 0], scale: 1 }); balls.push({ pos: [-3.17, 0.1 - 5 * 0.035 - 0.012, z] }); }
       instances(G.torus(0.012, 0.0035, 5, 10, PI * 2, 'z'), STEEL, links, { parent: ch });
       instances(G.sphere(0.014, 10, 8), M.metal(0x44464a, 0.5), balls, { parent: ch });
 
       // turret-mounted: cupola, loader hatch (hatches belong to the turret system)
-      cup = part(tur, { he: 'כיפת המפקד', en: 'Commander cupola', mat: 'פלדת שריון יצוקה', desc: 'המפקד יושב מימין. מסביבו 8 פריסקופים ושמשות שריון, כך שיכול לצפות 360° בלי להוציא את הראש. אפשר גם לפתוח את הצוהר ולצאת החוצה.' }, { pos: [-0.55, TR + 0.05, 0.62] });
+      cup = part(tur, { he: 'כיפת המפקד', en: 'Commander cupola', mat: 'פלדת שריון יצוקה', desc: 'המפקד יושב מימין. מסביבו 8 פריסקופים ושמשות שריון, כך שיכול לצפות 360° בלי להוציא את הראש. אפשר גם לפתוח את הצוהר ולצאת החוצה.' }, { pos: [-0.9, TR + 0.02, 0.62] });
       put(G.cyl(0.36, 0.4, 0.13, 36, 'y'), OLIVE, cup, [0, 0.065, 0]);
       put(G.cyl(0.33, 0.33, 0.03, 36, 'y'), OLIVE2, cup, [0, 0.145, 0]);
       put(G.torus(0.285, 0.012, 8, 40, PI * 2, 'y'), M.rubber(), cup, [0, 0.162, 0]);
@@ -1235,24 +1316,28 @@ window.L3D_MODEL = {
       put(G.cyl(0.29, 0.3, 0.045, 36, 'y'), OLIVE, cl, [0.3, 0.0, 0]);
       put(G.cyl(0.08, 0.1, 0.03, 20, 'y'), OLIVE2, cl, [0.3, 0.04, 0]);
       put(G.torus(0.045, 0.01, 8, 18, PI, 'y'), DSTEEL, cl, [0.55, 0.045, 0]);
+      lidDetails(cl, 0.3, 0.29, 0.022);
       hatches.push({ obj: cl, axis: 'z', sign: 1, max: 1.3, id: 'cmdr' });
       // loader hatch
-      ld = part(tur, { he: 'צוהר הטען', en: 'Loader hatch', mat: 'פלדת שריון', desc: 'הטען יושב משמאל. הצוהר המרובע נפתח לאחור ומאפשר לו לצאת ולטעון בעמידה.' }, { pos: [-0.62, TR + 0.05, -0.62] });
+      ld = part(tur, { he: 'צוהר הטען', en: 'Loader hatch', mat: 'פלדת שריון', desc: 'הטען יושב משמאל. הצוהר המרובע נפתח לאחור ומאפשר לו לצאת ולטעון בעמידה.' }, { pos: [-1.0, TR + 0.02, -0.62] });
       put(G.cyl(0.33, 0.35, 0.09, 36, 'y'), OLIVE, ld, [0, 0.045, 0]);
       const lc = part(ld, { he: 'מכסה צוהר הטען', en: 'Loader hatch lid', mat: 'פלדה + אטם', desc: 'מכסה עם ציר אחורי ומנעול פנימי.' }, { pos: [-0.28, 0.1, 0] });
       put(G.cyl(0.27, 0.27, 0.04, 32, 'y'), OLIVE, lc, [0.28, 0.0, 0]);
       put(G.torus(0.04, 0.009, 8, 16, PI, 'y'), DSTEEL, lc, [0.5, 0.04, 0]);
+      lidDetails(lc, 0.28, 0.27, 0.02);
       hatches.push({ obj: lc, axis: 'z', sign: 1, max: 1.25, id: 'loader' });
+      const rgh = part(tur, { he: 'ידיות אחיזה על הגג (6)', en: 'Roof grab handles (×6)', mat: 'פלדה מצופה', desc: 'ידיות לצוות שנע על גג הצריח ומטפס אל הצוהרים, ולהחזקה בזמן נסיעה בשטח.' });
+      for (const [x, z] of [[-1.7, 0.75], [-1.7, -0.75], [-0.4, 0.05], [-2.3, 0.0], [0.3, -0.5], [0.3, 0.7]]) put(G.tube([V3(-0.09, 0, 0), V3(-0.09, 0.05, 0), V3(0.09, 0.05, 0), V3(0.09, 0, 0)], 0.009, 14, 6), STEEL, rgh, [x, roofY(x) + 0.004, z]);
 
-      // smoke grenade dischargers (2 banks of 8)
-      const edge3 = [[1.35, 1.02], [2.10, 0.66]];
-      for (const s of [1, -1]) {
-        const p0 = [edge3[0][0], edge3[0][1] * s], p1 = [edge3[1][0], edge3[1][1] * s], sl = slabAlong(p0, p1, 0.2, 0.05, 0.1, 0.2, s);
-        const bank = part(equipSys, { he: `משגר רימוני עשן ${sideHe(s)} (8)`, en: `Smoke launcher (${sideEn(s)}, ×8)`, mat: 'פלדה + עדשות', desc: 'שמונה קנים שמשגרים רימוני עשן קדימה, ליצירת מסך מגן. הם מכוונים כך שהעשן יתפשט לפני הטנק.' });
+      // smoke grenade dischargers (2 banks of 8) on the front cheeks
+      for (const sd of [1, -1]) {
+        const pt = surfPt(sd, 1.62, 0.5), n = surfN(sd, 1.62, 0.5);
+        const bank = part(equipSys, { he: `משגר רימוני עשן ${sideHe(sd)} (8)`, en: `Smoke launcher (${sideEn(sd)}, ×8)`, mat: 'פלדה + עדשות', desc: 'שמונה קנים שמשגרים רימוני עשן קדימה, ליצירת מסך מגן. הם מכוונים כך שהעשן יתפשט לפני הטנק.' });
         tur.add(bank); bank.userData.sysOverride = 'equip';
-        bank.position.set(sl.cx + sl.nx * 0.02, 0.42, sl.cz + sl.nz * 0.02); bank.rotation.y = Math.atan2(-sl.nz, sl.nx);
-        put(B(0.2, 0.05, 0.5), DSTEEL, bank, [0, -0.07, 0]);
-        for (let r = 0; r < 2; r++) for (let c = 0; c < 4; c++) { const t = put(G.cyl(0.037, 0.037, 0.2, 14, 'x'), M.metal(0x34373b, 0.5), bank, [0.04, r * 0.085 + 0.0, -0.18 + c * 0.12], [0, 0, 0.6 * 0.0]); void t; put(G.cyl(0.03, 0.03, 0.01, 12, 'x'), BLACK, bank, [0.145, r * 0.085, -0.18 + c * 0.12]); }
+        bank.position.copy(pt).addScaledVector(n, 0.13); bank.rotation.y = Math.atan2(-n.z, n.x);
+        put(B(0.12, 0.05, 0.5), DSTEEL, bank, [-0.04, -0.07, 0]);
+        for (let r = 0; r < 2; r++) for (let c = 0; c < 4; c++) { put(G.cyl(0.037, 0.037, 0.2, 14, 'x'), M.metal(0x34373b, 0.5), bank, [0.04, r * 0.085, -0.18 + c * 0.12]); put(G.cyl(0.03, 0.03, 0.01, 12, 'x'), BLACK, bank, [0.145, r * 0.085, -0.18 + c * 0.12]); }
+        put(B(0.02, 0.2, 0.5), DSTEEL, bank, [-0.07, 0.04, 0]);
       }
     }
 
@@ -1261,18 +1346,21 @@ window.L3D_MODEL = {
     {
       const barrelMat = M.metal(0x2c2f33, 0.45);
       const mant = sub(gunG, 'gun', { he: 'מגן תותח (מנטלט)', en: 'Gun mantlet', mat: 'פלדת שריון יצוקה', desc: 'הגוש הכבד שמגן על פתח התותח בחזית הצריח. הוא נע יחד עם התותח ומשמש גם כשריון, והצורה שלו מסיטה פגזים כלפי מעלה.' });
-      put(sidePrism([[0.05, -0.27], [0.32, -0.22], [0.48, 0.0], [0.34, 0.3], [0.05, 0.28]], -0.52, 0.52), OLIVE2, mant, null, null, { name: 'mantlet block' });
-      put(G.cyl(0.13, 0.13, 0.16, 28, 'x'), M.rubber(), mant, [0.5, 0.0, 0.0], null, { name: 'dust boot' });
-      bolts(mant, [[-0.4, 0.1], [0.4, 0.1], [-0.4, -0.15], [0.4, -0.15]].map(([z, y]) => ({ pos: [0.2, y + 0.04, z], rot: [0, 0, 0] })), 0.012);
+      put(sidePrism([[0.0, -0.2], [0.3, -0.16], [0.5, 0.0], [0.38, 0.3], [0.0, 0.3]], -0.5, 0.5), OLIVE2, mant, null, null, { name: 'mantlet block' });
+      put(sidePrism([[0.0, 0.3], [0.38, 0.3], [0.52, 0.12], [0.5, 0.0], [0.0, 0.0]], -0.58, -0.5), OLIVE, mant, null, null, { name: 'mantlet cheek L' });
+      put(sidePrism([[0.0, 0.3], [0.38, 0.3], [0.52, 0.12], [0.5, 0.0], [0.0, 0.0]], 0.5, 0.58), OLIVE, mant, null, null, { name: 'mantlet cheek R' });
+      put(G.cyl(0.13, 0.115, 0.16, 28, 'x'), M.rubber(), mant, [0.58, 0.0, 0.0], null, { name: 'dust boot' });
+      bolts(mant, [[-0.4, 0.1], [0.4, 0.1], [-0.4, -0.1], [0.4, -0.1], [-0.2, 0.2], [0.2, 0.2], [-0.3, 0.0], [0.3, 0.0]].map(([z, y]) => ({ pos: [0.3 + (y < 0.0 ? 0.0 : 0.0), y + 0.08, z], rot: [0, 0, -PI / 2 + 0.0] })), 0.013);
       const tube = sub(gunG, 'gun', { he: 'קנה התותח', en: 'Gun barrel', mat: 'פלדת תותחים מצופה כרום', desc: 'קנה חלק באורך כ־5.5 מ׳ (מתוכם חלק בתוך הצריח). חלק, בלי חריצים, כי הפגז הוא חץ שמסתובב בעצמו מהמייצבים שבגופו.' });
-      put(G.cyl(0.067, 0.063, GUN.len - 0.5, 32, 'x'), barrelMat, tube, [0.5 + (GUN.len - 0.5) / 2, 0, 0], null, { name: 'tube' });
+      put(G.cyl(0.075, 0.066, GUN.len - 0.5, 36, 'x'), barrelMat, tube, [0.5 + (GUN.len - 0.5) / 2, 0, 0], null, { name: 'tube' });
       put(G.cyl(0.095, 0.095, 0.7, 28, 'x'), M.darkSteel(), tube, [0.35, 0, 0], null, { name: 'cradle sleeve' });
       const sleeve = sub(gunG, 'gun', { he: 'שרוול תרמי', en: 'Thermal sleeve', mat: 'סיבי זכוכית בשרוול דו־שכבתי', desc: 'שרוול סיבי זכוכית שמשווה את הטמפרטורה סביב הקנה. בלי שרוול, שמש חמה או גשם יעקמו את הקנה בכמה מילימטרים ויקלקלו את דיוק האש.' });
-      put(G.cyl(0.092, 0.092, 2.2, 32, 'x'), dusty(0x4a4a3d, { r: 0.9, m: 0.05, name: 'סיבי זכוכית' }), sleeve, [1.7, 0, 0], null, { name: 'sleeve' });
-      instances(G.torus(0.094, 0.006, 6, 28, PI * 2, 'x'), M.darkChrome(), Array.from({ length: 9 }, (_, i) => ({ pos: [0.7 + i * 0.275, 0, 0] })), { parent: sleeve });
+      put(G.cyl(0.108, 0.108, 3.0, 36, 'x'), dusty(0x4b4d3f, { r: 0.9, m: 0.05, dust: 0.25, name: 'סיבי זכוכית' }), sleeve, [2.05, 0, 0], null, { name: 'sleeve' });
+      instances(G.torus(0.11, 0.0065, 6, 32, PI * 2, 'x'), M.darkChrome(), Array.from({ length: 10 }, (_, i) => ({ pos: [0.7 + i * 0.31, 0, 0] })), { parent: sleeve });
+      instances(B(0.05, 0.02, 0.03), M.darkChrome(), Array.from({ length: 10 }, (_, i) => ({ pos: [0.7 + i * 0.31, 0.112, 0] })), { parent: sleeve });
       const evac = sub(gunG, 'gun', { he: 'מפלט גזים (איבקואטור)', en: 'Bore evacuator', mat: 'פלדה', desc: 'מיכל גזים עם צינורות כיוונים. אחרי כל ירייה הוא מנקז את אבק השריפה מהקנה, כדי שלא יזרום לתוך הצריח בעת פתיחת הבריח.' });
-      put(G.lathe([[0.066, -0.26], [0.09, -0.22], [0.105, -0.14], [0.105, 0.14], [0.09, 0.22], [0.066, 0.26]], 28, 'x'), dusty(0x3c3d36, { r: 0.7, m: 0.5, name: 'פלדה צבועה' }), evac, [3.15, 0, 0], null, { name: 'evacuator' });
-      for (const a of [0.7, -0.7, 2.4, -2.4]) put(G.cyl(0.012, 0.012, 0.2, 8, 'x'), STEEL, evac, [3.12, Math.sin(a) * 0.1, Math.cos(a) * 0.1], [0, 0, 0.16]);
+      put(G.cyl(0.085, 0.085, 0.16, 28, 'x'), dusty(0x3c3d36, { r: 0.7, m: 0.5, name: 'פלדה צבועה' }), evac, [3.62, 0, 0], null, { name: 'evacuator' });
+      for (const a of [0.7, -0.7, 2.4, -2.4]) put(G.cyl(0.012, 0.012, 0.16, 8, 'x'), STEEL, evac, [3.62, Math.sin(a) * 0.085, Math.cos(a) * 0.085], [0, 0, 0.0]);
       const mrs = sub(gunG, 'gun', { he: 'מערכת כיול לוע (MRS)', en: 'Muzzle reference system', mat: 'פלדה + מראה אופטית', desc: 'מראה קטנה בקצה הקנה שמשקפת קרן לכוונת. האופטיקה מודדת סטייה של הקנה בין ירייה לירייה ומתקנת אוטומטית.' });
       put(G.cyl(0.075, 0.075, 0.12, 24, 'x'), M.darkSteel(), mrs, [GUN.len - 0.06, 0, 0], null, { name: 'muzzle collar' });
       put(G.torus(0.068, 0.012, 8, 28, PI * 2, 'x'), STEEL, mrs, [GUN.len - 0.005, 0, 0]);
@@ -1298,41 +1386,41 @@ window.L3D_MODEL = {
 
     // ================================================================== OPTICS + MACHINE GUNS (on the roof)
     {
-      const gs = sub(tur, 'optics', { he: 'ראש כוונת התותחן', en: 'Gunner sight head', mat: 'פלדה + חלונות ברמה צבאית', desc: 'ראש הכוונת של התותחן, מייצב בשני צירים. בתוכו מצלמת יום, מצלמה תרמית (ראיית לילה) ומד טווח לייזר — תותחן מכוון וקולט יעד בעשרות קילומטרים.' }, { pos: [0.75, TR + 0.05, 0.42] });
-      put(B(0.38, 0.12, 0.36), OLIVE2, gs, [0, 0.06, 0], null, { name: 'base' });
-      put(B(0.28, 0.18, 0.3), M.darkSteel(), gs, [0.0, 0.2, 0], null, { name: 'head' });
+      const gs = sub(tur, 'optics', { he: 'ראש כוונת התותחן', en: 'Gunner sight head', mat: 'פלדה + חלונות ברמה צבאית', desc: 'ראש הכוונת של התותחן, מייצב בשני צירים. בתוכו מצלמת יום, מצלמה תרמית (ראיית לילה) ומד טווח לייזר — תותחן מכוון וקולט יעד בעשרות קילומטרים.' }, { pos: [-0.12, TR + 0.02, 0.45] });
+      put(RB(0.38, 0.12, 0.36), OLIVE2, gs, [0, 0.06, 0], null, { name: 'base' });
+      put(RB(0.28, 0.18, 0.3), M.darkSteel(), gs, [0.0, 0.2, 0], null, { name: 'head' });
       for (const [z, c] of [[-0.07, 0x86e0ff], [0.08, 0xffd36a]]) { put(G.cyl(0.045, 0.045, 0.02, 18, 'x'), M.metal(0x101214, 0.2), gs, [0.15, 0.2, z]); put(G.cyl(0.036, 0.036, 0.012, 18, 'x'), M.lens(c, 0.6), gs, [0.16, 0.2, z]); }
-      put(B(0.3, 0.025, 0.34), OLIVE2, gs, [0.0, 0.31, 0], null, { name: 'hood' });
+      put(RB(0.3, 0.025, 0.34), OLIVE2, gs, [0.0, 0.31, 0], null, { name: 'hood' });
       const cs = sub(cup, 'optics', { he: 'מכ״ם פריסקופי של המפקד (CWS)', en: 'Commander panoramic sight', mat: 'פלדה, מערכת אופטית מייצבת', desc: 'כוונת פנורמית של המפקד על גג הכיפה. המפקד יכול להצביע על יעד, והתותח פונה אליו אוטומטית — מערכת ״צייד־הורג״ (hunter-killer).' });
-      put(B(0.24, 0.2, 0.26), M.darkSteel(), cs, [0.38, 0.22, 0], null, { name: 'sight body' });
+      put(RB(0.24, 0.2, 0.26), M.darkSteel(), cs, [0.38, 0.22, 0], null, { name: 'sight body' });
       for (const z of [-0.06, 0.06]) { put(G.cyl(0.04, 0.04, 0.02, 18, 'x'), M.metal(0x101214, 0.2), cs, [0.51, 0.24, z]); put(G.cyl(0.032, 0.032, 0.012, 18, 'x'), M.lens(z > 0 ? 0xffd36a : 0x86e0ff, 0.6), cs, [0.52, 0.24, z]); }
       const per = sub(cup, 'optics', { he: 'פריסקופי המפקד (8)', en: 'Commander periscopes (×8)', mat: 'זכוכית שריון בבית פלדה', desc: 'שמונה חלונות ראייה מסביב לכיפה. בכל אחד זכוכית רב־שכבתית חסינת רסיסים, וביחד הם נותנים תצפית של 360°.' });
-      for (let i = 0; i < 8; i++) { const a = (i / 8) * PI * 2 + PI / 8; const g = new THREE.Group(); g.position.set(Math.cos(a) * 0.3, 0.2, Math.sin(a) * 0.3); g.rotation.y = -a; per.add(g); put(B(0.1, 0.1, 0.12), BLACK, g); put(B(0.012, 0.06, 0.1), M.glass(0x0a1a22, 0.7), g, [0.056, 0.0, 0]); put(B(0.12, 0.014, 0.14), DSTEEL, g, [0, 0.055, 0]); }
+      for (let i = 0; i < 8; i++) { const a = (i / 8) * PI * 2 + PI / 8; const g = new THREE.Group(); g.position.set(Math.cos(a) * 0.3, 0.2, Math.sin(a) * 0.3); g.rotation.y = -a; per.add(g); put(RB(0.1, 0.1, 0.12), BLACK, g); put(RB(0.012, 0.06, 0.1), M.glass(0x0a1a22, 0.7), g, [0.056, 0.0, 0]); put(RB(0.12, 0.014, 0.14), DSTEEL, g, [0, 0.055, 0]); }
       // loader periscope
       const lp = sub(ld, 'optics', { he: 'פריסקופ הטען', en: 'Loader periscope', mat: 'זכוכית שריון', desc: 'פריסקופ נוסף לטען, מסתכל לצד שמאל ואחורה.' });
-      put(B(0.14, 0.1, 0.12), BLACK, lp, [0.0, 0.14, 0.3]); put(B(0.1, 0.06, 0.012), M.glass(0x0a1a22, 0.7), lp, [0.0, 0.14, 0.37]);
+      put(RB(0.14, 0.1, 0.12), BLACK, lp, [0.0, 0.14, 0.3]); put(RB(0.1, 0.06, 0.012), M.glass(0x0a1a22, 0.7), lp, [0.0, 0.14, 0.37]);
       // laser-warning receivers
       const lwr = sub(tur, 'optics', { he: 'חיישני אזהרת לייזר (4)', en: 'Laser warning receivers (×4)', mat: 'פלדה ופוליקרבונט', desc: 'כיפות קטנות בפינות הצריח שקולטות קרן לייזר משמיד או מכוון. כשהן מזהות — המערכת מתריעה, ואפשר לשגר עשן.' });
-      for (const [x, z] of [[0.6, 0.95], [0.6, -0.95], [-2.6, 0.85], [-2.6, -0.85]]) { put(G.sphere(0.04, 14, 10), M.polycarb(), lwr, [x, TR + 0.075, z]); put(G.cyl(0.05, 0.055, 0.03, 16, 'y'), DSTEEL, lwr, [x, TR + 0.065, z]); }
+      for (const [x, z] of [[0.0, 0.8], [0.0, -0.8], [-2.7, 0.65], [-2.7, -0.65]]) { put(G.sphere(0.04, 14, 10), M.polycarb(), lwr, [x, TR + 0.075, z]); put(G.cyl(0.05, 0.055, 0.03, 16, 'y'), DSTEEL, lwr, [x, TR + 0.065, z]); }
       // antennas
       const ant = sub(tur, 'optics', { he: 'אנטנות קשר (2) ו־GPS', en: 'Radio antennas (×2) & GPS', mat: 'פיברגלס, נחושת, בסיס גמיש', desc: 'שתי אנטנות שוט לקשר רדיו, וכיפה קטנה ל־GPS. הבסיסים הגמישים מאפשרים להן להתכופף אל הענפים בלי להישבר.' });
-      for (const [x, z, h] of [[-2.4, 0.5, 1.2], [-2.4, -0.5, 0.9]]) { put(G.cyl(0.04, 0.05, 0.1, 14, 'y'), M.rubber(), ant, [x, TR + 0.1, z]); put(G.cyl(0.0035, 0.009, h, 8, 'y'), M.metal(0x2a2c30, 0.4), ant, [x, TR + 0.15 + h / 2, z]); put(G.sphere(0.012, 8, 6), STEEL, ant, [x, TR + 0.15 + h, z]); }
-      put(G.lathe([[0.001, 0], [0.05, 0], [0.05, 0.03], [0.03, 0.05], [0.001, 0.055]], 18, 'y'), M.plastic(0x1c1d20, 0.6), ant, [-1.2, TR + 0.05, -0.15]);
+      for (const [x, z, h] of [[-2.1, 0.28, 1.2], [-2.1, -0.28, 0.9]]) { put(G.cyl(0.04, 0.05, 0.1, 14, 'y'), M.rubber(), ant, [x, TR + 0.1, z]); put(G.cyl(0.0035, 0.009, h, 8, 'y'), M.metal(0x2a2c30, 0.4), ant, [x, TR + 0.15 + h / 2, z]); put(G.sphere(0.012, 8, 6), STEEL, ant, [x, TR + 0.15 + h, z]); }
+      put(G.lathe([[0.001, 0], [0.05, 0], [0.05, 0.03], [0.03, 0.05], [0.001, 0.055]], 18, 'y'), M.plastic(0x1c1d20, 0.6), ant, [-1.5, TR + 0.0, -0.15]);
 
       // machine guns on pintle rings + a small remote weapon station
       const mg = (parent, info, pos, yaw, shield, postH) => {
         const m = sub(parent, 'gun', info, { pos, rot: [0, yaw, 0] });
-        put(G.cyl(0.015, 0.015, 0.7, 10, 'x'), STEEL, m, [0.5, 0.1, 0]); put(B(0.5, 0.1, 0.07), M.darkSteel(), m, [0.0, 0.1, 0]); put(B(0.22, 0.16, 0.1), M.plastic(0x38402e, 0.6), m, [0.0, -0.02, 0.1]);
+        put(G.cyl(0.015, 0.015, 0.7, 10, 'x'), STEEL, m, [0.5, 0.1, 0]); put(RB(0.5, 0.1, 0.07), M.darkSteel(), m, [0.0, 0.1, 0]); put(RB(0.22, 0.16, 0.1), M.plastic(0x38402e, 0.6), m, [0.0, -0.02, 0.1]);
         put(G.cyl(0.02, 0.02, postH, 8, 'y'), STEEL, m, [-0.1, 0.05 - postH / 2, 0]);
-        if (shield) put(B(0.025, 0.3, 0.42), OLIVE2, m, [0.2, 0.12, 0]);
+        if (shield) put(RB(0.025, 0.3, 0.42), OLIVE2, m, [0.2, 0.12, 0]);
         return m;
       };
       mg(cup, { he: 'מקלע המפקד (7.62 מ״מ)', en: 'Commander MG (7.62 mm)', mat: 'פלדה', desc: 'מקלע MAG על טבעת מעל כיפת המפקד, ליריות הגנה קרובות.' }, [0.0, 0.32, -0.3], 0, false, 0.225);
       mg(ld, { he: 'מקלע הטען (7.62 מ״מ) עם מגן', en: 'Loader MG with shield', mat: 'פלדה + מגן שריון', desc: 'מקלע שני על ציר, מוגן בלוח שריון מרובע שמגן על ראש הטען.' }, [0.1, 0.23, -0.3], 0, true, 0.19);
-      const rws = sub(tur, 'gun', { he: 'עמדת נשק נשלטת מרחוק (RWS)', en: 'Remote weapon station', mat: 'פלדה + מצלמות', desc: 'עמדת נשק קטנה שנשלטת מבפנים: המפקד יורה בלי לחשוף את ראשו. מצלמה ומקלע .50 או 7.62 מ״מ מאזנים זה את זה. מותקנת בצד שמאל.' }, { pos: [0.1, TR + 0.05, -0.8] });
+      const rws = sub(tur, 'gun', { he: 'עמדת נשק נשלטת מרחוק (RWS)', en: 'Remote weapon station', mat: 'פלדה + מצלמות', desc: 'עמדת נשק קטנה שנשלטת מבפנים: המפקד יורה בלי לחשוף את ראשו. מצלמה ומקלע .50 או 7.62 מ״מ מאזנים זה את זה. מותקנת בצד שמאל.' }, { pos: [-0.05, TR + 0.02, -0.72] });
       put(G.cyl(0.2, 0.22, 0.1, 24, 'y'), OLIVE2, rws, [0, 0.05, 0], null, { name: 'ring base' });
       const rwsTop = new THREE.Group(); rwsTop.position.y = 0.1; rws.add(rwsTop);
-      put(B(0.34, 0.2, 0.3), M.darkSteel(), rwsTop, [0, 0.1, 0]); put(G.cyl(0.015, 0.015, 0.6, 10, 'x'), STEEL, rwsTop, [0.35, 0.12, 0.05]); put(B(0.08, 0.08, 0.1), BLACK, rwsTop, [0.18, 0.12, -0.1]); put(G.cyl(0.03, 0.03, 0.02, 14, 'x'), M.lens(0x86e0ff, 0.6), rwsTop, [0.225, 0.12, -0.1]);
+      put(RB(0.34, 0.2, 0.3), M.darkSteel(), rwsTop, [0, 0.1, 0]); put(G.cyl(0.015, 0.015, 0.6, 10, 'x'), STEEL, rwsTop, [0.35, 0.12, 0.05]); put(RB(0.08, 0.08, 0.1), BLACK, rwsTop, [0.18, 0.12, -0.1]); put(G.cyl(0.03, 0.03, 0.02, 14, 'x'), M.lens(0x86e0ff, 0.6), rwsTop, [0.225, 0.12, -0.1]);
       K.onFrame((time) => { if (speed > 0.05) rwsTop.rotation.y = Math.sin(time * 0.6) * 0.6 * Math.min(speed, 1); });
     }
 
@@ -1347,34 +1435,34 @@ window.L3D_MODEL = {
       });
       const radarFace = new THREE.MeshStandardMaterial({ map: radarTex, roughness: 0.4, metalness: 0.3 });
       const mkRadar = (x, z, s, rear) => {
-        const r = sub(tur, 'trophy', { he: `מכ״ם Trophy ${rear ? 'אחורי' : 'קדמי'} ${sideHe(s)}`, en: `Trophy radar ${rear ? 'rear' : 'front'} (${sideEn(s)})`, mat: 'מערך אנטנות מישורי (AESA) בבית פלדה', desc: 'פאנל מכ״ם שטוח סורק את השמיים סביב הטנק. הוא מזהה טיל או רקטה שנורים לעבר הטנק ותוך מאית השנייה מחשב את מסלולם.' }, { pos: [x, 0.42, z], rot: [0, -s * (rear ? 3 * PI / 4 : PI / 4), 0] });
-        put(B(0.07, 0.56, 0.4), M.darkSteel(), r, [0, 0, 0], null, { name: 'housing' });
+        const r = sub(tur, 'trophy', { he: `מכ״ם Trophy ${rear ? 'אחורי' : 'קדמי'} ${sideHe(s)}`, en: `Trophy radar ${rear ? 'rear' : 'front'} (${sideEn(s)})`, mat: 'מערך אנטנות מישורי (AESA) בבית פלדה', desc: 'פאנל מכ״ם שטוח סורק את השמיים סביב הטנק. הוא מזהה טיל או רקטה שנורים לעבר הטנק ותוך מאית השנייה מחשב את מסלולם.' }, { pos: [x, 0.44, z], rot: [0, -s * (rear ? 3 * PI / 4 : PI / 4), 0] });
+        put(RB(0.07, 0.56, 0.4), M.darkSteel(), r, [0, 0, 0], null, { name: 'housing' });
         put(new THREE.PlaneGeometry(0.35, 0.5), radarFace, r, [0.037, 0.0, 0.0], [0, PI / 2, 0], { name: 'array face', cast: false });
-        put(B(0.025, 0.58, 0.02), M.steel(), r, [0.03, 0, 0.195]); put(B(0.025, 0.58, 0.02), M.steel(), r, [0.03, 0, -0.195]);
-        put(B(0.025, 0.02, 0.4), M.steel(), r, [0.03, 0.28, 0]); put(B(0.025, 0.02, 0.4), M.steel(), r, [0.03, -0.28, 0]);
-        for (const dy of [-0.18, 0.18]) put(B(0.2, 0.04, 0.05), DSTEEL, r, [-0.12, dy, 0]);
-        put(B(0.014, 0.018, 0.05), L.green, r, [0.04, 0.3, 0]);
+        put(RB(0.025, 0.58, 0.02), M.steel(), r, [0.03, 0, 0.195]); put(RB(0.025, 0.58, 0.02), M.steel(), r, [0.03, 0, -0.195]);
+        put(RB(0.025, 0.02, 0.4), M.steel(), r, [0.03, 0.28, 0]); put(RB(0.025, 0.02, 0.4), M.steel(), r, [0.03, -0.28, 0]);
+        for (const dy of [-0.18, 0.18]) put(RB(0.2, 0.04, 0.05), DSTEEL, r, [-0.12, dy, 0]);
+        put(RB(0.014, 0.018, 0.05), L.green, r, [0.04, 0.3, 0]);
         return r;
       };
-      for (const s of [1, -1]) { mkRadar(0.3, s * 1.53, s, false); mkRadar(-1.3, s * 1.53, s, true); }
+      for (const s of [1, -1]) { const pf = surfPt(s, 0.45, 0.42), pr = surfPt(s, -2.35, 0.42); mkRadar(pf.x, pf.z + s * 0.3, s, false); mkRadar(pr.x, pr.z + s * 0.3, s, true); }
       // countermeasure launchers on the rear roof (they rise and turn outward when armed)
       const lau = sub(tur, 'trophy', { he: 'משגרי יירוט (2)', en: 'Interceptor launchers (×2)', mat: 'פלדה + קנים עם מכסי הגנה', desc: 'שני תרמילי שיגור על גג הצריח. כשמכ״ם מזהה איום, הם משגרים מטען יירוט שמתפוצץ סמוך לטיל ומשמיד אותו. לאחר ההפעלה אי אפשר לשגר שוב מיד, ולכן מחזיקים כמה שיגורים.' });
       for (const s of [1, -1]) {
-        const hg = new THREE.Group(); hg.position.set(-2.45, TR + 0.07, s * 0.78); lau.add(hg);
-        put(B(0.8, 0.07, 0.42), M.darkSteel(), hg, [0.38, 0.0, 0], null, { name: 'fixed base' });
-        for (const dz of [-0.17, 0.17]) put(B(0.04, 0.09, 0.06), STEEL, hg, [0.0, 0.05, dz]);
+        const hg = new THREE.Group(); hg.position.set(-2.55, TR + 0.07, s * 0.58); lau.add(hg);
+        put(RB(0.8, 0.07, 0.42), M.darkSteel(), hg, [0.38, 0.0, 0], null, { name: 'fixed base' });
+        for (const dz of [-0.17, 0.17]) put(RB(0.04, 0.09, 0.06), STEEL, hg, [0.0, 0.05, dz]);
         const pod = new THREE.Group(); pod.position.set(0.0, 0.1, 0); hg.add(pod);
-        put(B(0.7, 0.14, 0.38), OLIVE2, pod, [0.35, 0.05, 0], null, { name: 'pod box' });
+        put(RB(0.7, 0.14, 0.38), OLIVE2, pod, [0.35, 0.05, 0], null, { name: 'pod box' });
         for (const dz of [-0.09, 0.09]) { put(G.cyl(0.062, 0.062, 0.52, 18, 'x'), M.metal(0x2e3034, 0.5), pod, [0.38, 0.17, dz], null, { name: 'launch tube' }); put(G.cyl(0.05, 0.05, 0.014, 16, 'x'), L.red, pod, [0.65, 0.17, dz], null, { cast: false }); put(G.torus(0.062, 0.008, 6, 20, PI * 2, 'x'), STEEL, pod, [0.62, 0.17, dz]); }
-        put(B(0.02, 0.1, 0.34), CIRON, pod, [0.7, 0.05, 0]);
+        put(RB(0.02, 0.1, 0.34), CIRON, pod, [0.7, 0.05, 0]);
         pods.push({ hg, pod, s });
       }
       const cab = sub(tur, 'trophy', { he: 'חבילת כבלים וממשק חיבור', en: 'Trophy cable harness', mat: 'נחושת בבידוד גומי', desc: 'חבילת כבלים מוגנת בתעלת פלדה שמחברת את המכ״מים והמשגרים למחשב הבקרה שבתוך הצריח.' });
-      for (const s of [1, -1]) { put(G.tube([V3(-2.45, TR + 0.1, s * 0.62), V3(-2.3, TR + 0.1, s * 0.4), V3(-1.8, TR + 0.1, s * 0.3), V3(-1.2, TR + 0.1, s * 0.5)], 0.015, 30, 8), M.rubber(), cab); }
+      for (const s of [1, -1]) { put(G.tube([V3(-2.55, TR + 0.1, s * 0.46), V3(-2.3, TR + 0.1, s * 0.3), V3(-1.8, TR + 0.1, s * 0.28), V3(-1.2, TR + 0.1, s * 0.5)], 0.015, 30, 8), M.rubber(), cab); }
       const cpu = sub(tur, 'trophy', { he: 'מחשב בקרת Trophy', en: 'Trophy control unit', mat: 'אלומיניום מוקשח, קירור פסיבי', desc: 'המחשב שמקבל נתוני מכ״ם ומחליט תוך מילי־שניות אם לשגר יירוט ומאיזה משגר. מותקן בחלק האחורי של הצריח בין הרדיו לתחמושת.' });
-      put(B(0.35, 0.22, 0.3), M.castAlu(), cpu, [-2.75, 0.2, -0.6]);
-      instances(B(0.34, 0.012, 0.02), M.aluminum(), Array.from({ length: 8 }, (_, i) => ({ pos: [-2.75, 0.31 + 0.0, -0.74 + i * 0.04] })), { parent: cpu }).position.y = 0.0;
-      put(B(0.012, 0.03, 0.05), L.green, cpu, [-2.57, 0.26, -0.6]);
+      put(RB(0.35, 0.22, 0.3), M.castAlu(), cpu, [-2.75, 0.2, -0.6]);
+      instances(RB(0.34, 0.012, 0.02), M.aluminum(), Array.from({ length: 8 }, (_, i) => ({ pos: [-2.75, 0.31 + 0.0, -0.74 + i * 0.04] })), { parent: cpu }).position.y = 0.0;
+      put(RB(0.012, 0.03, 0.05), L.green, cpu, [-2.57, 0.26, -0.6]);
     }
 
     // ================================================================== CREW COMPARTMENT, AMMUNITION
@@ -1472,18 +1560,18 @@ window.L3D_MODEL = {
         for (const x of [3.3, 3.0]) put(B(0.04, 0.012, 0.12), DSTEEL, cab, [x, deckY(x) + 0.02, s * 0.38]);
       }
       const tool = part(equipSys, { he: 'כלי עבודה (את, מקוש)', en: 'Hand tools (shovel, sledge)', mat: 'פלדה ועץ', desc: 'את ומקוש על המדף. כדי להחזיר טנק תקוע מהחול, לפעמים החול מנצח את הטכנולוגיה.' });
-      put(G.cyl(0.015, 0.015, 0.9, 8, 'x'), M.wood(), tool, [-2.0, SPONSON_Y + 0.07, 1.3]); put(B(0.28, 0.01, 0.2), STEEL, tool, [-1.43, SPONSON_Y + 0.07, 1.3]);
-      put(G.cyl(0.018, 0.018, 0.75, 8, 'x'), M.wood(), tool, [-2.2, SPONSON_Y + 0.08, 1.52]); put(B(0.16, 0.08, 0.08), DSTEEL, tool, [-1.8, SPONSON_Y + 0.08, 1.52]);
+      put(G.cyl(0.015, 0.015, 0.9, 8, 'x'), M.wood(), tool, [-2.0, sponY(1.3) + 0.04, 1.3]); put(B(0.28, 0.01, 0.2), STEEL, tool, [-1.43, sponY(1.3) + 0.04, 1.3]);
+      put(G.cyl(0.018, 0.018, 0.75, 8, 'x'), M.wood(), tool, [-2.2, sponY(1.52) + 0.04, 1.52]); put(B(0.16, 0.08, 0.08), DSTEEL, tool, [-1.8, sponY(1.52) + 0.05, 1.52]);
       const jer = part(equipSys, { he: 'ג׳ריקנים (3)', en: 'Jerrycans (×3)', mat: 'פלדה מצופה', desc: 'שלושה ג׳ריקנים של מים או שמן. בצבא נושאים אותם בכל מקום לגיבוי.' });
-      for (let i = 0; i < 3; i++) { put(B(0.36, 0.46, 0.17), M.paintFlat(0x5c6347, 0.7), jer, [0.2 + i * 0.4, SPONSON_Y + 0.26, -1.55]); put(G.tube([V3(0.2 + i * 0.4 - 0.1, SPONSON_Y + 0.5, -1.55), V3(0.2 + i * 0.4, SPONSON_Y + 0.58, -1.55), V3(0.2 + i * 0.4 + 0.1, SPONSON_Y + 0.5, -1.55)], 0.01, 12, 6), STEEL, jer); }
+      for (let i = 0; i < 3; i++) { put(B(0.36, 0.46, 0.17), M.paintFlat(0x5c6347, 0.7), jer, [0.2 + i * 0.4, sponY(1.55) + 0.25, -1.55]); put(G.tube([V3(0.2 + i * 0.4 - 0.1, sponY(1.55) + 0.49, -1.55), V3(0.2 + i * 0.4, sponY(1.55) + 0.57, -1.55), V3(0.2 + i * 0.4 + 0.1, sponY(1.55) + 0.49, -1.55)], 0.01, 12, 6), STEEL, jer); }
       const bx = part(equipSys, { he: 'תיבות ציוד אחוריות (2)', en: 'Rear stowage boxes (×2)', mat: 'פלדה בעובי 2 מ״מ', desc: 'תיבות למנות, בדים ושקי שינה, מחוברות לגב המדפים. הצוות חי בטנק לימים, ולכן הציוד נחוץ.' });
       for (const s of [1, -1]) { put(B(0.7, 0.4, 0.44), OLIVE2, bx, [-3.3, 1.65, s * 1.58]); put(B(0.04, 0.06, 0.1), STEEL, bx, [-2.95, 1.7, s * 1.58]); bolts(bx, Array.from({ length: 4 }, (_, i) => ({ pos: [-3.5 + (i % 2) * 0.4, 1.85, s * (1.4 + (i >> 1) * 0.36)] })), 0.011); }
       const mf = part(equipSys, { he: 'מגני בוץ מגומי (4)', en: 'Rubber mud flaps (×4)', mat: 'גומי מחוזק בבד', desc: 'מונעים התזת בוץ ואבק על הציוד והצוות, וגם מקטינים את ענן האבק מאחורי הטנק.' });
-      for (const s of [1, -1]) { put(B(0.02, 0.34, 0.76), CAMO_RUB, mf, [3.995, 1.28, s * 1.425]); put(B(0.02, 0.28, 0.76), CAMO_RUB, mf, [-4.37, 0.98, s * 1.425]); }
+      for (const s of [1, -1]) { put(B(0.02, 0.2, 0.7), CAMO_RUB, mf, [3.99, 1.2, s * 1.425], [0, 0, -0.0]); put(B(0.02, 0.28, 0.76), CAMO_RUB, mf, [-4.37, 0.98, s * 1.425]); }
       // markings: tactical number on both turret sides + data plate
       const num = K.textTexture('3 • 7 • 4', { font: '800 120px "Arial Black", Arial', color: '#f2efe6', pad: 12 });
       const mk = sub(tur, 'equip', { he: 'סימון טקטי על הצריח (2)', en: 'Turret tactical numbers (×2)', mat: 'צבע לבן מט', desc: 'מספר הטנק בצבע לבן על דופן הצריח: פלוגה, מחלקה, מספר טנק. הצבע מט כדי שלא ינצנץ בשמש.' });
-      for (const s of [1, -1]) put(new THREE.PlaneGeometry(0.5, 0.5 / num.aspect), M.decal(num.tex), mk, [-0.5, 0.36, s * 1.472], [0, s > 0 ? 0 : PI, 0], { cast: false });
+      for (const sd of [1, -1]) { const pt = surfPt(sd, -0.9, 0.5), n = surfN(sd, -0.9, 0.5), g = new THREE.Group(); g.position.copy(pt).addScaledVector(n, 0.095); g.rotation.y = sd > 0 ? 0 : PI; mk.add(g); const phi = Math.atan2(n.y, Math.abs(n.z)); put(new THREE.PlaneGeometry(0.5, 0.5 / num.aspect), M.decal(num.tex), g, [0, 0, 0], [-phi, 0, 0], { cast: false }); }
       const pl = part(equipSys, { he: 'לוחית דגם על הגוף', en: 'Hull data plate', mat: 'אלומיניום חרוט', desc: 'לוחית יצרן על הגוף: דגם, מספר סידורי ושנת ייצור. על כל טנק יש מספר ייחודי.' });
       const pt = K.textTexture('MERKAVA Mk.4M\nIDF · 2012', { font: '700 80px Arial', color: '#2a2a28', bg: '#b9bcc0', lineHeight: 90 });
       put(new THREE.PlaneGeometry(0.22, 0.22 / pt.aspect), M.decal(pt.tex), pl, [3.5, deckY(3.5) + 0.01, 0.0], [-PI / 2 + DECK_A, 0, PI / 2], { cast: false });
