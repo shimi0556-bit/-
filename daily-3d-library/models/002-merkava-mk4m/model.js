@@ -875,12 +875,13 @@ window.L3D_MODEL = {
       // ammunition racks: 4 columns × 8 rounds (rear of the hull, either side of the door aisle)
       const cGeo = G.lathe([[0.0, 0.0], [0.055, 0.0], [0.06, 0.02], [0.062, 0.52], [0.052, 0.6], [0.04, 0.64]], 16, 'y');
       const hGeo = G.lathe([[0.04, 0.64], [0.04, 0.78], [0.028, 0.88], [0.0, 0.96]], 16, 'y');
-      const ammo = part(crewSys, { he: 'מכלי תחמושת (32 פגזים)', en: 'Ammunition cells (32 rounds)', mat: 'פלדה עמידת אש', desc: 'הפגזים מאוחסנים אנכית בגוף האחורי, בין הצוות לדלת האחורית. מכל מכל בנוי שיחסוך מהצוות שריפה אם יש פגיעה.' });
+      const ammo = part(crewSys, { he: 'מכלי תחמושת (48 פגזים)', en: 'Ammunition cells (48 rounds)', mat: 'פלדה עמידת אש', desc: 'הפגזים מאוחסנים אנכית בגוף האחורי, בין הצוות לדלת האחורית. מכל מכל בנוי שיחסוך מהצוות שריפה אם יש פגיעה.' });
       const casings = [], heads = [];
-      for (const s of [1, -1]) for (const zc of [0.56, 0.79]) for (let i = 0; i < 8; i++) { const p = [-3.42 + i * 0.19, 0.56, s * zc]; casings.push({ pos: p }); heads.push({ pos: p }); }
+      for (const s of [1, -1]) for (const zc of [0.56, 0.79]) for (let i = 0; i < 10; i++) { const p = [-3.42 + i * 0.19, 0.56, s * zc]; casings.push({ pos: p }); heads.push({ pos: p }); }
+      for (const s of [1, -1]) for (let i = 0; i < 4; i++) { const p = [-3.42 + i * 0.19, 0.56, s * 0.33]; casings.push({ pos: p }); heads.push({ pos: p }); }
       instances(cGeo, M.brass(), casings, { parent: ammo }); instances(hGeo, M.metal(0x4d5342, 0.5), heads, { parent: ammo });
       const racks = part(crewSys, { he: 'מסגרות מכלי התחמושת', en: 'Rack frames', mat: 'פלדה מגולוונת', desc: 'רצפה ותקרה מחוררות שמחזיקות את הפגזים בישיבה אנכית ומונעות מהם להתנדנד בנסיעה.' });
-      for (const s of [1, -1]) for (const zc of [0.675]) { put(B(1.7, 0.03, 0.4), M.metal(0x363a3f, 0.6), racks, [-2.75, 0.52, s * zc]); put(B(1.7, 0.03, 0.4), M.metal(0x363a3f, 0.6), racks, [-2.75, 1.19, s * zc]); for (const px of [-3.57, -1.93]) for (const dz of [-0.19, 0.19]) put(B(0.03, 0.7, 0.03), M.metal(0x363a3f, 0.6), racks, [px, 0.85, s * zc + dz]); }
+      for (const s of [1, -1]) for (const zc of [0.675]) { put(B(1.95, 0.03, 0.4), M.metal(0x363a3f, 0.6), racks, [-2.62, 0.52, s * zc]); put(B(1.95, 0.03, 0.4), M.metal(0x363a3f, 0.6), racks, [-2.62, 1.19, s * zc]); for (const px of [-3.57, -1.69, -2.62]) for (const dz of [-0.19, 0.19]) put(B(0.03, 0.7, 0.03), M.metal(0x363a3f, 0.6), racks, [px, 0.85, s * zc + dz]); }
       void headGeo; void caseGeo;
     }
 
@@ -933,6 +934,32 @@ window.L3D_MODEL = {
       for (const dz of [-0.15, 0, 0.15]) { put(RB(0.12, 0.1, 0.1, 0.012), BLACK, dp, [2.55, 1.22, -0.52 + dz]); put(G.torus(0.032, 0.01, 8, 16, PI * 2, 'x'), M.rubber(), dp, [2.49, 1.22, -0.52 + dz]); }
       const bt = part(crewSys, { he: 'חגורות בטיחות (4)', en: 'Crew seat belts (×4)', mat: 'ניילון ופלדה', desc: 'חגורת ארבע נקודות לכל אחד מהצוות — חיונית בנסיעה בשטח, ובמיוחד בטנק שקופץ על דיונות.' });
       for (const z of [-0.69, -0.35]) put(G.tube([V3(2.6, 0.98, z), V3(2.72, 0.9, z), V3(2.78, 0.82, z)], 0.015, 14, 5), M.fabric(0x2a2d24), bt);
+    }
+
+    // ================================================================== FIREWALL, PARTITIONS, HULL LINERS, CENTRE RACKS
+    {
+      const foil = M.metal(0x9aa0a6, 0.4), lin = M.fabric(0x3c4034);
+      const fw = part(crewSys, { he: 'קיר אש ומחיצות תא המנוע', en: 'Firewall & engine-bay partitions', mat: 'פלדה + ציפוי בידוד תרמי', desc: 'קיר אש מפריד בין תא המנוע לתא הלחימה, ומחיצה אורכית מפרידה בין המנוע לנהג. אם המנוע נדלק או נפגע, האש לא עוברת לצוות. בקיר יש פתח שירות עם בריחים.' });
+      put(B(0.04, 1.0, 1.9), foil, fw, [1.42, 1.0, 0]);
+      put(B(1.58, 0.9, 0.04), foil, fw, [2.22, 1.0, 0.04]);
+      for (const y of [0.6, 0.85, 1.1, 1.35]) { put(B(0.045, 0.03, 1.9), DSTEEL, fw, [1.42, y, 0]); }
+      for (const z of [-0.6, -0.2, 0.2, 0.6]) put(B(0.045, 1.0, 0.03), DSTEEL, fw, [1.42, 1.0, z]);
+      put(RB(0.02, 0.4, 0.4, 0.01), DSTEEL, fw, [1.44, 1.0, -0.55]);
+      for (const dz of [-0.17, 0.17]) put(RB(0.03, 0.05, 0.05, 0.008), STEEL, fw, [1.47, 1.0, -0.55 + dz]);
+      bolts(fw, Array.from({ length: 18 }, (_, i) => ({ pos: [1.4 + (i % 2) * 0.03, 0.55 + (i >> 1) * 0.1, 0.75], rot: [0, 0, 0] })), 0.01);
+      put(G.tube([V3(1.4, 0.7, 0.3), V3(1.3, 0.8, 0.25), V3(1.0, 0.8, 0.2)], 0.01, 16, 6), M.copper(), fw);
+      for (const sd of [1, -1]) {
+        const ln = part(crewSys, { he: `ציפוי דופן הגוף ${sideHe(sd)}`, en: `Hull side liner (${sideEn(sd)})`, mat: 'סיבי ארמיד + רשת ברגים', desc: 'לוחות ציפוי נגד רסיסים על הדופן הפנימית של הגוף. אם פגז פוגע, הציפוי עוצר את הרסיסים שנתזים מהפלדה פנימה.' });
+        for (const [x0, x1] of [[-3.55, -1.8], [0.45, 1.25]]) {
+          const cx = (x0 + x1) / 2, w = x1 - x0;
+          put(B(w, 0.82, 0.02), lin, ln, [cx, 1.02, sd * 0.965], null, { name: 'liner panel' });
+          for (const y of [0.78, 1.26]) put(B(w, 0.025, 0.03), DSTEEL, ln, [cx, y, sd * 0.955]);
+          bolts(ln, Array.from({ length: Math.round(w / 0.25) * 2 }, (_, i) => ({ pos: [x0 + 0.12 + (i >> 1) * 0.25, 0.78 + (i % 2) * 0.48, sd * 0.945], rot: [-sd * PI / 2, 0, 0] })), 0.009);
+        }
+        put(G.tube([V3(-3.5, 1.45, sd * 0.93), V3(-2.4, 1.48, sd * 0.93), V3(-1.8, 1.48, sd * 0.93)], 0.012, 20, 6), sd > 0 ? M.copper() : M.metal(0x7a2a24, 0.6), ln);
+      }
+      const cr = part(crewSys, { he: 'מתקני תחמושת מרכזיים (8 פגזים)', en: 'Centre ammo racks (8 rounds)', mat: 'פלדה מגולוונת', desc: 'שני מתקנים קטנים משני צידי המעבר שליד הדלת האחורית, ובהם עוד 8 פגזים — כך שהחזית מחזיקה 48 פגזים בגוף.' });
+      for (const s of [1, -1]) { put(B(0.86, 0.03, 0.2), M.metal(0x363a3f, 0.6), cr, [-3.2, 0.52, s * 0.33]); put(B(0.86, 0.03, 0.2), M.metal(0x363a3f, 0.6), cr, [-3.2, 1.19, s * 0.33]); for (const px of [-3.62, -2.78]) for (const dz of [-0.09, 0.09]) put(B(0.03, 0.7, 0.03), M.metal(0x363a3f, 0.6), cr, [px, 0.85, s * 0.33 + dz]); }
     }
 
     // ================================================================== EQUIPMENT + MARKINGS
