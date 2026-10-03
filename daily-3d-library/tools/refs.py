@@ -12,10 +12,16 @@ model's README instead. Needs Pillow for sheet/pair (pip install pillow).
 """
 import json, os, subprocess, sys, urllib.parse
 
-UA = "l3d-ref-bot/1.0"
+UA = "daily-3d-library-refs/1.0 (https://github.com/shimi0556-bit/-; reference photos for 3D modelling)"
 
-def get(url):
-    return subprocess.run(["curl", "-sSL", "-A", UA, url], capture_output=True, check=True).stdout
+def get(url, tries=5):
+    import time
+    for k in range(tries):  # Wikimedia rate-limits bursts: back off and retry
+        out = subprocess.run(["curl", "-sSL", "-A", UA, url], capture_output=True, check=True).stdout
+        if b"too many requests" not in out[:300].lower():
+            return out
+        time.sleep(15 * (k + 1))
+    return out
 
 def search(q, n=30):
     u = "https://commons.wikimedia.org/w/api.php?" + urllib.parse.urlencode({
@@ -33,6 +39,7 @@ def fetch(q, dest, match=None):
         fn = os.path.join(dest, f"{i:02d}.jpg")
         with open(fn, "wb") as f:
             f.write(get(url))
+        import time; time.sleep(1.5)
         print(fn, title)
         i += 1
 

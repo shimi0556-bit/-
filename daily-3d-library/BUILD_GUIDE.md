@@ -103,7 +103,8 @@ python3 tools/refs.py pair $SCRATCH/ref/01.jpg $SCRATCH/m/m01.png $SCRATCH/cmp_0
 1. Pick photos in the same colour/variant as the model, covering at least: front, front 3/4, side, rear 3/4, rear, and one close-up of each signature part (wheel, lights, cockpit, hatch…).
 2. Match each angle with `tools/shot.cjs` and compare the pairs. Go **part by part**, in this order: silhouette and proportions (roofline, overhangs, ride height, wheel size vs body), big masses (nose, tail, turret…), then each system (lights, wheels, glass, trim, markings), then colour and materials.
 3. Write down every difference, fix the biggest first, re-shoot the same pairs, repeat until no part reads as wrong.
-4. Never commit the photos (licences). List the Commons files you compared against in the model README under "Reference photos", and record what changed in the wiki notes.
+4. **Overlay, not just side-by-side.** For the main side/3-4 photo, solve the photo's camera from known points (`tools/camsolve.py`: wheel rims, tyre contacts, roof peak), render the model with that camera (`"bare": true`, same pixel size) and draw its edges over the photo (`tools/overlay.py`). Every gap in the red outline is a measurable error; back-project photo pixels onto a plane (z of that feature) to read real coordinates in metres and put them into the model as tables of measured points, instead of guessing curve parameters.
+5. Never commit the photos (licences). List the Commons files you compared against in the model README under "Reference photos", and record what changed in the wiki notes.
  In the Claude Code sandbox Playwright is the global install. `check.cjs` fetches three.js with `curl` and serves it to the page, so it works behind the sandbox proxy.
 
 ## 7. Publish

@@ -23,9 +23,9 @@ window.L3D_MODEL = {
     const HW = 0.96;                           // half width 1.92 m
     const ARCH_R = 0.405, ARCH_Y = 0.36;        // wheel-arch circle
     const W_IN = 0.69;                         // inner wheelhouse wall
-    const COWL = 1.02, WS_TOP = 0.02, ROOF_END = -0.92, BL_END = -2.24;
+    const COWL = 1.06, WS_TOP = -0.05, ROOF_END = -0.92, BL_END = -2.24;
     const ROOF = 1.622 - 0.5 * 0.27 * 0.27;                        // roof peak ≈ 1.62 with the crown
-    const GA_TOP = 0.178, GA_BOT = 0.405, A_G = 0.42; // side-glass band in v; greenhouse ends at A_G
+    const GA_TOP = 0.215, GA_BOT = 0.412, A_G = 0.42; // side-glass band in v; greenhouse ends at A_G
     const FD = [0.98, -0.155], RD = [-0.185, -1.06], QG = [-1.10, -1.62]; // front / rear door, quarter glass
     const FR = [1.10, 2.18];                   // frunk lid x range
     const LG = -0.95;                          // liftgate hinge line
@@ -33,27 +33,38 @@ window.L3D_MODEL = {
     const FLOOR = 0.42;                        // cabin floor (the battery sits under it)
 
     // ------------------------------------------------------------------ section parameters
+    // Profiles measured from a camera-matched reference photo (tools/camsolve.py + back-projection):
+    // monotone cubic interpolation through [x, value] tables.
+    const table = (pts) => {
+      const n = pts.length, xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]), m = new Array(n).fill(0);
+      const d = []; for (let i = 0; i < n - 1; i++) d.push((ys[i + 1] - ys[i]) / (xs[i + 1] - xs[i]));
+      m[0] = d[0]; m[n - 1] = d[n - 2];
+      for (let i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2;
+      for (let i = 0; i < n - 1; i++) { if (d[i] === 0) { m[i] = m[i + 1] = 0; continue; } const a = m[i] / d[i], b = m[i + 1] / d[i], h = a * a + b * b; if (h > 9) { const t = 3 / Math.sqrt(h); m[i] = t * a * d[i]; m[i + 1] = t * b * d[i]; } }
+      return (x) => {
+        if (x <= xs[0]) return ys[0]; if (x >= xs[n - 1]) return ys[n - 1];
+        let i = 0; while (x > xs[i + 1]) i++;
+        const hh = xs[i + 1] - xs[i], t = (x - xs[i]) / hh, t2 = t * t, t3 = t2 * t;
+        return (2 * t3 - 3 * t2 + 1) * ys[i] + (t3 - 2 * t2 + t) * hh * m[i] + (-2 * t3 + 3 * t2) * ys[i + 1] + (t3 - t2) * hh * m[i + 1];
+      };
+    };
+    // plan view: rounded nose and tail (real corners sit ~0.26 m behind the tip at |z| = 0.6)
     const W = (x) => {
-      const rf = 0.5, rr = 0.30;
-      if (x > XF - rf) { const u = clamp((x - (XF - rf)) / rf); return HW * Math.pow(Math.max(0, 1 - Math.pow(u, 3.2)), 1 / 3.2); }
+      const rf = 0.6, rr = 0.30;
+      if (x > XF - rf) { const u = clamp((x - (XF - rf)) / rf); return HW * Math.pow(Math.max(0, 1 - Math.pow(u, 2.4)), 1 / 2.4); }
       if (x < XR + rr) { const d = XR + rr - x; return HW - rr + Math.sqrt(Math.max(0, rr * rr - d * d)); }
       return HW;
     };
-    const Yb = (x) => {                        // beltline / hood edge
-      if (x > COWL) return 0.985 - 0.17 * Math.pow((x - COWL) / (XF - COWL), 1.5) - 0.11 * Math.pow(smooth(XF - 0.3, XF, x), 1.6);
-      if (x < -1.9) return 1.06 - 0.07 * Math.pow((-1.9 - x) / (-1.9 - XR), 2);
-      return lerp(0.985, 1.06, (COWL - x) / (COWL + 1.9));
-    };
-    const Yt = (x) => {                        // centre-line profile
-      if (x >= COWL) return Yb(x) + 0.045 - 0.03 * Math.pow((x - COWL) / (XF - COWL), 2);
-      if (x >= WS_TOP) { const t = (COWL - x) / (COWL - WS_TOP); return Yb(x) + (ROOF - Yb(x)) * (1 - Math.pow(1 - t, 1.55)); }
-      if (x >= BL_END) { const d = x + 0.25; return d > 0 ? 1.622 - 0.5 * d * d : 1.622 - ((1.622 - 1.15) / Math.pow(-(BL_END + 0.25), 1.45)) * Math.pow(-d, 1.45); }
-      const t = (BL_END - x) / (BL_END - XR); return 1.12 - 0.05 * t * t;
-    };
+    // centre-line top: hood → windshield → roof → fastback → spoiler
+    const YT = table([[XR, 1.11], [-2.36, 1.13], [-2.28, 1.23], [-2.10, 1.35], [-1.92, 1.426], [-1.745, 1.48], [-1.565, 1.53], [-1.307, 1.565], [-1.052, 1.58], [-0.801, 1.587], [-0.553, 1.586], [-0.37, 1.565], [-0.13, 1.545], [0.11, 1.50], [0.34, 1.42], [0.57, 1.32], [0.82, 1.2], [1.06, 1.08], [1.32, 0.99], [1.54, 0.945], [1.76, 0.9], [1.98, 0.855], [2.19, 0.81], [XF, 0.75]]);
+    // beltline (bottom of the side glass); in front of the cowl it is the hood edge, 5 cm below the hood crown
+    const YB = table([[XR, 1.09], [-2.3, 1.12], [-1.9, 1.16], [-1.36, 1.16], [-1.11, 1.15], [-0.37, 1.13], [0.34, 1.11], [0.97, 1.075]]);
+    const Yb = (x) => (x > COWL ? YT(x) - 0.05 - 0.05 * smooth(XF - 0.3, XF, x) : x > 0.97 ? lerp(1.075, YT(COWL) - 0.05, (x - 0.97) / (COWL - 0.97)) : YB(x));
+    const Yt = (x) => YT(x);
     const Y0 = (x) => {
       let y = 0.17;
-      if (x > 1.95) y += 0.2 * Math.pow((x - 1.95) / (XF - 1.95), 1.8);
-      if (x < -1.95) y += 0.19 * Math.pow((-1.95 - x) / (-1.95 - XR), 1.6);
+      if (x > 1.95) y += 0.11 * Math.pow((x - 1.95) / (XF - 1.95), 1.8);
+      if (x < -1.95) y += 0.11 * Math.pow((-1.95 - x) / (-1.95 - XR), 1.6);
       return y;
     };
     const YA = (x) => {
@@ -64,16 +75,16 @@ window.L3D_MODEL = {
     const sec = (x, v) => {
       const s = v < 0 ? -1 : 1, a = Math.min(1, Math.abs(v));
       const w = W(x), yb = Yb(x), hh = Math.max(0.004, Yt(x) - yb), y0 = Y0(x), ya = YA(x);
-      const nf = smooth(1.3, XF, x), k = clamp(hh / 0.5), wg = w - lerp(0.05, 0.13, k) - 0.12 * nf, n = lerp(5.5, 3.3, k), drop = 0.055 + 0.1 * nf;
+      const nf = smooth(1.3, XF, x), k = clamp(hh / 0.5), wg = w - lerp(0.09, 0.2, k) - 0.12 * nf - 0.14 * smooth(-0.9, -2.3, x), n = lerp(5.5, 2.8, k), drop = 0.07 + 0.1 * nf, ws = w - 0.075, wi = Math.min(W_IN, Math.max(0, w - 0.17));
       let y, z;
       const seg = (a0, a1) => (a - a0) / (a1 - a0);
       if (a <= LV.glass) { const t = (a / LV.glass) * PI / 2; z = wg * Math.pow(Math.sin(t), 2 / n); y = yb + hh * Math.pow(Math.cos(t), 2 / n); }
-      else if (a <= LV.shoulder) { const t = seg(LV.glass, LV.shoulder) * PI / 2; z = wg + (w - wg) * Math.sin(t); y = yb - drop * (1 - Math.cos(t)); }
-      else if (a <= LV.side) { const t = seg(LV.shoulder, LV.side); y = lerp(yb - drop, ya + 0.05, t); z = w + 0.014 * Math.sin(PI * t * 0.8) - 0.07 * t * t; }
-      else if (a <= LV.cornerB) { const t = seg(LV.side, LV.cornerB) * PI / 2; z = w - 0.07 - 0.05 * (1 - Math.cos(t)); y = ya + 0.05 - 0.05 * Math.sin(t); }
-      else if (a <= LV.well) { const t = seg(LV.cornerB, LV.well); z = lerp(w - 0.12, W_IN, t); y = ya; }
-      else if (a <= LV.wellIn) { const t = seg(LV.well, LV.wellIn); z = W_IN; y = lerp(ya, y0, t); }
-      else { const t = seg(LV.wellIn, 1); z = lerp(W_IN, 0, t); y = y0; }
+      else if (a <= LV.shoulder) { const t = seg(LV.glass, LV.shoulder) * PI / 2; z = wg + (ws - wg) * Math.sin(t); y = yb - drop * (1 - Math.cos(t)); }
+      else if (a <= LV.side) { const t = seg(LV.shoulder, LV.side); y = lerp(yb - drop, ya + 0.05, t); z = w - 0.075 * Math.pow(Math.abs(t - 0.45) / 0.55, 2) - 0.035 * t * t; }
+      else if (a <= LV.cornerB) { const t = seg(LV.side, LV.cornerB) * PI / 2; z = w - 0.11 - 0.05 * (1 - Math.cos(t)); y = ya + 0.05 - 0.05 * Math.sin(t); }
+      else if (a <= LV.well) { const t = seg(LV.cornerB, LV.well); z = lerp(w - 0.16, wi, t); y = ya; }
+      else if (a <= LV.wellIn) { const t = seg(LV.well, LV.wellIn); z = wi; y = lerp(ya, y0, t); }
+      else { const t = seg(LV.wellIn, 1); z = lerp(wi, 0, t); y = y0; }
       return V3(x, y, s * z);
     };
     const out = (p, x) => V3(0, p.y - (Y0(x) + Yb(x)) / 2, p.z);
@@ -140,18 +151,19 @@ window.L3D_MODEL = {
       // front: lower intake + grille mesh + splitter
       const fr = part(bodySys, { he: 'פגוש קדמי, פתח אוויר תחתון וספליטר', en: 'Front fascia, lower intake & splitter', mat: 'פוליפרופילן צבוע + רשת שחורה', desc: 'בחזית אין גריל כמו ברכב בנזין — רק פתח תחתון שמכניס אוויר לרדיאטור של משאבת החום, עם תריסים אקטיביים שנסגרים בנסיעה מהירה.' });
       const fxz = (z) => { let lo = XF - 0.5, hi = XF; for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (W(m) > Math.abs(z)) lo = m; else hi = m; } return lo; };
-      put(G.box(0.04, 0.13, 1.12, 0.03), GLOSSBLK, fr, [fxz(0.56) - 0.0, 0.34, 0], null, { name: 'lower intake' });
-      instances(new THREE.BoxGeometry(0.01, 0.006, 1.06), M.plastic(0x050506, 0.6), Array.from({ length: 8 }, (_, i) => ({ pos: [fxz(0.53) + 0.018, 0.29 + i * 0.013, 0] })), { parent: fr });
-      put(G.box(0.03, 0.025, 1.0, 0.01), M.plastic(0x2a2c30, 0.5), fr, [fxz(0.5) + 0.008, 0.255, 0], null, { name: 'lower lip' });
-      // vertical black corner inlets (air curtains) next to the headlamps
-      for (const s2 of [1, -1]) { const pts = []; for (let k = 0; k <= 8; k++) { const y = 0.3 + k * 0.05, z = s2 * 0.885; pts.push(V3(fxz(z) - 0.022, y, z)); } put(G.tube(pts, 0.022, 16, 8), GLOSSBLK, fr); }
+      // wide black lower intake and lip: bands of the nose surface that follow constant heights
+      for (const s2 of [1, -1]) {
+        mesh(band(XF - 0.34, XF - 0.001, (x) => s2 * vAtY(x, 0.42, 1), (x) => s2 * vAtY(x, 0.28, 1), { offset: 0.004 }), GLOSSBLK, { parent: fr, name: 'lower intake' });
+        mesh(band(XF - 0.34, XF - 0.001, (x) => s2 * vAtY(x, 0.28, 1), (x) => s2 * vAtY(x, 0.235, 1), { offset: 0.004 }), M.plastic(0x2a2c30, 0.5), { parent: fr, name: 'lower lip' });
+      }
+      instances(new THREE.BoxGeometry(0.01, 0.006, 0.7), M.plastic(0x050506, 0.6), Array.from({ length: 7 }, (_, i) => ({ pos: [fxz(0.35) - 0.006, 0.3 + i * 0.016, 0] })), { parent: fr });
       // rear diffuser + reflectors
       const rd = part(bodySys, { he: 'מפזר אוויר אחורי', en: 'Rear diffuser', mat: 'פלסטיק שחור מרקם', desc: 'החלק השחור התחתון בפגוש האחורי. הוא מכוון את זרימת האוויר מתחת לרכב ומקטין גרר.' });
       put(G.box(0.05, 0.05, 1.4, 0.015), M.plastic(0x141516, 0.75), rd, [XR + 0.03, Y0(XR) + 0.0, 0]);
       instances(new THREE.BoxGeometry(0.2, 0.06, 0.008), M.plastic(0x141516, 0.75), [-0.45, -0.15, 0.15, 0.45].map((z) => ({ pos: [XR + 0.09, Y0(XR) + 0.03, z] })), { parent: rd });
       // underbody aero tray
       const ut = part(bodySys, { he: 'מגש תחתון אווירודינמי', en: 'Underbody aero tray', mat: 'פלסטיק מחוזק סיבים', desc: 'כיסוי חלק לכל התחתית. הוא מגן על הסוללה ומאפשר לאוויר לזרום מתחת לרכב בלי מערבולות.' });
-      put(new THREE.BoxGeometry(4.2, 0.006, 1.32), M.plastic(0x1d1e20, 0.8), ut, [0, 0.165, 0]);
+      put(new THREE.BoxGeometry(3.7, 0.006, 1.3), M.plastic(0x1d1e20, 0.8), ut, [-0.1, 0.165, 0]);
       // cowl + wipers + washer jets
       const cw = part(bodySys, { he: 'אדן שמשה ומגבים', en: 'Cowl & wipers', mat: 'פלסטיק + פלדה קפיצית + גומי', desc: 'המגבים מוסתרים מתחת לקצה מכסה התא הקדמי. מגב אחד גדול מנקה כמעט את כל השמשה, ומתחתיו שני מתזי מים.' });
       put(new THREE.BoxGeometry(0.1, 0.012, 1.5), TRIM, cw, [COWL + 0.03, Yb(COWL) + 0.035, 0]);
@@ -175,7 +187,7 @@ window.L3D_MODEL = {
       const tub = part(bodySys, { he: 'אמבט תא המטען הקדמי', en: 'Frunk tub', mat: 'פלסטיק יצוק עמיד מים', desc: 'אמבט פלסטיק עמוק עם ניקוז. מתחתיו: מצבר 16V, משאבת החום ומיכל נוזל השמשות.' });
       const tb = M.plastic(0x16171a, 0.85);
       put(new THREE.BoxGeometry(0.72, 0.02, 0.84), tb, tub, [1.56, 0.56, 0]);
-      put(new THREE.BoxGeometry(0.02, 0.3, 0.84), tb, tub, [1.2, 0.71, 0]); put(new THREE.BoxGeometry(0.02, 0.2, 0.84), tb, tub, [1.92, 0.66, 0]);
+      put(new THREE.BoxGeometry(0.02, 0.3, 0.84), tb, tub, [1.2, 0.71, 0]); put(new THREE.BoxGeometry(0.02, 0.18, 0.84), tb, tub, [1.85, 0.65, 0]);
       for (const z of [-0.42, 0.42]) put(new THREE.BoxGeometry(0.72, 0.22, 0.02), tb, tub, [1.56, 0.67, z]);
       put(G.box(0.6, 0.012, 0.7, 0.004), M.carpet(0x1c1d21), tub, [1.56, 0.572, 0]);
       put(G.cyl(0.012, 0.012, 0.02, 10, 'y'), M.rubber(), tub, [1.56, 0.55, 0.3]);
@@ -291,12 +303,12 @@ window.L3D_MODEL = {
     // ================================================================== LIGHTS
     const lampMat = (c, i = 0.06, o = 0.95) => new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: i, roughness: 0.25, metalness: 0, transparent: o < 1, opacity: o });
     const L = { drl: lampMat(0xf4f8ff, 0.15), head: lampMat(0xffffff, 0.05), tail: lampMat(0xff1a10, 0.12), brake: lampMat(0xff2010, 0.06), amber: lampMat(0xffa21a, 0.05), rev: lampMat(0xffffff, 0.04), cabin: lampMat(0xffe6c0, 0.0), port: lampMat(0x2cff7a, 0.2) };
-    const frontX = (z) => { let lo = XF - 0.62, hi = XF; for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (W(m) > Math.abs(z)) lo = m; else hi = m; } return lo; };
-    const rearX = (z) => { const rr = 0.30, a = Math.abs(z) - (HW - rr); return a > 0 ? XR + rr - Math.sqrt(Math.max(0, rr * rr - a * a)) : XR; };
+    const frontX = (z) => { let lo = XF - 0.5, hi = XF; for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (W(m) > Math.abs(z)) lo = m; else hi = m; } return lo; };
+    const rearX = (z) => { let lo = XR, hi = XR + 0.3; for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (W(m) > Math.abs(z)) hi = m; else lo = m; } return hi; };
     {
       const lights = sys('lights');
       const bar = part(lights, { he: 'פס אור קדמי לרוחב החזית', en: 'Front full-width light bar', mat: 'נורות LED מתחת לעדשה', desc: 'פס אור דק שחוצה את כל החזית — סימן ההיכר של ג׳וניפר. משמש כאור יום ומשנה צבע לכתום כאיתות בקצוות.' });
-      const barPts = []; for (let i = 0; i <= 48; i++) { const z = -0.86 + (i / 48) * 1.72, x = frontX(z); barPts.push(V3(x + 0.004, Yb(x) - 0.022, z)); }
+      const barPts = []; for (let i = 0; i <= 48; i++) { const sd = i < 24 ? -1 : 1, u = sd < 0 ? i / 24 : (48 - i) / 24, x = lerp(XF - 0.5, XF - 0.002, u); barPts.push(onBody(x, sd * vAtY(x, Yb(x) - 0.05 - 0.02 * u, 1), 0.003)); }
       put(G.tube(barPts, 0.0045, 96, 6), L.drl, bar);
       put(G.tube(barPts.map((p) => p.clone().add(V3(-0.004, -0.008, 0))), 0.006, 96, 5), GLOSSBLK, bar);
       for (const s of [1, -1]) {
@@ -668,9 +680,9 @@ window.L3D_MODEL = {
       const jk = part(bd, { he: 'נקודות הרמה (4)', en: 'Jack points (×4)', mat: 'פלדה + פקק גומי', desc: 'ארבע נקודות מסומנות בתחתית שבהן מרימים את הרכב בלי לפגוע בסוללה.' });
       for (const x of [AXF - 0.5, AXR + 0.5]) for (const z of [-0.7, 0.7]) put(G.cyl(0.03, 0.03, 0.02, 16, 'y'), M.rubber(), jk, [x, 0.165, z]);
       const th = part(bd, { he: 'מכסה וו גרירה', en: 'Tow-eye cover', mat: 'פלסטיק צבוע', desc: 'מכסה קטן בפגוש הקדמי. מאחוריו מוברג וו הגרירה שנמצא בתא המטען.' });
-      put(G.cyl(0.025, 0.025, 0.006, 16, 'x'), PAINT, th, [frontX(0.45) - 0.01, 0.42, 0.45]);
+      { const x = XF - 0.12, v = vAtY(x, 0.45, 1), g = new THREE.Group(); g.position.copy(onBody(x, v, 0.001)); g.quaternion.setFromUnitVectors(V3(0, 1, 0), nrm(x, v)); th.add(g); put(G.cyl(0.025, 0.025, 0.004, 16, 'y'), PAINT, g); }
       const fl2 = part(bd, { he: 'מנעול תא המטען הקדמי', en: 'Frunk latch', mat: 'פלדה + מנוע חשמלי', desc: 'מנעול כפול עם מנוע חשמלי, ובתוך התא ידית חירום זוהרת לפתיחה מבפנים.' });
-      put(G.box(0.06, 0.05, 0.08, 0.008), M.steel(), fl2, [2.0, 0.66, 0]);
+      put(G.box(0.06, 0.05, 0.08, 0.008), M.steel(), fl2, [1.82, 0.7, 0]);
     }
 
     // ================================================================== ANIMATION: wheels spin while "drive" is on

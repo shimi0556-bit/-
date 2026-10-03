@@ -36,7 +36,9 @@ Compared against 19 photos of a Quicksilver Model Y Juniper (Dual Motor First Ed
 - Wheels: silver swept-blade aero rims (were black); smaller wheel arches so the tyres fill them.
 - Colour: darker, bluer Quicksilver; glass roof tinted almost black (frit bars on top removed).
 
-Still different: the real nose face is more sloped and rounded than the model's; the real body has a fuller rear haunch; the rear lower bumper shape is simplified.
+Round 2 (camera-matched overlay): the camera of photo (10) was solved from the wheel rims, the model was rendered with the same camera and its outline drawn over the photo. The centre-line profile and the beltline are now tables of points measured off that photo (roof peaks 1.59 m at x ≈ −0.8, windshield base at x ≈ 1.06, hood falls to 0.75 m at the nose), the body section is barrel-shaped with a strong shoulder and tumblehome, the greenhouse narrows toward the tail, the lower intake is a full-width band, and the nose underside no longer sticks out.
+
+Still clearly different (honest list): the nose is too narrow and pointed in plan view and the front face is not sculpted like the real one (no defined bumper corners); the rear window and liftgate are too wide and flat and the real rear haunches over the wheels are missing; the hood has a visible crease where the frunk lid meets the nose; the side surfaces lack the real door-panel feature lines; wheel-arch liners are not black. A single parametric section limits how close the body can get — the next step would be lofting the body from several measured cross-sections (front, B-pillar, rear axle, tail) taken from front/rear photos.
 
 ## Known simplifications / open
 
