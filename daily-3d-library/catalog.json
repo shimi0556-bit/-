@@ -13,10 +13,10 @@
       "page": "models/003-tesla-model-y/index.html",
       "thumb": "models/003-tesla-model-y/thumb.jpg",
       "stats": {
-        "parts": 153,
-        "meshes": 466,
-        "triangles": 474496,
-        "buildMs": 815
+        "parts": 154,
+        "meshes": 481,
+        "triangles": 416780,
+        "buildMs": 861
       }
     },
     {
@@ -35,7 +35,7 @@
         "parts": 258,
         "meshes": 1225,
         "triangles": 400316,
-        "buildMs": 649
+        "buildMs": 618
       }
     },
     {
@@ -54,7 +54,7 @@
         "parts": 246,
         "meshes": 1151,
         "triangles": 612682,
-        "buildMs": 1149
+        "buildMs": 1166
       }
     }
   ]

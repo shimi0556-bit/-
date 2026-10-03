@@ -2,7 +2,7 @@
 
 The 2025 "Juniper" Model Y, modelled procedurally in [`model.js`](model.js). Open [`index.html`](index.html).
 
-**153 named parts in 11 systems, ~465 meshes, ~475K triangles, no model or image files.**
+**154 named parts in 11 systems, ~480 meshes, ~415K triangles, no model or image files.**
 
 ## What's modelled
 
@@ -26,8 +26,19 @@ Toggles: doors, frunk, liftgate (with animated power struts), charge port + cabl
 
 Length 4.79 m, height 1.624 m, wheelbase 2.89 m, ground clearance 167 mm, 255/45 R19 tyres. Sources: [Wikipedia](https://en.wikipedia.org/wiki/Tesla_Model_Y), [Basenor](https://www.basenor.com/pages/model-y-juniper-dimensions), [EV Database](https://ev-database.org/car/3103/Tesla-Model-Y-RWD), [carsized](https://www.carsized.com/en/cars/tesla-model-y-2025-suv/). Width varies between sources (1.92–1.98 m without mirrors); the model uses 1.92 m. Cell layout, motors and interior are informed reconstructions.
 
+## Reference photos (part-by-part comparison)
+
+Compared against 19 photos of a Quicksilver Model Y Juniper (Dual Motor First Edition) on Wikimedia Commons ("Tesla Model Y Dual Motor First Edition Juniper Quicksilver (1)…(19).jpg"), front, side, 3/4 and rear, using `tools/refs.py` + `tools/shot.cjs`. Changes made from the comparison:
+
+- Silhouette: roof now peaks just behind the windshield and falls in one continuous curve to the tail (was flat and sedan-like); windshield starts further forward; taller side glass; body sides tuck in toward the rocker.
+- Nose: rounder plan and a hood that rolls down at the front; light bar moved up to the hood's leading edge; headlamps are small units in the corners under the bar ends; vertical black corner inlets; wide black lower intake and lip (the old splitter and centre plate holder were removed).
+- Tail: thick black ducktail spoiler across the liftgate with TESLA lettering in it and the light strip under it; tail lamps tucked under the spoiler ends; black lower bumper that wraps around the corners; plate moved onto the black lower bumper.
+- Wheels: silver swept-blade aero rims (were black); smaller wheel arches so the tyres fill them.
+- Colour: darker, bluer Quicksilver; glass roof tinted almost black (frit bars on top removed).
+
+Still different: the real nose face is more sloped and rounded than the model's; the real body has a fuller rear haunch; the rear lower bumper shape is simplified.
+
 ## Known simplifications / open
 
 - The battery is only visible in the cutaway/x-ray (the aero tray covers it from below).
 - The A-pillar glass shows strong studio reflections; on a real GPU with the full environment it reads as normal glass.
-- Built in one session after the user asked to run it immediately; worth a photo comparison round like #002 got.
