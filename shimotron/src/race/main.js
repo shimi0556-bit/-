@@ -31,6 +31,7 @@ import { loadRealModels, warmRealModels } from './RealModels.js';
 import { World, WORLD } from './World.js';
 import { SpaceScene } from './Space.js';
 import { Explore, ROAM } from './Explore.js';
+import { timing } from './Timing.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -87,6 +88,7 @@ class Game {
     document.documentElement.lang = 'he';
     this.ui = new RaceUI(document.getElementById('ui'), this);
     const progress = async (p, text) => {
+      timing.step(text);
       this.ui.showLoader(text, p);
       await nextFrame();
     };
@@ -102,8 +104,9 @@ class Game {
 
     await progress(0.08, 'מאתחל את מנוע שימוטרון…');
     const canvas = document.getElementById('viewport');
-    const forced = (location.hash.slice(1) || new URLSearchParams(location.search).get('quality') || '').toLowerCase();
-    const q = ['low', 'medium', 'high', 'ultra'].includes(forced) ? forced : this.settings.quality || undefined;
+    const levels = ['low', 'medium', 'high', 'ultra'];
+    const forced = location.hash.slice(1).toLowerCase().split(/[^a-z]+/).find((w) => levels.includes(w)) || (new URLSearchParams(location.search).get('quality') || '').toLowerCase();
+    const q = levels.includes(forced) ? forced : this.settings.quality || undefined;
     const engine = new Engine(canvas, { quality: q });
     this.engine = engine;
     this.settings.quality = engine.quality.presetName;
@@ -196,6 +199,7 @@ class Game {
     engine.atmosphere.update(0);
     engine.start();
     await progress(1, 'מוכן');
+    timing.mark('התפריט עלה');
     this.ui.hideLoader();
     this.toMenu();
     this._planAll();
@@ -297,7 +301,11 @@ class Game {
       if (this.island) this.island.suspend();
       const pad = this.world.pad && this.world.pad.id === st.id ? this.world.pad : null;
       const island = new Island(eng, this.materials, this.water, st, { plan: this.plans[st.id], cache: this.bakeCache, keepOut: (x, z) => this.world.keepOut(st.id, x, z), pad, bridgeEnds: this.world.bridgeEnds(st.id), background });
-      await island.build(progress);
+      await island.build((p, t) => {
+        timing.step(`${st.name}: ${t}`);
+        return progress(p, t);
+      });
+      timing.mark(`${st.name} נבנה`);
       island.suspend();
       if (this.island) this.island.resume();
       this.islands.set(st.id, island);
@@ -963,8 +971,10 @@ class Game {
     if (!this.island || this.island.stage !== st || this.islandDirty) {
       await this.loadIsland(index, (p, t) => this.ui.showLoader(t, p));
       this.ui.showLoader('מקמפל שיידרים…', 0.96);
+      timing.step('ציור ראשון של האי (קימפול שיידרים)');
       await nextFrame();
     }
+    timing.step('יצירת המכוניות והמירוץ');
     this._endRace();
     this._endPodium();
     this._showMap(false);
@@ -1002,6 +1012,7 @@ class Game {
       race = new CraftRace(this, this.island, { kind, laps: this.settings.laps, difficulty: this._difficulty(), roster: this._gridOrder(this.roster()), space: this.inSpace ? this.space : null });
     }
     this.race = race;
+    timing.step('קימפול שיידרים למירוץ');
     try {
       await Promise.race([eng.renderer.compileAsync(eng.scene, eng.camera), wait(6000)]);
     } catch {
@@ -1015,6 +1026,7 @@ class Game {
     this.camera.setMode('orbit');
     this.camera.orbitAngle = Math.atan2(race.player.car.forward.z, race.player.car.forward.x) + Math.PI * 0.75;
     eng.cameraRig = this.camera;
+    timing.mark('המירוץ התחיל');
     this.ui.showHUD(race, st);
     this.engine.canvas.focus({ preventScroll: true });
   }
@@ -1083,6 +1095,7 @@ class Game {
     this.state = 'explore';
     eng.paused = false;
     eng.cameraRig = this.camera;
+    timing.mark('הסיור החופשי התחיל');
     this.ui.showExplore(ex, st);
     this.engine.canvas.focus({ preventScroll: true });
   }
