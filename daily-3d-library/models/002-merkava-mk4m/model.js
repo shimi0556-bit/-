@@ -80,8 +80,8 @@ window.L3D_MODEL = {
       mats.set(key, m);
       return m;
     };
-    const OLIVE = dusty(0x4e4b3b, { dust: 0.3 });                         // main hull / turret paint (IDF khaki-olive)
-    const OLIVE2 = dusty(0x46433a, { dust: 0.3 });                        // armour modules, a shade darker
+    const OLIVE = dusty(0x5d5a43, { dust: 0.3 });                         // main hull / turret paint (IDF khaki-olive)
+    const OLIVE2 = dusty(0x54513d, { dust: 0.3 });                        // armour modules, a shade darker
     const SAND = dusty(0x8a7a58, { name: 'צבע חול (סיני)' });
     const CAMO_RUB = dusty(0x1c1c1b, { r: 0.95, m: 0, dust: 0.8, name: 'גומי שריון (חצאיות)' });
     const TRACK_M = dusty(0x2a2926, { r: 0.9, m: 0.4, dust: 0.6, name: 'פלדה + רפידות גומי מאובקות' });
@@ -393,35 +393,35 @@ window.L3D_MODEL = {
 
     // ================================================================== SPONSONS, FENDERS, SKIRTS
     const skirts = [];
-    const SKY = 1.36;                                        // skirt hinge height
-    const SPA = Math.atan2(0.22, 0.81);                      // slope of the sponson plate (rises toward the hull)
-    const sponY = (az) => SKY + ((1.86 - az) / 0.81) * 0.22; // sponson surface height at |z| = az
+    const SKY = 1.46;                                        // skirt hinge height
+    const SPA = Math.atan2(0.14, 0.81);                      // slope of the sponson plate (rises toward the hull)
+    const sponY = (az) => SKY + ((1.86 - az) / 0.81) * 0.14; // sponson surface height at |z| = az
     const vTex = K.textTexture('V', { font: '900 260px "Arial Black", Arial', color: '#f1eee4', pad: 6 });
     const plateTex = (n) => n;
     void plateTex;
     for (const s of [1, -1]) {
       const sp = part(hullSys, { he: `מדף צד משופע (ספונסון) ${sideHe(s)}`, en: `Sloped sponson (${sideEn(s)})`, mat: 'פלדה בעובי 20 מ״מ + צלעות חיזוק', desc: 'לוח משופע שמחבר את דופן הגוף לראש החצאית. הוא מכסה את החלק העליון של הזחל, והשיפוע שלו מסיט פגזים ונותן לצוות מקום ללכת עליו.' });
-      put(G.box(6.65, 0.05, 0.84, 0.015, 2), OLIVE, sp, [-0.375, 1.445, s * 1.455], [s * SPA, 0, 0], { name: 'sponson plate' });
+      put(G.box(6.65, 0.05, 0.83, 0.015, 2), OLIVE, sp, [-0.375, 1.515, s * 1.455], [s * SPA, 0, 0], { name: 'sponson plate' });
       bolts(sp, Array.from({ length: 28 }, (_, i) => { const az = i % 2 ? 1.2 : 1.72; return { pos: [-3.45 + (i >> 1) * 0.47 + 0.24, sponY(az) + 0.027, s * az], rot: [s * SPA, 0, 0] }; }), 0.01);
       const ff = part(hullSys, { he: `כנף קדמית ${sideHe(s)}`, en: `Front fender (${sideEn(s)})`, mat: 'פלדה עם שוליים מחוזקים', desc: 'כנף משופעת שמגינה על גלגל ההנעה מפני אבנים ובוץ, ויורדת קדימה בהמשך לקו הגוף. על שפתה הקדמית מותקן מגן בוץ מגומי.' });
-      put(G.box(1.33, 0.04, 0.78, 0.012, 2), OLIVE, ff, [3.35, 1.45, s * 1.425], [0, 0, -0.227], { name: 'fender plate' });
-      put(B(1.3, 0.11, 0.03), OLIVE2, ff, [3.35, 1.4, s * 1.795], [0, 0, -0.227], { name: 'fender lip' });
-      instances(G.bolt(0.01), DSTEEL, Array.from({ length: 8 }, (_, i) => ({ pos: [2.85 + (i >> 1) * 0.36, 1.45 + 0.027 + 0.227 * (3.35 - (2.85 + (i >> 1) * 0.36)) - 0.0, s * (i % 2 ? 1.18 : 1.68)], rot: [0, 0, -0.227] })), { parent: ff });
+      put(G.box(0.98, 0.04, 0.78, 0.012, 2), OLIVE, ff, [3.475, 1.39, s * 1.425], [0, 0, -0.227], { name: 'fender plate' });
+      put(G.box(0.96, 0.1, 0.03, 0.008, 2), OLIVE2, ff, [3.475, 1.34, s * 1.795], [0, 0, -0.227], { name: 'fender lip' });
+      instances(G.bolt(0.01), DSTEEL, Array.from({ length: 6 }, (_, i) => { const x = 3.12 + (i >> 1) * 0.3; return { pos: [x, 1.39 + 0.027 + 0.227 * (3.475 - x), s * (i % 2 ? 1.18 : 1.68)], rot: [0, 0, -0.227] }; }), { parent: ff });
       const rf = part(hullSys, { he: `כנף אחורית ${sideHe(s)}`, en: `Rear fender (${sideEn(s)})`, mat: 'פלדה', desc: 'כנף קטנה מעל גלגל המתח האחורי.' });
       put(B(0.85, 0.04, 0.78), OLIVE, rf, [-3.93, 1.14, s * 1.425], null, { name: 'rear fender plate' });
       // side skirts: 6 hinged plates per side (a toggle lifts them to show the running gear); the first one is the long, chamfered front plate
       for (let i = 0; i < 6; i++) {
         const front = i === 5, half = front ? 0.67 : 0.4875, x = front ? 2.33 : -2.815 + i * 0.995;
         const sk = part(armorSys, { he: `חצאית שריון ${i + 1} ${sideHe(s)}${front ? ' (קדמית)' : ''}`, en: `Side skirt ${i + 1} (${sideEn(s)})${front ? ' front' : ''}`, mat: 'פלדה + שכבת גומי מרוחקת', desc: front ? 'החצאית הקדמית ארוכה יותר, והפינה התחתונה שלה חתוכה בשיפוע שעוקב אחרי עליית הזחל אל גלגל ההנעה. עליה מצויר הסימן הלבן של הפלוגה.' : 'לוחית שריון צד על ציר עליון. מגינה על הזחל והמתלים מפני נשק נגד טנקים קל, ואפשר להרים אותה לתחזוקה.' }, { pos: [x, SKY, s * SKZ] });
-        if (front) put(sidePrism([[-half, 0], [half, 0], [half, -0.5], [0.22, -1.08], [-half, -1.08]], -0.03, 0.03), OLIVE2, sk, null, null, { name: 'skirt plate' });
-        else put(G.box(2 * half, 1.08, 0.06, 0.014, 2), OLIVE2, sk, [0, -0.54, 0], null, { name: 'skirt plate' });
-        put(B(2 * half - 0.12, 0.012, 0.012), DSTEEL, sk, [0, -0.5, s * 0.032]);
+        if (front) put(sidePrism([[-half, 0], [half, 0], [half, -0.4], [0.3, -0.84], [-half, -0.84]], -0.03, 0.03), OLIVE2, sk, null, null, { name: 'skirt plate' });
+        else put(G.box(2 * half, 0.84, 0.06, 0.014, 2), OLIVE2, sk, [0, -0.42, 0], null, { name: 'skirt plate' });
+        put(B(2 * half - 0.12, 0.012, 0.012), DSTEEL, sk, [0, -0.4, s * 0.032]);
         put(B(2 * half - 0.04, 0.035, 0.02), OLIVE, sk, [0, -0.025, s * 0.04]);
-        instances(G.bolt(0.012), DSTEEL, [[-half + 0.06, -0.1], [half - 0.06, -0.1], [-half + 0.06, -0.95], [half - 0.06, -0.95], [0, -0.1], [0, -0.95]].map(([bx, by]) => ({ pos: [bx, by, s * 0.03], rot: [s * PI / 2, 0, 0] })), { parent: sk });
-        put(G.tube([V3(-0.09, -0.4, s * 0.03), V3(-0.09, -0.4, s * 0.075), V3(0.09, -0.4, s * 0.075), V3(0.09, -0.4, s * 0.03)], 0.01, 12, 6), STEEL, sk);
-        if (front) { const g = new THREE.Group(); g.rotation.y = s > 0 ? 0 : PI; g.position.set(-0.15, -0.55, s * 0.034); sk.add(g); put(new THREE.PlaneGeometry(0.5, 0.5 / vTex.aspect), M.decal(vTex.tex), g, [0, 0, 0], null, { cast: false }); }
+        instances(G.bolt(0.012), DSTEEL, [[-half + 0.06, -0.1], [half - 0.06, -0.1], [-half + 0.06, -0.74], [half - 0.06, -0.74], [0, -0.1], [0, -0.74]].map(([bx, by]) => ({ pos: [bx, by, s * 0.03], rot: [s * PI / 2, 0, 0] })), { parent: sk });
+        put(G.tube([V3(-0.09, -0.27, s * 0.03), V3(-0.09, -0.27, s * 0.075), V3(0.09, -0.27, s * 0.075), V3(0.09, -0.27, s * 0.03)], 0.01, 12, 6), STEEL, sk);
+        if (front) { const g = new THREE.Group(); g.rotation.y = s > 0 ? 0 : PI; g.position.set(-0.15, -0.42, s * 0.034); sk.add(g); put(new THREE.PlaneGeometry(0.4, 0.4 / vTex.aspect), M.decal(vTex.tex), g, [0, 0, 0], null, { cast: false }); }
         const flap = part(sk, { he: `מגן גומי תחתון ${i + 1} ${sideHe(s)}`, en: `Rubber flap ${i + 1} (${sideEn(s)})`, mat: 'גומי מחוזק בבד', desc: 'פס גומי בתחתית החצאית. מונע אבק, וסופג מכות כשהטנק גורר חול ואבנים.' });
-        put(G.box(front ? 0.84 : 2 * half, 0.18, 0.02, 0.008, 2), CAMO_RUB, flap, [front ? -0.25 : 0, -1.17, 0]);
+        put(G.box(front ? 0.84 : 2 * half, 0.14, 0.02, 0.008, 2), CAMO_RUB, flap, [front ? -0.25 : 0, -0.9, 0]);
         skirts.push(sk); sk.userData.s = s;
       }
       const hg = part(armorSys, { he: `פס צירים לחצאיות ${sideHe(s)}`, en: `Skirt hinge bar (${sideEn(s)})`, mat: 'פלדה מחוסמת', desc: 'ציר ארוך לאורך שולי המדף שעליו נתלות כל שש החצאיות.' });
@@ -656,8 +656,8 @@ window.L3D_MODEL = {
       instances(G.torus(0.11, 0.0065, 6, 32, PI * 2, 'x'), M.darkChrome(), Array.from({ length: 10 }, (_, i) => ({ pos: [0.7 + i * 0.31, 0, 0] })), { parent: sleeve });
       instances(B(0.05, 0.02, 0.03), M.darkChrome(), Array.from({ length: 10 }, (_, i) => ({ pos: [0.7 + i * 0.31, 0.112, 0] })), { parent: sleeve });
       const evac = sub(gunG, 'gun', { he: 'מפלט גזים (איבקואטור)', en: 'Bore evacuator', mat: 'פלדה', desc: 'מיכל גזים עם צינורות כיוונים. אחרי כל ירייה הוא מנקז את אבק השריפה מהקנה, כדי שלא יזרום לתוך הצריח בעת פתיחת הבריח.' });
-      put(G.cyl(0.085, 0.085, 0.16, 28, 'x'), dusty(0x3c3d36, { r: 0.7, m: 0.5, name: 'פלדה צבועה' }), evac, [3.62, 0, 0], null, { name: 'evacuator' });
-      for (const a of [0.7, -0.7, 2.4, -2.4]) put(G.cyl(0.012, 0.012, 0.16, 8, 'x'), STEEL, evac, [3.62, Math.sin(a) * 0.085, Math.cos(a) * 0.085], [0, 0, 0.0]);
+      put(G.lathe([[0.075, -0.2], [0.11, -0.16], [0.125, -0.1], [0.125, 0.1], [0.11, 0.16], [0.075, 0.2]], 32, 'x'), dusty(0x4b4d3f, { r: 0.7, m: 0.4, dust: 0.25, name: 'פלדה צבועה' }), evac, [3.3, 0, 0], null, { name: 'evacuator' });
+      for (const a of [0.7, -0.7, 2.4, -2.4]) put(G.cyl(0.012, 0.012, 0.16, 8, 'x'), STEEL, evac, [3.3, Math.sin(a) * 0.125, Math.cos(a) * 0.125], [0, 0, 0.0]);
       const mrs = sub(gunG, 'gun', { he: 'מערכת כיול לוע (MRS)', en: 'Muzzle reference system', mat: 'פלדה + מראה אופטית', desc: 'מראה קטנה בקצה הקנה שמשקפת קרן לכוונת. האופטיקה מודדת סטייה של הקנה בין ירייה לירייה ומתקנת אוטומטית.' });
       put(G.cyl(0.075, 0.075, 0.12, 24, 'x'), M.darkSteel(), mrs, [GUN.len - 0.06, 0, 0], null, { name: 'muzzle collar' });
       put(G.torus(0.068, 0.012, 8, 28, PI * 2, 'x'), STEEL, mrs, [GUN.len - 0.005, 0, 0]);
@@ -862,9 +862,9 @@ window.L3D_MODEL = {
       const jer = part(equipSys, { he: 'ג׳ריקנים (3)', en: 'Jerrycans (×3)', mat: 'פלדה מצופה', desc: 'שלושה ג׳ריקנים של מים או שמן. בצבא נושאים אותם בכל מקום לגיבוי.' });
       for (let i = 0; i < 3; i++) { put(B(0.36, 0.46, 0.17), M.paintFlat(0x5c6347, 0.7), jer, [0.2 + i * 0.4, sponY(1.55) + 0.25, -1.55]); put(G.tube([V3(0.2 + i * 0.4 - 0.1, sponY(1.55) + 0.49, -1.55), V3(0.2 + i * 0.4, sponY(1.55) + 0.57, -1.55), V3(0.2 + i * 0.4 + 0.1, sponY(1.55) + 0.49, -1.55)], 0.01, 12, 6), STEEL, jer); }
       const bx = part(equipSys, { he: 'תיבות ציוד אחוריות (2)', en: 'Rear stowage boxes (×2)', mat: 'פלדה בעובי 2 מ״מ', desc: 'תיבות למנות, בדים ושקי שינה, מחוברות לגב המדפים. הצוות חי בטנק לימים, ולכן הציוד נחוץ.' });
-      for (const s of [1, -1]) { put(B(0.7, 0.4, 0.44), OLIVE2, bx, [-3.3, 1.65, s * 1.58]); put(B(0.04, 0.06, 0.1), STEEL, bx, [-2.95, 1.7, s * 1.58]); bolts(bx, Array.from({ length: 4 }, (_, i) => ({ pos: [-3.5 + (i % 2) * 0.4, 1.85, s * (1.4 + (i >> 1) * 0.36)] })), 0.011); }
+      for (const s of [1, -1]) { put(B(0.7, 0.4, 0.44), OLIVE2, bx, [-3.3, 1.7, s * 1.58]); put(B(0.04, 0.06, 0.1), STEEL, bx, [-2.95, 1.7, s * 1.58]); bolts(bx, Array.from({ length: 4 }, (_, i) => ({ pos: [-3.5 + (i % 2) * 0.4, 1.85, s * (1.4 + (i >> 1) * 0.36)] })), 0.011); }
       const mf = part(equipSys, { he: 'מגני בוץ מגומי (4)', en: 'Rubber mud flaps (×4)', mat: 'גומי מחוזק בבד', desc: 'מונעים התזת בוץ ואבק על הציוד והצוות, וגם מקטינים את ענן האבק מאחורי הטנק.' });
-      for (const s of [1, -1]) { put(B(0.02, 0.2, 0.7), CAMO_RUB, mf, [3.99, 1.2, s * 1.425], [0, 0, -0.0]); put(B(0.02, 0.28, 0.76), CAMO_RUB, mf, [-4.37, 0.98, s * 1.425]); }
+      for (const s of [1, -1]) { put(B(0.02, 0.18, 0.7), CAMO_RUB, mf, [3.96, 1.17, s * 1.425]); put(B(0.02, 0.28, 0.76), CAMO_RUB, mf, [-4.37, 0.98, s * 1.425]); }
       // markings: tactical number on both turret sides + data plate
       const num = K.textTexture('3 • 7 • 4', { font: '800 120px "Arial Black", Arial', color: '#f2efe6', pad: 12 });
       const mk = sub(tur, 'equip', { he: 'סימון טקטי על הצריח (2)', en: 'Turret tactical numbers (×2)', mat: 'צבע לבן מט', desc: 'מספר הטנק בצבע לבן על דופן הצריח: פלוגה, מחלקה, מספר טנק. הצבע מט כדי שלא ינצנץ בשמש.' });
