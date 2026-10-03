@@ -20,7 +20,7 @@ The IDF's main battle tank, modelled procedurally in [`model.js`](model.js). Ope
 | Crew | Turret basket with floor, slip ring and grating, 4 sculpted seats (soft-body cushions, backs, headrests, armrests, posts), 3 turret consoles with labelled buttons, knobs and guarded toggles, driver steering wheel, pedals, dashboard with labelled buttons, 3 radios with panels, ready rack (4 rounds), 48 rounds in racks in the rear hull, 3 fire bottles, NBC unit, stretchers |
 | Equipment | Tow cables with eyes and clamps, shovel and sledge, 3 jerrycans, rear stowage boxes, 2 × 8 smoke launchers, mud flaps, tactical numbers on the turret, hull data plate |
 
-Toggles: turret traverse, gun elevation, hatches, rear door, side skirts, running tracks (every link, road wheel, sprocket and roller turns with the right speed; the engine fan spins), Trophy armed, lights (night mode turns them on).
+Toggles: **fire (F)**, turret traverse, gun elevation, hatches, rear door, side skirts, running tracks (every link, road wheel, sprocket and roller turns with the right speed; the engine fan spins), Trophy armed, lights (night mode turns them on).
 
 ## Close-up realism (second pass)
 
@@ -35,6 +35,8 @@ After the first release the model was compared against photos of the real Mk 4 a
 - Final pass: driver compartment (tread-plate floor, liners, grab handle, eyepieces, belts), equipment with real shapes (jerrycans with cap, embossed X and carry handle; stowage boxes with lid, latches and handles), rear fenders with lips and flaps.
 
 - Firewall between engine and crew compartment with service hatch, partition beside the driver, aramid liners on the hull sides, harnesses, 4 centre-rack columns.
+
+- Firing (toggle `ירי` / key F, repeats every ~5 s while on): muzzle fireball + star flare + point light, 18 smoke puffs and 14 ground-dust puffs that expand and fade, a tracer streak, a recoil stroke of 0.4 m (barrel, sleeve, breech and muzzle parts slide back and return), and a synthesised Web Audio boom (noise + 95→24 Hz thump + crack, no files). Sprites are pooled, so repeated shots allocate nothing.
 
 ## Upgrades over #001
 
