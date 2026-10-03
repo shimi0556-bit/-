@@ -2,15 +2,15 @@
 
 The IDF's main battle tank, modelled procedurally in [`model.js`](model.js). Open [`index.html`](index.html).
 
-**231 named parts in 11 systems, ~950 meshes, ~280K triangles, no model or image files.**
+**243 named parts in 11 systems, ~1,030 meshes, ~340K triangles, no model or image files.**
 
 ## What's modelled
 
 | System | Detail |
 |---|---|
-| Hull | Welded hull from a side profile extruded for both sides, shallow V-shaped belly with stiffening ribs, low-slope lower glacis, nose and upper glacis, engine deck, roof with the turret-ring hole, rear plate frame. Rear door on 3 hinges with stiffeners, 3 latches + handle, 18 bolts, tail lamps. Engine intake louvers (10 slats), exhaust grilles, fill caps with chains, driver hatch with collar and 3 periscopes, front tow eyes, rear shackles, lifting lugs, headlamps with guards, sponson shelves with ribs and bolt rows, front and rear fenders |
-| Armour | 12 hinged side skirts (plate, 3 ribs, 6 bolts, lifting handle, rubber flap each) on hinge bars; 22 bolted turret armour modules (side, centre, front, cheek, rear) with 6 bolts and a spacer rib each; chain curtain behind the bustle: 31 chains × 5 links + ball weights on a bar |
-| Turret | Ring bearing (steel race, gear ring with 90 teeth, 48 bolts), turret skirt, wedge-shaped shell (flat rear roof, sloped front roof built by bending the extrusion), roof plate with weld bead, rear plate, commander cupola (8 periscopes, hatch lid, seal ring, bolts), loader hatch |
+| Hull | Welded hull from a side profile extruded for both sides, sloped sponson plates that rise from the skirt tops to the hull side (as on the real tank), shallow V-shaped belly with stiffening ribs, low-slope lower glacis, nose and upper glacis, engine deck, roof with the turret-ring hole, rear plate frame. Rear door on 3 hinges with stiffeners, 3 latches + handle, 18 bolts, tail lamps. Engine intake louvers (10 slats), exhaust grilles, fill caps with chains, driver hatch with collar and 3 periscopes, front tow eyes, rear shackles, lifting lugs, headlamps with guards, sponson shelves with ribs and bolt rows, front and rear fenders |
+| Armour | 12 hinged side skirts (rounded plate, groove, 6 bolts, lifting handle, rubber flap; the front plate is longer with a chamfered lower corner and the white company chevron) on hinge bars with lugs; 28 bolted turret armour modules that follow the sloping turret side, each with chamfered edges and 6 bolts; chain curtain behind the bustle: 31 chains × 5 links + ball weights on a bar |
+| Turret | Ring bearing (steel race, gear ring with 90 teeth, 48 bolts), turret skirt, low wedge shell lofted between a wide bottom outline and a narrower, lower roof outline (sides lean in ~35°, roof slopes down toward the mantlet), weld beads along the roof edge, panel lines with bolt rows, 6 roof grab handles, rear plate, commander cupola (8 periscopes, hatch lid, seal ring, bolts), loader hatch |
 | Gun & weapons | 120 mm MG253: mantlet with dust boot, tube, cradle sleeve, thermal sleeve with 9 clamp bands, bore evacuator with 4 pipes, muzzle reference system, breech, 2 recoil cylinders, data plate, coaxial MAG; commander MG, loader MG with shield, small remote weapon station that sweeps while driving |
 | Optics & comms | Gunner sight head (day + thermal windows, hood), commander panoramic sight, 8 periscopes, loader periscope, 4 laser-warning receivers, 2 whip antennas and a GPS puck |
 | Trophy (“מעיל רוח”) | 4 flat radar panels with patch-antenna grids and green status LEDs, 2 interceptor launchers that rise and turn outward when armed (toggle), cable harness, control unit with cooling fins |
@@ -21,6 +21,14 @@ The IDF's main battle tank, modelled procedurally in [`model.js`](model.js). Ope
 | Equipment | Tow cables with eyes and clamps, shovel and sledge, 3 jerrycans, rear stowage boxes, 2 × 8 smoke launchers, mud flaps, tactical numbers on the turret, hull data plate |
 
 Toggles: turret traverse, gun elevation, hatches, rear door, side skirts, running tracks (every link, road wheel, sprocket and roller turns with the right speed; the engine fan spins), Trophy armed, lights (night mode turns them on).
+
+## Close-up realism (second pass)
+
+After the first release the model was compared against photos of the real Mk 4 and rebuilt: a much lower and flatter turret with inward-leaning sides, sloped sponsons, a long chamfered front skirt, a thicker thermal-sleeved barrel without the bulb, darker olive paint. For zooming in:
+
+- the paint shader adds a cast-steel micro-bump (object-space noise, normal perturbed analytically, faded out with distance so it doesn't alias), paint chips that expose bare metal (lower roughness, higher metalness) and roughness variation;
+- armour modules have chamfered edges, skirts and sponsons have rounded edges, optics and weapon receivers use slightly rounded boxes;
+- every hatch lid has a rubber seal, a bolt ring, a grab handle, hinge barrels and a latch; deck panels have seams and bolt rows; sponsons have grab handles; skirts have hinge lugs.
 
 ## Upgrades over #001
 
