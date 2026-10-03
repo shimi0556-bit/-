@@ -14,7 +14,7 @@
 // with the true speed), traversing turret, elevating gun, extending Trophy launchers.
 
 window.L3D_MODEL = {
-  async build({ K, THREE, sys }) {
+  async build({ K, THREE, sys, scene }) {
     const { M, G, V3, mesh, part, instances, lerp, clamp } = K;
     const PI = Math.PI;
 
@@ -642,8 +642,10 @@ window.L3D_MODEL = {
     }
 
     // ================================================================== GUN (120 mm MG253), elevates on the trunnion
+    let recoilG;
     const gunG = sub(tur, 'gun', { he: 'מכלול התותח 120 מ״מ', en: '120 mm gun assembly', mat: 'פלדת תותחים, ציפוי כרום בקנה', desc: 'התותח החלק MG253 בקוטר 120 מ״מ — אחד התותחים החזקים בעולם. פגזי חץ (APFSDS) יוצאים ממנו במהירות של כ־1,700 מטר בשנייה, והוא יכול גם לשגר טילי LAHAT.' }, { pos: [GUN.x, GUN.y, 0] });
     {
+      recoilG = new THREE.Group(); recoilG.name = 'recoiling parts'; gunG.add(recoilG);
       const barrelMat = M.metal(0x2c2f33, 0.45);
       const mant = sub(gunG, 'gun', { he: 'מגן תותח (מנטלט)', en: 'Gun mantlet', mat: 'פלדת שריון יצוקה', desc: 'הגוש הכבד שמגן על פתח התותח בחזית הצריח. הוא נע יחד עם התותח ומשמש גם כשריון, והצורה שלו מסיטה פגזים כלפי מעלה.' });
       // cast mantlet: soft, fully rounded body (wider than tall, tapering forward) + a round collar around the barrel
@@ -652,17 +654,17 @@ window.L3D_MODEL = {
       put(G.torus(0.17, 0.02, 10, 40, PI * 2, 'x'), OLIVE, mant, [0.42, 0.0, 0]);
       put(G.cyl(0.125, 0.11, 0.14, 28, 'x'), M.rubber(), mant, [0.7, 0.0, 0.0], null, { name: 'dust boot' });
       bolts(mant, [[-0.4, 0.0], [0.4, 0.0], [-0.3, 0.2], [0.3, 0.2], [-0.3, -0.1], [0.3, -0.1]].map(([z, y]) => ({ pos: [0.2, y + 0.26, z * 0.9], rot: [0, 0, 0] })), 0.013);
-      const tube = sub(gunG, 'gun', { he: 'קנה התותח', en: 'Gun barrel', mat: 'פלדת תותחים מצופה כרום', desc: 'קנה חלק באורך כ־5.5 מ׳ (מתוכם חלק בתוך הצריח). חלק, בלי חריצים, כי הפגז הוא חץ שמסתובב בעצמו מהמייצבים שבגופו.' });
+      const tube = sub(recoilG, 'gun', { he: 'קנה התותח', en: 'Gun barrel', mat: 'פלדת תותחים מצופה כרום', desc: 'קנה חלק באורך כ־5.5 מ׳ (מתוכם חלק בתוך הצריח). חלק, בלי חריצים, כי הפגז הוא חץ שמסתובב בעצמו מהמייצבים שבגופו.' });
       put(G.cyl(0.075, 0.066, GUN.len - 0.5, 36, 'x'), barrelMat, tube, [0.5 + (GUN.len - 0.5) / 2, 0, 0], null, { name: 'tube' });
       put(G.cyl(0.095, 0.095, 0.7, 28, 'x'), M.darkSteel(), tube, [0.35, 0, 0], null, { name: 'cradle sleeve' });
-      const sleeve = sub(gunG, 'gun', { he: 'שרוול תרמי', en: 'Thermal sleeve', mat: 'סיבי זכוכית בשרוול דו־שכבתי', desc: 'שרוול סיבי זכוכית שמשווה את הטמפרטורה סביב הקנה. בלי שרוול, שמש חמה או גשם יעקמו את הקנה בכמה מילימטרים ויקלקלו את דיוק האש.' });
+      const sleeve = sub(recoilG, 'gun', { he: 'שרוול תרמי', en: 'Thermal sleeve', mat: 'סיבי זכוכית בשרוול דו־שכבתי', desc: 'שרוול סיבי זכוכית שמשווה את הטמפרטורה סביב הקנה. בלי שרוול, שמש חמה או גשם יעקמו את הקנה בכמה מילימטרים ויקלקלו את דיוק האש.' });
       put(G.cyl(0.108, 0.108, 3.0, 36, 'x'), dusty(0x4b4d3f, { r: 0.9, m: 0.05, dust: 0.25, name: 'סיבי זכוכית' }), sleeve, [2.05, 0, 0], null, { name: 'sleeve' });
       instances(G.torus(0.11, 0.0065, 6, 32, PI * 2, 'x'), M.darkChrome(), Array.from({ length: 10 }, (_, i) => ({ pos: [0.7 + i * 0.31, 0, 0] })), { parent: sleeve });
       instances(B(0.05, 0.02, 0.03), M.darkChrome(), Array.from({ length: 10 }, (_, i) => ({ pos: [0.7 + i * 0.31, 0.112, 0] })), { parent: sleeve });
-      const evac = sub(gunG, 'gun', { he: 'מפלט גזים (איבקואטור)', en: 'Bore evacuator', mat: 'פלדה', desc: 'מיכל גזים עם צינורות כיוונים. אחרי כל ירייה הוא מנקז את אבק השריפה מהקנה, כדי שלא יזרום לתוך הצריח בעת פתיחת הבריח.' });
+      const evac = sub(recoilG, 'gun', { he: 'מפלט גזים (איבקואטור)', en: 'Bore evacuator', mat: 'פלדה', desc: 'מיכל גזים עם צינורות כיוונים. אחרי כל ירייה הוא מנקז את אבק השריפה מהקנה, כדי שלא יזרום לתוך הצריח בעת פתיחת הבריח.' });
       put(G.lathe([[0.075, -0.2], [0.11, -0.16], [0.125, -0.1], [0.125, 0.1], [0.11, 0.16], [0.075, 0.2]], 32, 'x'), dusty(0x4b4d3f, { r: 0.7, m: 0.4, dust: 0.25, name: 'פלדה צבועה' }), evac, [3.3, 0, 0], null, { name: 'evacuator' });
       for (const a of [0.7, -0.7, 2.4, -2.4]) put(G.cyl(0.012, 0.012, 0.16, 8, 'x'), STEEL, evac, [3.3, Math.sin(a) * 0.125, Math.cos(a) * 0.125], [0, 0, 0.0]);
-      const mrs = sub(gunG, 'gun', { he: 'מערכת כיול לוע (MRS)', en: 'Muzzle reference system', mat: 'פלדה + מראה אופטית', desc: 'מראה קטנה בקצה הקנה שמשקפת קרן לכוונת. האופטיקה מודדת סטייה של הקנה בין ירייה לירייה ומתקנת אוטומטית.' });
+      const mrs = sub(recoilG, 'gun', { he: 'מערכת כיול לוע (MRS)', en: 'Muzzle reference system', mat: 'פלדה + מראה אופטית', desc: 'מראה קטנה בקצה הקנה שמשקפת קרן לכוונת. האופטיקה מודדת סטייה של הקנה בין ירייה לירייה ומתקנת אוטומטית.' });
       put(G.cyl(0.075, 0.075, 0.12, 24, 'x'), M.darkSteel(), mrs, [GUN.len - 0.06, 0, 0], null, { name: 'muzzle collar' });
       put(G.torus(0.068, 0.012, 8, 28, PI * 2, 'x'), STEEL, mrs, [GUN.len - 0.005, 0, 0]);
       put(B(0.16, 0.1, 0.1), M.darkSteel(), mrs, [GUN.len - 0.16, 0.1, 0]);
@@ -670,7 +672,7 @@ window.L3D_MODEL = {
       const bore = put(G.cyl(0.044, 0.044, 0.02, 20, 'x'), BLACK, mrs, [GUN.len + 0.002, 0, 0], null, { name: 'bore', cast: false });
       void bore;
       // breech + recoil system, inside the turret
-      const brc = sub(gunG, 'gun', { he: 'בריח וקופסת קנה', en: 'Breech & breech ring', mat: 'פלדה מחושלת', desc: 'הבריח האנכי נפתח למעלה וסוגר את התא אחרי שהטען מכניס פגז. הוא מחזיק לחץ של אלפי אטמוספרות בשבריר שנייה.' });
+      const brc = sub(recoilG, 'gun', { he: 'בריח וקופסת קנה', en: 'Breech & breech ring', mat: 'פלדה מחושלת', desc: 'הבריח האנכי נפתח למעלה וסוגר את התא אחרי שהטען מכניס פגז. הוא מחזיק לחץ של אלפי אטמוספרות בשבריר שנייה.' });
       put(B(0.5, 0.34, 0.34), M.darkSteel(), brc, [-0.45, 0.0, 0], null, { name: 'breech ring' });
       put(B(0.4, 0.2, 0.3), M.castIron(), brc, [-0.8, 0.0, 0]);
       put(G.cyl(0.03, 0.03, 0.12, 12, 'y'), STEEL, brc, [-0.48, 0.2, 0]);
@@ -1004,6 +1006,74 @@ window.L3D_MODEL = {
       const pl = part(equipSys, { he: 'לוחית דגם על הגוף', en: 'Hull data plate', mat: 'אלומיניום חרוט', desc: 'לוחית יצרן על הגוף: דגם, מספר סידורי ושנת ייצור. על כל טנק יש מספר ייחודי.' });
       const pt = K.textTexture('MERKAVA Mk.4M\nIDF · 2012', { font: '700 80px Arial', color: '#2a2a28', bg: '#b9bcc0', lineHeight: 90 });
       put(new THREE.PlaneGeometry(0.22, 0.22 / pt.aspect), M.decal(pt.tex), pl, [3.5, deckY(3.5) + 0.01, 0.0], [-PI / 2 + DECK_A, 0, PI / 2], { cast: false });
+    }
+
+
+    // ================================================================== FIRING EFFECTS (muzzle blast, smoke, dust, tracer, recoil, sound)
+    {
+      const mkTex = (draw) => K.canvasTexture(128, 128, draw);
+      const flashTex = mkTex((g, w, h) => { const r = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); r.addColorStop(0, 'rgba(255,255,235,1)'); r.addColorStop(0.18, 'rgba(255,225,130,0.95)'); r.addColorStop(0.5, 'rgba(255,120,30,0.55)'); r.addColorStop(1, 'rgba(120,30,0,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); });
+      const starTex = mkTex((g, w, h) => { g.translate(w / 2, h / 2); for (let k = 0; k < 9; k++) { g.rotate((Math.PI * 2) / 9 + 0.3 * k); const r = g.createLinearGradient(0, 0, w / 2, 0); r.addColorStop(0, 'rgba(255,240,180,0.9)'); r.addColorStop(1, 'rgba(255,120,20,0)'); g.fillStyle = r; g.beginPath(); g.moveTo(0, -3); g.lineTo(w / 2 * (0.55 + 0.45 * ((k * 37) % 10) / 10), 0); g.lineTo(0, 3); g.fill(); } });
+      const smokeTex = mkTex((g, w, h) => { for (let k = 0; k < 14; k++) { const x = w / 2 + (Math.random() - 0.5) * w * 0.34, y = h / 2 + (Math.random() - 0.5) * h * 0.34, r0 = w * (0.18 + Math.random() * 0.14); const r = g.createRadialGradient(x, y, 0, x, y, r0); r.addColorStop(0, 'rgba(255,255,255,0.35)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); } });
+      const mkSprite = (tex, color, blending, opacity) => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color, blending, transparent: true, depthWrite: false, opacity, fog: false })); sp.visible = false; sp.renderOrder = 10; scene.add(sp); return sp; };
+      const parts = [];
+      const add = (o) => { o.sprite.visible = true; parts.push(o); return o; };
+      const flashLight = new THREE.PointLight(0xffa850, 0, 14, 1.6); scene.add(flashLight);
+      const tracer = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.6, 8).rotateZ(Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd9a0, transparent: true, opacity: 0, depthWrite: false })); tracer.visible = false; scene.add(tracer);
+      let age = 99, aud = null, firing = false, nextAt = 0, dir = V3(1, 0, 0), mpos = V3();
+      const pool = []; // sprites are created once and reused by every shot
+      for (let k = 0; k < 3; k++) pool.push({ s: mkSprite(flashTex, 0xffffff, THREE.AdditiveBlending, 1), k: 'flash' });
+      pool.push({ s: mkSprite(starTex, 0xffffff, THREE.AdditiveBlending, 1), k: 'star' });
+      for (let k = 0; k < 18; k++) pool.push({ s: mkSprite(smokeTex, 0x8a8478, THREE.NormalBlending, 0.5), k: 'smoke' });
+      for (let k = 0; k < 14; k++) pool.push({ s: mkSprite(smokeTex, 0xa8946a, THREE.NormalBlending, 0.45), k: 'dust' });
+      const rnd = (a) => (Math.sin(a * 91.7) * 43758.5453) % 1;
+      const setup = () => {
+        gunG.updateWorldMatrix(true, true);
+        mpos.set(GUN.len + 0.12, 0, 0).applyMatrix4(gunG.matrixWorld);
+        dir.set(1, 0, 0).transformDirection(gunG.matrixWorld);
+        pool.forEach((p, i) => { p.r = Math.abs(rnd(i + 1)); p.q = Math.abs(rnd(i + 7)); p.u = Math.abs(rnd(i + 13)); });
+        // ground point below the muzzle, pushed a little ahead
+        tracer.position.copy(mpos);
+        tracer.quaternion.setFromUnitVectors(V3(1, 0, 0), dir);
+      };
+      const step = (a) => {
+        const out = (t) => 1 - Math.pow(1 - clamp(t), 3);
+        pool.forEach((p, i) => {
+          const s = p.s; let life, u, o = 0, sc = 0;
+          if (p.k === 'flash') { life = 0.28 + i * 0.05; u = a / life; o = (1 - u) * (i ? 0.75 : 1); sc = lerp(0.5, 3.4 - i * 0.7, out(u * 1.4)); s.position.copy(mpos).addScaledVector(dir, 0.3 + i * 0.45 * out(u)); s.material.rotation = i; }
+          else if (p.k === 'star') { life = 0.12; u = a / life; o = 1 - u; sc = lerp(1.2, 4.4, out(u)); s.position.copy(mpos).addScaledVector(dir, 0.1); s.material.rotation = a * 5; }
+          else if (p.k === 'smoke') { life = 3.2 + p.r * 2.4; u = a / life; o = 0.5 * Math.pow(1 - clamp(u), 1.4) * clamp(a / 0.05); sc = lerp(0.35, 1.6 + 2.6 * p.q, out(u * 0.9) * 0.9 + 0.1 * u); const spread = V3(0, 0, 0).addScaledVector(V3(p.q - 0.5, p.u - 0.3, p.r - 0.5), 1.4 * out(u)); s.position.copy(mpos).addScaledVector(dir, 0.25 + (1.2 + 5 * p.r) * out(u * 0.8)).add(spread).add(V3(0, 0.5 * u * u * 2, 0)); s.material.rotation = p.q * 6 + u; }
+          else { life = 2.6 + p.r * 2; u = a / life; o = 0.5 * Math.pow(1 - clamp(u), 1.5) * clamp((a - 0.04) / 0.1); sc = lerp(0.5, 2.4 + 2.2 * p.q, out(u * 0.85)); const ang = p.u * Math.PI * 2, rr = (0.5 + 4 * out(u * 0.7)) * (0.4 + p.r); s.position.set(mpos.x + dir.x * 1.5 + Math.cos(ang) * rr, 0.25 + 0.5 * out(u), mpos.z + dir.z * 1.5 + Math.sin(ang) * rr); s.material.rotation = p.q * 5; }
+          s.visible = a >= 0 && u < 1; s.material.opacity = clamp(o); s.scale.setScalar(sc);
+        });
+        flashLight.position.copy(mpos).addScaledVector(dir, 0.8); flashLight.intensity = a < 0.5 ? 60 * Math.exp(-a * 11) : 0;
+        const tr = a * 240; tracer.visible = a < 0.9 && a >= 0; tracer.material.opacity = clamp(1 - a / 0.9); tracer.position.copy(mpos).addScaledVector(dir, 2 + tr);
+        // recoil: fast back, slow return
+        const rc = a < 0.07 ? a / 0.07 : Math.pow(Math.max(0, 1 - (a - 0.07) / 0.95), 2);
+        recoilG.position.x = -0.4 * rc;
+      };
+      const boom = () => {
+        try {
+          const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+          aud = aud || new AC(); if (aud.state === 'suspended') aud.resume();
+          const t0 = aud.currentTime, sr = aud.sampleRate, len = Math.floor(sr * 2.4), buf = aud.createBuffer(1, len, sr), d = buf.getChannelData(0);
+          let lp = 0; for (let i = 0; i < len; i++) { const t = i / sr; lp += (Math.random() * 2 - 1 - lp) * (0.35 * Math.exp(-t * 2.2) + 0.02); d[i] = lp * 2.2 * (Math.exp(-t * 7) * 0.9 + Math.exp(-t * 1.4) * 0.35) + 0.0 * t; }
+          const src = aud.createBufferSource(); src.buffer = buf;
+          const thump = aud.createOscillator(); thump.type = 'sine'; thump.frequency.setValueAtTime(95, t0); thump.frequency.exponentialRampToValueAtTime(24, t0 + 0.5);
+          const tg = aud.createGain(); tg.gain.setValueAtTime(1.1, t0); tg.gain.exponentialRampToValueAtTime(0.001, t0 + 0.7);
+          const crack = aud.createBufferSource(), cb = aud.createBuffer(1, Math.floor(sr * 0.12), sr), cd = cb.getChannelData(0); for (let i = 0; i < cd.length; i++) cd[i] = (Math.random() * 2 - 1) * Math.exp(-i / sr * 60); crack.buffer = cb;
+          const master = aud.createGain(); master.gain.value = 0.7; const comp = aud.createDynamicsCompressor();
+          src.connect(master); thump.connect(tg).connect(master); crack.connect(master); master.connect(comp).connect(aud.destination);
+          src.start(t0); thump.start(t0); thump.stop(t0 + 0.8); crack.start(t0);
+        } catch (e) { /* audio is optional */ }
+      };
+      const fire = () => { setup(); age = 0; step(0); boom(); };
+      K.toggle('fire', { he: 'ירי', key: 'f', seconds: 0.25 }, (t) => { const on = t > 0.6; if (on && !firing) { firing = true; if (age > 3.0) { fire(); nextAt = 0; } } if (!on) firing = false; });
+      K.onFrame((time, dt) => {
+        if (age < 12) { age += dt; step(age); } else if (age < 99) { age = 99; pool.forEach((p) => { p.s.visible = false; }); tracer.visible = false; flashLight.intensity = 0; recoilG.position.x = 0; }
+        if (firing && age >= 99 || (firing && age > 5.5)) fire();
+      });
+      K.__fire = { fire, at: (a) => { setup(); age = a; step(a); } };
     }
 
     // ================================================================== TOGGLES + ANIMATION
