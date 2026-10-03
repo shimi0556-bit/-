@@ -87,11 +87,28 @@ python3 build.py --check                   # must print "ok" for the new model (
 node tools/check.cjs --qa <NNN-slug>       # writes models/<id>/shots/*.png: front, side, rear, top, under, explode, xray, cut, open, night + custom views
 ```
 
-Look at every QA shot (Read the PNGs). Fix anything floating, intersecting, upside-down or mirrored, then re-run. In the Claude Code sandbox Playwright is the global install. `check.cjs` fetches three.js with `curl` and serves it to the page, so it works behind the sandbox proxy.
+Look at every QA shot (Read the PNGs). Fix anything floating, intersecting, upside-down or mirrored, then re-run.
+
+### 6b. Photo comparison, part by part (required for every model)
+
+The user asked for this explicitly: every model is compared against real photos found on the internet, part by part, before it is published. Our own render can look fine on its own and still be wrong (the Merkava's skirts hid the wheels and the Tesla's nose was a box until we compared).
+
+```bash
+python3 tools/refs.py fetch "<object name + generation>" $SCRATCH/ref <optional title filter>   # Wikimedia Commons, free licences
+python3 tools/refs.py sheet $SCRATCH/ref_sheet.jpg $SCRATCH/ref/*.jpg                           # read the sheet, pick 4-6 angles
+node tools/shot.cjs <id> $SCRATCH/m m01 '{"pos":[…],"target":[…],"fov":30}' …                  # match each photo's camera
+python3 tools/refs.py pair $SCRATCH/ref/01.jpg $SCRATCH/m/m01.png $SCRATCH/cmp_01.jpg          # REAL | MODEL side by side
+```
+
+1. Pick photos in the same colour/variant as the model, covering at least: front, front 3/4, side, rear 3/4, rear, and one close-up of each signature part (wheel, lights, cockpit, hatch…).
+2. Match each angle with `tools/shot.cjs` and compare the pairs. Go **part by part**, in this order: silhouette and proportions (roofline, overhangs, ride height, wheel size vs body), big masses (nose, tail, turret…), then each system (lights, wheels, glass, trim, markings), then colour and materials.
+3. Write down every difference, fix the biggest first, re-shoot the same pairs, repeat until no part reads as wrong.
+4. Never commit the photos (licences). List the Commons files you compared against in the model README under "Reference photos", and record what changed in the wiki notes.
+ In the Claude Code sandbox Playwright is the global install. `check.cjs` fetches three.js with `curl` and serves it to the page, so it works behind the sandbox proxy.
 
 ## 7. Publish
 
 1. `python3 build.py --check` once more, so `index.html`, `catalog.json`, `thumb.jpg` and `stats.json` are fresh.
 2. Add the model's row to the table in `README.md`, and a dated line under `## Notes` in `wiki/daily-3d-library.md` (what was built, anything surprising, open issues).
 3. Commit (`Add #NNN <name> to the daily 3D library`), push, and get it onto `main` as the routine instructs.
-4. Send the model's `index.html` to the user (`SendUserFile`), with a two-line Hebrew summary: what it is and how many parts it has.
+4. Send the model's `index.html` to the user (`SendUserFile`), with a two-line Hebrew summary: what it is and how many parts it has. Mention which reference photos it was compared against and what still differs.

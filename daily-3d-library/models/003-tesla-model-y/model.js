@@ -21,34 +21,33 @@ window.L3D_MODEL = {
     const TIRE_R = 0.356, TIRE_W = 0.255;      // 255/45 R19
     const WHEEL_Z = 0.818;                     // track 1.636 m
     const HW = 0.96;                           // half width 1.92 m
-    const ARCH_R = 0.43, ARCH_Y = 0.37;        // wheel-arch circle
+    const ARCH_R = 0.405, ARCH_Y = 0.36;        // wheel-arch circle
     const W_IN = 0.69;                         // inner wheelhouse wall
-    const COWL = 1.05, WS_TOP = 0.20, ROOF_END = -1.05, BL_END = -2.16;
-    const ROOF = 1.585;                        // roof peak ≈ 1.62 with the crown
-    const GA_TOP = 0.205, GA_BOT = 0.405, A_G = 0.42; // side-glass band in v; greenhouse ends at A_G
+    const COWL = 1.02, WS_TOP = 0.02, ROOF_END = -0.92, BL_END = -2.24;
+    const ROOF = 1.622 - 0.5 * 0.27 * 0.27;                        // roof peak ≈ 1.62 with the crown
+    const GA_TOP = 0.178, GA_BOT = 0.405, A_G = 0.42; // side-glass band in v; greenhouse ends at A_G
     const FD = [0.98, -0.155], RD = [-0.185, -1.06], QG = [-1.10, -1.62]; // front / rear door, quarter glass
     const FR = [1.10, 2.18];                   // frunk lid x range
-    const LG = -1.09;                          // liftgate hinge line
+    const LG = -0.95;                          // liftgate hinge line
     const GAP = 0.0035;
     const FLOOR = 0.42;                        // cabin floor (the battery sits under it)
 
     // ------------------------------------------------------------------ section parameters
     const W = (x) => {
-      const rf = 0.62, rr = 0.30;
-      if (x > XF - rf) { const u = clamp((x - (XF - rf)) / rf); return HW * Math.pow(Math.max(0, 1 - Math.pow(u, 2.6)), 1 / 2.6) * (0.985 + 0.015 * (1 - u)); }
+      const rf = 0.5, rr = 0.30;
+      if (x > XF - rf) { const u = clamp((x - (XF - rf)) / rf); return HW * Math.pow(Math.max(0, 1 - Math.pow(u, 3.2)), 1 / 3.2); }
       if (x < XR + rr) { const d = XR + rr - x; return HW - rr + Math.sqrt(Math.max(0, rr * rr - d * d)); }
       return HW;
     };
     const Yb = (x) => {                        // beltline / hood edge
-      if (x > COWL) return 0.985 - 0.29 * Math.pow((x - COWL) / (XF - COWL), 2.2);
+      if (x > COWL) return 0.985 - 0.17 * Math.pow((x - COWL) / (XF - COWL), 1.5) - 0.11 * Math.pow(smooth(XF - 0.3, XF, x), 1.6);
       if (x < -1.9) return 1.06 - 0.07 * Math.pow((-1.9 - x) / (-1.9 - XR), 2);
       return lerp(0.985, 1.06, (COWL - x) / (COWL + 1.9));
     };
     const Yt = (x) => {                        // centre-line profile
       if (x >= COWL) return Yb(x) + 0.045 - 0.03 * Math.pow((x - COWL) / (XF - COWL), 2);
       if (x >= WS_TOP) { const t = (COWL - x) / (COWL - WS_TOP); return Yb(x) + (ROOF - Yb(x)) * (1 - Math.pow(1 - t, 1.55)); }
-      if (x >= ROOF_END) { const t = (WS_TOP - x) / (WS_TOP - ROOF_END); return ROOF + 0.035 * Math.sin(PI * t) - 0.035 * t * t; }
-      if (x >= BL_END) { const t = (ROOF_END - x) / (ROOF_END - BL_END); return 1.55 - 0.43 * Math.pow(t, 1.2); }
+      if (x >= BL_END) { const d = x + 0.25; return d > 0 ? 1.622 - 0.5 * d * d : 1.622 - ((1.622 - 1.15) / Math.pow(-(BL_END + 0.25), 1.45)) * Math.pow(-d, 1.45); }
       const t = (BL_END - x) / (BL_END - XR); return 1.12 - 0.05 * t * t;
     };
     const Y0 = (x) => {
@@ -65,14 +64,14 @@ window.L3D_MODEL = {
     const sec = (x, v) => {
       const s = v < 0 ? -1 : 1, a = Math.min(1, Math.abs(v));
       const w = W(x), yb = Yb(x), hh = Math.max(0.004, Yt(x) - yb), y0 = Y0(x), ya = YA(x);
-      const k = clamp(hh / 0.5), wg = w - lerp(0.05, 0.13, k), n = lerp(5.5, 2.5, k);
+      const nf = smooth(1.3, XF, x), k = clamp(hh / 0.5), wg = w - lerp(0.05, 0.13, k) - 0.12 * nf, n = lerp(5.5, 3.3, k), drop = 0.055 + 0.1 * nf;
       let y, z;
       const seg = (a0, a1) => (a - a0) / (a1 - a0);
       if (a <= LV.glass) { const t = (a / LV.glass) * PI / 2; z = wg * Math.pow(Math.sin(t), 2 / n); y = yb + hh * Math.pow(Math.cos(t), 2 / n); }
-      else if (a <= LV.shoulder) { const t = seg(LV.glass, LV.shoulder) * PI / 2; z = wg + (w - wg) * Math.sin(t); y = yb - 0.055 * (1 - Math.cos(t)); }
-      else if (a <= LV.side) { const t = seg(LV.shoulder, LV.side); y = lerp(yb - 0.055, ya + 0.05, t); z = w + 0.012 * Math.sin(PI * t) - 0.035 * t * t; }
-      else if (a <= LV.cornerB) { const t = seg(LV.side, LV.cornerB) * PI / 2; z = w - 0.035 - 0.05 * (1 - Math.cos(t)); y = ya + 0.05 - 0.05 * Math.sin(t); }
-      else if (a <= LV.well) { const t = seg(LV.cornerB, LV.well); z = lerp(w - 0.085, W_IN, t); y = ya; }
+      else if (a <= LV.shoulder) { const t = seg(LV.glass, LV.shoulder) * PI / 2; z = wg + (w - wg) * Math.sin(t); y = yb - drop * (1 - Math.cos(t)); }
+      else if (a <= LV.side) { const t = seg(LV.shoulder, LV.side); y = lerp(yb - drop, ya + 0.05, t); z = w + 0.014 * Math.sin(PI * t * 0.8) - 0.07 * t * t; }
+      else if (a <= LV.cornerB) { const t = seg(LV.side, LV.cornerB) * PI / 2; z = w - 0.07 - 0.05 * (1 - Math.cos(t)); y = ya + 0.05 - 0.05 * Math.sin(t); }
+      else if (a <= LV.well) { const t = seg(LV.cornerB, LV.well); z = lerp(w - 0.12, W_IN, t); y = ya; }
       else if (a <= LV.wellIn) { const t = seg(LV.well, LV.wellIn); z = W_IN; y = lerp(ya, y0, t); }
       else { const t = seg(LV.wellIn, 1); z = lerp(W_IN, 0, t); y = y0; }
       return V3(x, y, s * z);
@@ -82,7 +81,7 @@ window.L3D_MODEL = {
     const nrm = (x, v) => { const e = 1e-3; const du = sec(x + e, v).sub(sec(x - e, v)), dv = sec(x, v + e).sub(sec(x, v - e)); const n = du.cross(dv).normalize(); const p = sec(x, v); if (n.dot(out(p, x)) < 0) n.negate(); return n; };
     const onBody = (x, v, d = 0) => sec(x, v).addScaledVector(nrm(x, v), d);
     // v for a given height on the door side (s = side)
-    const vAtY = (x, y, s = 1) => s * (LV.shoulder + (LV.side - LV.shoulder) * clamp((Yb(x) - 0.055 - y) / (Yb(x) - 0.055 - YA(x) - 0.05)));
+    const vAtY = (x, y, s = 1) => { const dr = 0.055 + 0.1 * smooth(1.3, XF, x); return s * (LV.shoulder + (LV.side - LV.shoulder) * clamp((Yb(x) - dr - y) / (Yb(x) - dr - YA(x) - 0.05))); };
 
     const inX = (x, r) => x <= Math.max(...r) && x >= Math.min(...r);
     const aP = (x) => lerp(0.165, 0.372, clamp((x - WS_TOP) / (COWL - WS_TOP)));          // A-pillar line (v at x)
@@ -110,7 +109,7 @@ window.L3D_MODEL = {
 
     // a patch of the section between two v-curves lo(x)..hi(x): smooth edges along the pillars
     const band = (x0, x1, lo, hi, o = {}) => surface((x, u) => sec(x, lerp(lo(x), hi(x), u)), subX(x0, x1), samples(0, 1, 0.08), { out, ...o });
-    const PAINT = M.paint(0x9da1a6);            // Quicksilver
+    const PAINT = M.paint(0x7d838b);            // Quicksilver
     const GLOSSBLK = M.gloss(0x08090a);
     const TRIM = M.plastic(0x101113, 0.5);
     const glassMat = (o = 0.62) => M.glass(0x0b1013, o);
@@ -125,7 +124,12 @@ window.L3D_MODEL = {
       // rear face: lower part is the bumper (body), upper part belongs to the liftgate
       const rr = ring(XR).slice(0, -1), YC = 0.66;
       const clip = (pts, keepAbove) => { const o = []; for (let i = 0; i < pts.length; i++) { const p = pts[i], q = pts[(i + 1) % pts.length], pa = (p.y >= YC) === keepAbove, qa = (q.y >= YC) === keepAbove; if (pa) o.push(p); if (pa !== qa) { const t = (YC - p.y) / (q.y - p.y); o.push(p.clone().lerp(q, t)); } } return o; };
-      mesh(cap(clip(rr, false), V3(-1, 0, 0)), PAINT, { parent: shell, name: 'rear bumper face' });
+      const clipAt = (pts, yc, keepAbove) => { const o = []; for (let i = 0; i < pts.length; i++) { const p = pts[i], q = pts[(i + 1) % pts.length], pa = (p.y >= yc) === keepAbove, qa = (q.y >= yc) === keepAbove; if (pa) o.push(p); if (pa !== qa) { const t = (yc - p.y) / (q.y - p.y); o.push(p.clone().lerp(q, t)); } } return o; };
+      const lowerR = clip(rr, false);
+      mesh(cap(clipAt(lowerR, 0.5, false), V3(-1, 0, 0)), M.plastic(0x141516, 0.6), { parent: shell, name: 'rear lower bumper (black)' });
+      mesh(cap(clipAt(lowerR, 0.5, true), V3(-1, 0, 0)), PAINT, { parent: shell, name: 'rear bumper face' });
+      // black lower bumper wraps around the rear corners
+      for (const s2 of [1, -1]) mesh(surface(sec, subX(XR, XR + 0.32), subV(s2 * vAtY(XR + 0.2, 0.5, 1), s2 * 1), { out, offset: 0.004, skip: (x, v) => sec(x, v).y > 0.5 }), M.plastic(0x141516, 0.6), { parent: shell, name: 'rear corner cladding' });
       ctx.rearUpper = clip(rr, true);
       // B-pillar gloss-black appliqués + A-pillar trim between windshield and door glass
       const bp = part(bodySys, { he: 'עמודי B בשחור מבריק', en: 'Gloss-black B-pillar trims', mat: 'פלסטיק פסנתר שחור', desc: 'כיסוי שחור מבריק על העמוד שבין הדלתות, כדי שהחלונות ייראו כפס זכוכית אחד רציף.' });
@@ -135,13 +139,15 @@ window.L3D_MODEL = {
       for (const s of [1, -1]) mesh(surface(sec, samples(AXR + ARCH_R + 0.01, AXF - ARCH_R - 0.01, 0.05), samples(s * 0.75, s * LV.cornerB, 0.012), { out, offset: 0.003 }), M.plastic(0x16171a, 0.45), { parent: cl });
       // front: lower intake + grille mesh + splitter
       const fr = part(bodySys, { he: 'פגוש קדמי, פתח אוויר תחתון וספליטר', en: 'Front fascia, lower intake & splitter', mat: 'פוליפרופילן צבוע + רשת שחורה', desc: 'בחזית אין גריל כמו ברכב בנזין — רק פתח תחתון שמכניס אוויר לרדיאטור של משאבת החום, עם תריסים אקטיביים שנסגרים בנסיעה מהירה.' });
-      put(G.box(0.03, 0.12, 1.1, 0.02), GLOSSBLK, fr, [XF - 0.03, 0.36, 0]);
-      instances(new THREE.BoxGeometry(0.01, 0.006, 1.04), M.plastic(0x050506, 0.6), Array.from({ length: 8 }, (_, i) => ({ pos: [XF - 0.012, 0.31 + i * 0.013, 0] })), { parent: fr });
-      put(G.box(0.12, 0.02, 1.5, 0.008), TRIM, fr, [XF - 0.07, Y0(XF - 0.07) - 0.005, 0]);
-      for (const s of [1, -1]) put(G.box(0.025, 0.1, 0.12, 0.02), GLOSSBLK, fr, [XF - 0.08, 0.38, s * 0.66], [0, s * 0.5, 0]);
+      const fxz = (z) => { let lo = XF - 0.5, hi = XF; for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (W(m) > Math.abs(z)) lo = m; else hi = m; } return lo; };
+      put(G.box(0.04, 0.13, 1.12, 0.03), GLOSSBLK, fr, [fxz(0.56) - 0.0, 0.34, 0], null, { name: 'lower intake' });
+      instances(new THREE.BoxGeometry(0.01, 0.006, 1.06), M.plastic(0x050506, 0.6), Array.from({ length: 8 }, (_, i) => ({ pos: [fxz(0.53) + 0.018, 0.29 + i * 0.013, 0] })), { parent: fr });
+      put(G.box(0.03, 0.025, 1.0, 0.01), M.plastic(0x2a2c30, 0.5), fr, [fxz(0.5) + 0.008, 0.255, 0], null, { name: 'lower lip' });
+      // vertical black corner inlets (air curtains) next to the headlamps
+      for (const s2 of [1, -1]) { const pts = []; for (let k = 0; k <= 8; k++) { const y = 0.3 + k * 0.05, z = s2 * 0.885; pts.push(V3(fxz(z) - 0.022, y, z)); } put(G.tube(pts, 0.022, 16, 8), GLOSSBLK, fr); }
       // rear diffuser + reflectors
       const rd = part(bodySys, { he: 'מפזר אוויר אחורי', en: 'Rear diffuser', mat: 'פלסטיק שחור מרקם', desc: 'החלק השחור התחתון בפגוש האחורי. הוא מכוון את זרימת האוויר מתחת לרכב ומקטין גרר.' });
-      put(G.box(0.05, 0.1, 1.5, 0.02), M.plastic(0x141516, 0.75), rd, [XR + 0.015, Y0(XR) + 0.06, 0]);
+      put(G.box(0.05, 0.05, 1.4, 0.015), M.plastic(0x141516, 0.75), rd, [XR + 0.03, Y0(XR) + 0.0, 0]);
       instances(new THREE.BoxGeometry(0.2, 0.06, 0.008), M.plastic(0x141516, 0.75), [-0.45, -0.15, 0.15, 0.45].map((z) => ({ pos: [XR + 0.09, Y0(XR) + 0.03, z] })), { parent: rd });
       // underbody aero tray
       const ut = part(bodySys, { he: 'מגש תחתון אווירודינמי', en: 'Underbody aero tray', mat: 'פלסטיק מחוזק סיבים', desc: 'כיסוי חלק לכל התחתית. הוא מגן על הסוללה ומאפשר לאוויר לזרום מתחת לרכב בלי מערבולות.' });
@@ -256,7 +262,8 @@ window.L3D_MODEL = {
       const gpart = (he, en, desc, xr, vr, skipFn, off = 0) => { const g = part(glassSys, { he, en, mat: 'זכוכית מרובדת', desc }); mesh(surface(sec, subX(xr[0], xr[1]), subV(vr[0], vr[1]), { out, offset: off, thickness: 0.006, skip: skipFn }), glassMat(0.55), { parent: g }); return g; };
       const wsg = gpart('שמשה קדמית', 'Windshield', 'שמשה מרובדת אקוסטית עם ציפוי שמסנן קרינה. בחלק העליון: תא המצלמות של האוטופיילוט.', [COWL, WS_TOP], [-WSA, WSA], (x, v) => !inWS(x, Math.abs(v)));
       wsg.clear(); mesh(band(WS_TOP, COWL, (x) => -(aP(x) - 0.003), (x) => aP(x) - 0.003, { thickness: 0.006 }), glassMat(0.55), { parent: wsg });
-      gpart('גג זכוכית', 'Glass roof', 'לוח זכוכית ענק אחד מעל כל הנוסעים, עם ציפוי שמחזיר UV וחום. אין לו וילון — הציפוי עושה את העבודה.', [WS_TOP - 0.04, ROOF_END + 0.05], [-0.163, 0.163]);
+      const rg = gpart('גג זכוכית', 'Glass roof', 'לוח זכוכית ענק אחד מעל כל הנוסעים, עם ציפוי שמחזיר UV וחום. אין לו וילון — הציפוי עושה את העבודה.', [WS_TOP - 0.04, ROOF_END + 0.05], [-0.163, 0.163]);
+      rg.children[0].material = M.glass(0x020304, 0.9);
       for (const s of [1, -1]) {
         const sl = s > 0 ? [GA_TOP + 0.003, GA_BOT - 0.003] : [-(GA_BOT - 0.003), -(GA_TOP + 0.003)];
         const qg = gpart(`חלון אחורי קבוע ${sideHe(s)}`, `Rear quarter glass (${sideEn(s)})`, 'חלון קבוע מאחורי הדלת האחורית, שמשלים את קו החלונות עד העמוד האחורי.', [QG[0], QG[1]], sl, (x, v) => !inQG(x, Math.abs(v)));
@@ -270,7 +277,7 @@ window.L3D_MODEL = {
       for (const sg of [1, -1]) mesh(band(WS_TOP, COWL, (x) => sg * (aP(x) - 0.05), (x) => sg * (aP(x) - 0.003), { offset: 0.008 }), GLOSSBLK, { parent: frit });
       mesh(band(COWL - 0.05, COWL, (x) => -(aP(x) - 0.003), (x) => aP(x) - 0.003, { offset: 0.008 }), GLOSSBLK, { parent: frit });
       for (const sg of [1, -1]) mesh(band(BL_END + 0.04, LG - 0.03, (x) => sg * (aD(x) - 0.06), (x) => sg * (aD(x) - 0.016), { offset: 0.006 }).translate(-ctx.gate.position.x, -ctx.gate.position.y, 0), GLOSSBLK, { parent: ctx.gate });
-      mesh(surface(sec, samples(WS_TOP - 0.04, ROOF_END + 0.05, 0.03, [WS_TOP - 0.08, ROOF_END + 0.09]), samples(-0.165, 0.165, 0.01, [-0.14, 0.14, 0]), { out, offset: 0.004, skip: (x, v) => x < WS_TOP - 0.08 && x > ROOF_END + 0.09 && Math.abs(v) < 0.14 }), GLOSSBLK, { parent: frit });
+      // (the glass roof is tinted almost black, as on the real car; no separate frit band)
       // body-colour pillar covers over the stepped hole edges (A-pillars and D-pillars)
       const pc = part(bodySys, { he: 'עמודי A ו־D (כיסויים חלקים)', en: 'A- and D-pillar covers', mat: 'פלדה + צבע', desc: 'העמודים שמחזיקים את הגג משני צידי השמשה הקדמית והאחורית. הם דקים במיוחד כדי לא להסתיר את שדה הראייה.' });
       for (const sg of [1, -1]) {
@@ -289,25 +296,31 @@ window.L3D_MODEL = {
     {
       const lights = sys('lights');
       const bar = part(lights, { he: 'פס אור קדמי לרוחב החזית', en: 'Front full-width light bar', mat: 'נורות LED מתחת לעדשה', desc: 'פס אור דק שחוצה את כל החזית — סימן ההיכר של ג׳וניפר. משמש כאור יום ומשנה צבע לכתום כאיתות בקצוות.' });
-      const barPts = []; for (let i = 0; i <= 40; i++) { const z = -0.84 + (i / 40) * 1.68; const x = frontX(z) - 0.02; barPts.push(onBody(x, vAtY(x, 0.72, z < 0 ? -1 : 1), 0.004)); }
-      put(G.tube(barPts, 0.006, 80, 6), L.drl, bar);
-      put(G.tube(barPts.map((p) => p.clone().add(V3(-0.002, -0.012, 0))), 0.004, 80, 5), GLOSSBLK, bar);
+      const barPts = []; for (let i = 0; i <= 48; i++) { const z = -0.86 + (i / 48) * 1.72, x = frontX(z); barPts.push(V3(x + 0.004, Yb(x) - 0.022, z)); }
+      put(G.tube(barPts, 0.0045, 96, 6), L.drl, bar);
+      put(G.tube(barPts.map((p) => p.clone().add(V3(-0.004, -0.008, 0))), 0.006, 96, 5), GLOSSBLK, bar);
       for (const s of [1, -1]) {
-        const z = s * 0.62, hx = frontX(z), hl = part(lights, { he: `פנס ראשי ${sideHe(s)}`, en: `Headlamp (${sideEn(s)})`, mat: 'פוליקרבונט + מטריצת LED', desc: 'פנס צר בפגוש מתחת לפס האור, עם עדשת הקרנה ומטריצת LED שמכבה אזורים כדי לא לסנוור נהגים ממול.' });
-        put(G.soft(0.05, 0.075, 0.32, { r: 0.02, seg: 4 }), GLOSSBLK, hl, [hx - 0.035, 0.6, z], [0, -s * 0.35, 0]);
-        for (const dz of [-0.07, 0.04]) { put(G.cyl(0.026, 0.026, 0.02, 20, 'x'), M.clearLens(), hl, [frontX(z + s * dz) - 0.01, 0.6, z + s * dz], [0, -s * 0.35, 0]); put(G.cyl(0.018, 0.018, 0.012, 18, 'x'), L.head, hl, [frontX(z + s * dz) - 0.022, 0.6, z + s * dz], [0, -s * 0.35, 0]); }
-        put(new THREE.BoxGeometry(0.006, 0.006, 0.12), L.amber, hl, [frontX(z + s * 0.14) - 0.012, 0.565, z + s * 0.14], [0, -s * 0.35, 0]);
+        const z = s * 0.72, hx = frontX(z), hy = Yb(hx) - 0.085, ang = Math.atan2(-(frontX(z + 0.01 * s) - hx), 0.01) * -s;
+        const hl = part(lights, { he: `פנס ראשי ${sideHe(s)}`, en: `Headlamp (${sideEn(s)})`, mat: 'פוליקרבונט + מטריצת LED', desc: 'פנס צר ונסתר בפינת הפגוש, מתחת לקצה פס האור, עם עדשת הקרנה ומטריצת LED שמכבה אזורים כדי לא לסנוור נהגים ממול.' });
+        const g = new THREE.Group(); g.position.set(hx, hy, z); g.rotation.y = s * Math.atan2(W(hx - 0.02) - W(hx), 0.02) * 0 - s * 0.45; hl.add(g);
+        put(G.soft(0.03, 0.05, 0.22, { r: 0.015, seg: 4 }), GLOSSBLK, g, [-0.008, 0, 0]);
+        for (const dz of [-0.05, 0.04]) { put(G.cyl(0.018, 0.018, 0.014, 20, 'x'), M.clearLens(), g, [0.006, 0, dz]); put(G.cyl(0.013, 0.013, 0.01, 18, 'x'), L.head, g, [0.0, 0, dz]); }
+        put(new THREE.BoxGeometry(0.006, 0.005, 0.16), L.amber, g, [0.008, -0.02, 0]);
+        void ang;
         // tail lamp (body corner, C-shape) + reverse lamp
         const tz = s * 0.78, tl = part(lights, { he: `פנס אחורי ${sideHe(s)}`, en: `Tail lamp (${sideEn(s)})`, mat: 'אקריליק אדום + LED', desc: 'פנס אחורי בצורת C עם אור ״מרחף״ שנוצר מהשתקפות פנימית. משתלב בפס האחורי.' });
-        const tpts = []; for (let i = 0; i <= 12; i++) { const zz = s * (0.62 + 0.3 * i / 12); tpts.push(V3(rearX(zz) - 0.005, 0.98 + 0.03 * Math.sin(PI * i / 12), zz)); }
-        put(G.tube(tpts, 0.016, 24, 8), L.tail, tl);
-        put(G.tube(tpts.map((p) => p.clone().add(V3(0, -0.06, 0))), 0.009, 24, 6), L.brake, tl);
-        put(G.box(0.02, 0.05, 0.13, 0.01), L.rev, tl, [XR + 0.01, 0.52, s * 0.5]);
-        put(G.box(0.012, 0.02, 0.1, 0.006), M.lens(0xb01010, 0.8), tl, [XR + 0.012, 0.42, s * 0.62]);
+        for (let k = 0; k < 3; k++) { const zz = s * (0.66 + k * 0.08); const x = rearX(zz); put(G.box(0.03, 0.045 - k * 0.008, 0.085, 0.01), L.tail, tl, [x + 0.006, 1.02 - k * 0.006, zz], [0, -s * (k * 0.35), 0]); }
+        put(G.box(0.02, 0.012, 0.22, 0.004), L.brake, tl, [rearX(s * 0.72) + 0.01, 0.99, s * 0.72], [0, -s * 0.3, 0]);
+        put(G.box(0.02, 0.035, 0.1, 0.01), L.rev, tl, [XR + 0.004, 0.47, s * 0.58]);
+        put(G.box(0.012, 0.02, 0.1, 0.006), M.lens(0xb01010, 0.8), tl, [XR + 0.004, 0.36, s * 0.7]);
       }
       // rear light bar on the liftgate (rides with the gate)
       const rb = part(lights, { he: 'פס אור אחורי', en: 'Rear light bar', mat: 'אקריליק אדום + LED', desc: 'פס אדום דק לרוחב הדלת האחורית שמחבר בין שני הפנסים.' });
-      put(new THREE.BoxGeometry(0.008, 0.012, 1.22), L.tail, rb, [XR - 0.004 - ctx.gate.position.x, 0.985 - ctx.gate.position.y, 0]);
+      const gpX = ctx.gate.position.x, gpY = ctx.gate.position.y;
+      const spPts = []; for (let i = 0; i <= 40; i++) { const z = -0.84 + (i / 40) * 1.68; spPts.push(V3(rearX(z) - 0.035 * (1 - Math.pow(Math.abs(z) / 0.84, 4)) - gpX, 1.075 - gpY, z)); }
+      const spoiler = part(rb, { he: 'ספוילר שחור אחורי (״ברווז״)', en: 'Black ducktail spoiler', mat: 'פלסטיק שחור מבריק', desc: 'פס שחור עבה בראש הדלת האחורית שבולט לאחור ומשמש כספוילר. בתוכו הכיתוב TESLA, ובקצוותיו הפנסים האחוריים.' });
+      const spm = put(G.tube(spPts, 0.065, 60, 14), GLOSSBLK, spoiler); void spm;
+      put(G.tube(spPts.map((p) => p.clone().add(V3(-0.03, -0.06, 0))), 0.005, 60, 5), L.tail, rb, null, null, { name: 'light strip' });
       ctx.gate.add(rb); rb.userData.sysOverride = 'lights';
       const cb = part(lights, { he: 'פנס בלימה עליון', en: 'Centre high-mount stop lamp', mat: 'LED', desc: 'פנס בלימה שלישי בקצה העליון של השמשה האחורית.' });
       put(new THREE.BoxGeometry(0.03, 0.01, 0.35), L.brake, cb, [LG - 0.02 - ctx.gate.position.x, Yt(LG - 0.02) - 0.01 - ctx.gate.position.y, 0]);
@@ -323,14 +336,14 @@ window.L3D_MODEL = {
     {
       const ins = sys('insignia');
       const word = part(ins, { he: 'כיתוב TESLA על הדלת האחורית', en: 'TESLA wordmark', mat: 'אותיות כרום כהה', desc: 'בג׳וניפר הוחלף סמל ה־T בכיתוב TESLA ברוחב הדלת האחורית.' });
-      const wt = K.textTexture('T E S L A', { font: '700 120px "Helvetica Neue", Arial', color: '#c9ccd0', pad: 10 });
-      put(new THREE.PlaneGeometry(0.42, 0.42 / wt.aspect), M.decal(wt.tex, { metalness: 0.8, roughness: 0.25 }), word, [XR - 0.006 - ctx.gate.position.x, 0.88 - ctx.gate.position.y, 0], [0, -PI / 2, 0], { cast: false });
+      const wt = K.textTexture('T E S L A', { font: '700 120px "Helvetica Neue", Arial', color: '#8d9298', pad: 10 });
+      put(new THREE.PlaneGeometry(0.55, 0.55 / wt.aspect), M.decal(wt.tex, { metalness: 0.8, roughness: 0.25 }), word, [rearX(0) - 0.1 - ctx.gate.position.x, 1.075 - ctx.gate.position.y, 0], [0, -PI / 2, 0], { cast: false });
       ctx.gate.add(word); word.userData.sysOverride = 'insignia';
       const plateTex = K.canvasTexture(520, 112, (g, w, h) => { g.fillStyle = '#f7d117'; g.fillRect(0, 0, w, h); g.fillStyle = '#1d4fb8'; g.fillRect(0, 0, 70, h); g.fillStyle = '#fff'; g.font = '700 30px Arial'; g.textAlign = 'center'; g.fillText('IL', 35, 92); g.strokeStyle = '#111'; g.lineWidth = 5; g.strokeRect(2.5, 2.5, w - 5, h - 5); g.fillStyle = '#111'; g.font = '800 82px Arial'; g.fillText('123-45-678', 292, 86); });
       const pl = part(ins, { he: 'לוחיות רישוי (2)', en: 'Licence plates (×2)', mat: 'אלומיניום מוטבע', desc: 'לוחיות רישוי ישראליות צהובות, עם פס כחול ו־IL בצד שמאל.' });
-      put(new THREE.BoxGeometry(0.004, 0.11, 0.52), M.decal(plateTex), pl, [XF - 0.0 + 0.004, 0.44, 0], [0, 0, 0]).rotation.y = 0;
-      const rp = put(new THREE.PlaneGeometry(0.52, 0.11), M.decal(plateTex), pl, [XR - 0.006, 0.56, 0], [0, -PI / 2, 0], { cast: false }); void rp;
-      const fp = put(new THREE.PlaneGeometry(0.52, 0.11), M.decal(plateTex), pl, [XF + 0.008, 0.44, 0], [0, PI / 2, 0], { cast: false }); void fp;
+      put(new THREE.BoxGeometry(0.006, 0.12, 0.53), M.plastic(0x111214, 0.5), pl, [XF - 0.0, 0.48, 0]);
+      const rp = put(new THREE.PlaneGeometry(0.52, 0.11), M.decal(plateTex), pl, [XR - 0.012, 0.45, 0], [0, -PI / 2, 0], { cast: false }); void rp;
+      const fp = put(new THREE.PlaneGeometry(0.52, 0.11), M.decal(plateTex), pl, [XF + 0.004, 0.48, 0], [0, PI / 2, 0], { cast: false }); void fp;
       // charge port (left rear, behind a flap in the tail-lamp corner)
       const cpx = -2.1, cpy = 0.93, cpp = onBody(cpx, vAtY(cpx, cpy, -1)), cpn = nrm(cpx, vAtY(cpx, cpy, -1));
       const port = part(ins, { he: 'שקע טעינה', en: 'Charge port', mat: 'פלסטיק + מגעי נחושת + LED', desc: 'שקע טעינה מהיר (NACS/CCS לפי שוק) מאחורי דלתית קטנה בפינה השמאלית האחורית. טבעת LED משנה צבע: כחול מוכן, ירוק טוען, אדום תקלה.' });
@@ -374,13 +387,22 @@ window.L3D_MODEL = {
       const swMat = M.decal(swTex, { roughness: 0.85, clearcoat: 0 });
       // rim: barrel + aero face with 5 twin-spoke windows
       const barrel = G.lathe([[RIM - 0.006, -0.12], [RIM + 0.012, -0.118], [RIM, -0.1], [RIM - 0.03, -0.05], [RIM - 0.03, 0.06], [RIM, 0.1], [RIM + 0.012, 0.115], [RIM - 0.004, 0.12]], 64, 'z');
+      // 19" aero wheel with 10 swept blades (Juniper style): holes are curved windows between the blades
       const faceShape = new THREE.Shape(); faceShape.absarc(0, 0, RIM + 0.006, 0, PI * 2, false);
-      for (let k = 0; k < 5; k++) for (const off of [-0.17, 0.17]) { const a = (k / 5) * PI * 2 + PI / 10 + off * 0.0; const hole = new THREE.Path(); const a0 = a + off - 0.13, a1 = a + off + 0.13; hole.moveTo(Math.cos(a0) * 0.1, Math.sin(a0) * 0.1); hole.absarc(0, 0, 0.215, a0 + 0.04, a1 - 0.04, false); hole.lineTo(Math.cos(a1) * 0.1, Math.sin(a1) * 0.1); hole.absarc(0, 0, 0.1, a1, a0, true); faceShape.holes.push(hole); }
-      const faceGeo = new THREE.ExtrudeGeometry(faceShape, { depth: 0.022, bevelEnabled: true, bevelSize: 0.004, bevelThickness: 0.004, bevelSegments: 2, curveSegments: 40 }); faceGeo.translate(0, 0, 0.088);
-      const rimMat = M.metal(0x2d3035, 0.32), lipMat = M.metal(0xb9bdc2, 0.2);
+      const NB = 5, tw = 0.75, r0 = 0.085, r1 = 0.22;
+      for (let k = 0; k < NB; k++) {
+        const a0 = (k / NB) * PI * 2, wA = (PI * 2 / NB) * 0.72, hole = new THREE.Path(), pts = [];
+        for (let i = 0; i <= 10; i++) { const t = i / 10, r = lerp(r0, r1, t), a = a0 + tw * t * t; pts.push([Math.cos(a) * r, Math.sin(a) * r]); }
+        for (let i = 10; i >= 0; i--) { const t = i / 10, r = lerp(r0 + 0.012, r1, t), a = a0 + wA * (0.35 + 0.65 * t) + tw * t * t; pts.push([Math.cos(a) * r, Math.sin(a) * r]); }
+        hole.moveTo(...pts[0]); for (const p of pts.slice(1)) hole.lineTo(...p); hole.closePath(); faceShape.holes.push(hole);
+      }
+      const bladeGeo = G.merge(Array.from({ length: NB }, (_, k) => { const a0 = (k / NB) * PI * 2, wA = (PI * 2 / NB) * 0.72; const pts = []; for (let i = 0; i <= 8; i++) { const t = i / 8, r = lerp(0.1, 0.215, t), a = a0 + wA * (0.5 + 0.2 * t) + tw * t * t; pts.push(V3(Math.cos(a) * r, Math.sin(a) * r, 0.097)); } return G.tube(pts, 0.009, 16, 6); }));
+      const faceGeo = new THREE.ExtrudeGeometry(faceShape, { depth: 0.02, bevelEnabled: true, bevelSize: 0.003, bevelThickness: 0.004, bevelSegments: 2, curveSegments: 40 }); faceGeo.translate(0, 0, 0.088);
+      const rimMat = M.metal(0xa3a8ae, 0.3), lipMat = M.metal(0x8f949a, 0.3);
       const logoTex = K.textTexture('T', { font: '800 220px Arial', color: '#e9ecef', bg: '#1b1d20', w: 256, h: 256 });
       const nutGeo = G.merge(Array.from({ length: 5 }, (_, k) => { const a = (k / 5) * PI * 2; return G.at(G.hexNut(0.011, 0.02), [Math.cos(a) * 0.057, Math.sin(a) * 0.057, 0.09], [PI / 2, 0, 0]); }));
       const disc = G.merge([G.cyl(0.178, 0.178, 0.026, 48, 'z'), G.cyl(0.09, 0.09, 0.05, 32, 'z').translate(0, 0, 0.02)]);
+      const hubGeo = G.cyl(0.095, 0.1, 0.06, 32, 'z').translate(0, 0, 0.07);
       for (const w of wheelSpots) {
         const name = `${w.front ? 'קדמי' : 'אחורי'} ${sideHe(w.s)}`, en = `${w.front ? 'Front' : 'Rear'} ${sideEn(w.s)}`;
         const wp = part(wheels, { he: `גלגל ${name}`, en: `${en} wheel`, mat: 'צמיג + חישוק אלומיניום 19״', desc: 'גלגל 19 אינץ׳ עם חישוק אווירודינמי וצמיג 255/45. הצורה הסגורה של החישוק מוסיפה כמה קילומטרים לטווח.' }, { pos: [w.x, TIRE_R, w.s * WHEEL_Z] });
@@ -392,7 +414,7 @@ window.L3D_MODEL = {
         instances(sipe, M.black(), sl, { parent: tire });
         mesh(swGeo, swMat, { parent: tire, pos: [0, 0, 0.1265], cast: false });
         const rim = part(spin, { he: `חישוק ${name}`, en: `${en} rim`, mat: 'אלומיניום יצוק, צבע אפור כהה', desc: 'חישוק 19 אינץ׳ עם חמישה זוגות חישורים ושפה מבריקה. הפתחים קטנים בכוונה כדי להקטין מערבולות.' });
-        mesh(barrel, lipMat, { parent: rim }); mesh(faceGeo, rimMat, { parent: rim });
+        mesh(barrel, lipMat, { parent: rim }); mesh(faceGeo, rimMat, { parent: rim }); mesh(hubGeo, M.metal(0x3a3d42, 0.4), { parent: rim }); mesh(bladeGeo, rimMat, { parent: rim });
         mesh(G.torus(RIM + 0.004, 0.006, 8, 64, PI * 2, 'z'), lipMat, { parent: rim, pos: [0, 0, 0.116] });
         const cap = part(spin, { he: `מכסה מרכזי ${name}`, en: `${en} centre cap`, mat: 'פלסטיק + סמל T', desc: 'מכסה קטן עם סמל T שמכסה את אומי הגלגל.' });
         mesh(G.cyl(0.05, 0.052, 0.012, 32, 'z'), M.decal(logoTex.tex, { metalness: 0.4 }), { parent: cap, pos: [0, 0, 0.118] });
@@ -603,9 +625,9 @@ window.L3D_MODEL = {
       const rc = part(ap, { he: 'מצלמות צד בכנפיים (2)', en: 'Fender repeater cameras (×2)', mat: 'עדשה + פנס איתות', desc: 'מצלמות שמסתכלות אחורה מהכנפיים הקדמיות, יחד עם פנס איתות קטן.' });
       for (const s of [1, -1]) { const v = vAtY(1.25, 0.8, s), p = onBody(1.25, v, 0.002), n = nrm(1.25, v); const g = new THREE.Group(); g.position.copy(p); g.quaternion.setFromUnitVectors(V3(0, 0, 1), n); rc.add(g); put(G.box(0.07, 0.025, 0.008, 0.004), M.gloss(0x0b0b0c), g); put(G.cyl(0.006, 0.006, 0.004, 10, 'z'), lensMat, g, [0.02, 0, 0.004]); put(new THREE.BoxGeometry(0.03, 0.006, 0.003), L.amber, g, [-0.015, 0, 0.004]); }
       const rcam = part(ap, { he: 'מצלמה אחורית', en: 'Rear camera', mat: 'עדשה עם מחמם', desc: 'מצלמה מעל לוחית הרישוי עם מחמם שמונע אדים. משמשת לחניה ולאוטופיילוט.' });
-      put(G.cyl(0.012, 0.012, 0.02, 12, 'x'), lensMat, rcam, [XR - 0.005, 0.64, 0]);
+      put(G.cyl(0.012, 0.012, 0.02, 12, 'x'), lensMat, rcam, [XR - 0.005, 0.5, 0]);
       const fcam = part(ap, { he: 'מצלמת פגוש קדמית', en: 'Front bumper camera', mat: 'עדשה + מתז ניקוי', desc: 'חדש בג׳וניפר (בחלק מהשווקים): מצלמה נמוכה בפגוש שרואה מכשולים קרובים בחניה.' });
-      put(G.cyl(0.012, 0.012, 0.02, 12, 'x'), lensMat, fcam, [XF - 0.0, 0.5, 0]);
+      put(G.cyl(0.012, 0.012, 0.02, 12, 'x'), lensMat, fcam, [XF - 0.002, 0.57, 0]);
       const cpu = part(ap, { he: 'מחשב האוטופיילוט (HW4)', en: 'Autopilot computer (HW4)', mat: 'לוח מעגלים + שבבי AI + קירור נוזלי', desc: 'מחשב עם שני שבבי בינה מלאכותית שמעבד את תמונות כל המצלמות בזמן אמת. מקורר בנוזל מאחורי תא הכפפות.' });
       put(G.box(0.28, 0.05, 0.22, 0.01), M.metal(0x7d838a, 0.4), cpu, [0.9, 0.82, 0.38]);
       instances(new THREE.BoxGeometry(0.26, 0.012, 0.004), M.aluminum(), Array.from({ length: 10 }, (_, i) => ({ pos: [0.9, 0.85, 0.29 + i * 0.02] })), { parent: cpu });
