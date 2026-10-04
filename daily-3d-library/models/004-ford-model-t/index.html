@@ -1,0 +1,1811 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>פורד מודל T · ספריית התלת־ממד היומית</title>
+<meta name="description" content="דגם תלת־ממד פרוצדורלי ומפורט של פורד מודל T בגרסת הטוריסט של 1915: רדיאטור פליז עם כיתוב Ford, פנסי פליז, גלגלי עץ בסגנון ארטילריה, מנוע ארבעה צילינדרים עם בוכנות נעות, תמסורת פלנטרית עם שלוש דוושות, מגנטו בגלגל התנופה, קפיצי עלים רוחביים וגג בד מתקפל. אפשר לפתוח את מכסה המנוע, הדלתות האחוריות, להרים את הגג, לקפל את השמשה ולהפעיל את המנוע.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg0: #07090d; --bg1: #0d1118; --ink: #e9edf3; --ink2: #9aa4b2; --ink3: #5f6875;
+  --line: rgba(255,255,255,.09); --glass: rgba(12,16,23,.78); --accent: #c8a75a; --accent2: #6f8fbf;
+  --r: 14px; --font: 'Heebo', 'Assistant', system-ui, sans-serif; --mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; background: var(--bg0); color: var(--ink); font-family: var(--font); overflow: hidden; -webkit-font-smoothing: antialiased; }
+button, input, select { font: inherit; color: inherit; }
+#stage { position: fixed; inset: 0; }
+#stage canvas { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
+body.shot .ui { display: none !important; }
+
+/* header */
+.head { position: fixed; top: 18px; right: 22px; max-width: min(560px, calc(100vw - 44px)); pointer-events: none; z-index: 5; }
+.brand { display: flex; gap: 10px; align-items: center; font-size: 12px; letter-spacing: .08em; color: var(--ink2); pointer-events: auto; }
+.brand a { color: var(--ink2); text-decoration: none; border-bottom: 1px dotted var(--ink3); }
+.brand .no { font-family: var(--mono); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 999px; padding: 1px 8px; }
+.head h1 { margin: 6px 0 2px; font-size: clamp(24px, 3.2vw, 40px); font-weight: 800; line-height: 1.05; letter-spacing: -.01em; }
+.head h1 small { display: block; font-size: .42em; font-weight: 500; color: var(--ink2); letter-spacing: .02em; margin-top: 6px; }
+
+/* side panel */
+.panel { position: fixed; top: 16px; left: 16px; bottom: 16px; width: 330px; background: var(--glass); backdrop-filter: blur(16px) saturate(1.2); -webkit-backdrop-filter: blur(16px) saturate(1.2); border: 1px solid var(--line); border-radius: var(--r); display: flex; flex-direction: column; z-index: 6; overflow: hidden; }
+.panel.closed { bottom: auto; }
+.panel.closed .tabs, .panel.closed .pbody { display: none; }
+.ptop { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px 8px 12px; border-bottom: 1px solid var(--line); }
+.ptop b { font-size: 13px; letter-spacing: .06em; color: var(--ink2); font-weight: 600; }
+.tabs { display: flex; gap: 4px; padding: 8px 10px 0; }
+.tabs button { flex: 1; background: none; border: 0; border-bottom: 2px solid transparent; color: var(--ink2); padding: 7px 4px; cursor: pointer; font-size: 13.5px; }
+.tabs button.on { color: var(--ink); border-color: var(--accent); }
+.pbody { flex: 1; overflow: auto; padding: 10px 12px 16px; scrollbar-width: thin; }
+.pbody::-webkit-scrollbar { width: 6px; } .pbody::-webkit-scrollbar-thumb { background: #2a313c; border-radius: 3px; }
+.sys { display: grid; grid-template-columns: 18px 1fr auto auto; align-items: center; gap: 8px; padding: 7px 4px; border-bottom: 1px solid var(--line); font-size: 14px; }
+.sys .dot { width: 11px; height: 11px; border-radius: 50%; }
+.sys .cnt { font-family: var(--mono); font-size: 11.5px; color: var(--ink3); }
+.sys input { accent-color: var(--accent); width: 16px; height: 16px; }
+.sys button { background: none; border: 1px solid var(--line); color: var(--ink2); border-radius: 6px; font-size: 11px; padding: 2px 6px; cursor: pointer; }
+.sys small { display: block; color: var(--ink3); font-size: 11.5px; }
+.search { width: 100%; background: #0a0d12; border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; margin-bottom: 8px; outline: none; }
+.search:focus { border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
+details.grp { border-bottom: 1px solid var(--line); }
+details.grp summary { cursor: pointer; padding: 8px 2px; font-size: 13.5px; font-weight: 600; display: flex; gap: 8px; align-items: center; list-style: none; }
+details.grp summary::-webkit-details-marker { display: none; }
+details.grp summary .cnt { margin-inline-start: auto; font-family: var(--mono); font-size: 11px; color: var(--ink3); }
+.prt { display: block; width: 100%; text-align: right; background: none; border: 0; color: var(--ink2); padding: 5px 8px 5px 4px; border-radius: 6px; cursor: pointer; font-size: 13px; line-height: 1.35; }
+.prt:hover, .prt.on { background: rgba(255,255,255,.06); color: var(--ink); }
+.prt.sub { padding-inline-start: 18px; font-size: 12.5px; }
+.prt.sub::before { content: '└ '; color: var(--ink3); }
+table.spec { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table.spec td { padding: 7px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.spec td:first-child { color: var(--ink2); width: 42%; }
+.facts { margin: 0; padding: 0 18px 0 0; font-size: 13.5px; line-height: 1.6; color: #cfd6df; }
+.facts li { margin-bottom: 8px; }
+.note { font-size: 12px; color: var(--ink3); line-height: 1.5; margin-top: 12px; }
+.note a { color: var(--accent2); }
+
+/* toolbar */
+.bar { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); width: min(980px, calc(100vw - 32px - 360px)); margin-left: 172px; background: var(--glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; z-index: 6; display: flex; flex-direction: column; gap: 8px; }
+.row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.sl { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 210px; font-size: 13px; color: var(--ink2); }
+.sl input[type=range] { flex: 1; accent-color: var(--accent); }
+.sl output { font-family: var(--mono); font-size: 11.5px; width: 34px; text-align: center; color: var(--ink); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { background: none; border: 0; padding: 4px 8px; font-size: 12px; color: var(--ink2); cursor: pointer; }
+.seg button.on { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--ink); }
+.btn { background: rgba(255,255,255,.04); border: 1px solid var(--line); border-radius: 9px; padding: 6px 10px; font-size: 13px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; transition: background .15s, border-color .15s; }
+.btn:hover { background: rgba(255,255,255,.09); }
+.btn.on { background: color-mix(in srgb, var(--accent) 24%, transparent); border-color: color-mix(in srgb, var(--accent) 65%, transparent); }
+.btn .k { font-family: var(--mono); font-size: 10px; color: var(--ink3); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+.sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
+select.btn { appearance: none; padding-inline-end: 10px; }
+select.btn option { background: #0d1118; }
+
+/* selection card + tooltip */
+.card { position: fixed; right: 22px; bottom: 132px; width: min(380px, calc(100vw - 44px)); background: var(--glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; z-index: 7; }
+.card h3 { margin: 4px 0 2px; font-size: 19px; }
+.card .en { color: var(--ink3); font-size: 12px; font-family: var(--mono); direction: ltr; text-align: right; }
+.card p { margin: 8px 0 10px; font-size: 13.5px; line-height: 1.6; color: #cfd6df; }
+.card .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink2); border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; }
+.card .chip i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.card .mat { font-size: 12px; color: var(--ink2); margin-bottom: 10px; }
+.card .x { position: absolute; top: 8px; left: 10px; background: none; border: 0; color: var(--ink2); font-size: 18px; cursor: pointer; }
+.card .crumbs { font-size: 11.5px; color: var(--ink3); margin-top: 2px; }
+.tip { position: fixed; pointer-events: none; z-index: 9; background: rgba(5,7,10,.92); border: 1px solid var(--line); border-radius: 8px; padding: 5px 9px; font-size: 12.5px; white-space: nowrap; transform: translate(-50%, -140%); }
+.tip i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-inline-end: 6px; }
+
+.stats { position: fixed; right: 22px; bottom: 16px; font-family: var(--mono); font-size: 11px; color: var(--ink3); z-index: 5; display: none; }
+.loading { position: fixed; inset: 0; display: grid; place-items: center; background: radial-gradient(ellipse at center, #121822 0%, #05070a 70%); z-index: 20; transition: opacity .5s; }
+.loading div { text-align: center; }
+.loading b { display: block; font-size: 22px; margin-bottom: 8px; }
+.loading span { color: var(--ink2); font-size: 14px; }
+.loading .err { color: #ff8a8a; font-family: var(--mono); font-size: 12px; direction: ltr; max-width: 80vw; white-space: pre-wrap; margin-top: 14px; }
+.help { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 30; display: grid; place-items: center; }
+.help > div { background: #0d1118; border: 1px solid var(--line); border-radius: var(--r); padding: 20px 24px; max-width: 520px; line-height: 1.8; font-size: 14px; }
+.help kbd { font-family: var(--mono); font-size: 12px; border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; background: #151a22; }
+
+@media (min-width: 1200px) { .stats { display: block; } }
+@media (max-width: 900px) {
+  .panel { top: auto; left: 10px; right: 10px; bottom: 10px; width: auto; max-height: 52vh; }
+  .panel.closed { top: auto; bottom: 10px; }
+  .bar .row:first-child { flex-direction: column; align-items: stretch; gap: 4px; }
+  .sl { min-width: 0; }
+  .head h1 { font-size: 22px; }
+  .head { max-width: calc(100vw - 28px); }
+  body.panel-open .bar { display: none; }
+  .bar { left: 10px; right: 10px; bottom: 62px; width: auto; transform: none; margin: 0; padding: 8px; }
+  .row.tg { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .row.tg::-webkit-scrollbar { display: none; }
+  .head { top: 12px; right: 14px; }
+  .card { bottom: auto; top: 110px; right: 10px; }
+  .sl { min-width: 150px; }
+}
+
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<!-- Generated by daily-3d-library/build.py from engine/ + models/004-ford-model-t/ — edit those, not this file. -->
+<div id="stage"></div>
+<div id="app"></div>
+<div class="loading ui"><div><b>פורד מודל T</b><span>בונה את הדגם חלק אחר חלק…</span></div></div>
+<script>window.L3D_META = {"id": "004-ford-model-t", "number": 4, "date": "2026-10-04", "dateHe": "4 באוקטובר 2026", "category": "רכבים", "title": "פורד מודל T", "titleEn": "Ford Model T Touring (1915, brass era)", "subtitle": "המכונית שהכניסה את העולם לכביש · טוריסט 1915 עם רדיאטור פליז ומנוע 20 כוח סוס", "description": "דגם תלת־ממד פרוצדורלי ומפורט של פורד מודל T בגרסת הטוריסט של 1915: רדיאטור פליז עם כיתוב Ford, פנסי פליז, גלגלי עץ בסגנון ארטילריה, מנוע ארבעה צילינדרים עם בוכנות נעות, תמסורת פלנטרית עם שלוש דוושות, מגנטו בגלגל התנופה, קפיצי עלים רוחביים וגג בד מתקפל. אפשר לפתוח את מכסה המנוע, הדלתות האחוריות, להרים את הגג, לקפל את השמשה ולהפעיל את המנוע.", "accent": "#d8b25a", "startView": "hero", "systems": [{"id": "body", "he": "מרכב ופחים", "desc": "גוף הטוריסט, כנפיים, לוחות דריכה ומכסה מנוע", "color": "#7a828c", "shell": true, "explode": [0, 0.7, 0], "spread": [0.1, 0.1, 0.5]}, {"id": "doors", "he": "דלתות", "desc": "שתי דלתות אחוריות עם ידיות וצירים", "color": "#9a7bd1", "shell": true, "explode": [0, 0.2, 0], "spread": [0.1, 0, 1.5]}, {"id": "top", "he": "גג, שמשה וווילונות", "desc": "קשתות פלדה, בד גג, שמשה דו־חלקית ווילונות צד", "color": "#5fb7c9", "shell": true, "explode": [0, 1.2, 0], "spread": [0.2, 0.2, 0.8]}, {"id": "lights", "he": "תאורה וצופר", "desc": "פנסי פליז, מנורות נפט, פנס זנב וצופר בולב", "color": "#f2d16b", "shell": false, "explode": [0.3, 0.3, 0], "spread": [0.4, 0.2, 0.6]}, {"id": "cooling", "he": "רדיאטור וקירור", "desc": "מעטפת פליז, ליבה, צינורות, מאוורר", "color": "#d8b25a", "shell": false, "explode": [0.7, 0.2, 0], "spread": [0.3, 0.1, 0.2]}, {"id": "engine", "he": "מנוע", "desc": "ארבעה צילינדרים, בוכנות, גל ארכובה, גלגל תנופה", "color": "#c2703d", "shell": false, "explode": [0.2, 0.9, 0], "spread": [0.2, 0.1, 0.2]}, {"id": "ignition", "he": "הצתה וחשמל", "desc": "מגנטו, סלילים, מצתים, חיווט", "color": "#e0d05a", "shell": false, "explode": [0, 1.1, 0], "spread": [0.2, 0.1, 0.3]}, {"id": "fuel", "he": "דלק ופליטה", "desc": "מיכל גרביטציה, קרבורטור, צינורות, משתיק קול", "color": "#5cc07a", "shell": false, "explode": [0, 0.5, 0], "spread": [0.1, 0.1, 0.8]}, {"id": "drivetrain", "he": "תמסורת", "desc": "תיבה פלנטרית, צינור מומנט, דיפרנציאל", "color": "#b45be0", "shell": false, "explode": [0, -0.4, 0], "spread": [0.1, 0, 0.3]}, {"id": "chassis", "he": "שלדה ומתלים", "desc": "אורכי פלדה, צירים, קפיצים, היגוי, בלמים", "color": "#4a7fb0", "shell": false, "explode": [0, -0.5, 0], "spread": [0.2, 0, 0.5]}, {"id": "wheels", "he": "גלגלים", "desc": "ארבעה גלגלי עץ עם חישורים, צמיגים, חישוקים ופקקי נאב", "color": "#8a6a3a", "shell": false, "explode": [0, 0, 0], "spread": [0.25, 0, 1.3]}, {"id": "interior", "he": "פנים", "desc": "מושבים, הגה, דוושות, ידיות ולוח מחוונים", "color": "#e0915a", "shell": false, "explode": [0, 0.4, 0], "spread": [0.1, 0.2, 0.2]}], "views": {"engine": {"he": "תא המנוע (מכסה פתוח)", "pos": [3.0, 1.9, -1.9], "target": [1.2, 0.8, 0], "fov": 38, "toggles": ["hood"]}, "cockpit": {"he": "מושב הנהג", "pos": [-0.55, 1.5, -0.3], "target": [0.7, 1.0, -0.2], "fov": 65}, "radiator": {"he": "רדיאטור הפליז", "pos": [3.0, 1.3, 0.7], "target": [1.7, 0.9, 0], "fov": 30}, "wheel": {"he": "גלגל וציר קדמי", "pos": [2.5, 0.6, 2.0], "target": [1.27, 0.4, 0.7], "fov": 32}, "rear": {"he": "דיפרנציאל והציר האחורי", "pos": [-3.3, 0.7, 1.8], "target": [-1.3, 0.5, 0.2], "fov": 34}}, "qa": {"open": ["hood", "doors", "top", "windshield"], "night": ["lights"]}, "specs": [["יצרן", "Ford Motor Company"], ["דגם", "Model T טוריסט (1915)"], ["שנות ייצור", "1908–1927 (כ־15 מיליון יחידות)"], ["אורך", "כ־3.4 מ׳"], ["רוחב", "כ־1.7 מ׳"], ["גובה", "כ־1.9 מ׳ (גג מורם)"], ["בסיס גלגלים", "2.54 מ׳ (100 אינץ׳)"], ["מסלול", "1.42 מ׳ (56 אינץ׳)"], ["מנוע", "ארבעה צילינדרים בשורה, 2.9 ליטר (177 אינץ׳ מעוקב), כ־20 כ״ס"], ["תמסורת", "פלנטרית, שני הילוכים קדימה ואחד אחורה"], ["מהירות", "כ־65–70 קמ״ש"], ["צמיגים", "30×3 מלפנים, 30×3½ מאחור"], ["הצתה", "מגנטו בגלגל התנופה + סלילי רטט"], ["משקל", "כ־540 ק״ג (שלדה), כ־650 ק״ג לטוריסט (הערכה)"]], "specNote": "המידות לפי פרסומי פורד ומקורות פומביים; הגובה, המשקל והמיקום המדויק של חלקי המנוע (צינור יניקה, פליטה וקרבורטור בצד שמאל) הם שחזור מושכל ולא שרטוט רשמי. בטוריסט של 1915 הדלתות הקדמיות לא נפתחו; הדגם מציג אותן כקו מוטבע בלבד.", "facts": ["מודל T הוצג ב־1 באוקטובר 1908 ונבנה כ־15 מיליון יחידות עד 1927.", "קו ההרכבה הנע של Highland Park (1913) קיצר את בניית הרכב מכ־12 שעות לכ־1.5 שעות (לפי פורד).", "המחיר ירד מכ־850 דולר ב־1909 לכ־260 דולר לגרסה הבסיסית ב־1925 (לפי הדיווחים).", "המשפט המיוחס להנרי פורד: ״כל צבע, כל עוד הוא שחור״ — בין 1914 ל־1925 כל המכוניות היו שחורות, כי לכה שחורה התייבשה מהר.", "גוש המנוע נוצק בחתיכה אחת עם ראש נשלף — שיטה שפורד הפיץ.", "אין דוושת גז: מצערת וקידום הצתה מופעלים בידיות שמתחת להגה.", "התמסורת פלנטרית: שלוש דוושות — שמאלית (נמוך/גבוה), אמצעית (אחורה), ימנית (בלם).", "הצתה מגנטו בגלגל התנופה מייצרת חשמל בלי סוללה; סוללה ומתנע חשמלי הגיעו רק ב־1919.", "הרדיאטור בפליז נמשך עד כ־1916–1917, ואז הוחלף במעטפת פח שחורה.", "המכונית נסעה על בנזין, ולפי מקורות גם על אתנול או נפט עם כוונון הקרבורטור."], "sources": [{"name": "Wikipedia — Ford Model T", "url": "https://en.wikipedia.org/wiki/Ford_Model_T"}, {"name": "The Henry Ford — Model T", "url": "https://www.thehenryford.org/collections-and-research/digital-collections/search-results#advancedSearch=1&tab=artifact-results&s.0.in=all&s.0.for=model%20t"}, {"name": "Model T Ford Club of America", "url": "https://www.mtfca.com/"}, {"name": "Wikimedia Commons — Ford Model T category", "url": "https://commons.wikimedia.org/wiki/Category:Ford_Model_T"}]};</script>
+<script type="module">
+// Daily 3D Library — modelling kit.
+// Shared helpers every model builds with: materials, primitives, parametric
+// surfaces, canvas textures, instancing and the part registry. Exposed as
+// window.L3D.kit so a model file can use it without an import (pages are
+// bundled into one HTML file by build.py, see README.md).
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+const L3D = (window.L3D = window.L3D || {});
+L3D.THREE = THREE;
+
+const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+
+// ---------------------------------------------------------------- materials
+const cache = new Map();
+const once = (key, make) => { if (!cache.has(key)) cache.set(key, make()); return cache.get(key); };
+const hexKey = (c) => (typeof c === 'number' ? c.toString(16) : String(c));
+
+function phys(o) { return new THREE.MeshPhysicalMaterial(o); }
+function std(o) { return new THREE.MeshStandardMaterial(o); }
+
+const M = {
+  // deep multi-layer car paint: metallic base + clear coat
+  paint: (c = 0x07080b) => once('paint' + hexKey(c), () => phys({ color: c, metalness: 0.6, roughness: 0.38, clearcoat: 1, clearcoatRoughness: 0.035, side: THREE.DoubleSide, name: 'צבע מתכתי + שכבת לכה' })),
+  paintFlat: (c = 0x111111, r = 0.6) => once('pflat' + hexKey(c) + r, () => std({ color: c, metalness: 0.1, roughness: r, name: 'צבע מט' })),
+  chrome: () => once('chrome', () => std({ color: 0xffffff, metalness: 1, roughness: 0.05, name: 'כרום' })),
+  satin: () => once('satin', () => std({ color: 0xcfd3d8, metalness: 1, roughness: 0.28, name: 'כרום סאטן' })),
+  darkChrome: () => once('dchrome', () => std({ color: 0x55585e, metalness: 1, roughness: 0.12, name: 'כרום כהה' })),
+  aluminum: () => once('alu', () => std({ color: 0xd9dde2, metalness: 1, roughness: 0.22, name: 'אלומיניום מלוטש' })),
+  castAlu: () => once('calu', () => std({ color: 0xa9adb2, metalness: 0.9, roughness: 0.55, name: 'אלומיניום יצוק' })),
+  steel: () => once('steel', () => std({ color: 0x8b9096, metalness: 0.95, roughness: 0.38, name: 'פלדה' })),
+  darkSteel: () => once('dsteel', () => std({ color: 0x3a3d42, metalness: 0.85, roughness: 0.5, name: 'פלדה כהה' })),
+  castIron: () => once('ciron', () => std({ color: 0x46484c, metalness: 0.75, roughness: 0.78, name: 'ברזל יצוק' })),
+  armorSteel: () => once('asteel', () => std({ color: 0x6b7178, metalness: 0.9, roughness: 0.45, name: 'פלדת שריון מוקשית' })),
+  titanium: () => once('titan', () => std({ color: 0x9a9690, metalness: 0.9, roughness: 0.32, name: 'טיטניום' })),
+  ceramic: () => once('ceram', () => std({ color: 0xe8e2d4, metalness: 0, roughness: 0.6, name: 'קרמיקה בליסטית' })),
+  kevlar: () => once('kevlar', () => std({ color: 0xc9a43a, metalness: 0.05, roughness: 0.8, name: 'קבלר (אראמיד)' })),
+  copper: () => once('copper', () => std({ color: 0xc8764a, metalness: 1, roughness: 0.3, name: 'נחושת' })),
+  brass: () => once('brass', () => std({ color: 0xd8b25a, metalness: 1, roughness: 0.3, name: 'פליז' })),
+  gold: () => once('gold', () => std({ color: 0xf2c75c, metalness: 1, roughness: 0.18, name: 'זהב' })),
+  rubber: () => once('rubber', () => std({ color: 0x141416, metalness: 0, roughness: 0.92, name: 'גומי' })),
+  tire: () => once('tire', () => std({ color: 0x18181a, metalness: 0, roughness: 0.86, name: 'גומי צמיגים' })),
+  plastic: (c = 0x15161a, r = 0.55) => once('plastic' + hexKey(c) + r, () => std({ color: c, metalness: 0, roughness: r, name: 'פלסטיק' })),
+  gloss: (c = 0x0b0b0d) => once('gloss' + hexKey(c), () => phys({ color: c, metalness: 0, roughness: 0.15, clearcoat: 1, clearcoatRoughness: 0.05, name: 'פלסטיק מבריק' })),
+  leather: (c = 0x15171c) => once('leather' + hexKey(c), () => phys({ color: c, metalness: 0, roughness: 0.62, sheen: 0.4, sheenColor: 0x444444, sheenRoughness: 0.6, bumpMap: noiseTexture(256, 'leather'), bumpScale: 0.6, name: 'עור' })),
+  fabric: (c = 0x1b1d24) => once('fabric' + hexKey(c), () => std({ color: c, metalness: 0, roughness: 0.95, bumpMap: noiseTexture(256, 'fabric'), bumpScale: 0.5, name: 'בד' })),
+  carpet: (c = 0x14161d) => once('carpet' + hexKey(c), () => std({ color: c, metalness: 0, roughness: 1, bumpMap: noiseTexture(256, 'carpet'), bumpScale: 1, name: 'שטיח' })),
+  wood: () => once('wood', () => phys({ color: 0x5a2e17, map: woodTexture(), roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.08, name: 'עץ מצופה לכה' })),
+  glass: (c = 0x0d1418, o = 0.55) => once('glass' + hexKey(c) + o, () => phys({ color: c, metalness: 0, roughness: 0.02, transparent: true, opacity: o, depthWrite: false, side: THREE.DoubleSide, envMapIntensity: 1.0, clearcoat: 1, name: 'זכוכית' })),
+  polycarb: () => once('polyc', () => phys({ color: 0x3d5a58, metalness: 0, roughness: 0.05, transparent: true, opacity: 0.16, depthWrite: false, side: THREE.DoubleSide, envMapIntensity: 0.3, name: 'פוליקרבונט' })),
+  clearLens: () => once('clens', () => phys({ color: 0xffffff, metalness: 0, roughness: 0.02, transparent: true, opacity: 0.18, depthWrite: false, side: THREE.DoubleSide, name: 'עדשה שקופה' })),
+  lens: (c = 0xff1010, o = 0.75) => once('lens' + hexKey(c) + o, () => phys({ color: c, metalness: 0, roughness: 0.08, transparent: true, opacity: o, side: THREE.DoubleSide, emissive: c, emissiveIntensity: 0.05, name: 'עדשה צבעונית' })),
+  // emissive light sources; intensity is driven by the model's toggles
+  light: (c = 0xffffff, i = 0.2) => once('light' + hexKey(c) + i, () => std({ color: c, emissive: c, emissiveIntensity: i, roughness: 0.3, metalness: 0, name: 'מקור אור' })),
+  reflector: () => once('refl', () => std({ color: 0xdfe6ee, metalness: 1, roughness: 0.08, name: 'מחזיר אור' })),
+  black: () => once('black', () => std({ color: 0x050505, metalness: 0, roughness: 0.8, name: 'שחור מט' })),
+  matte: (c) => once('matte' + hexKey(c), () => std({ color: c, metalness: 0, roughness: 0.75 })),
+  metal: (c, r = 0.35) => once('metal' + hexKey(c) + r, () => std({ color: c, metalness: 0.9, roughness: r })),
+  emissive: (c, i = 1) => once('emis' + hexKey(c) + i, () => std({ color: c, emissive: c, emissiveIntensity: i, roughness: 0.4 })),
+  // upholstery with pleats, double stitching and perforations on the centre panel.
+  // dir 'v' = pleats run across the face's v axis (horizontal bands on a backrest), 'u' = the other way
+  quilted: (c = 0x15171c, dir = 'v', thread = '#9c8a62', pleats = 7) => once('quilt' + hexKey(c) + dir + thread + pleats, () => {
+    const base = new THREE.Color(c);
+    const draw = (bump) => (g, w, h) => {
+      const col = (k) => { const q = base.clone().multiplyScalar(k); return `rgb(${(q.r * 255) | 0},${(q.g * 255) | 0},${(q.b * 255) | 0})`; };
+      g.fillStyle = bump ? '#808080' : col(1); g.fillRect(0, 0, w, h);
+      const A = dir === 'v' ? w : h, B = dir === 'v' ? h : w; // A = across the pleats, B = along them
+      const at = (a, b, fn) => (dir === 'v' ? fn(a, b) : fn(b, a));
+      const p0 = 0.22 * A, p1 = 0.78 * A; // centre panel between the bolsters
+      for (let i = 0; i < pleats; i++) {
+        const b0 = (i / pleats) * B, b1 = ((i + 1) / pleats) * B;
+        for (let k = 0; k < 12; k++) { // rounded pleat profile
+          const t = k / 11, lift = Math.sin(t * Math.PI);
+          g.fillStyle = bump ? `rgb(${90 + lift * 120 | 0},${90 + lift * 120 | 0},${90 + lift * 120 | 0})` : col(0.82 + lift * 0.3);
+          at(p0, b0 + t * (b1 - b0), (x, y) => g.fillRect(x, y, dir === 'v' ? p1 - p0 : (b1 - b0) / 11 + 1, dir === 'v' ? (b1 - b0) / 11 + 1 : p1 - p0));
+        }
+        // perforations
+        g.fillStyle = bump ? '#202020' : col(0.45);
+        for (let a = p0 + 10; a < p1 - 6; a += 9) for (let bb = b0 + (b1 - b0) * 0.3; bb < b1 - (b1 - b0) * 0.25; bb += 8) at(a + ((bb / 8) % 2) * 4, bb, (x, y) => { g.beginPath(); g.arc(x, y, 1.3, 0, 7); g.fill(); });
+        // groove + double stitching between pleats
+        g.fillStyle = bump ? '#000' : col(0.35); at(p0, b0 - 1.5, (x, y) => g.fillRect(x, y, dir === 'v' ? p1 - p0 : 3, dir === 'v' ? 3 : p1 - p0));
+        if (!bump) { g.fillStyle = thread; for (const off of [-5, 4]) for (let a = p0; a < p1; a += 7) at(a, b0 + off, (x, y) => g.fillRect(x, y, dir === 'v' ? 4 : 1.6, dir === 'v' ? 1.6 : 4)); }
+      }
+      // bolster seams with double stitching
+      for (const a of [p0, p1]) {
+        g.fillStyle = bump ? '#000' : col(0.35); at(a - 2, 0, (x, y) => g.fillRect(x, y, dir === 'v' ? 4 : B, dir === 'v' ? B : 4));
+        if (!bump) { g.fillStyle = thread; for (const off of [-7, 6]) for (let bb = 0; bb < B; bb += 7) at(a + off, bb, (x, y) => g.fillRect(x, y, dir === 'v' ? 1.6 : 4, dir === 'v' ? 4 : 1.6)); }
+      }
+    };
+    const map = canvasTexture(512, 512, draw(false));
+    const bumpMap = canvasTexture(512, 512, draw(true), { linear: true });
+    return new THREE.MeshPhysicalMaterial({ map, bumpMap, bumpScale: 2.2, roughness: 0.58, sheen: 0.5, sheenColor: 0x555555, sheenRoughness: 0.55, name: 'עור מקופל עם תפרים כפולים' });
+  }),
+  decal: (tex, o = {}) => phys({ map: tex, transparent: true, alphaTest: 0.05, roughness: o.roughness ?? 0.35, metalness: o.metalness ?? 0, clearcoat: o.clearcoat ?? 0.6, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, ...o.extra }),
+  screen: (tex, i = 0.9) => std({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: i, roughness: 0.2, metalness: 0 }),
+};
+
+// ------------------------------------------------------------ canvas textures
+function canvasTexture(w, h, draw, o = {}) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const g = c.getContext('2d');
+  draw(g, w, h);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = o.linear ? THREE.NoColorSpace : THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  if (o.repeat) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(o.repeat[0], o.repeat[1]); }
+  return t;
+}
+
+// deterministic PRNG so every build of a model is identical
+function rng(seed = 1) {
+  let s = seed >>> 0;
+  return () => { s = (s + 0x6d2b79f5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+
+function noiseTexture(size = 256, kind = 'leather') {
+  return once('noise' + kind + size, () => canvasTexture(size, size, (g, w, h) => {
+    const r = rng(kind.length * 977);
+    const img = g.createImageData(w, h);
+    for (let i = 0; i < w * h; i++) {
+      let v = 128 + (r() - 0.5) * (kind === 'carpet' ? 200 : 90);
+      if (kind === 'fabric') v += ((i % w) % 4 < 2 ? 30 : -30) + ((Math.floor(i / w) % 4) < 2 ? 20 : -20);
+      img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = v; img.data[i * 4 + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+    if (kind === 'leather') { // pebbled grain cells
+      g.globalAlpha = 0.25;
+      for (let k = 0; k < 900; k++) { g.fillStyle = r() > 0.5 ? '#fff' : '#000'; g.beginPath(); g.arc(r() * w, r() * h, 1 + r() * 3, 0, 7); g.fill(); }
+    }
+  }, { linear: true, repeat: kind === 'carpet' ? [10, 10] : [6, 6] }));
+}
+
+function woodTexture() {
+  return once('woodtex', () => canvasTexture(512, 512, (g, w, h) => {
+    const r = rng(7);
+    g.fillStyle = '#5b2f18'; g.fillRect(0, 0, w, h);
+    for (let y = 0; y < h; y += 2) {
+      const k = Math.sin(y * 0.05 + Math.sin(y * 0.013) * 4) * 0.5 + 0.5;
+      g.fillStyle = `rgba(${40 + k * 60},${18 + k * 25},${8 + k * 10},${0.25 + r() * 0.2})`;
+      g.fillRect(0, y, w, 2);
+    }
+    for (let k = 0; k < 40; k++) { g.strokeStyle = 'rgba(20,8,2,0.25)'; g.beginPath(); const y = r() * h; g.moveTo(0, y); g.bezierCurveTo(w * 0.3, y + r() * 30 - 15, w * 0.6, y + r() * 30 - 15, w, y + r() * 20 - 10); g.stroke(); }
+  }, { repeat: [2, 2] }));
+}
+
+// text rendered into a texture; returns {tex, aspect}
+function textTexture(text, o = {}) {
+  const font = o.font || '700 120px "Helvetica Neue", Arial, sans-serif';
+  const pad = o.pad ?? 20;
+  const meas = document.createElement('canvas').getContext('2d');
+  meas.font = font;
+  const lines = String(text).split('\n');
+  const lh = o.lineHeight || parseInt(font.match(/(\d+)px/)[1], 10) * 1.15;
+  const w = Math.ceil(Math.max(...lines.map((l) => meas.measureText(l).width)) + pad * 2);
+  const h = Math.ceil(lh * lines.length + pad * 2);
+  const tex = canvasTexture(o.w || w, o.h || h, (g, W, H) => {
+    if (o.bg) { g.fillStyle = o.bg; g.fillRect(0, 0, W, H); }
+    g.font = font; g.fillStyle = o.color || '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    if (o.letterSpacing) g.letterSpacing = o.letterSpacing;
+    lines.forEach((l, i) => g.fillText(l, W / 2, H / 2 + (i - (lines.length - 1) / 2) * lh));
+  });
+  return { tex, aspect: (o.w || w) / (o.h || h) };
+}
+
+// ---------------------------------------------------------------- geometry
+const G = {
+  box(w, h, d, r = 0, seg = 2) {
+    if (r > 0) return new RoundedBoxGeometry(w, h, d, seg, Math.min(r, w / 2, h / 2, d / 2) * 0.999);
+    return new THREE.BoxGeometry(w, h, d);
+  },
+  // cylinder along an axis ('x' | 'y' | 'z')
+  cyl(rTop, rBot, h, seg = 32, axis = 'y', open = false, hseg = 1) {
+    const g = new THREE.CylinderGeometry(rTop, rBot, h, seg, hseg, open);
+    if (axis === 'x') g.rotateZ(-Math.PI / 2);
+    if (axis === 'z') g.rotateX(Math.PI / 2);
+    return g;
+  },
+  sphere(r, ws = 24, hs = 16) { return new THREE.SphereGeometry(r, ws, hs); },
+  torus(R, r, rs = 12, ts = 48, arc = Math.PI * 2, axis = 'z') {
+    const g = new THREE.TorusGeometry(R, r, rs, ts, arc);
+    if (axis === 'x') g.rotateY(Math.PI / 2);
+    if (axis === 'y') g.rotateX(Math.PI / 2);
+    return g;
+  },
+  // lathe from [radius, height] pairs, revolved around an axis
+  lathe(pts, seg = 48, axis = 'y', phiStart = 0, phiLen = Math.PI * 2) {
+    const g = new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(Math.max(r, 0), y)), seg, phiStart, phiLen);
+    if (axis === 'x') g.rotateZ(-Math.PI / 2);
+    if (axis === 'z') g.rotateX(Math.PI / 2);
+    return g;
+  },
+  tube(pts, r, segs = 64, radial = 8, closed = false, curveType = 'catmullrom', tension = 0.5) {
+    const curve = new THREE.CatmullRomCurve3(pts.map((p) => (p.isVector3 ? p : V3(...p))), closed, curveType, tension);
+    return new THREE.TubeGeometry(curve, segs, r, radial, closed);
+  },
+  // polyline tube with sharp-ish bends (pipes, brake lines)
+  pipe(pts, r, radial = 8) {
+    return G.tube(pts, r, Math.max(8, pts.length * 12), radial, false, 'centripetal');
+  },
+  shape(pts, holes = []) {
+    const s = new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x, y)));
+    holes.forEach((h) => s.holes.push(h.isPath ? h : new THREE.Path(h.map(([x, y]) => new THREE.Vector2(x, y)))));
+    return s;
+  },
+  roundRect(w, h, r, cx = 0, cy = 0) {
+    const s = new THREE.Shape(); const x = cx - w / 2, y = cy - h / 2; r = Math.min(r, w / 2, h / 2);
+    s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r);
+    s.lineTo(x + w, y + h - r); s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r);
+    s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y);
+    return s;
+  },
+  roundRectPath(w, h, r, cx = 0, cy = 0) { const s = G.roundRect(w, h, r, cx, cy); const p = new THREE.Path(); p.curves = s.curves; return p; },
+  circlePath(r, cx = 0, cy = 0, cw = false) { const p = new THREE.Path(); p.absarc(cx, cy, r, 0, Math.PI * 2, cw); return p; },
+  // extrude a 2D shape (XY) by depth along +Z, centred on z=0. A bevel grows the outline
+  // by `bevel` unless bevelOffset: -bevel keeps the outline where the shape says
+  extrude(shape, depth, o = {}) {
+    const g = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: !!o.bevel, bevelSize: o.bevel || 0, bevelOffset: o.bevelOffset ?? 0, bevelThickness: o.bevelT ?? o.bevel ?? 0, bevelSegments: o.bevelSeg ?? 3, curveSegments: o.curveSeg ?? 16, steps: o.steps ?? 1 });
+    g.translate(0, 0, -depth / 2);
+    return g;
+  },
+  hexNut(s = 0.012, h = 0.01) { return once('hex' + s + h, () => G.cyl(s, s, h, 6, 'y')); },
+  // hex bolt head + washer, standing on +Y
+  bolt(s = 0.01) {
+    return once('bolt' + s, () => {
+      const head = G.cyl(s, s, s * 0.65, 6, 'y'); head.translate(0, s * 0.45, 0);
+      const washer = G.cyl(s * 1.35, s * 1.35, s * 0.15, 16, 'y'); washer.translate(0, s * 0.075, 0);
+      return mergeGeometries([head.toNonIndexed(), washer.toNonIndexed()]);
+    });
+  },
+  rivet(r = 0.006) { return once('rivet' + r, () => { const g = new THREE.SphereGeometry(r, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2); return g; }); },
+  merge(list) {
+    const norm = list.filter(Boolean).map((g) => { const n = g.index ? g.toNonIndexed() : g; if (!n.attributes.uv) n.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(n.attributes.position.count * 2), 2)); return n; });
+    norm.forEach((g) => { for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(k)) g.deleteAttribute(k); });
+    return mergeGeometries(norm);
+  },
+  // place a geometry copy with a transform (for merging many small parts)
+  at(geo, pos = [0, 0, 0], rot = [0, 0, 0], scale = 1) {
+    const g = geo.clone();
+    const m = new THREE.Matrix4().compose(V3(...pos), new THREE.Quaternion().setFromEuler(new THREE.Euler(...rot)), typeof scale === 'number' ? V3(scale, scale, scale) : V3(...scale));
+    g.applyMatrix4(m);
+    return g;
+  },
+};
+
+// average normals of vertices that share a position (rounded-box face seams)
+function smoothNormals(g) {
+  g.computeVertexNormals();
+  const pos = g.attributes.position, nor = g.attributes.normal, acc = new Map();
+  const key = (i) => `${Math.round(pos.getX(i) * 2e4)},${Math.round(pos.getY(i) * 2e4)},${Math.round(pos.getZ(i) * 2e4)}`;
+  for (let i = 0; i < pos.count; i++) { const k = key(i), a = acc.get(k) || [0, 0, 0]; a[0] += nor.getX(i); a[1] += nor.getY(i); a[2] += nor.getZ(i); acc.set(k, a); }
+  for (let i = 0; i < pos.count; i++) { const a = acc.get(key(i)), l = Math.hypot(a[0], a[1], a[2]) || 1; nor.setXYZ(i, a[0] / l, a[1] / l, a[2] / l); }
+  nor.needsUpdate = true;
+  return g;
+}
+
+// Sculpted ("soft") box: a finely subdivided rounded box pushed around by
+// deform(p, n), where n is the vertex position normalised to [-1, 1] on each
+// axis. Used for upholstery, pillows, housings: anything that shouldn't look
+// like a plain box. Keeps the 6 face groups (px, nx, py, ny, pz, nz), so a
+// material array can put e.g. quilted leather on just the seating face.
+G.soft = (w, h, d, o = {}) => {
+  const r = Math.min(o.r ?? 0.02, (w / 2) * 0.98, (h / 2) * 0.98, (d / 2) * 0.98);
+  const g = new RoundedBoxGeometry(w, h, d, o.seg ?? 5, r);
+  if (o.deform) {
+    const pos = g.attributes.position, p = new THREE.Vector3(), n = new THREE.Vector3();
+    for (let i = 0; i < pos.count; i++) {
+      p.fromBufferAttribute(pos, i); n.set(p.x / (w / 2), p.y / (h / 2), p.z / (d / 2));
+      o.deform(p, n); pos.setXYZ(i, p.x, p.y, p.z);
+    }
+  }
+  return smoothNormals(g);
+};
+
+// --------------------------------------------------------- param surfaces
+// Sorted samples from a to b. `step` may be a number or a function of position;
+// every value in `breaks` that falls inside (a, b) is hit exactly, so patches
+// cut from the same surface line up perfectly with the holes left for them.
+function samples(a, b, step, breaks = []) {
+  const dir = Math.sign(b - a) || 1;
+  const st = typeof step === 'function' ? step : () => step;
+  const bs = [...new Set([...breaks, b])].filter((t) => (t - a) * dir > 1e-9 && (b - t) * dir >= -1e-9).sort((p, q) => (p - q) * dir);
+  const out = [a]; let cur = a;
+  for (const nb of bs) {
+    let n = 0, t = cur;
+    while ((nb - t) * dir > 1e-9 && n < 4000) { t += dir * Math.max(1e-4, st(t)); n++; }
+    n = Math.max(1, n);
+    for (let i = 1; i <= n; i++) out.push(cur + ((nb - cur) * i) / n);
+    cur = nb;
+  }
+  return out;
+}
+
+// Build a surface from S(u, v) -> Vector3 over the grid us × vs.
+//   skip(u, v)  -> true to leave a hole for the quad centred at (u, v)
+//   out(p,u,v)  -> a vector pointing "outside" (fixes normal orientation)
+//   offset      -> push the surface along its normal (negative = inward)
+//   thickness   -> solidify inward, adding inner skin + rim walls around holes/edges
+function surface(S, us, vs, o = {}) {
+  const { skip = null, out = null, offset = 0, thickness = 0, inset = 0 } = o;
+  const nu = us.length, nv = vs.length, e = 1e-4;
+  const P = new Array(nu * nv), N = new Array(nu * nv);
+  const idx = (i, j) => i * nv + j;
+  for (let i = 0; i < nu; i++) {
+    for (let j = 0; j < nv; j++) {
+      const u = us[i], v = vs[j];
+      const p = S(u, v);
+      const du = S(u + e, v).sub(S(u - e, v));
+      const dv = S(u, v + e).sub(S(u, v - e));
+      let n = du.cross(dv);
+      if (n.lengthSq() < 1e-18) n = null; else {
+        n.normalize();
+        if (out) { const h = out(p, u, v); if (n.dot(h) < 0) n.negate(); }
+      }
+      P[idx(i, j)] = p; N[idx(i, j)] = n;
+    }
+  }
+  // fill degenerate normals from the nearest valid neighbour
+  for (let pass = 0; pass < 4; pass++) for (let i = 0; i < nu; i++) for (let j = 0; j < nv; j++) {
+    if (N[idx(i, j)]) continue;
+    const nb = [[i + 1, j], [i - 1, j], [i, j + 1], [i, j - 1]].find(([a, b]) => a >= 0 && b >= 0 && a < nu && b < nv && N[idx(a, b)]);
+    if (nb) N[idx(i, j)] = N[idx(nb[0], nb[1])].clone();
+  }
+  for (let k = 0; k < N.length; k++) if (!N[k]) N[k] = V3(0, 1, 0);
+
+  const keep = new Uint8Array((nu - 1) * (nv - 1));
+  for (let i = 0; i < nu - 1; i++) for (let j = 0; j < nv - 1; j++) {
+    const uc = (us[i] + us[i + 1]) / 2, vc = (vs[j] + vs[j + 1]) / 2;
+    keep[i * (nv - 1) + j] = skip && skip(uc, vc) ? 0 : 1;
+  }
+  const kept = (i, j) => i >= 0 && j >= 0 && i < nu - 1 && j < nv - 1 && keep[i * (nv - 1) + j] === 1;
+
+  // uv by accumulated distance along the middle row/column
+  const uAcc = [0], vAcc = [0];
+  const jm = Math.floor(nv / 2), im = Math.floor(nu / 2);
+  for (let i = 1; i < nu; i++) uAcc.push(uAcc[i - 1] + P[idx(i, jm)].distanceTo(P[idx(i - 1, jm)]));
+  for (let j = 1; j < nv; j++) vAcc.push(vAcc[j - 1] + P[idx(im, j)].distanceTo(P[idx(im, j - 1)]));
+
+  const pos = [], nor = [], uvs = [], ind = [];
+  const push = (p, n, uu, vv) => { pos.push(p.x, p.y, p.z); nor.push(n.x, n.y, n.z); uvs.push(uu, vv); return pos.length / 3 - 1; };
+  const layer = (off, flip) => {
+    const base = pos.length / 3;
+    for (let i = 0; i < nu; i++) for (let j = 0; j < nv; j++) {
+      const n = N[idx(i, j)];
+      const p = P[idx(i, j)].clone().addScaledVector(n, off);
+      push(p, flip ? n.clone().negate() : n, uAcc[i], vAcc[j]);
+    }
+    for (let i = 0; i < nu - 1; i++) for (let j = 0; j < nv - 1; j++) {
+      if (!kept(i, j)) continue;
+      const a = base + idx(i, j), b = base + idx(i + 1, j), c = base + idx(i + 1, j + 1), d = base + idx(i, j + 1);
+      const pa = P[idx(i, j)], pb = P[idx(i + 1, j)], pc = P[idx(i + 1, j + 1)], pd = P[idx(i, j + 1)];
+      const fn = pc.clone().sub(pa).cross(pd.clone().sub(pb));
+      const nAvg = N[idx(i, j)].clone().add(N[idx(i + 1, j + 1)]);
+      let ccw = fn.dot(nAvg) > 0;
+      if (flip) ccw = !ccw;
+      if (ccw) ind.push(a, b, c, a, c, d); else ind.push(a, c, b, a, d, c);
+    }
+  };
+  const outer = offset, inner = offset - thickness;
+  layer(outer, false);
+  if (thickness > 0) layer(inner, true);
+  const skinCount = ind.length;
+  if (thickness > 0) {
+    // rim walls on every boundary edge of the kept region
+    const wall = (i0, j0, i1, j1, ci, cj) => {
+      const k0 = idx(i0, j0), k1 = idx(i1, j1);
+      const a = P[k0].clone().addScaledVector(N[k0], outer), b = P[k1].clone().addScaledVector(N[k1], outer);
+      const c = P[k1].clone().addScaledVector(N[k1], inner), d = P[k0].clone().addScaledVector(N[k0], inner);
+      const centre = P[idx(ci, cj)].clone().add(P[idx(ci + 1, cj + 1)]).multiplyScalar(0.5);
+      const away = a.clone().add(b).multiplyScalar(0.5).sub(centre);
+      const fn = b.clone().sub(a).cross(d.clone().sub(a));
+      if (fn.lengthSq() < 1e-16) return;
+      const n = fn.clone().normalize();
+      const flipW = n.dot(away) < 0;
+      const nn = flipW ? n.clone().negate() : n;
+      const ia = push(a, nn, 0, 0), ib = push(b, nn, 1, 0), ic = push(c, nn, 1, 1), id = push(d, nn, 0, 1);
+      if (!flipW) ind.push(ia, id, ib, ib, id, ic); else ind.push(ia, ib, id, ib, ic, id);
+    };
+    for (let i = 0; i < nu - 1; i++) for (let j = 0; j < nv - 1; j++) {
+      if (!kept(i, j)) continue;
+      if (!kept(i, j - 1)) wall(i, j, i + 1, j, i, j);
+      if (!kept(i, j + 1)) wall(i, j + 1, i + 1, j + 1, i, j);
+      if (!kept(i - 1, j)) wall(i, j, i, j + 1, i, j);
+      if (!kept(i + 1, j)) wall(i + 1, j, i + 1, j + 1, i, j);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  g.setIndex(ind);
+  // group 0 = skins, group 1 = rim walls: pass [skinMat, edgeMat] to darken panel edges
+  g.addGroup(0, skinCount, 0);
+  if (ind.length > skinCount) g.addGroup(skinCount, ind.length - skinCount, 1);
+  void inset;
+  return g;
+}
+
+// flat cap for a planar loop of 3D points; `normal` picks the facing side
+function cap(points, normal) {
+  const n = normal.clone().normalize();
+  const t = Math.abs(n.y) < 0.9 ? V3(0, 1, 0) : V3(1, 0, 0);
+  const a = t.clone().cross(n).normalize(), b = n.clone().cross(a);
+  const c2 = points.map((p) => new THREE.Vector2(p.dot(a), p.dot(b)));
+  const tris = THREE.ShapeUtils.triangulateShape(c2, []);
+  const pos = [], nor = [], uv = [];
+  for (const tri of tris) {
+    let [i0, i1, i2] = tri;
+    const f = points[i1].clone().sub(points[i0]).cross(points[i2].clone().sub(points[i0]));
+    if (f.dot(n) < 0) [i1, i2] = [i2, i1];
+    for (const k of [i0, i1, i2]) { pos.push(points[k].x, points[k].y, points[k].z); nor.push(n.x, n.y, n.z); uv.push(c2[k].x, c2[k].y); }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  return g;
+}
+
+// ------------------------------------------------------------ scene graph
+const registry = { toggles: [], frames: [] };
+
+function mesh(geo, mat, o = {}) {
+  const m = new THREE.Mesh(geo, mat);
+  if (o.pos) m.position.set(...o.pos);
+  if (o.rot) m.rotation.set(...o.rot);
+  if (o.scale) typeof o.scale === 'number' ? m.scale.setScalar(o.scale) : m.scale.set(...o.scale);
+  if (o.name) m.name = o.name;
+  m.castShadow = o.cast ?? true;
+  m.receiveShadow = o.receive ?? true;
+  if (o.parent) o.parent.add(m);
+  return m;
+}
+
+function group(parent, o = {}) {
+  const g = new THREE.Group();
+  if (o.pos) g.position.set(...o.pos);
+  if (o.rot) g.rotation.set(...o.rot);
+  if (o.name) g.name = o.name;
+  if (parent) parent.add(g);
+  return g;
+}
+
+// A named, documented part. Everything the viewer can hover, list, isolate or
+// explode is a part: { he, en, desc, mat } where `mat` names the material.
+function part(parent, info, o = {}) {
+  const g = group(parent, o);
+  g.name = info.en || info.he;
+  g.userData.part = info;
+  if (o.explode) g.userData.explode = V3(...o.explode);
+  return g;
+}
+
+// InstancedMesh from a list of transforms [{pos, rot, scale}]
+function instances(geo, mat, list, o = {}) {
+  const im = new THREE.InstancedMesh(geo, mat, list.length);
+  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), s = V3();
+  list.forEach((t, k) => {
+    e.set(...(t.rot || [0, 0, 0]), t.order || 'XYZ');
+    q.setFromEuler(e);
+    const sc = t.scale ?? 1;
+    typeof sc === 'number' ? s.setScalar(sc) : s.set(...sc);
+    m4.compose(V3(...t.pos), q, s);
+    im.setMatrixAt(k, m4);
+  });
+  im.instanceMatrix.needsUpdate = true;
+  im.castShadow = o.cast ?? true;
+  im.receiveShadow = true;
+  im.computeBoundingSphere();
+  if (o.parent) o.parent.add(im);
+  return im;
+}
+
+// mirror a built object across the z=0 plane (left/right pairs)
+function mirrorZ(obj) {
+  const c = obj.clone(true);
+  c.position.z *= -1;
+  c.rotation.x *= -1; c.rotation.y *= -1;
+  c.traverse((n) => {
+    if (n.isMesh && n !== c) { /* children keep their local transform; flip via parent scale */ }
+  });
+  c.scale.z *= -1;
+  c.traverse((n) => { if (n.isMesh) n.userData.mirrored = true; });
+  return c;
+}
+
+// A control panel: plate + real 3D buttons, knobs and guarded toggle switches,
+// with crisp backlit labels drawn into one texture per panel.
+//   panel(parent, { pos, normal, up, w, h, plate, ink, buttons: [
+//     { x, y, w, h, d, kind: 'rect'|'round'|'knob'|'toggle'|'rocker', label, led: '#3f6', mat, color } ] })
+// x/y are metres in the panel plane (x = right as seen from the front, y = up).
+function panel(parent, o) {
+  const g = group(parent, { name: o.name || 'panel' });
+  const zA = V3(...o.normal).normalize(), yA = V3(...(o.up || [0, 1, 0]));
+  yA.addScaledVector(zA, -yA.dot(zA)).normalize();
+  const xA = yA.clone().cross(zA);
+  g.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(xA, yA, zA));
+  g.position.set(...o.pos);
+  const W = o.w, H = o.h, PD = o.depth ?? 0.004;
+  if (o.plate !== false) mesh(G.box(W, H, PD, Math.min(0.004, PD / 2), 1), o.plate || M.gloss(0x0b0b0c), { parent: g, pos: [0, 0, -PD / 2], name: 'plate', cast: false });
+  const caps = new Map();
+  const add = (mat, geo) => { if (!caps.has(mat)) caps.set(mat, []); caps.get(mat).push(geo); };
+  const ppm = Math.min(5000, 2048 / Math.max(W, H));
+  const mk = () => { const c = document.createElement('canvas'); c.width = Math.ceil(W * ppm); c.height = Math.ceil(H * ppm); return c; };
+  const capC = mk(), plateC = mk(), cg = capC.getContext('2d'), pg = plateC.getContext('2d');
+  let capDepth = 0.005, usedCap = false, usedPlate = false;
+  const cx = (x) => (x + W / 2) * ppm, cy = (y) => (H / 2 - y) * ppm;
+  const text = (ctx, s, x, y, size, color) => { ctx.fillStyle = color; ctx.font = `700 ${Math.max(6, size * ppm)}px Arial, Helvetica, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s, cx(x), cy(y)); };
+  const ink = o.ink || '#e3e7ee';
+  for (const b of o.buttons) {
+    const bw = b.w ?? 0.02, bh = b.h ?? bw, kind = b.kind || 'rect';
+    const capMat = b.mat || M.gloss(b.color ?? 0x141416);
+    if (kind === 'rect' || kind === 'round' || kind === 'rocker') {
+      const bd = b.d ?? 0.005; capDepth = bd;
+      const geo = kind === 'round' ? G.cyl(bw / 2, bw / 2, bd, 24, 'z') : G.box(bw, bh, bd, Math.min(0.003, bw / 3, bh / 3), 1);
+      if (kind === 'rocker') geo.rotateX(0.12);
+      add(capMat, G.at(geo, [b.x, b.y, bd / 2]));
+      if (b.label) { text(cg, b.label, b.x, b.y - (b.led ? bh * 0.12 : 0), Math.min(bh * 0.42, (bw / Math.max(2, b.label.length)) * 1.5), b.ink || ink); usedCap = true; }
+      if (b.led) { cg.fillStyle = b.led; const lw = bw * 0.36 * ppm, lh = Math.max(2, bh * 0.1 * ppm); cg.fillRect(cx(b.x) - lw / 2, cy(b.y + bh * 0.3) - lh / 2, lw, lh); usedCap = true; }
+    } else if (kind === 'knob') {
+      const bd = b.d ?? 0.016;
+      add(b.mat || M.satin(), G.at(G.cyl(bw / 2, bw / 2 * 0.93, bd, 32, 'z'), [b.x, b.y, bd / 2]));
+      add(M.gloss(0x111111), G.at(G.cyl(bw / 2 * 0.8, bw / 2 * 0.8, 0.0015, 24, 'z'), [b.x, b.y, bd + 0.0007]));
+      add(M.light(0xffffff, 0.6), G.at(G.box(0.0015, bw * 0.3, 0.001), [b.x, b.y + bw * 0.22, bd + 0.0016]));
+      if (b.label) { text(pg, b.label, b.x, b.y - bw / 2 - 0.006, 0.0055, b.ink || ink); usedPlate = true; }
+      (b.ticks || []).forEach((t, i, arr) => { const a = Math.PI * (0.75 - (1.5 * i) / Math.max(1, arr.length - 1)); text(pg, t, b.x + Math.cos(a) * (bw / 2 + 0.006), b.y + Math.sin(a) * (bw / 2 + 0.006), 0.004, b.ink || ink); usedPlate = true; });
+    } else if (kind === 'toggle') {
+      add(M.gloss(0x161618), G.at(G.box(0.018, 0.026, 0.004, 0.002, 1), [b.x, b.y, 0.002]));
+      add(M.chrome(), G.at(G.cyl(0.005, 0.005, 0.005, 16, 'z'), [b.x, b.y, 0.0065]));
+      const lever = G.merge([G.at(G.cyl(0.0022, 0.0022, 0.016, 10, 'y'), [0, 0.008, 0]), G.at(G.sphere(0.0034, 10, 8), [0, 0.016, 0])]);
+      lever.rotateX(1.05); add(M.chrome(), G.at(lever, [b.x, b.y, 0.008]));
+      // spring-loaded safety cover, flipped open
+      const cover = G.box(0.022, 0.03, 0.012, 0.002, 1); cover.translate(0, -0.015, 0.006); cover.rotateX(-1.25);
+      add(b.coverMat || M.lens(b.cover ?? 0xc8102e, 0.8), G.at(cover, [b.x, b.y + 0.015, 0.004]));
+      if (b.label) { text(pg, b.label, b.x, b.y - 0.02, 0.0048, b.ink || ink); usedPlate = true; }
+    }
+  }
+  for (const [mat, list] of caps) mesh(G.merge(list), mat, { parent: g, cast: false, name: 'controls' });
+  const labelMat = (c) => { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return new THREE.MeshStandardMaterial({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: 0.45, transparent: true, alphaTest: 0.2, roughness: 0.4, polygonOffset: true, polygonOffsetFactor: -2 }); };
+  if (usedCap) mesh(new THREE.PlaneGeometry(W, H), labelMat(capC), { parent: g, pos: [0, 0, capDepth + 0.0004], cast: false, name: 'labels' });
+  if (usedPlate) mesh(new THREE.PlaneGeometry(W, H), labelMat(plateC), { parent: g, pos: [0, 0, 0.0004], cast: false, name: 'labels' });
+  return g;
+}
+
+// animated toggles (doors, lights…) — viewer renders a button per toggle
+function toggle(id, info, apply, initial = 0) {
+  registry.toggles.push({ id, ...info, apply, t: initial, target: initial, init: initial });
+  apply(initial);
+}
+function onFrame(fn) { registry.frames.push(fn); }
+
+L3D.kit = {
+  THREE, V3, clamp, lerp, smooth, rng, M, G, samples, surface, cap,
+  canvasTexture, textTexture, noiseTexture, mesh, group, part, instances, mirrorZ, panel, smoothNormals,
+  toggle, onFrame, registry, mergeGeometries,
+};
+
+</script>
+<script type="module">
+// #004 — Ford Model T Touring (1915, brass era). Built entirely in code with the library kit
+// (engine/kit.js). Units are metres. Axes: +x = forward, +y = up, +z = right (passenger side);
+// the driver sits at -z (left-hand drive). s = +1 right, -1 left.
+window.L3D_MODEL = {
+  async build({ K, THREE, sys }) {
+    const { M, G, V3, mesh, part, surface, samples, cap, lerp, smooth, clamp, instances } = K;
+    const PI = Math.PI;
+    const v3 = (p) => (p.isVector3 ? p : V3(...p));
+    const put = (geo, mat, parent, pos, rot, o = {}) => { if (rot && !Array.isArray(rot)) { o = rot; rot = null; } return mesh(geo, mat, { parent, pos: pos || undefined, rot: rot || undefined, ...o }); };
+    const rod = (parent, a, b, r, mat, o = {}) => { a = v3(a); b = v3(b); const d = b.clone().sub(a); const m = mesh(G.cyl(o.r2 ?? r, r, d.length(), o.seg || 10, 'y'), mat, { parent, name: o.name }); m.position.copy(a).addScaledVector(d, 0.5); m.quaternion.setFromUnitVectors(V3(0, 1, 0), d.clone().normalize()); return m; };
+    const dbl = (m) => { const c = m.clone(); c.side = THREE.DoubleSide; return c; };
+    const sideHe = (s) => (s > 0 ? 'ימין' : 'שמאל'), sideEn = (s) => (s > 0 ? 'right' : 'left');
+    // generic loft through rings of points (smooth shaded, open or closed ring)
+    const loft = (rings, close = false) => {
+      const nr = rings.length, np = rings[0].length, pos = [], ind = [], uv = [];
+      rings.forEach((r, i) => r.forEach((p, j) => { pos.push(p.x, p.y, p.z); uv.push(i / (nr - 1), j / (np - 1)); }));
+      const nj = close ? np : np - 1;
+      for (let i = 0; i < nr - 1; i++) for (let j = 0; j < nj; j++) { const a = i * np + j, b = i * np + ((j + 1) % np), c = (i + 1) * np + ((j + 1) % np), d = (i + 1) * np + j; ind.push(a, b, c, a, c, d); }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(ind); g.computeVertexNormals();
+      return g;
+    };
+    // sweep a cross-section [[z, h]…] along an x-y path; h is measured along the outward normal (away from (cx, cy))
+    const sweep = (path, section, cx, cy) => loft(path.map((p, i) => {
+      const a = path[Math.max(0, i - 1)], b = path[Math.min(path.length - 1, i + 1)];
+      let tx = b[0] - a[0], ty = b[1] - a[1]; const l = Math.hypot(tx, ty); tx /= l; ty /= l;
+      let nx = -ty, ny = tx; if (nx * (p[0] - cx) + ny * (p[1] - cy) < 0) { nx = -nx; ny = -ny; }
+      return (typeof section === 'function' ? section(i, path.length) : section).map(([z, h]) => V3(p[0] + nx * h, p[1] + ny * h, z));
+    }));
+    const tableFn = (pts) => (x) => { if (x <= pts[0][0]) return pts[0][1]; for (let i = 0; i < pts.length - 1; i++) if (x <= pts[i + 1][0]) return lerp(pts[i][1], pts[i + 1][1], (x - pts[i][0]) / (pts[i + 1][0] - pts[i][0])); return pts[pts.length - 1][1]; };
+    const bolts = (parent, list, size = 0.006, mat = M.steel()) => instances(G.bolt(size), mat, list.map((l) => ({ pos: l.pos, rot: l.rot || [0, 0, 0] })), { parent });
+    const rivets = (parent, list, r = 0.004, mat = M.darkSteel()) => instances(G.rivet(r), mat, list.map((l) => ({ pos: l.pos, rot: l.rot || [0, 0, 0] })), { parent, cast: false });
+    const P = (parent, he, en, mat, desc, o) => part(parent, { he, en, mat, desc }, o);
+
+    // ------------------------------------------------------------------ key dimensions
+    const AXF = 1.27, AXR = -1.27, TR = 0.381, WZ = 0.711;     // wheelbase 2.54 m (100 in), track 1.42 m (56 in)
+    const FRAME_Y = 0.58, FLOOR = 0.70, BZ = 0.575, BELT = 1.06;
+    const BLACK = new THREE.MeshPhysicalMaterial({ color: 0x0a0a0b, metalness: 0.1, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.08, side: THREE.DoubleSide, name: 'לכה שחורה (ג׳פאן)' }), BLACKM = M.paintFlat(0x0c0c0d, 0.5);
+    const BRASS = M.brass(), BRASSD = (() => { const m = M.brass().clone(); m.color.setHex(0xb98f3a); m.roughness = 0.42; return m; })();
+    const STEEL = M.steel(), DSTEEL = M.darkSteel(), CAST = M.castIron();
+    const IRON = M.metal(0x1d1e21, 0.5);
+    const SHEET = dbl(M.metal(0x131315, 0.4));
+    const woodNat = (() => { const m = new THREE.MeshStandardMaterial({ color: 0x101012, roughness: 0.4, metalness: 0, bumpMap: K.noiseTexture(256, 'fabric'), bumpScale: 0.3, name: 'עץ היקורי צבוע שחור' }); return m; })();
+    const woodDark = new THREE.MeshStandardMaterial({ color: 0x4a2c16, roughness: 0.6, bumpMap: K.noiseTexture(256, 'leather'), bumpScale: 0.3, name: 'עץ אפר' });
+    const fabricTop = new THREE.MeshStandardMaterial({ color: 0x17171a, roughness: 0.95, side: THREE.DoubleSide, bumpMap: K.noiseTexture(256, 'fabric'), bumpScale: 0.6, name: 'בד גג מגומם' });
+    const spinners = [];
+
+    // ================================================================== WHEELS
+    const wheelsSys = sys('wheels');
+    const wheelSpots = [{ x: AXF, s: 1, front: true }, { x: AXF, s: -1, front: true }, { x: AXR, s: 1, front: false }, { x: AXR, s: -1, front: false }];
+    {
+      const rimGeo = G.lathe([[0.296, -0.035], [0.303, -0.035], [0.31, -0.03], [0.322, -0.034], [0.326, -0.03], [0.315, -0.02], [0.306, -0.012], [0.306, 0.012], [0.315, 0.02], [0.326, 0.03], [0.322, 0.034], [0.31, 0.03], [0.303, 0.035], [0.296, 0.035], [0.296, -0.035]], 64, 'z');
+      const felloeGeo = G.lathe([[0.236, -0.026], [0.3, -0.03], [0.3, 0.03], [0.236, 0.026], [0.236, -0.026]], 48, 'z');
+      const hubGeo = G.lathe([[0, -0.085], [0.034, -0.085], [0.05, -0.06], [0.074, -0.04], [0.074, 0.04], [0.05, 0.06], [0.034, 0.085], [0, 0.085]], 28, 'z');
+      const flangeGeo = G.merge([G.cyl(0.092, 0.092, 0.012, 32, 'z').translate(0, 0, -0.046), G.cyl(0.092, 0.092, 0.012, 32, 'z').translate(0, 0, 0.046)]);
+      const spokeGeo = G.merge(Array.from({ length: 12 }, (_, k) => { const a = (k / 12) * PI * 2; const g = G.cyl(0.011, 0.02, 0.19, 8, 'y'); g.scale(1, 1, 1.25); g.translate(0, 0.095 + 0.07, 0); g.rotateZ(a - PI / 2 + PI / 2); return g; }));
+      const capGeo = G.lathe([[0, 0.052], [0.02, 0.05], [0.036, 0.04], [0.046, 0.02], [0.046, 0], [0, 0]], 24, 'z');
+      const hubBolts = G.merge(Array.from({ length: 6 }, (_, k) => { const a = (k / 6) * PI * 2; return G.at(G.cyl(0.006, 0.006, 0.01, 6, 'z'), [Math.cos(a) * 0.075, Math.sin(a) * 0.075, 0.056]); }));
+      const sidewall = K.textTexture('30 × 3½ · 4 PLY', { font: '600 70px Arial', color: '#3b3b3e', pad: 6 });
+      for (const w of wheelSpots) {
+        const name = `${w.front ? 'קדמי' : 'אחורי'} ${sideHe(w.s)}`, en = `${w.front ? 'Front' : 'Rear'} ${sideEn(w.s)}`;
+        const tw = w.front ? 1.0 : 1.17;
+        const wp = part(wheelsSys, { he: `גלגל ${name}`, en: `${en} wheel`, mat: 'עץ היקורי + חישוק פלדה + צמיג', desc: `גלגל ארטילריה מעץ עם 12 חישורים, ${w.front ? 'צמיג 30×3 קדמי' : 'צמיג 30×3½ אחורי רחב יותר'}. את הגלגל בנו כמו עגלה: חישורי עץ היקורי שנדחסים לתוך נבות וחישוק.` });
+        wp.position.set(w.x, TR, w.s * WZ); if (w.s < 0) wp.rotation.y = PI;
+        const spin = new THREE.Group(); wp.add(spin); spinners.push({ o: spin, s: w.s });
+        const tire = part(spin, { he: `צמיג ${name}`, en: `${en} tyre`, mat: 'גומי מוואלקן + בד, 30×3' + (w.front ? '' : '½'), desc: 'צמיג קלינצ׳ר (נכנס לתוך שפת החישוק) עם שתי שכבות בד, שפופרת פנימית וכיתוב מידה על הדופן. נתקע לעיתים קרובות — מנהגים נסעו עם ערכת תיקון.' });
+        mesh(G.torus(0.343, 0.038, 14, 64, PI * 2, 'z'), M.tire(), { parent: tire, scale: [1, 1, tw] });
+        if (w.front) for (const z of [-0.016, 0.016]) mesh(G.torus(0.3805, 0.0018, 4, 64, PI * 2, 'z'), M.black(), { parent: tire, pos: [0, 0, z], cast: false });
+        else instances(new THREE.BoxGeometry(0.004, 0.012, 0.034), M.black(), Array.from({ length: 40 }, (_, i) => { const a = (i / 40) * PI * 2; return { pos: [Math.cos(a) * 0.381, Math.sin(a) * 0.381, 0.012 * (i % 2 ? 1 : -1)], rot: [0, 0, a + PI / 2 + (i % 2 ? 0.5 : -0.5)] }; }), { parent: tire, cast: false });
+        const sw = mesh(new THREE.RingGeometry(0.322, 0.35, 48), M.decal(sidewall.tex, { roughness: 0.9, clearcoat: 0 }), { parent: tire, pos: [0, 0, 0.0385 * tw], cast: false });
+        { const p = sw.geometry.attributes.position, uv = sw.geometry.attributes.uv; for (let i = 0; i < p.count; i++) uv.setXY(i, 0.5 + p.getX(i) / 0.7, 0.5 + p.getY(i) / 0.7); }
+        const rim = P(spin, `חישוק ${name}`, `${en} clincher rim`, 'פלדה מגולוונת', 'חישוק פלדה בקוטר 24 אינץ׳ עם שפות מעוקלות שאוחזות בפטיט הצמיג. בפרט: ברז אוויר קטן עם מכסה.');
+        mesh(rimGeo, STEEL, { parent: rim });
+        put(G.cyl(0.005, 0.005, 0.03, 8, 'y'), BRASS, rim, [Math.cos(0.7) * 0.3, Math.sin(0.7) * 0.3, 0.0], [0, 0, 0.7 - PI / 2 + PI]);
+        const fel = P(spin, `חישוק עץ (פלגה) ${name}`, `${en} wooden felloe`, 'עץ היקורי', 'טבעת העץ שאליה נקבעים קצות החישורים. מצופה בלכה ומחוזקת בחישוק הפלדה בחימום (התכווצות).');
+        mesh(felloeGeo, woodNat, { parent: fel });
+        instances(new THREE.BoxGeometry(0.03, 0.012, 0.008), DSTEEL, Array.from({ length: 12 }, (_, i) => { const a = (i / 12) * PI * 2 + 0.26; return { pos: [Math.cos(a) * 0.294, Math.sin(a) * 0.294, 0.034], rot: [0, 0, a + PI / 2] }; }), { parent: fel });
+        const sp = P(spin, `חישורים ${name} (12)`, `${en} spokes (×12)`, 'עץ היקורי', 'שנים־עשר חישורים מחוטבים, עבים ליד הנאב ודקים ליד הפלגה. שוקעים בחריצי הנאב וקבועים בדבק ובקשירה.');
+        mesh(spokeGeo, woodNat, { parent: sp });
+        const hub = P(spin, `נאב ${name}`, `${en} hub`, 'עץ + אוגנים מפלדה', 'נאב עץ גדול עם שני אוגנים מפלדה שמאחדים את החישורים. בתוכו מסבי רולר ועליו שישה ברגים.');
+        mesh(hubGeo, woodDark, { parent: hub }); mesh(flangeGeo, IRON, { parent: hub }); mesh(hubBolts, STEEL, { parent: hub });
+        const hc = P(spin, `פקק נאב ${name}`, `${en} hub cap`, 'פליז', 'פקק פליז מוברג על קצה הציר, עם סמל ״Ford״ מוטבע.');
+        mesh(capGeo, BRASS, { parent: hc, pos: [0, 0, 0.08] });
+        wp.userData.tw = tw;
+      }
+    }
+    // spare wheel on the rear (static)
+    {
+      const sp = P(wheelsSys, 'גלגל חילוף', 'Spare wheel', 'צמיג + חישוק פלדה', 'חישוק פלדה עם צמיג 30×3½ מותקן על תושבת בגב הרכב. ההחלפה כרוכה בפתיחת החישוק מהגלגל עם ברגי נעילה ורתמת פלדה.');
+      sp.position.set(-1.72, 1.0, 0); sp.rotation.y = PI / 2;
+      mesh(G.torus(0.343, 0.038, 12, 56, PI * 2, 'z'), M.tire(), { parent: sp, scale: [1, 1, 1.17] });
+      mesh(G.lathe([[0.296, -0.035], [0.322, -0.034], [0.326, -0.03], [0.306, -0.012], [0.306, 0.012], [0.326, 0.03], [0.322, 0.034], [0.296, 0.035]], 56, 'z'), STEEL, { parent: sp });
+      mesh(G.cyl(0.07, 0.07, 0.006, 24, 'z'), IRON, { parent: sp, pos: [0, 0, 0.04] });
+      const cr = P(wheelsSys, 'תושבת גלגל חילוף', 'Spare-tyre carrier', 'פלדה + רצועה', 'מוט פלדה אחד ושתי תושבות שמחזיקות את החישוק ללוח האחורי. מכוסה בלולאת רצועה.');
+      rod(cr, [-1.6, 0.66, 0], [-1.7, 0.7, 0], 0.012, IRON); put(new THREE.BoxGeometry(0.05, 0.1, 0.34), IRON, cr, [-1.62, 0.72, 0]);
+    }
+    // ------------------------------------------------------------------ steered/driven spin animation
+    let speed = 0;
+    K.toggle('drive', { he: 'גלגלים מסתובבים', key: 'g', seconds: 1.2 }, (t) => { speed = t * 5; });
+    K.onFrame((time, dt) => { if (speed > 0.01) for (const sp of spinners) sp.o.rotation.z -= (sp.s * speed * dt) / 0.381; });
+
+    // ================================================================== BODY
+    const body = sys('body');
+    // ---- fenders (swept sections along arcs around the axles)
+    const arc = (cx, cy, R, a0, a1, n) => Array.from({ length: n + 1 }, (_, i) => { const a = lerp(a0, a1, i / n) * PI / 180; return [cx + Math.cos(a) * R, cy + Math.sin(a) * R]; });
+    const FR = 0.41;
+    const fenderSec = (zin) => [[zin, 0.01], [zin + 0.1, 0.012], [zin + 0.25, 0.01], [WZ - 0.02, 0.0], [WZ + 0.05, -0.008], [0.80, -0.04], [0.812, -0.1]];
+    const fenderMat = BLACK;
+    const secBlend = (zin, s, kTip, kTail) => (i, n) => {
+      const full = fenderSec(zin), board = [[0.585, 0.0], [0.64, 0.0], [0.72, 0.0], [0.78, 0.0], [0.82, 0.0], [0.835, 0.0], [0.84, 0.0]];
+      let b = kTail(i, n), k = kTip(i, n);
+      const zc = (zin + 0.85) / 2;
+      return full.map(([z, h], j) => { const zz = lerp(zc + (z - zc) * k, board[j][0], b), hh = lerp(h * k, 0, b); return [s * zz, hh]; });
+    };
+    for (const s of [1, -1]) {
+      const sH = sideHe(s), sE = sideEn(s);
+      const ff = P(body, `פח כנף קדמית ${sH}`, `Front ${sE} fender`, 'פלדה + לכה שחורה', 'הכנף הקדמית מכוסה בלכה שחורה (״ג׳פאן״ שהתייבשה מהר, הסיבה שכל המכוניות שחורות מ־1914). קצה מגולגל מחזק את הפח, והקצה הפנימי עולה אל מכסה המנוע.');
+      const pathF = [...arc(AXF, TR, FR, -22, 180, 40), [0.80, 0.398], [0.76, 0.43]];
+      const secF = secBlend(0.30, s, (i) => 0.3 + 0.7 * smooth(0, 12, i), (i, n) => smooth(40, n - 1, i));
+      mesh(sweep(pathF, secF, AXF, TR), fenderMat, { parent: ff, name: 'fender skin' });
+      const rf = P(body, `פח כנף אחורית ${sH}`, `Rear ${sE} fender`, 'פלדה + לכה שחורה', 'הכנף האחורית רחבה וגולשת עד מאחורי הגלגל, כשהקצה הפנימי צמוד לדופן הגוף. בחזית היא ממשיכה אל לוח הדריכה.');
+      const pathR = [[-0.76, 0.43], [-0.80, 0.398], ...arc(AXR, TR, FR, 0, 188, 40)];
+      const secR = secBlend(0.585, s, (i, n) => 0.5 + 0.5 * smooth(n - 1, n - 10, i), (i, n) => 1 - smooth(0, 3, i));
+      mesh(sweep(pathR, secR, AXR, TR), fenderMat, { parent: rf, name: 'fender skin' });
+      // beads (rivets) along the rolled edges
+      rivets(ff, arc(AXF, TR, FR - 0.03, -10, 175, 26).map(([x, y]) => ({ pos: [x, y + 0.0, s * 0.835], rot: [0, 0, 0] })), 0.003, BRASS);
+      // fender irons (brackets) to the frame
+      const fi = P(body, `ברזלי תליית כנף ${sH} (3)`, `${sE} fender irons (×3)`, 'פלדה מחושלת', 'שלושה זרועות מברזל שמחברות כל כנף למסגרת. בלעדיהן הכנף תרעד בנסיעה על כביש עפר.');
+      for (const [x0, y0, x1, y1] of [[AXF + 0.12, 0.76, AXF + 0.12, 0.64], [AXF - 0.22, 0.79, AXF - 0.22, 0.64], [AXR + 0.12, 0.79, AXR + 0.12, 0.62], [AXR - 0.22, 0.77, AXR - 0.22, 0.60]]) { /* handled below per side */ rod(fi, [x0, y0 - 0.03, s * 0.44], [x1, y1, s * 0.36], 0.009, IRON); }
+    }
+    // ---- running boards
+    for (const s of [1, -1]) {
+      const rb = P(body, `לוח דריכה ${sideHe(s)}`, `${sideEn(s)} running board`, 'פלדה מצופה לכה + רצועות עץ', 'משטח שאליו דורכים בעלייה. פס אלומיניום מחורץ מונע החלקה, ומתחתיו ארבעה תומכי ברזל.');
+      put(new THREE.BoxGeometry(1.56, 0.012, 0.235), SHEET, rb, [0, 0.432, s * 0.7025]);
+      put(new THREE.BoxGeometry(1.56, 0.02, 0.008), M.aluminum(), rb, [0, 0.434, s * 0.825]);
+      instances(new THREE.BoxGeometry(1.5, 0.004, 0.008), M.darkSteel(), Array.from({ length: 18 }, (_, i) => ({ pos: [0, 0.4395, s * (0.595 + i * 0.012)] })), { parent: rb, cast: false });
+      for (const x of [-0.62, -0.22, 0.22, 0.62]) { rod(rb, [x, 0.426, s * 0.62], [x, 0.60, s * 0.42], 0.01, IRON); }
+    }
+    // ---- body tub: side walls with a door notch, rear panel, floor, toe-board, dash
+    const DOOR = [-1.27, -0.60];       // rear door x range (hinged at the rear)
+    const DY = 0.72;                    // door bottom
+    const sideShape = () => {
+      const p = [[0.88, 0.66], [-1.50, 0.66], [-1.56, 0.7], [-1.58, 0.8], [-1.58, BELT - 0.01], [-1.54, BELT + 0.02]];
+      const sh = new THREE.Shape(); sh.moveTo(...p[0]); p.slice(1).forEach((q) => sh.lineTo(...q));
+      sh.lineTo(DOOR[0] - 0.004, BELT + 0.02); sh.lineTo(DOOR[0] - 0.004, DY - 0.004); sh.lineTo(DOOR[1] + 0.004, DY - 0.004); sh.lineTo(DOOR[1] + 0.004, BELT + 0.02);
+      sh.lineTo(0.2, BELT + 0.02); sh.quadraticCurveTo(0.6, BELT + 0.03, 0.88, 1.17); sh.lineTo(0.88, 0.66);
+      return sh;
+    };
+    const bodyMat = BLACK;
+    for (const s of [1, -1]) {
+      const sp = P(body, `דופן גוף ${sideHe(s)}`, `Body side panel ${sideEn(s)}`, 'פלדה/אלומיניום על שלד עץ', 'דופן הגוף נתונה על שלד עץ אפר. גוף הטוריסט נבנה בנפרד מהשלדה ונורה אליה בארבעה ברגי נגרות.');
+      const g = G.extrude(sideShape(), 0.02, { bevel: 0.002, curveSeg: 12 });
+      mesh(g, bodyMat, { parent: sp, pos: [0, 0, s * BZ] });
+      rivets(sp, [[0.4, 1.0], [-0.2, 1.0], [-0.6, 1.0], [-1.3, 1.0], [-1.5, 0.9], [0.8, 1.1], [0.3, 0.7], [-0.4, 0.7], [-1.0, 0.68], [-1.4, 0.68]].map(([x, y]) => ({ pos: [x, y, s * (BZ + 0.012)], rot: [PI / 2, 0, 0] })), 0.004, BRASS);
+      // blind front door outline
+      const fd = P(body, `דלת קדמית דמה ${sideHe(s)}`, `Front blind door ${sideEn(s)}`, 'פלדה צבועה', 'בטוריסט של 1915 דלתות המושב הקדמי היו מצוירות בלבד (כאן: קו מכוסה ללא ידית), ונכנסו אליו מהצד ומעל לוח הדריכה. (לפי תיאור שנאסף; פשטנו.)');
+      for (const [x0, x1] of [[-0.12, 0.62]]) { for (const x of [x0, x1]) put(new THREE.BoxGeometry(0.006, 0.34, 0.004), M.black(), fd, [x, 0.89, s * (BZ + 0.021)]); put(new THREE.BoxGeometry(x1 - x0, 0.006, 0.004), M.black(), fd, [(x0 + x1) / 2, 0.72, s * (BZ + 0.021)]); }
+    }
+    {
+      const rp = P(body, 'לוח אחורי', 'Rear panel', 'פלדה צבועה', 'לוח הקצה האחורי של הגוף, מחורר לסוגרי מנורת הזנב ולוחית הרישוי.');
+      put(new THREE.BoxGeometry(0.02, 0.38, 1.17), BLACK, rp, [-1.58, 0.86, 0]);
+      const lp = P(body, 'לוחית רישוי', 'Licence plate', 'פלדה אמייל', 'לוחית רישוי של קליפורניה 1915: מספר על רקע צהוב, בלי שנת הנפקה כדוגמת היום.');
+      const tx = K.canvasTexture(512, 256, (g, w, h) => { g.fillStyle = '#e8b923'; g.fillRect(0, 0, w, h); g.strokeStyle = '#111'; g.lineWidth = 8; g.strokeRect(10, 10, w - 20, h - 20); g.fillStyle = '#111'; g.font = '700 40px Arial'; g.textAlign = 'center'; g.fillText('CAL', 70, 60); g.fillText('1915', w - 80, 60); g.font = '700 150px Arial'; g.fillText('3685', w / 2, 190); });
+      mesh(new THREE.PlaneGeometry(0.3, 0.15), M.decal(tx, { roughness: 0.5 }), { parent: lp, pos: [-1.592, 0.52, 0], rot: [0, -PI / 2, 0], cast: false });
+      put(new THREE.BoxGeometry(0.004, 0.15, 0.3), M.metal(0xdba81e, 0.4), lp, [-1.589, 0.52, 0]); put(new THREE.BoxGeometry(0.03, 0.12, 0.02), IRON, lp, [-1.55, 0.6, 0]);
+      const fp = P(body, 'לוחית רישוי קדמית', 'Front licence plate', 'פלדה אמייל', 'לוחית שנייה שתלויה מתחת לרדיאטור על זוג תומכים מהצלע הקדמית, כדי שייראה מספר גם מלפנים.');
+      const ftx = K.canvasTexture(512, 256, (g, w, h) => { g.fillStyle = '#e8b923'; g.fillRect(0, 0, w, h); g.strokeStyle = '#111'; g.lineWidth = 8; g.strokeRect(10, 10, w - 20, h - 20); g.fillStyle = '#111'; g.font = '700 40px Arial'; g.textAlign = 'center'; g.fillText('CAL', 70, 60); g.fillText('1915', w - 80, 60); g.font = '700 150px Arial'; g.fillText('3685', w / 2, 190); });
+      mesh(new THREE.PlaneGeometry(0.3, 0.15), M.decal(ftx, { roughness: 0.5 }), { parent: fp, pos: [1.791, 0.4, 0], rot: [0, PI / 2, 0], cast: false });
+      put(new THREE.BoxGeometry(0.004, 0.15, 0.3), M.metal(0xdba81e, 0.4), fp, [1.788, 0.4, 0]);
+      for (const z of [-0.12, 0.12]) rod(fp, [1.785, 0.36, z], [1.5, 0.52, z * 1.2], 0.008, IRON);
+      const fl = P(body, 'לוחות רצפה', 'Floorboards', 'עץ אורן', 'לוחות עץ פשוטים עם חריץ למוטות הדוושות ויציאה לידית הבלם. מעליהם שטיח גומי.');
+      put(new THREE.BoxGeometry(2.25, 0.02, 1.15), woodDark, fl, [-0.42, FLOOR - 0.01, 0]);
+      put(G.box(0.8, 0.006, 0.7, 0.002), M.rubber(), fl, [0.3, FLOOR + 0.002, 0]);
+      const tb = P(body, 'לוח רגליים משופע', 'Toeboard', 'עץ + פלדה', 'לוח משופע שמחבר את הרצפה לקדמת התא, עם חריצים לשלוש הדוושות ולמוט היגוי.');
+      { const g = new THREE.BoxGeometry(0.34, 0.012, 1.14); g.rotateZ(1.0); put(g, woodDark, tb, [0.72, 0.84, 0]); }
+      const ds = P(body, 'לוח מחוונים וקיר אש (דאש)', 'Dash & firewall', 'פלדה צבועה', 'קיר האש שמפריד בין תא הנוסעים למנוע. ללא מחוונים כמעט: רק מתג הצתה, מד זרם וכפתור חנק.');
+      put(new THREE.BoxGeometry(0.02, 0.5, 1.17), BLACK, ds, [0.88, 0.97, 0]);
+      const cw = P(body, 'אדן קדמי (קאול)', 'Cowl', 'פלדה מעוצבת', 'החלק המעוגל שמעל קיר האש. עליו יושבים מנורות הצד ושמשת הרוח.');
+      { const secs = []; for (const x of [0.9, 0.78]) secs.push(Array.from({ length: 11 }, (_, i) => { const u = i / 10 * 2 - 1; return V3(x, 1.2 + 0.04 * (1 - Math.abs(u) ** 2.4) - (x < 0.85 ? 0.03 : 0), u * BZ); })); mesh(loft(secs), BLACK, { parent: cw }); }
+      const rs = P(body, 'מושב פנימי עליון (ארגז מושב)', 'Front seat riser', 'עץ + פלדה', 'ארגז העץ שמתחת למושב הקדמי: בתוכו מיכל הדלק, ומעליו כרית המושב.');
+      put(new THREE.BoxGeometry(0.46, 0.14, 1.12), BLACK, rs, [-0.07, FLOOR + 0.07, 0]);
+      const rs2 = P(body, 'ארגז מושב אחורי', 'Rear seat riser', 'עץ + פלדה', 'פלטפורמה נמוכה עבור כרית המושב האחורי, עם מגירה לכלי עבודה.');
+      put(new THREE.BoxGeometry(0.5, 0.12, 1.12), BLACK, rs2, [-1.12, FLOOR + 0.06, 0]);
+      for (const s of [1, -1]) { const sl = P(body, `קורת רצפה ${sideHe(s)}`, `${sideEn(s)} body sill`, 'עץ אפר', 'קורת עץ ארוכה שמתחת לדופן. הגוף יושב עליה והיא מונחת על מסגרת הפלדה, עם ריפוד גומי.'); put(new THREE.BoxGeometry(2.3, 0.05, 0.05), woodDark, sl, [-0.35, 0.645, s * 0.5]); }
+    }
+    // ---- hood (two halves hinged on the ridge), radiator, bonnet louvres
+    const hoodSec = [[0.27, 0.86], [0.272, 0.93], [0.245, 1.04], [0.17, 1.105], [0.04, 1.135], [0.0, 1.14]];
+    const hoodX = [0.9, 1.58];
+    for (const s of [1, -1]) {
+      const hh = P(body, `חצי מכסה מנוע ${sideHe(s)}`, `Hood half ${sideEn(s)}`, 'פלדה בעובי 1 מ״מ + לכה', 'מכסה המנוע מורכב משני חצאים שנפתחים כמו כנפי ספר מציר באמצע. הצדדים מחוררים בתריסי אוורור כדי להוציא חום.');
+      hh.position.set(0, 1.14, 0);
+      const rings = [0, 0.5, 1].map((t) => { const x = lerp(hoodX[0], hoodX[1], t); const k = lerp(1, 0.9, t); return hoodSec.map(([z, y]) => V3(x, 1.14 + (y - 1.14) * (t > 0.5 ? 1.0 : 1.0) - (t > 0 ? 0.015 * t : 0), s * z * k)); });
+      mesh(loft(rings), BLACK, { parent: hh, pos: [0, -1.14, 0], name: 'hood skin' });
+      const lv = P(hh, `תריסי אוורור ${sideHe(s)}`, `${sideEn(s)} louvres`, 'פלדה מחורצת', 'ארבעה חריצי אוורור מוטבעים בצד כל חצי מכסה, כדי שהאוויר החם יברח מהמנוע.');
+      for (let i = 0; i < 5; i++) put(new THREE.BoxGeometry(0.1, 0.008, 0.004), M.black(), lv, [1.23 + i * 0.0, 0.92 - 1.14 + i * 0.03, s * 0.268], null, {});
+      rivets(hh, Array.from({ length: 12 }, (_, i) => ({ pos: [0.95 + i * 0.058, 0.9 - 1.14, s * 0.272], rot: [PI / 2, 0, 0] })), 0.0035, BRASS);
+      hh.userData.hinge = s;
+    }
+    const hoodHalves = body.children.filter((c) => c.name && c.name.startsWith('Hood half'));
+    K.toggle('hood', { he: 'מכסה מנוע', key: 'h', seconds: 1.4 }, (t) => { for (const h of hoodHalves) h.rotation.x = -h.userData.hinge * 1.95 * Math.sin(t * PI / 2); });
+    {
+      const lt = P(body, 'תפס מכסה מנוע', 'Hood clip', 'פלדה קפיצית', 'שני תפסים לחוצי קפיץ שמחזיקים את חצי המכסה ברקע הרדיאטור.');
+      for (const s of [1, -1]) put(new THREE.BoxGeometry(0.03, 0.02, 0.01), STEEL, lt, [1.57, 0.88, s * 0.26]);
+      const hr = P(body, 'ציר מכסה מנוע', 'Hood hinge strip', 'פלדה', 'פס מתכת לאורך הרכס שבו נפגשים שני חצאי המכסה, ובו צירי הפתיחה.');
+      put(new THREE.BoxGeometry(0.68, 0.01, 0.025), IRON, hr, [1.24, 1.145, 0]);
+    }
+
+    // ================================================================== COOLING (brass radiator)
+    const cool = sys('cooling');
+    const RX = 1.64;   // radiator centre x
+    {
+      const shellShape = G.shape([[-0.205, 0.0], [0.205, 0.0], [0.205, 0.5], [0.19, 0.52], [-0.19, 0.52], [-0.205, 0.5]], [[[-0.19, 0.015], [0.19, 0.015], [0.19, 0.49], [-0.19, 0.49]]]);
+      const sg = G.extrude(shellShape, 0.11, { curveSeg: 4 }); sg.rotateY(-PI / 2); // shape x → world z, extrusion → x
+      const shell = P(cool, 'מעטפת רדיאטור מפליז', 'Brass radiator shell', 'פליז מלוטש', 'המעטפת הנוצצת שהפכה לסמל של הדגם. בשנת 1917 החליפו אותה בפח שחור כדי לחסוך בעלות.');
+      mesh(sg, BRASS, { parent: shell, pos: [RX, 0.66, 0] });
+      // top header with embossed script
+      const hd = P(cool, 'ראש הרדיאטור והכיתוב Ford', 'Radiator top tank & Ford script', 'פליז + כיתוב מוטבע', 'המיכל העליון המשופע נושא את הכיתוב Ford בכתב יד של הנרי פורד, הוטבע בפליז. ממנו נמלא המים.');
+      mesh(G.box(0.1, 0.12, 0.4, 0.004, 2), BRASS, { parent: hd, pos: [RX, 1.1, 0] });
+      const sc = K.textTexture('Ford', { font: 'italic 800 190px "Brush Script MT","URW Chancery L","Z003","Lucida Handwriting",cursive', color: '#6a4d12', pad: 10 });
+      mesh(new THREE.PlaneGeometry(0.23, 0.23 / sc.aspect), M.decal(sc.tex, { roughness: 0.5, metalness: 0.5 }), { parent: hd, pos: [RX + 0.0505 + 0.002, 1.095, 0], rot: [0, PI / 2, 0], cast: false });
+      const cr = P(cool, 'ליבת רדיאטור (חלת דבש)', 'Radiator core (honeycomb)', 'צינורות נחושת + סנפירים', 'מאות צינורות קטנים עם סנפירים שמצננים את המים. הרדיאטור אינו דחוס — הקירור נעשה ב״תרמוסיפון״: מים חמים עולים ומים קרים יורדים בלי משאבה.');
+      const hc = K.canvasTexture(256, 256, (g, w, h) => { g.fillStyle = '#0a0a0b'; g.fillRect(0, 0, w, h); g.strokeStyle = '#2b2c2f'; g.lineWidth = 2; for (let y = 0; y < h; y += 8) for (let x = 0; x < w; x += 9) { g.beginPath(); for (let k = 0; k < 6; k++) { const a = PI / 3 * k + PI / 6; g.lineTo(x + (y / 8 % 2 ? 4.5 : 0) + Math.cos(a) * 4.5, y + Math.sin(a) * 4.5); } g.closePath(); g.stroke(); } }, { repeat: [2, 2] });
+      const coreMat = new THREE.MeshStandardMaterial({ map: hc, roughness: 0.7, metalness: 0.3 });
+      mesh(new THREE.BoxGeometry(0.09, 0.4, 0.37), coreMat, { parent: cr, pos: [RX - 0.0, 0.89, 0] });
+      const fl = P(cool, 'מכסה ומילוי רדיאטור', 'Radiator cap', 'פליז', 'פקק פליז עם צוואר קצר. לפעמים חוסמים אותו במד־חום כנפיים (מוטומטר) שמראה לנהג אם המנוע מתחמם.');
+      mesh(G.lathe([[0, 0.0], [0.028, 0.0], [0.03, 0.02], [0.022, 0.04], [0.024, 0.05], [0.0, 0.055]], 20, 'y'), BRASS, { parent: fl, pos: [RX - 0.02, 1.16, 0] });
+      mesh(G.cyl(0.036, 0.036, 0.012, 20, 'y'), BRASSD, { parent: fl, pos: [RX - 0.02, 1.158, 0] });
+      const dr = P(cool, 'ברז ניקוז (פטקוק)', 'Drain petcock', 'פליז', 'ברז קטן בתחתית הרדיאטור שמרוקנים בו את המים לפני חורף כדי שלא יקפאו.');
+      put(G.cyl(0.008, 0.008, 0.04, 8, 'y'), BRASS, dr, [RX - 0.03, 0.64, 0.05]); put(G.box(0.03, 0.006, 0.008, 0.002), BRASS, dr, [RX - 0.03, 0.618, 0.05]);
+      const st = P(cool, 'מוטות תמיכה לרדיאטור', 'Radiator stay rods', 'פלדה', 'שני מוטות שמחברים את הרדיאטור לראש המנוע. הם מונעים מהרדיאטור לנדנד על הקפיצים.');
+      for (const s of [1, -1]) rod(st, [RX - 0.06, 1.0, s * 0.13], [1.34, 0.88, s * 0.1], 0.007, IRON);
+      const hs = P(cool, 'צינורות גומי עליון ותחתון', 'Radiator hoses (upper & lower)', 'גומי מצולע + קולרי פליז', 'שני צינורות גומי: העליון מוביל מים חמים מראש המנוע, והתחתון מחזיר קרים. קולרי הפליז מהודקים בבורג.');
+      rod(hs, [1.34, 0.88, 0.0], [RX - 0.08, 1.04, 0.0], 0.026, M.rubber());
+      rod(hs, [1.38, 0.62, -0.2], [RX - 0.07, 0.72, -0.2], 0.02, M.rubber());
+      for (const [a, b] of [[[1.37, 0.894, 0], [1.37, 0.894, 0]], [[RX - 0.1, 1.03, 0], 0]]) put(G.torus(0.032, 0.004, 6, 20, PI * 2, 'x'), BRASS, hs, a);
+      const fan = P(cool, 'מאוורר ורצועה', 'Fan & belt', 'פלדה מצופה + רצועת עור', 'מאוורר ארבע להבים על רצועת עור שמסתובב מציר המנוע. זז רק כשהמנוע פועל.');
+      const fanG = new THREE.Group(); fanG.position.set(1.50, 0.62, 0); fan.add(fanG);
+      mesh(G.cyl(0.028, 0.028, 0.03, 16, 'x'), DSTEEL, { parent: fanG });
+      for (let k = 0; k < 4; k++) { const b = mesh(G.box(0.01, 0.17, 0.05, 0.003, 1), M.metal(0x2a2b2e, 0.5), { parent: fanG, pos: [0, 0, 0] }); b.rotation.x = (k * PI) / 2; b.position.set(0, Math.cos(k * PI / 2) * 0.1, Math.sin(k * PI / 2) * 0.1); b.rotation.y = 0.35; }
+      rod(fan, [1.40, 0.62, -0.02], [1.50, 0.62, -0.02], 0.004, STEEL);
+      cool.userData.fan = fanG;
+      ctxFan = fanG;
+    }
+    var ctxFan;
+    // ================================================================== LIGHTS & HORN
+    const lightsSys = sys('lights');
+    const L = {};
+    {
+      L.head = new THREE.MeshStandardMaterial({ color: 0xfff1c8, emissive: 0xffe9a8, emissiveIntensity: 0.05, roughness: 0.1, transparent: true, opacity: 0.7 });
+      L.kero = new THREE.MeshStandardMaterial({ color: 0xffd9a0, emissive: 0xffa94d, emissiveIntensity: 0.05, roughness: 0.3, transparent: true, opacity: 0.65 });
+      L.tail = new THREE.MeshStandardMaterial({ color: 0xc01010, emissive: 0xff2020, emissiveIntensity: 0.05, roughness: 0.2, transparent: true, opacity: 0.8 });
+      const reflGeo = G.lathe([[0, -0.07], [0.03, -0.065], [0.06, -0.045], [0.085, -0.01], [0.092, 0.0]], 28, 'x');
+      for (const s of [1, -1]) {
+        const sH = sideHe(s), sE = sideEn(s);
+        const hl = P(lightsSys, `פנס ראשי ${sH}`, `Headlamp ${sE}`, 'פליז + זכוכית + מחזיר מכסף', 'פנס חשמלי שמוזן מהמגנטו של המנוע (מ־1915): בעוצמת האור משתנה עם סיבובי המנוע, ולכן באיטיות הוא מחשיך. הטבעת העליונה נפתחת להחלפת הנורה.');
+        hl.position.set(1.6, 0.98, s * 0.37);
+        mesh(G.lathe([[0.105, -0.07], [0.108, -0.06], [0.1, -0.02], [0.1, 0.03], [0.109, 0.05], [0.112, 0.058]], 36, 'x'), BRASSD, { parent: hl, name: 'lamp drum' });
+        mesh(G.torus(0.108, 0.007, 8, 40, PI * 2, 'x'), BRASS, { parent: hl, pos: [0.062, 0, 0], name: 'door rim' });
+        mesh(new THREE.CircleGeometry(0.1, 36), L.head, { parent: hl, pos: [0.062, 0, 0], rot: [0, PI / 2, 0], name: 'lens' });
+        mesh(reflGeo, M.reflector(), { parent: hl, pos: [0.0, 0, 0], name: 'reflector' });
+        mesh(G.sphere(0.014, 12, 10), L.head, { parent: hl, pos: [-0.012, 0, 0], name: 'bulb' });
+        put(G.cyl(0.006, 0.006, 0.03, 8, 'y'), BRASS, hl, [0.065, 0.108, 0]);
+        rod(hl, [0, -0.1, 0], [-0.0, -0.205, s * -0.02], 0.014, BRASSD);
+        put(G.cyl(0.03, 0.03, 0.012, 16, 'y'), BRASSD, hl, [0, -0.206, s * -0.02]);
+        const sl = P(lightsSys, `מנורת צד ${sH} (נפט)`, `Side lamp ${sE} (oil)`, 'פליז + זכוכית', 'מנורת נפט קטנה ליד הקאול, עם פתיל ובד. נדלקת בגפרור מהצד ונותנת אור קלוש כדי שיראו את הרכב.');
+        sl.position.set(0.84, 1.17, s * 0.62);
+        mesh(G.lathe([[0, 0.0], [0.04, 0.0], [0.045, 0.01], [0.04, 0.03], [0.045, 0.1], [0.035, 0.16], [0.012, 0.18], [0.0, 0.2]], 20, 'y'), BRASSD, { parent: sl });
+        mesh(G.cyl(0.03, 0.03, 0.09, 16, 'y'), L.kero, { parent: sl, pos: [0.03, 0.08, 0], name: 'chimney glass' });
+        mesh(G.cyl(0.012, 0.016, 0.03, 10, 'y'), BRASS, { parent: sl, pos: [0, 0.213, 0] });
+        rod(sl, [0, 0, 0], [0.0, -0.1, s * -0.04], 0.012, BRASSD);
+      }
+      const tl = P(lightsSys, 'פנס זנב (נפט)', 'Tail lamp (oil)', 'פליז + זכוכית אדומה', 'פנס נפט אחורי עם עדשה אדומה — לפני החשמל, הוא ההתראה היחידה לרכב שבא מאחור בלילה.');
+      tl.position.set(-1.6, 0.98, -0.38);
+      mesh(G.cyl(0.04, 0.045, 0.1, 16, 'x'), BRASSD, { parent: tl, pos: [-0.04, 0, 0] });
+      mesh(G.sphere(0.034, 14, 10, 0, 0), L.tail, { parent: tl, pos: [-0.092, 0, 0] });
+      put(G.cyl(0.006, 0.006, 0.24, 8, 'y'), IRON, tl, [0.0, -0.1, 0]);
+      const hn = P(lightsSys, 'צופר בולב עם פעמון', 'Bulb horn', 'פליז + גומי', 'צפצוף בלחיצת כדור גומי: האוויר דוחף דרך קנה פליז מתפתל. ה״קלקסון״ באה בתור הבא.');
+      mesh(G.sphere(0.04, 16, 12), M.rubber(), { parent: hn, pos: [0.4, 1.02, -0.65] });
+      mesh(G.tube([V3(0.4, 1.02, -0.62), V3(0.46, 1.06, -0.63), V3(0.52, 1.1, -0.64), V3(0.58, 1.1, -0.66)], 0.012, 16, 8), BRASS, { parent: hn });
+      mesh(G.lathe([[0.012, 0], [0.04, 0.08], [0.08, 0.18]], 20, 'x'), BRASS, { parent: hn, pos: [0.57, 1.09, -0.66], rot: [0, 0, 0.05] });
+      const wr = P(lightsSys, 'חוטי חשמל לפנסים', 'Headlamp wiring', 'נחושת + בידוד בד', 'שני חוטי נחושת בבידוד בד שזורים מהמגנטו אל הפנסים הקדמיים דרך מתג.');
+      for (const s of [1, -1]) mesh(G.tube([V3(0.88, 0.9, s * 0.1), V3(1.2, 0.86, s * 0.3), V3(1.5, 0.84, s * 0.34), V3(1.58, 0.92, s * 0.37)], 0.003, 24, 5), M.rubber(), { parent: wr });
+    }
+    K.toggle('lights', { he: 'פנסים', key: 'l', seconds: 0.4, night: true }, (t) => { L.head.emissiveIntensity = 0.05 + t * 4; L.kero.emissiveIntensity = 0.05 + t * 1.6; L.tail.emissiveIntensity = 0.05 + t * 2.2; });
+
+    // ================================================================== DOORS (rear, hinged at the rear edge)
+    const doorsSys = sys('doors');
+    const doorList = [];
+    for (const s of [1, -1]) {
+      const sH = sideHe(s), sE = sideEn(s);
+      const pv = V3(DOOR[0] + 0.004, 0, s * (BZ + 0.0));
+      const door = P(doorsSys, `דלת אחורית ${sH}`, `Rear door ${sE}`, 'פלדה על שלד עץ + לכה', 'דלת אחורית היחידה שנפתחת בכל צד: צירי אחורה, פתיחה לכיוון החזית. הידית פנימית וחיצונית.');
+      door.position.copy(pv);
+      const sh = new THREE.Shape(); sh.moveTo(0.0, DY); sh.lineTo(DOOR[1] - DOOR[0] - 0.008, DY); sh.lineTo(DOOR[1] - DOOR[0] - 0.008, BELT + 0.02); sh.lineTo(0.0, BELT + 0.02); sh.closePath();
+      mesh(G.extrude(sh, 0.02, { bevel: 0.002 }), BLACK, { parent: door, pos: [0, 0, 0] });
+      const dh = P(door, `ידית דלת ${sH}`, `Door handle ${sE}`, 'פליז מצופה ניקל', 'ידית פליז קטנה בצורת מוט שמחזיקה את התפס. בלחיצה מרימים את התפס ופותחים.');
+      put(G.cyl(0.008, 0.008, 0.07, 10, 'y'), M.satin(), dh, [DOOR[1] - DOOR[0] - 0.05, 0.93, s * 0.03]); put(G.cyl(0.02, 0.02, 0.006, 16, 'z'), M.satin(), dh, [DOOR[1] - DOOR[0] - 0.05, 0.93, s * 0.012]);
+      for (const y of [0.78, 0.99]) { const hg = P(door, `ציר דלת ${sH} (${y > 0.9 ? 'עליון' : 'תחתון'})`, `Door hinge ${sE}`, 'פלדה מחושלת', 'ציר שרשרת עם ציר פלדה. הצירים מאחור כדי שהדלת תיסגר מעצמה בנסיעה קדימה.'); put(G.cyl(0.008, 0.008, 0.08, 10, 'y'), IRON, hg, [0, y, s * 0.012]); put(new THREE.BoxGeometry(0.1, 0.05, 0.006), IRON, hg, [0.04, y, s * 0.012]); }
+      doorList.push({ door, s });
+    }
+    K.toggle('doors', { he: 'דלתות אחוריות', key: 'd', seconds: 1.4 }, (t) => { const e = Math.sin(t * PI / 2); for (const d of doorList) d.door.rotation.y = d.s * e * 1.3; });
+
+    // ================================================================== INTERIOR
+    const inter = sys('interior');
+    const LEATH = M.leather(0x14110e);
+    const seatBack = (xc, name, en) => {
+      const sb = P(inter, name, en, 'עור מלאכותי + קפיצים + שיער סוס', 'משענת עם 20 כפתורי צביעה (טופטינג) ותפרים כפולים. מתחתיה קפיצי סליל וריפוד מהודק.');
+      mesh(G.soft(0.1, 0.4, 1.1, { r: 0.04, seg: 6, deform: (p, n) => { p.x += Math.max(0, 1 - Math.abs(n.z)) * 0.01 * n.y; } }), [LEATH, LEATH, LEATH, LEATH, M.quilted(0x14110e, 'v', '#4a3d2c', 6), LEATH], { parent: sb, pos: [xc, 1.0, 0] });
+      const btn = instances(G.sphere(0.006, 8, 6), M.black(), Array.from({ length: 18 }, (_, i) => ({ pos: [xc + 0.054, 0.9 + Math.floor(i / 6) * 0.1, -0.4 + (i % 6) * 0.16] })), { parent: sb, cast: false });
+      return sb;
+    };
+    const cush = (xc, name, en, w) => {
+      const c = P(inter, name, en, 'עור מלאכותי + קפיצים', 'כרית ישיבה על קפיצי סליל. מתחת נמצא מיכל הדלק (במושב הקדמי) או ארגז כלים (באחורי).');
+      mesh(G.soft(w, 0.14, 1.08, { r: 0.05, seg: 6, deform: (p, n) => { p.y -= 0.012 * (1 - n.x * n.x) * (1 - n.z * n.z) * Math.max(0, n.y); } }), [LEATH, LEATH, M.quilted(0x14110e, 'u', '#4a3d2c', 5), LEATH, LEATH, LEATH], { parent: c, pos: [xc, FLOOR + 0.14 + 0.07, 0] });
+      return c;
+    };
+    seatBack(-0.31, 'משענת מושב קדמי', 'Front seat back'); seatBack(-1.43, 'משענת מושב אחורי', 'Rear seat back');
+    cush(-0.07, 'כרית מושב קדמי', 'Front seat cushion', 0.5); cush(-1.12, 'כרית מושב אחורי', 'Rear seat cushion', 0.58);
+    {
+      const sw = P(inter, 'הגה', 'Steering wheel', 'עץ שחור + ספיידר פליז', 'חישוק עץ בקוטר 40 ס״מ על ארבעה חישורי פלדה. במרכז ה״ספיידר״: ידיות ההצתה והמצערת.');
+      sw.position.set(0.52, 1.12, -0.28); sw.rotation.z = Math.atan2(0.3, 0.3) + 0.0; // tilted ~45°
+      const swg = new THREE.Group(); swg.rotation.y = PI / 2; sw.add(swg);
+      mesh(G.torus(0.19, 0.012, 10, 48), woodDark, { parent: swg });
+      for (let k = 0; k < 4; k++) { const a = k * PI / 2 + PI / 4; rod(swg, [Math.cos(a) * 0.02, Math.sin(a) * 0.02, 0], [Math.cos(a) * 0.185, Math.sin(a) * 0.185, 0], 0.006, M.darkSteel()); }
+      mesh(G.cyl(0.03, 0.03, 0.03, 20, 'z'), BRASS, { parent: swg });
+      const sp = P(inter, 'ידיות צינור: הצתה ומצערת', 'Spark & throttle levers', 'פליז + פלדה', 'שתי ידיות קטנות מתחת להגה: משמאל מקדמים את ההצתה, מימין נותנים גז. בלי דוושת גז!');
+      sp.position.set(0.52, 1.12, -0.28); sp.rotation.z = sw.rotation.z;
+      const spg = new THREE.Group(); spg.rotation.y = PI / 2; sp.add(spg);
+      mesh(G.torus(0.074, 0.003, 6, 24, PI, 'z'), BRASS, { parent: spg, pos: [0, 0, 0.03], rot: [0, 0, PI] });
+      rod(spg, [0, 0, 0.03], [0.05, -0.08, 0.03], 0.003, BRASS); rod(spg, [0, 0, 0.03], [-0.05, -0.08, 0.03], 0.003, BRASS);
+      const col = P(inter, 'עמוד היגוי', 'Steering column', 'צינור פלדה + מנשא', 'צינור פלדה מוליך את תנועת ההגה אל תיבת ההיגוי הקטנה. יציאתו מהקיר היא בזווית של 45°.');
+      rod(col, [0.52, 1.12, -0.28], [0.9, 0.78, -0.28], 0.015, DSTEEL);
+      // pedals
+      const pd = P(inter, 'שלוש דוושות', 'Three pedals', 'פלדה + גומי', 'שמאלית: שני הילוכים (לחיצה: איטי, שחרור: מהיר). אמצעית: אחורה. ימנית: בלם. אין דוושת גז, ואין מצמד רגיל.');
+      for (const [z, c] of [[-0.18, 0x222222], [-0.08, 0x222222], [0.02, 0x222222]]) { rod(pd, [0.64, 0.7, z], [0.62, 0.78, z], 0.008, DSTEEL); put(G.box(0.07, 0.01, 0.06, 0.004), M.matte(0x8c1a1a), pd, [0.61, 0.795, z]); }
+      for (const [z, t] of [[-0.18, 'C'], [-0.08, 'R'], [0.02, 'B']]) { const tx = K.textTexture(t, { font: '700 100px Arial', color: '#e9d9a0', pad: 4 }); mesh(new THREE.PlaneGeometry(0.03, 0.03), M.decal(tx.tex), { parent: pd, pos: [0.61, 0.802, z], rot: [-PI / 2, 0, 0], cast: false }); }
+      const hb = P(inter, 'ידית בלם יד (ילוך)', 'Hand lever', 'פלדה + ידית', 'ידית שמאלית ארוכה: מושכים אחורה — מבלמים ומכניסים ניוטרל. דוחפים קדימה — ילוך מהיר.');
+      rod(hb, [0.44, FLOOR + 0.02, -0.52], [0.34, 1.0, -0.52], 0.01, DSTEEL); put(G.sphere(0.022, 12, 10), M.matte(0x222222), hb, [0.34, 1.02, -0.52]);
+      put(new THREE.BoxGeometry(0.01, 0.1, 0.01), STEEL, hb, [0.44, FLOOR + 0.03, -0.505]);
+      const fm = P(inter, 'שטיח רצפה', 'Floor mat', 'גומי', 'שטיח גומי שחור עם הכיתוב Ford בבליטה.');
+      const ft = K.textTexture('Ford', { font: 'italic 700 150px "Brush Script MT","URW Chancery L",cursive', color: '#2a2a2c', bg: '#0e0e0f', pad: 12 });
+      mesh(new THREE.PlaneGeometry(0.34, 0.34 / ft.aspect), M.decal(ft.tex, { roughness: 0.9, clearcoat: 0 }), { parent: fm, pos: [0.48, FLOOR + 0.0075, 0.25], rot: [-PI / 2, 0, PI / 2], cast: false });
+      const rr = P(inter, 'מסילת שמיכה וחגורה', 'Robe rail & foot rail', 'פליז', 'מוט פליז מאחורי המושב הקדמי להחזקת שמיכת צמר; נחוצה בחורף כי לטוריסט אין חימום.');
+      rod(rr, [-0.36, 0.88, -0.55], [-0.36, 0.88, 0.55], 0.009, BRASS);
+      for (const s of [-0.55, 0.55]) rod(rr, [-0.36, 0.88, s], [-0.34, 0.82, s], 0.007, BRASS);
+      // dash fittings
+      const ig = P(inter, 'מתג הצתה ומד זרם', 'Ignition switch & ammeter', 'פליז + בקליט', 'במרכז הקיר: מתג עם מפתח, ומד קטן שמראה אם המגנטו או הסוללה פועלים. אין מד מהירות.');
+      const am = K.textTexture('AMP', { font: '700 100px Arial', color: '#e9d9a0', bg: '#16130e', pad: 8 });
+      put(G.cyl(0.04, 0.04, 0.01, 24, 'x'), BRASS, ig, [0.868, 1.0, 0.04]); mesh(new THREE.CircleGeometry(0.032, 24), new THREE.MeshStandardMaterial({ map: am.tex }), { parent: ig, pos: [0.862, 1.0, 0.04], rot: [0, -PI / 2, 0] });
+      put(G.box(0.1, 0.07, 0.01, 0.003), BRASSD, ig, [0.87, 0.9, -0.12]); put(G.cyl(0.012, 0.012, 0.012, 12, 'x'), STEEL, ig, [0.862, 0.9, -0.12]);
+      const ck = P(inter, 'כפתור חנק', 'Choke wire pull', 'חוט פלדה + ידית', 'חוט שמושך את חסם האוויר ליד הקרבורטור: לחיצה מחזירה אותו. כדי להתניע בקור.');
+      mesh(G.tube([V3(0.87, 0.88, 0.14), V3(0.7, 0.8, 0.14), V3(0.4, 0.74, 0.3)], 0.002, 12, 4), M.rubber(), { parent: ck }); put(G.sphere(0.012, 8, 6), M.matte(0x222222), ck, [0.866, 0.88, 0.14]);
+    }
+
+    // ================================================================== WINDSHIELD + TOP
+    const topSys = sys('top');
+    {
+      const WX = 0.78, WB = 1.19;
+      const ws = P(topSys, 'שמשת רוח (שתי חלקים)', 'Windshield assembly', 'פלדה צבועה + זכוכית', 'שמשה דו־חלקית: הקדמית התחתונה קבועה, והעליונה מתקפלת קדימה כדי לנהוג עם רוח בפנים. מסגרת פלדה עם צירי פליז.');
+      const lowerG = M.glass(0x203038, 0.35);
+      mesh(G.box(0.012, 0.22, 1.02, 0.002, 1), lowerG, { parent: ws, pos: [WX, WB + 0.12, 0] });
+      for (const s of [1, -1]) { rod(ws, [WX, WB, s * 0.53], [WX - 0.04, WB + 0.5, s * 0.53], 0.011, BRASS); put(G.box(0.03, 0.03, 0.03, 0.005), BRASS, ws, [WX, WB + 0.01, s * 0.53]); }
+      put(new THREE.BoxGeometry(0.02, 0.016, 1.06), BLACK, ws, [WX, WB + 0.01, 0]); put(new THREE.BoxGeometry(0.02, 0.016, 1.06), BLACK, ws, [WX - 0.005, WB + 0.235, 0]);
+      const up = new THREE.Group(); up.position.set(WX - 0.005, WB + 0.235, 0); ws.add(up);
+      mesh(G.box(0.012, 0.22, 1.02, 0.002, 1), lowerG, { parent: up, pos: [0, 0.12, 0] });
+      for (const z of [-0.51, 0.51]) put(new THREE.BoxGeometry(0.02, 0.24, 0.016), BLACK, up, [0, 0.12, z]);
+      put(new THREE.BoxGeometry(0.02, 0.016, 1.06), BLACK, up, [-0.0, 0.24, 0]);
+      K.toggle('windshield', { he: 'שמשה עליונה', key: 'w', seconds: 1.0 }, (t) => { up.rotation.z = -t * 1.45; });
+      const wp = P(topSys, 'מגב ידני', 'Hand wiper', 'פליז + גומי', 'מגב קטן שמסובבים ביד, ללא מנוע — הנהג מנגב את הזכוכית בעצמו בנסיעה בגשם.');
+      rod(wp, [WX + 0.01, WB + 0.3, 0.05], [WX + 0.01, WB + 0.3, 0.35], 0.004, M.rubber()); put(G.sphere(0.012, 8, 6), BRASS, wp, [WX + 0.01, WB + 0.26, 0.05]);
+    }
+    // top: bows fold back like a fan; canopy scales away to a bundle behind the rear seat
+    const topG = new THREE.Group(); topSys.add(topG);
+    const bowPivots = [[0.62, 1.2], [-0.15, 1.2], [-0.78, 1.2], [-1.38, 1.2]];
+    const bows = [];
+    const crown = tableFn([[0.62, 1.68], [0.3, 1.74], [-0.2, 1.8], [-0.8, 1.82], [-1.2, 1.8], [-1.42, 1.72]]);
+    {
+      bowPivots.forEach(([bx, by], i) => {
+        const b = P(topSys, `קשת גג ${i + 1}`, `Top bow ${i + 1}`, 'פלדה צינורית + עץ', i === 0 ? 'הקשת הקדמית (הדר) נקשרת לשמשה בשתי תפסים. בין הקשתות מתוח הבד.' : 'קשת פלדה מתקפלת על ציר ברזל בגוף המכונית. כשמקפלים אותן הן נערמות כמניפה.');
+        b.position.set(bx, by - 0.14 + 0.03 * i, 0);
+        const bg = new THREE.Group(); bg.userData.i = i; b.add(bg);
+        const top = crown(bx), lean = -0.06;
+        const pts = [V3(0, 0, -0.6), V3(lean, 0.35, -0.61), V3(lean - 0.01, top - by + 0.14 - 0.06, -0.58), V3(lean - 0.01, top - by + 0.14, -0.3), V3(lean - 0.01, top - by + 0.14 + 0.01, 0), V3(lean - 0.01, top - by + 0.14, 0.3), V3(lean - 0.01, top - by + 0.14 - 0.06, 0.58), V3(lean, 0.35, 0.61), V3(0, 0, 0.6)];
+        mesh(G.tube(pts, 0.011, 60, 8), M.darkSteel(), { parent: bg });
+        for (const z of [-0.6, 0.6]) { put(G.cyl(0.02, 0.02, 0.03, 12, 'z'), BRASS, bg, [0, 0, z * 1.0]); put(G.box(0.08, 0.03, 0.04, 0.005), IRON, bg, [-0.0, -0.01, z * 0.98]); }
+        bows.push({ b, bg, i, bx, by });
+      });
+      const cv = P(topSys, 'בד הגג', 'Canopy fabric', 'בד כותנה מגומם', 'שכבת בד אטומה למים מעל שכבת בד פנימית. הבד מתוח בתפרים מקבילים על הקשתות.');
+      const cg = new THREE.Group(); cg.position.set(-1.38, 1.06, 0); cv.add(cg);
+      const xs = []; for (let i = 0; i <= 24; i++) xs.push(lerp(0.66, -1.46, i / 24));
+      const rings = xs.map((x) => { const top = crown(x) + 0.01; return Array.from({ length: 17 }, (_, j) => { const u = j / 16 * 2 - 1; const edge = Math.abs(u); const y = top - 0.05 - Math.pow(edge, 4) * 0.0 + 0.0 - (edge > 0.95 ? (edge - 0.95) * 2 : 0); return V3(x + 1.38, y - 1.06 + 0.02, u * 0.64); }); });
+      mesh(loft(rings), fabricTop, { parent: cg });
+      // side valance + rear flap
+      const vS = []; for (const s of [1, -1]) { const g = loft([xs.map((x) => V3(x + 1.38, crown(x) - 0.06 - 1.06 + 0.02 - 0.0, s * 0.64)), xs.map((x) => V3(x + 1.38, crown(x) - 0.2 - 1.06, s * 0.64))]); vS.push(g); mesh(g, fabricTop, { parent: cg }); }
+      const rear = loft([Array.from({ length: 11 }, (_, j) => V3(0.04 - 0.0, crown(-1.42) - 0.06 - 1.06 + 0.02, (j / 10 * 2 - 1) * 0.64)), Array.from({ length: 11 }, (_, j) => V3(-0.1, 0.12 - 0.02, (j / 10 * 2 - 1) * 0.6))]);
+      mesh(rear, fabricTop, { parent: cg });
+      const rw = P(topSys, 'חלון אחורי (איזינגלס)', 'Rear window (isinglass)', 'סלולואיד שקוף', 'חלון קטן מפלסטיק שקוף (איזינגלס) בבד האחורי, המאפשר לנהג לראות מאחור. נהיה צהוב עם השנים.');
+      mesh(G.box(0.004, 0.18, 0.4, 0.002, 1), M.glass(0x2a3a3c, 0.45), { parent: rw, pos: [-1.5, 1.52, 0], rot: [0, 0, 0.18] });
+      const rest = P(topSys, 'מסדר קפל (מנוחת גג)', 'Top rest & straps', 'עור + פליז', 'שלוש רצועות עור מחזיקות את הגג המקופל כדי שלא יקרוס ברוח.');
+      for (const z of [-0.45, 0, 0.45]) put(new THREE.BoxGeometry(0.02, 0.01, 0.06), M.leather(0x2b2218), rest, [-1.2, 1.1, z]);
+      const props = P(topSys, 'מוטות תמיכה אחוריים', 'Rear top props', 'פלדה צינורית', 'שני מוטות שמחזיקים את הגג כשהוא מורם ונגררים אל הכנפיים האחוריות.');
+      for (const s of [1, -1]) rod(props, [-1.4, 1.62, s * 0.6], [-1.45, 0.82, s * 0.62], 0.008, DSTEEL);
+      // side curtains
+      const curt = new THREE.Group(); topSys.add(curt);
+      const sc = P(topSys, 'וילונות צד (איזינגלס)', 'Side curtains', 'בד מגומם + איזינגלס', 'וילונות נשלפים עם חלון שקוף, ננעלים בלחצנים למסגרת. הם מגנים מהגשם אבל מקשים לצאת.');
+      curt.add(sc);
+      for (const s of [1, -1]) for (const [x0, x1] of [[-1.38, -0.44], [-0.4, 0.58]]) {
+        put(new THREE.BoxGeometry(x1 - x0, 0.46, 0.006), fabricTop, sc, [(x0 + x1) / 2, 1.38, s * 0.645]);
+        put(new THREE.BoxGeometry((x1 - x0) * 0.6, 0.22, 0.008), M.glass(0x2a3a3c, 0.4), sc, [(x0 + x1) / 2, 1.4, s * 0.649]);
+      }
+      curt.visible = false;
+      let topT = 0, curT = 0;
+      const upd = () => { const sx = 0.12 + 0.88 * topT, sy = 0.1 + 0.9 * topT; cg.scale.set(sx, sy, 1); rw.visible = topT > 0.5; rest.visible = topT < 0.5; props.visible = topT > 0.5; curt.scale.y = Math.max(0.001, curT * topT); curt.position.y = (1 - curt.scale.y) * 1.62; curt.visible = curT * topT > 0.02;
+        for (const o of bows) { const fold = 1 - topT; o.bg.rotation.z = -fold * (1.42 + 0.03 * o.i) ; }
+      };
+      K.toggle('top', { he: 'גג מתקפל', key: 't', seconds: 1.8 }, (t) => { topT = Math.sin(t * PI / 2); upd(); });
+      K.toggle('curtains', { he: 'וילונות צד', key: 'v', seconds: 1.0 }, (t) => { curT = t; upd(); });
+    }
+
+    // ================================================================== CHASSIS
+    const ch = sys('chassis');
+    {
+      // frame rails (C channels) + cross-members
+      for (const s of [1, -1]) {
+        const fr = P(ch, `אורך שלדה ${sideHe(s)}`, `Frame rail ${sideEn(s)}`, 'פלדת ונדיום מכופפת', 'קורת C מפלדת ונדיום: קלה וחזקה בהפתעה. הנרי פורד גילה את הפלדה בחלקי מירוץ צרפתיים, ובזכותה השלדה קלה ב־30%.');
+        const L = 3.12, cx = 0.04, z = s * 0.36;
+        put(new THREE.BoxGeometry(L, 0.11, 0.005), IRON, fr, [cx, FRAME_Y, z]);
+        put(new THREE.BoxGeometry(L, 0.005, 0.055), IRON, fr, [cx, FRAME_Y + 0.0525, z - s * 0.025]); put(new THREE.BoxGeometry(L, 0.005, 0.055), IRON, fr, [cx, FRAME_Y - 0.0525, z - s * 0.025]);
+        const rv = []; for (let i = 0; i < 40; i++) rv.push({ pos: [-1.5 + i * 0.075, FRAME_Y + (i % 2 ? 0.035 : -0.035), z + s * 0.003], rot: [PI / 2 * 0 + (s > 0 ? PI / 2 : -PI / 2), 0, 0] });
+        rivets(fr, rv, 0.0045);
+      }
+      const cm = P(ch, 'קורות רוחב (5)', 'Cross-members (×5)', 'פלדה מכופפת + ניטים', 'חמש קורות שמחברות את שני האורכים ונושאות את המנוע, התמסורת והקפיצים. מסומרות בניטים חמים.');
+      for (const x of [1.46, 0.98, 0.5, -0.4, -1.5]) { put(new THREE.BoxGeometry(0.06, 0.08, 0.76), IRON, cm, [x, FRAME_Y + (x > 1.4 ? 0.03 : 0), 0]); }
+      // front axle: dropped I-beam
+      const AY = (z) => 0.37 + 0.11 * Math.pow(Math.abs(z) / 0.64, 2);
+      const ax = P(ch, 'ציר קדמי (קורת I)', 'Front axle (I-beam)', 'פלדת ונדיום מחושלת', 'קורת I מחושלת, מקופלת כלפי מטה במרכז כדי לעבור מתחת למנוע, והקצוות הפונים כלפי מעלה מחזיקים את הציפורנים.');
+      for (let i = 0; i < 16; i++) { const z0 = -0.64 + i * 0.08, z1 = z0 + 0.08, d = V3(0, AY(z1) - AY(z0), 0.08), len = d.length(); const g = G.merge([new THREE.BoxGeometry(0.008, 0.05, len), G.at(new THREE.BoxGeometry(0.034, 0.008, len), [0, 0.022, 0]), G.at(new THREE.BoxGeometry(0.034, 0.008, len), [0, -0.022, 0])]); const m = mesh(g, IRON, { parent: ax }); m.position.set(AXF, (AY(z0) + AY(z1)) / 2, (z0 + z1) / 2); m.rotation.x = -Math.atan2(d.y, d.z); }
+      for (const s of [1, -1]) {
+        const sp = P(ch, `ציפורן היגוי ${sideHe(s)}`, `Steering spindle ${sideEn(s)}`, 'פלדה מחושלת', 'בולט שפונה החוצה: עליו נסמך הגלגל. הוא מסתובב על ציר אנכי (קינגפין) כשהנהג מפנה את ההגה.');
+        put(G.cyl(0.025, 0.02, 0.1, 14, 'z'), STEEL, sp, [AXF, TR, s * 0.62]);
+        put(G.cyl(0.015, 0.015, 0.15, 10, 'y'), DSTEEL, sp, [AXF, TR + 0.03, s * 0.58]); put(G.cyl(0.026, 0.026, 0.02, 12, 'y'), BRASS, sp, [AXF, TR + 0.105, s * 0.58]);
+        rod(sp, [AXF - 0.0, TR + 0.0, s * 0.58], [AXF - 0.12, TR + 0.03, s * 0.64], 0.011, IRON);
+      }
+      const tr = P(ch, 'מוט חיבור (טיירוד)', 'Tie rod', 'פלדה', 'מוט שמחבר את שני ציפורני הגלגלים כדי שיתכנסו יחד. אורכו נקבע בכיוון הידיני.');
+      rod(tr, [AXF - 0.12, TR + 0.03, -0.64], [AXF - 0.12, TR + 0.03, 0.64], 0.011, IRON); for (const s of [1, -1]) put(G.sphere(0.017, 10, 8), STEEL, tr, [AXF - 0.12, TR + 0.03, s * 0.64]);
+      const dl = P(ch, 'מוט היגוי (דראג־לינק)', 'Drag link', 'פלדה', 'מוט ארוך מזרוע פיטמן בתיבת ההיגוי אל הציפורן השמאלי, שדרכו הכיוון עובר לשני הגלגלים.');
+      rod(dl, [0.93, 0.66, -0.3], [AXF - 0.12, TR + 0.03, -0.64], 0.01, IRON); put(G.sphere(0.014, 8, 6), STEEL, dl, [0.93, 0.66, -0.3]);
+      const sgh = P(ch, 'תיבת היגוי פלנטרית', 'Planetary steering gear', 'ברזל יצוק + גלגלי שיניים', 'תיבה מוגנת שבה גלגלי שיניים פלנטריים מגדילים את כוח הנהג. בולטת ליד קיר האש.');
+      put(G.cyl(0.05, 0.05, 0.1, 20, 'z'), CAST, sgh, [0.93, 0.76, -0.28]); put(G.cyl(0.03, 0.03, 0.1, 16, 'y'), CAST, sgh, [0.93, 0.7, -0.3]);
+      bolts(sgh, Array.from({ length: 6 }, (_, k) => ({ pos: [0.93 + Math.cos(k * 1.047) * 0.04, 0.76 + Math.sin(k * 1.047) * 0.04, -0.328], rot: [PI / 2, 0, 0] })), 0.004);
+      // springs
+      const leafSpring = (parent, cx, y0, n, span, thick, name) => {
+        const g = new THREE.Group(); parent.add(g);
+        for (let i = 0; i < n; i++) { const L = span * (1 - i * 0.13), pts = []; for (let k = 0; k <= 16; k++) { const u = (k / 16) * 2 - 1; pts.push(V3(cx, y0 + 0.07 * (1 - u * u) - i * thick - 0.02 * Math.abs(u) * (i * 0.5), u * L)); } mesh(G.tube(pts, thick * 0.5, 30, 5), M.metal(0x2a2c30, 0.4), { parent: g, scale: [3.2, 1, 1] }); }
+        return g;
+      };
+      const fs = P(ch, 'קפיץ עלים קדמי (רוחבי)', 'Front transverse leaf spring', 'פלדת קפיצים, 6 עלים', 'קפיץ אחד לרוחב המכונית: מרכזו קבוע לקורת הרוחב, וקצותיו תלויים בשקליים על הציר. פשוט וזול — ודי נוח בכבישי עפר.');
+      leafSpring(fs, 1.40, 0.62, 6, 0.52, 0.012, 'front');
+      const cl = P(ch, 'מהדקי קפיץ (U) וכרית', 'Spring clips', 'פלדה', 'שתי חבקות U שמהדקות את צרור העלים. בין עלים משמנים גרפיט.');
+      for (const z of [-0.04, 0.04]) put(G.torus(0.04, 0.005, 6, 16, PI, 'z'), STEEL, cl, [1.40, 0.7, z]);
+      for (const s of [1, -1]) { const sh = P(ch, `שקליים קדמי ${sideHe(s)}`, `Front shackle ${sideEn(s)}`, 'פלדה', 'חוליית צירים שמחברת את קצה הקפיץ לציר ונותנת לו לנוע כשהקפיץ מתכופף.'); rod(sh, [1.40, 0.62 - 0.015, s * 0.52], [AXF + 0.0, 0.46, s * 0.56], 0.007, DSTEEL); }
+      const rs = P(ch, 'קפיץ אחורי', 'Rear transverse leaf spring', 'פלדת קפיצים, 7 עלים', 'קפיץ רוחבי מאחור, שמחובר בשקליים לצירי העגלה ולקורה האחורית.');
+      leafSpring(rs, -1.5, 0.58, 7, 0.52, 0.012, 'rear');
+      for (const s of [1, -1]) { const sh = P(ch, `שקליים אחורי ${sideHe(s)}`, `Rear shackle ${sideEn(s)}`, 'פלדה', 'שקליים אחורי שמעביר את משקל הרכב לקפיץ ולציר.'); rod(sh, [-1.5, 0.58, s * 0.5], [AXR - 0.02, 0.42, s * 0.46], 0.007, DSTEEL); }
+      const wb = P(ch, 'מוטות רדיוס (חץ V)', 'Radius rods (wishbone)', 'פלדה מחושלת', 'שני מוטות בצורת V מהציר הקדמי אל כדור המצמד מאחורי המנוע — הם מונעים מהציר להתקדם או לסטות.');
+      for (const s of [1, -1]) rod(wb, [AXF + 0.04, 0.4, s * 0.4], [0.94, 0.48, 0.0], 0.012, IRON);
+      put(G.sphere(0.04, 14, 10), CAST, wb, [0.9, 0.48, 0]);
+      // rear axle housing + brakes
+      const rax = P(ch, 'בית ציר אחורי', 'Rear axle housing', 'פלדה מעוצבת', 'שני חצאי צינור מוברגים באמצע. בתוכו עוברים שני סרנים עם נעילה למנוע.');
+      rod(rax, [AXR, TR, -0.5], [AXR, TR, 0.5], 0.038, M.metal(0x2a2c30, 0.55)); put(G.cyl(0.05, 0.05, 0.1, 18, 'z'), CAST, rax, [AXR, TR, -0.44]); put(G.cyl(0.05, 0.05, 0.1, 18, 'z'), CAST, rax, [AXR, TR, 0.44]);
+      for (const s of [1, -1]) {
+        const bd = P(ch, `תוף בלם חירום ${sideHe(s)}`, `Emergency brake drum ${sideEn(s)}`, 'ברזל יצוק + בטנה', 'תוף שמאוגד לנאב האחורי, בתוכו שני לבני בלימה כשמושכים את ידית היד.');
+        put(G.cyl(0.14, 0.14, 0.06, 32, 'z'), CAST, bd, [AXR, TR, s * 0.62]);
+        put(G.torus(0.14, 0.008, 8, 32, PI * 2, 'z'), M.darkSteel(), bd, [AXR, TR, s * 0.65]);
+        put(G.cyl(0.115, 0.115, 0.05, 28, 'z'), M.matte(0x7a5a2c), bd, [AXR, TR, s * 0.62]);
+        put(new THREE.BoxGeometry(0.08, 0.02, 0.04), IRON, bd, [AXR - 0.1, TR - 0.1, s * 0.6]);
+      }
+      const brr = P(ch, 'מוטות בלם', 'Brake rods', 'פלדה', 'מוטות אחרוני שמעבירים את תנועת הידית הלתונה אל לבני התוף.');
+      rod(brr, [0.4, 0.62, -0.5], [-0.4, 0.5, -0.5], 0.007, IRON); rod(brr, [-0.4, 0.5, -0.5], [AXR, 0.43, -0.6], 0.007, IRON); rod(brr, [-0.4, 0.5, -0.5], [AXR, 0.43, 0.6], 0.007, IRON);
+      const pe = P(ch, 'תושבות כנפיים תחתונות', 'Splash aprons', 'פלדה דקה', 'לוחות פח מתחת לפנימיות הכנפיים שמגינים על המנוע מבוץ.');
+      for (const s of [1, -1]) put(new THREE.BoxGeometry(0.5, 0.004, 0.2), SHEET, pe, [1.27, 0.62, s * 0.28]);
+    }
+
+    // ================================================================== ENGINE
+    const eng = sys('engine');
+    const CY = 0.62, CX = [1.31, 1.205, 1.1, 0.995];   // crank axis height, cylinder x
+    const moving = { pistons: [], rods: [], crank: null, flywheels: [] };
+    {
+      const bl = P(eng, 'בלוק מנוע (יצוק כיחידה)', 'Cylinder block', 'ברזל יצוק', 'ארבעת הצילינדרים וחצי גוף האיטום נוצקו בחתיכה אחת — חידוש של פורד ב־1908. הראש (קדמי) נפרד, כך שאפשר לצחצח בוכנות בלי לפרק את כל המנוע.');
+      mesh(new THREE.BoxGeometry(0.46, 0.32, 0.24), CAST, { parent: bl, pos: [1.15, 0.7, 0] });
+      for (const x of CX) mesh(G.cyl(0.05, 0.05, 0.05, 20, 'y'), M.darkSteel(), { parent: bl, pos: [x, 0.86, 0] });
+      const pan = P(eng, 'אגן שמן', 'Crankcase pan', 'פלדה לחוצה', 'אגן פח שמחזיק כ־2 ליטר שמן. השמן אינו נשאב — הגלגל התנופה מרסס אותו ברחבי המנוע.');
+      mesh(G.box(0.5, 0.1, 0.3, 0.02), M.darkSteel(), { parent: pan, pos: [1.15, 0.5, 0] });
+      put(G.cyl(0.012, 0.012, 0.02, 8, 'y'), STEEL, pan, [1.15, 0.445, 0]);
+      for (const z of [-0.12, 0.12]) put(G.cyl(0.008, 0.008, 0.03, 8, 'x'), BRASS, pan, [1.37, 0.52, z]);
+      const hd = P(eng, 'ראש צילינדרים', 'Cylinder head', 'ברזל יצוק', 'מכסה כל ארבעת הצילינדרים: נתיבי הצתה, תעלות מים, וארבעה חורי מצתים. מחובר ב־15 ברגים וטבעת אוטם.');
+      mesh(new THREE.BoxGeometry(0.46, 0.07, 0.24), CAST, { parent: hd, pos: [1.15, 0.9, 0] });
+      bolts(hd, Array.from({ length: 15 }, (_, i) => ({ pos: [0.96 + (i % 5) * 0.09 + (i >= 5 ? 0.0 : 0.0), 0.94, (Math.floor(i / 5) - 1) * 0.085], rot: [0, 0, 0] })), 0.008, STEEL);
+      const gk = P(eng, 'אטם ראש', 'Head gasket', 'אסבסט + נחושת', 'שכבה דקה בין הראש לבלוק שמונעת דליפת גזי שריפה ומים.');
+      put(new THREE.BoxGeometry(0.46, 0.004, 0.24), M.matte(0xa59377), gk, [1.15, 0.865, 0]);
+      const vc = P(eng, 'כיסוי שסתומים (צד)', 'Valve cover plate', 'פח', 'לוחית פח בצד המנוע שמכסה את השסתומים ובולי הדחיפה, מוחזקת בקפיץ.');
+      put(new THREE.BoxGeometry(0.4, 0.1, 0.006), M.darkSteel(), vc, [1.15, 0.75, -0.123]);
+      const tc = P(eng, 'כיסוי גלגלי תזמון', 'Timing gear cover', 'פח לחוץ', 'מאחורי הכיסוי הקדמי יושבים גלגלי השיניים שמסנכרנים את גל הארכובה וגל זיזים (כשהמנוע פועל).');
+      put(G.cyl(0.11, 0.11, 0.05, 28, 'x'), M.darkSteel(), tc, [1.4, 0.62, 0]); bolts(tc, Array.from({ length: 8 }, (_, k) => ({ pos: [1.428, 0.62 + Math.sin(k * 0.785) * 0.09, Math.cos(k * 0.785) * 0.09], rot: [0, 0, -PI / 2] })), 0.005);
+      const ct = P(eng, 'ציר התנעה ידית', 'Starting crank', 'פלדה + ידית עץ', 'הידית שמסובבים בחזית כדי להתניע. מסוכן: הנפילה לאחור יכולה לשבור את פרק היד, ולכן מחזיקים את האגודל בצד.');
+      rod(ct, [1.45, 0.62, 0], [1.78, 0.62, 0], 0.012, DSTEEL); rod(ct, [1.78, 0.62, 0], [1.78, 0.5, 0], 0.011, DSTEEL); put(G.cyl(0.017, 0.017, 0.1, 12, 'z'), woodNat, ct, [1.78, 0.5, 0.0]);
+      put(G.cyl(0.02, 0.02, 0.02, 14, 'x'), BRASS, ct, [1.7, 0.62, 0]);
+      // internals (visible in the cutaway)
+      const pg = P(eng, 'בוכנות ומוטות חיבור (4)', 'Pistons & connecting rods (×4)', 'ברזל יצוק + פלדה', 'ארבע בוכנות נעות בשרשרת. סדר ההצתה 1־2־4־3. כל בוכנה עוברת בשלב הצתה, בשלב פליטה ובשני המהלכים האחרים.');
+      const ccrank = P(eng, 'גל ארכובה ומשקלים', 'Crankshaft & counterweights', 'פלדה מחושלת', 'גל שלוש מסבים (בדרך כלל חמשה בכלי מודרני). המשקל הנגדי מאזן את תנועות הבוכנה.');
+      const cg = new THREE.Group(); ccrank.add(cg); moving.crank = cg;
+      mesh(G.cyl(0.02, 0.02, 0.5, 16, 'x'), STEEL, { parent: ccrank, pos: [1.15, CY, 0] });
+      CX.forEach((x, i) => { const th = [0, PI, PI, 0][i]; mesh(G.cyl(0.018, 0.018, 0.04, 12, 'x'), STEEL, { parent: cg, pos: [x, CY + Math.cos(th) * 0.0508, Math.sin(th) * 0.0508] }); mesh(G.cyl(0.06, 0.06, 0.012, 20, 'x'), IRON, { parent: cg, pos: [x - 0.04, CY - Math.cos(th) * 0.04, -Math.sin(th) * 0.04] }); });
+      const rGeo = G.box(0.014, 0.14, 0.014, 0.003, 1);
+      CX.forEach((x, i) => { const p = mesh(G.cyl(0.046, 0.046, 0.07, 20, 'y'), M.castAlu(), { parent: pg }); const r = mesh(rGeo, STEEL, { parent: pg }); moving.pistons.push({ p, r, x, th0: [0, PI, PI, 0][i] }); });
+      const cam = P(eng, 'גל זיזים ושסתומים (8)', 'Camshaft, valves & lifters', 'פלדה מחושלת', 'גל זיזים אחד לפתוח ולסגור שמונה שסתומים (שניים לכל צילינדר). בשנת 1908 זה היה חידוש.');
+      mesh(G.cyl(0.012, 0.012, 0.48, 10, 'x'), STEEL, { parent: cam, pos: [1.15, 0.7, -0.07] });
+      for (const x of CX) for (const dz of [-0.05, 0.05]) { put(G.cyl(0.004, 0.004, 0.12, 6, 'y'), STEEL, cam, [x + dz * 0.0, 0.76, dz * 1.1 - 0.0]); put(G.cyl(0.015, 0.004, 0.01, 10, 'y'), STEEL, cam, [x, 0.82, dz * 1.1]); }
+      const fw = P(eng, 'גלגל תנופה עם מגנטים', 'Flywheel with magnets', 'ברזל יצוק + 16 מגנטים', 'גלגל כבד על גל הארכובה שמאחסן אנרגיה. עליו 16 מגנטים שמסובבים ליד סלילים וכך יוצרים חשמל להצתה. ללא סוללה!');
+      const fwg = new THREE.Group(); fw.add(fwg); moving.flywheels.push(fwg);
+      mesh(G.cyl(0.18, 0.18, 0.04, 36, 'x'), CAST, { parent: fwg, pos: [0.86, CY, 0] });
+      instances(new THREE.BoxGeometry(0.03, 0.02, 0.03), M.matte(0x6b1d1d), Array.from({ length: 16 }, (_, k) => { const a = k / 16 * PI * 2; return { pos: [0.835, CY + Math.cos(a) * 0.165, Math.sin(a) * 0.165], rot: [-a, 0, 0] }; }), { parent: fwg });
+      const mg = P(eng, 'סלילי מגנטו (16)', 'Magneto coil ring (×16)', 'נחושת + ברזל', 'טבעת קבועה עם 16 סלילים מול המגנטים. כשהגלגל מסתובב הם מייצרים זרם חילופין של כ־30 וולט.');
+      instances(G.cyl(0.012, 0.012, 0.03, 8, 'x'), M.copper(), Array.from({ length: 16 }, (_, k) => { const a = k / 16 * PI * 2; return { pos: [0.82, CY + Math.cos(a) * 0.14, Math.sin(a) * 0.14] }; }), { parent: mg });
+      put(G.cyl(0.155, 0.155, 0.012, 32, 'x'), M.darkSteel(), mg, [0.81, CY, 0]);
+      const fh = P(eng, 'בית גלגל התנופה', 'Flywheel housing', 'ברזל יצוק', 'בית גדול שמצד אחד נצמד לבלוק ומצד שני לתמסורת. ממנו יוצא ציר הקשירה לתמסורת.');
+      mesh(G.lathe([[0.2, -0.06], [0.2, 0.06], [0.18, 0.08], [0.17, 0.0]], 36, 'x'), CAST, { parent: fh, pos: [0.82, CY, 0] });
+      put(G.cyl(0.04, 0.04, 0.4, 14, 'z'), CAST, fh, [0.98, 0.45, 0]);
+      const mm = P(eng, 'תושבות מנוע (3)', 'Engine mounts', 'פלדה + גומי', 'שלוש נקודות חיבור בין הבלוק למסגרת: שתיים בקדמה ואחת בבית הגלגל. זו שלוש־נקודתית כדי שהמסגרת תתעקם בלי לשבור את המנוע.');
+      for (const s of [1, -1]) put(new THREE.BoxGeometry(0.1, 0.05, 0.05), IRON, mm, [1.15, 0.6, s * 0.18]); put(new THREE.BoxGeometry(0.05, 0.05, 0.1), IRON, mm, [1.4, 0.55, 0]);
+      const of = P(eng, 'צינור מילוי שמן ושקעי מפלס', 'Oil filler & level cocks', 'פליז + פח', 'צינור שבו שופכים שמן, ושני ברזים בצד האגן שבודקים בהם את המפלס: אם הפתוח לא מוציא שמן — חסר.');
+      rod(of, [1.4, 0.6, 0.16], [1.45, 0.66, 0.16], 0.016, DSTEEL); put(G.cyl(0.02, 0.02, 0.012, 14, 'y'), BRASS, of, [1.45, 0.67, 0.16]);
+      for (const y of [0.5, 0.47]) put(G.cyl(0.006, 0.006, 0.03, 8, 'z'), BRASS, of, [1.1, y, -0.155]);
+    }
+    // ================================================================== IGNITION
+    const ign = sys('ignition');
+    {
+      const cb = P(ign, 'קופסת סלילי חילוף (טרמבלר)', 'Trembler coil box', 'עץ + פליז + נחושת', 'ארבעה סלילים עם נקודות רוטטות (טרמבלר) בתוך קופסה אחת. כל אחד מייצר מתח גבוה לאחד המצתים. אפשר ״לשמוע״ את הזמזום.');
+      put(G.box(0.3, 0.14, 0.12, 0.005, 1), woodDark, cb, [0.835, 0.95, 0.1]); // sits on the dash behind the seat? placed on the cabin side
+      for (let i = 0; i < 4; i++) { put(G.box(0.05, 0.1, 0.1, 0.004, 1), M.darkSteel(), cb, [0.835 - 0.0, 0.95, 0.1 + (i - 1.5) * 0.065 * 0.0]); put(G.cyl(0.006, 0.006, 0.02, 8, 'x'), BRASS, cb, [0.822, 0.95 + 0.02, 0.1 - 0.12 + i * 0.06]); }
+      const pl = P(ign, 'מצתים (4)', 'Spark plugs (×4)', 'חרסינה + פלדה', 'ארבעה מצתים בראש. הנקודה ביניהם נפערת ב־0.6 מ״מ בערך. מדי פעם צריך לנקות פחם.');
+      for (const x of CX) { put(G.cyl(0.012, 0.012, 0.04, 10, 'y'), STEEL, pl, [x, 0.955, 0]); put(G.cyl(0.011, 0.011, 0.06, 10, 'y'), M.ceramic(), pl, [x, 1.0, 0]); put(G.cyl(0.005, 0.005, 0.014, 6, 'y'), BRASS, pl, [x, 1.04, 0]); }
+      const wr = P(ign, 'חוטי הצתה', 'Ignition wires', 'נחושת + גומי', 'חוטים מכוסי בד גומי מהתא לחצה ומהמצתים. אחד עם שרוול ירוק.');
+      CX.forEach((x, i) => mesh(G.tube([V3(0.835, 0.95, 0.04 + i * 0.01), V3(x - 0.1, 1.02, 0.1), V3(x, 1.06, 0.03)], 0.003, 16, 5), M.rubber(), { parent: wr }));
+      const cm = P(ign, 'מחלק זרם (טיימר קדמי)', 'Timer (commutator)', 'פליז + פיברגלס', 'פנאה סיבובית בקדמת המנוע שמעבירה את הזרם לסליל הנכון בעיתוי מתאים.');
+      put(G.cyl(0.03, 0.03, 0.04, 20, 'x'), BRASSD, cm, [1.45, 0.62, 0]); for (let k = 0; k < 4; k++) put(G.cyl(0.004, 0.004, 0.03, 6, 'z'), BRASS, cm, [1.45, 0.62 + (k % 2 ? 0 : 0.02), (k - 1.5) * 0.01]);
+    }
+    // ================================================================== FUEL & EXHAUST
+    const fuel = sys('fuel');
+    {
+      const tk = P(fuel, 'מיכל דלק (גרביטציה)', 'Gravity fuel tank', 'פח מצופה אבץ', 'מיכל 10 גלונים (38 ליטר) מתחת למושב. הדלק זורם לקרבורטור בגרביטציה, אז בעלייה תלולה צריך לנסוע אחורה כשהמיכל כמעט ריק!');
+      put(G.box(0.4, 0.26, 0.96, 0.03), M.metal(0x5b5e63, 0.5), tk, [-0.05, 0.66 + 0.08 - 0.13 + 0.12, 0]);
+      put(G.cyl(0.03, 0.03, 0.02, 14, 'y'), BRASS, tk, [-0.05, 0.89, 0.3]);
+      const sb = P(fuel, 'פקק משקעים', 'Sediment bulb', 'זכוכית + פליז', 'קערת זכוכית קטנה בתחתית צינור הדלק שמסננת בוץ ומים. בודקים אותה בעין.');
+      put(G.cyl(0.02, 0.02, 0.05, 12, 'y'), M.glass(0xd0e0d0, 0.5), sb, [0.15, 0.62, 0.2]);
+      const fl = P(fuel, 'צינור דלק', 'Fuel line', 'נחושת', 'צינור נחושת דק שמוליך דלק מהמיכל אל הקרבורטור בצד שמאל, עם ברז סגירה.');
+      mesh(G.tube([V3(0.15, 0.6, 0.2), V3(0.4, 0.55, 0.05), V3(0.7, 0.58, -0.15), V3(0.95, 0.7, -0.17), V3(1.12, 0.68, -0.17)], 0.004, 30, 5), M.copper(), { parent: fl });
+      const cb = P(fuel, 'קרבורטור (קינגסטון)', 'Carburettor', 'פליז', 'קרבורטור בלי מצערת אוטומטית — מערבב דלק ואוויר. יש בורג כוונון עם ידית על הקיר ותפס חנק.');
+      put(G.cyl(0.035, 0.035, 0.1, 18, 'y'), BRASS, cb, [1.12, 0.62, -0.17]); put(G.cyl(0.04, 0.04, 0.03, 18, 'y'), BRASSD, cb, [1.12, 0.68, -0.17]); put(G.cyl(0.006, 0.006, 0.06, 8, 'y'), BRASS, cb, [1.14, 0.56, -0.17]);
+      const im = P(fuel, 'מערכת יניקה', 'Intake manifold', 'ברזל יצוק', 'צינור יצוק שמוליך תערובת דלק־אוויר אל ארבעת הצילינדרים.');
+      mesh(G.tube([V3(1.12, 0.75, -0.17), V3(1.12, 0.8, -0.13), V3(1.31, 0.82, -0.125), V3(0.995, 0.82, -0.125)], 0.03, 20, 10), CAST, { parent: im });
+      const em = P(fuel, 'צינור פליטה', 'Exhaust manifold', 'ברזל יצוק', 'ארבע יציאות מהצילינדרים מתחברות לצינור אחד שיורד אל הממפלר מתחת לרצפה.');
+      put(G.box(0.46, 0.05, 0.05, 0.01), CAST, em, [1.15, 0.7, -0.16]); rod(em, [1.1, 0.7, -0.16], [0.92, 0.5, -0.3], 0.03, CAST);
+      const mf = P(fuel, 'משתיק קול (ממפלר) וצינור זנב', 'Muffler & tailpipe', 'פלדה', 'משתיק קול גלילי עם חיץ בפנים. הצינור מוביל מאחור מתחת לדלת האחורית.');
+      put(G.cyl(0.055, 0.055, 0.5, 22, 'x'), M.metal(0x3a3a3c, 0.6), mf, [0.2, 0.46, -0.3]); rod(mf, [0.92, 0.5, -0.3], [0.45, 0.46, -0.3], 0.03, DSTEEL); rod(mf, [-0.05, 0.46, -0.3], [-1.55, 0.45, -0.3], 0.025, DSTEEL);
+      for (const x of [0.4, 0.0]) put(G.torus(0.058, 0.006, 6, 20, PI * 2, 'x'), STEEL, mf, [x, 0.46, -0.3]);
+    }
+    // ================================================================== DRIVETRAIN
+    const dt = sys('drivetrain');
+    {
+      const tx = P(dt, 'תיבת הילוכים פלנטרית', 'Planetary transmission', 'ברזל יצוק', 'תיבת שני הילוכים קדימה והילוך אחד אחורה בשלוש סרטי בלימה. בלי מצמד רגיל — לחיצה על דוושה מצמצמת סרט סביב תוף.');
+      mesh(new THREE.BoxGeometry(0.34, 0.2, 0.32), CAST, { parent: tx, pos: [0.68, 0.58, 0] });
+      const hh = P(dt, 'מכסה חור־יד', 'Hand-hole cover', 'פח + 8 ברגים', 'לוחית שפותחים בה בלי לפרק את התיבה: דרכה החליפו סרטי בלימה.');
+      put(G.box(0.18, 0.012, 0.16, 0.004), M.darkSteel(), hh, [0.68, 0.682, 0]); bolts(hh, Array.from({ length: 8 }, (_, k) => ({ pos: [0.68 + (k % 4 - 1.5) * 0.045, 0.69, (k < 4 ? -1 : 1) * 0.07] })), 0.005);
+      const pg = P(dt, 'גלגלי שיניים פלנטריים (3 קבוצות)', 'Planetary gear sets (×3)', 'פלדה מחושלת', 'שלוש קבוצות גלגלי שיניים: שמש מרכזית, שלושה לוויינים וטבעת. כל קבוצה מקנה יחס אחר.');
+      const gear = (r, n, w) => G.merge([G.cyl(r, r, w, 28, 'x'), ...Array.from({ length: n }, (_, k) => { const a = k / n * PI * 2; return G.at(new THREE.BoxGeometry(w, 0.008, 0.008), [0, Math.cos(a) * (r + 0.003), Math.sin(a) * (r + 0.003)], [a, 0, 0]); })]);
+      for (const x of [0.58, 0.68, 0.78]) { mesh(gear(0.045, 18, 0.05), M.steel(), { parent: pg, pos: [x, 0.58, 0] }); for (let k = 0; k < 3; k++) { const a = k * 2.094; mesh(gear(0.025, 10, 0.05), M.castAlu(), { parent: pg, pos: [x, 0.58 + Math.cos(a) * 0.07, Math.sin(a) * 0.07] }); } }
+      const br = P(dt, 'סרטי בלימה (3)', 'Brake bands (×3)', 'פלדה + בטנה', 'ברק, גלגל נסיעה והילוך אחורי — כל אחד סרט פלדה סביב תוף שנסגר בלחיצת דוושה.');
+      for (const x of [0.58, 0.68, 0.78]) put(G.torus(0.1, 0.006, 6, 28, PI * 1.6, 'x'), M.matte(0x8a6a38), br, [x, 0.58, 0]);
+      const cl = P(dt, 'מצמד מגע (דיסקים)', 'Clutch disc pack', 'פלדה + פיברגלס', 'סידרת דיסקים צמודים בקפיצים שמצמידים את גלגל התנופה לתמסורת בהילוך מהיר.');
+      for (let i = 0; i < 6; i++) put(G.cyl(0.14, 0.14, 0.004, 28, 'x'), i % 2 ? M.darkSteel() : M.matte(0x6b5a3a), cl, [0.86 - 0.12 + i * 0.012 + 0.0, 0.62 - 0.04, 0]);
+      const uj = P(dt, 'מפרק כדורי וקופסת מפרק', 'Universal joint ball & cap', 'פלדה מחושלת + ברונזה', 'כדור גדול בקצה גל ההנעה, בתוך בית שמחזיק אותו. מכאן העברת כוח בלי דחף מצד המכסה.');
+      put(G.sphere(0.06, 20, 16), M.castIron(), uj, [0.5, 0.52, 0]);
+      const tt = P(dt, 'צינור מומנט וגל הנעה', 'Torque tube & drive shaft', 'פלדה', 'הגל בתוך צינור נושא שמפתיע — הוא עובר לציר ומחזיק אותו במקום. ללא מוטות אחוריים!');
+      rod(tt, [0.5, 0.52, 0], [AXR + 0.15, 0.4, 0], 0.045, M.metal(0x2a2c30, 0.55)); rod(tt, [0.5, 0.52, 0], [AXR + 0.15, 0.4, 0], 0.018, STEEL);
+      moving.shaft = tt;
+      const df = P(dt, 'דיפרנציאל (בית כדורי)', 'Differential housing', 'ברזל יצוק', 'בית כדורי בצורת ביצה בציר האחורי. בפנים: גלגל כתר וגלגל שיניים קטן, ושני פנינים ושני צירים.');
+      mesh(G.sphere(0.13, 24, 18), CAST, { parent: df, pos: [AXR, TR, 0], scale: [1.1, 1, 1] });
+      bolts(df, Array.from({ length: 8 }, (_, k) => ({ pos: [AXR + Math.cos(k * 0.785) * 0.105, TR + Math.sin(k * 0.785) * 0.105, 0.0], rot: [PI / 2, 0, 0] })), 0.007);
+      const rg = P(dt, 'גלגל כתר וגלגל קטן (בקצה)', 'Ring gear & pinion', 'פלדה מוקשית', 'גלגל כתר גדול וגלגל קטן שמעבירים את הכוח מהאורך לרוחב, וכך מסתובבים הגלגלים.');
+      put(G.cyl(0.095, 0.095, 0.02, 32, 'z'), STEEL, rg, [AXR, TR, 0.03]); put(G.cyl(0.025, 0.025, 0.06, 14, 'x'), STEEL, rg, [AXR + 0.06, TR, 0]);
+      const axs = P(dt, 'סרנים (2)', 'Axle shafts (×2)', 'פלדה', 'שני סרנים בתוך בית הציר שמעבירים כוח מהדיפרנציאל לגלגלים.');
+      for (const s of [1, -1]) rod(axs, [AXR, TR, s * 0.1], [AXR, TR, s * 0.7], 0.022, STEEL);
+    }
+    // ================================================================== ENGINE ANIMATION
+    let engineSpeed = 0, crankAngle = 0;
+    const setEngine = () => {
+      const r = 0.0508, Lr = 0.14;
+      for (const m of moving.pistons) {
+        const th = crankAngle + m.th0, cy = CY + Math.cos(th) * r, cz = Math.sin(th) * r;
+        const yp = cy + Math.sqrt(Lr * Lr - cz * cz);
+        m.p.position.set(m.x, yp + 0.02, 0);
+        const a = V3(m.x, cy, cz), b = V3(m.x, yp, 0), d = b.clone().sub(a);
+        m.r.position.copy(a).addScaledVector(d, 0.5); m.r.quaternion.setFromUnitVectors(V3(0, 1, 0), d.clone().normalize());
+      }
+      moving.crank.rotation.x = crankAngle; for (const f of moving.flywheels) f.rotation.x = crankAngle;
+      ctxFan.rotation.x = crankAngle * 1.6;
+    };
+    setEngine();
+    K.toggle('engine', { he: 'מנוע פועל', key: 'e', seconds: 1.0 }, (t) => { engineSpeed = t * 14; });
+    K.onFrame((time, dt) => { if (engineSpeed > 0.01) { crankAngle += engineSpeed * dt; setEngine(); } });
+  },
+};
+
+</script>
+<script type="module">
+// Daily 3D Library — shared viewer.
+// Loads window.L3D_META (from meta.json) and window.L3D_MODEL (model.js),
+// builds the model with the kit and wraps it in the studio + Hebrew UI:
+// systems / parts / specs panel, exploded view, x-ray, cutaway, model toggles,
+// camera presets, hover + select with part cards, screenshot.
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const $ = (s, el = document) => el.querySelector(s);
+const h = (tag, attrs = {}, ...kids) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') e.className = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (k === 'html') e.innerHTML = v; else if (v !== false && v != null) e.setAttribute(k, v === true ? '' : v);
+  }
+  for (const k of kids.flat()) if (k != null && k !== false) e.append(k.nodeType ? k : document.createTextNode(k));
+  return e;
+};
+const SHOT = new URLSearchParams(location.search).has('shot');
+
+async function waitForModel() {
+  for (let i = 0; i < 600; i++) { if (window.L3D?.kit && window.L3D_MODEL) return; await new Promise((r) => setTimeout(r, 10)); }
+  throw new Error('model script did not register window.L3D_MODEL');
+}
+
+function showError(err) {
+  console.error(err);
+  const box = $('.loading');
+  if (box) { box.style.opacity = 1; box.hidden = false; box.querySelector('div').append(h('div', { class: 'err' }, String(err && err.stack || err))); }
+  window.__error = String(err);
+}
+window.addEventListener('error', (e) => showError(e.error || e.message));
+window.addEventListener('unhandledrejection', (e) => showError(e.reason));
+
+// A dark photo studio with soft-box strips: dark paint and glass pick up crisp
+// highlight lines instead of mirroring a bright white room.
+function studioEnvironment() {
+  const env = new THREE.Scene();
+  const bright = (k) => new THREE.MeshBasicMaterial({ color: new THREE.Color(k, k, k), side: THREE.DoubleSide });
+  const room = new THREE.Mesh(new THREE.SphereGeometry(30, 48, 24), new THREE.MeshBasicMaterial({ side: THREE.BackSide, vertexColors: true }));
+  const pos = room.geometry.attributes.position, cols = [];
+  for (let i = 0; i < pos.count; i++) { const t = (pos.getY(i) / 30 + 1) / 2; const c = 0.06 + 0.16 * Math.pow(1 - Math.abs(t - 0.45) * 1.6, 2); cols.push(c, c * 1.03, c * 1.1); }
+  room.geometry.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+  env.add(room);
+  const floorM = new THREE.Mesh(new THREE.CircleGeometry(30, 48), bright(0.32)); floorM.rotation.x = -Math.PI / 2; floorM.position.y = -1; env.add(floorM);
+  const box = (w, h, k, pos, rot) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), bright(k)); m.position.set(...pos); m.rotation.set(...rot); env.add(m); };
+  for (const z of [-3.2, 0, 3.2]) box(14, 1.4, 5.5, [0, 9, z], [Math.PI / 2, 0, 0]);   // overhead strips
+  box(2.2, 7, 2.6, [0, 3, 12], [0, Math.PI, 0]); box(2.2, 7, 2.6, [0, 3, -12], [0, 0, 0]); // side strips
+  box(10, 4, 1.2, [14, 3, 0], [0, -Math.PI / 2, 0]); box(10, 4, 0.8, [-14, 3, 0], [0, Math.PI / 2, 0]); // front / rear fill
+  return env;
+}
+
+async function main() {
+  const meta = window.L3D_META || {};
+  document.documentElement.style.setProperty('--accent', meta.accent || '#c8a75a');
+  if (SHOT) document.body.classList.add('shot');
+  await waitForModel();
+  const K = window.L3D.kit;
+  const MODEL = window.L3D_MODEL;
+
+  // ------------------------------------------------------------- renderer
+  const stage = $('#stage');
+  const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, SHOT ? 1 : 2));
+  renderer.setSize(stage.clientWidth, stage.clientHeight);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.localClippingEnabled = true;
+  stage.append(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const BG_DAY = new THREE.Color(0x10141b), BG_NIGHT = new THREE.Color(0x030407);
+  scene.background = BG_DAY;
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(studioEnvironment(), 0.03).texture;
+  scene.environmentIntensity = 0.9;
+
+  const camera = new THREE.PerspectiveCamera(32, stage.clientWidth / stage.clientHeight, 0.05, 120);
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.dampingFactor = 0.08;
+  controls.minDistance = 0.15; controls.maxDistance = 40;
+  controls.maxPolarAngle = Math.PI * 0.495;
+
+  const hemi = new THREE.HemisphereLight(0xdfe8ff, 0x1a1510, 0.55); scene.add(hemi);
+  const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(4, 7, 5); key.castShadow = true;
+  key.shadow.mapSize.set(SHOT ? 2048 : 2048, 2048); key.shadow.bias = -0.0004; key.shadow.normalBias = 0.02; key.shadow.radius = 4;
+  scene.add(key, key.target);
+  const rim = new THREE.DirectionalLight(0xbcd2ff, 1.1); rim.position.set(-6, 3, -4); scene.add(rim);
+  const fill = new THREE.DirectionalLight(0xffe7c4, 0.5); fill.position.set(-3, 2, 6); scene.add(fill);
+
+  // studio floor: soft radial falloff + contact shadow
+  const floorTex = K.canvasTexture(512, 512, (g, w, hh) => {
+    const gr = g.createRadialGradient(w / 2, hh / 2, 0, w / 2, hh / 2, w / 2);
+    gr.addColorStop(0, '#3a414c'); gr.addColorStop(0.45, '#232831'); gr.addColorStop(1, '#10141b');
+    g.fillStyle = gr; g.fillRect(0, 0, w, hh);
+  });
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(30, 96), new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.85, metalness: 0 }));
+  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+  const grid = new THREE.PolarGridHelper(12, 24, 24, 96, 0x2a313b, 0x1d232b);
+  grid.position.y = 0.001; grid.material.transparent = true; grid.material.opacity = 0.35; scene.add(grid);
+
+  // ------------------------------------------------------------ build model
+  const t0 = performance.now();
+  const root = new THREE.Group(); root.name = 'model';
+  const systems = new Map();
+  for (const s of meta.systems || []) {
+    const g = new THREE.Group(); g.name = s.id; g.userData.system = s; root.add(g); systems.set(s.id, g);
+  }
+  const ctx = { K, THREE, meta, sys: (id) => { if (!systems.has(id)) throw new Error('unknown system ' + id); return systems.get(id); }, scene, renderer };
+  await MODEL.build(ctx);
+  scene.add(root);
+  root.updateMatrixWorld(true);
+  const buildMs = performance.now() - t0;
+
+  const box = new THREE.Box3().setFromObject(root);
+  const size = box.getSize(new THREE.Vector3()), centre = box.getCenter(new THREE.Vector3());
+  const radius = size.length() / 2;
+  key.shadow.camera.left = -radius * 1.2; key.shadow.camera.right = radius * 1.2;
+  key.shadow.camera.top = radius * 1.2; key.shadow.camera.bottom = -radius * 1.2;
+  key.shadow.camera.near = 0.5; key.shadow.camera.far = 30; key.target.position.copy(centre);
+  key.position.copy(centre).add(new THREE.Vector3(4, 7, 5));
+
+  const contact = new THREE.Mesh(new THREE.PlaneGeometry(size.x * 1.25, size.z * 1.6), new THREE.MeshBasicMaterial({
+    transparent: true, depthWrite: false, opacity: 0.85,
+    map: K.canvasTexture(256, 256, (g, w, hh) => { const gr = g.createRadialGradient(w / 2, hh / 2, 0, w / 2, hh / 2, w / 2); gr.addColorStop(0, 'rgba(0,0,0,.85)'); gr.addColorStop(0.55, 'rgba(0,0,0,.45)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, hh); }),
+  }));
+  contact.rotation.x = -Math.PI / 2; contact.position.set(centre.x, 0.002, centre.z); scene.add(contact);
+
+  // ------------------------------------------------------------ parts index
+  const sysInfo = new Map((meta.systems || []).map((s) => [s.id, s]));
+  // a part may live inside another system's assembly (door glass rides on the door)
+  // and still belong to its own system via userData.sysOverride
+  const sysOf = (o) => { for (let p = o; p; p = p.parent) { if (p.userData.sysOverride) return p.userData.sysOverride; if (p.userData.system) return p.userData.system.id; } return null; };
+  const parts = [];
+  let meshCount = 0, triCount = 0;
+  root.traverse((o) => {
+    if (o.userData.part) {
+      let parentPart = null;
+      for (let p = o.parent; p && !p.userData.system; p = p.parent) if (p.userData.part) { parentPart = p; break; }
+      o.userData.sysId = sysOf(o); o.userData.parentPart = parentPart;
+      parts.push(o);
+    }
+    if (o.isMesh) {
+      o.userData.sysId = sysOf(o);
+      meshCount++;
+      const g = o.geometry; const n = g.index ? g.index.count / 3 : g.attributes.position.count / 3;
+      triCount += n * (o.isInstancedMesh ? o.count : 1);
+      o.userData.baseMat = o.material;
+    }
+  });
+  const partsOf = (sysId) => parts.filter((p) => p.userData.sysId === sysId);
+  let isolated = null;
+  window.__stats = { parts: parts.length, meshes: meshCount, triangles: Math.round(triCount), buildMs: Math.round(buildMs) };
+
+  // explode: every part directly under a system moves by system vector + radial spread
+  const exploders = [];
+  for (const [id, g] of systems) {
+    const s = sysInfo.get(id) || {};
+    const sv = new THREE.Vector3(...(s.explode || [0, 0.8, 0]));
+    const spread = new THREE.Vector3(...(s.spread || [0.35, 0.25, 0.9]));
+    for (const c of g.children) {
+      const b = new THREE.Box3().setFromObject(c);
+      if (b.isEmpty()) continue;
+      const pc = b.getCenter(new THREE.Vector3()).sub(centre);
+      const off = c.userData.explode ? new THREE.Vector3().copy(c.userData.explode) : sv.clone().add(pc.multiply(spread));
+      exploders.push({ o: c, base: c.position.clone(), off, local: false });
+    }
+  }
+  root.traverse((o) => { if (o.userData.explodeLocal) exploders.push({ o, base: o.position.clone(), off: new THREE.Vector3().copy(o.userData.explodeLocal), local: true }); });
+  let explode = 0;
+  const applyExplode = () => { for (const e of exploders) e.o.position.copy(e.base).addScaledVector(e.off, explode); };
+
+  // ------------------------------------------------------------ x-ray / wire / cut
+  const ghost = new THREE.MeshStandardMaterial({ color: 0x86b4ff, transparent: true, opacity: 0.07, depthWrite: false, side: THREE.DoubleSide, roughness: 0.2, metalness: 0 });
+  let xray = false, wire = false;
+  const shellSys = new Set((meta.systems || []).filter((s) => s.shell).map((s) => s.id));
+  const setMaterials = () => {
+    root.traverse((o) => {
+      if (!o.isMesh) return;
+      const sysId = o.userData.sysId;
+      const sel = selected && isInside(o, selected);
+      o.material = xray && shellSys.has(sysId) && !sel ? ghost : sel ? highlight(o.userData.baseMat) : o.userData.baseMat;
+      o.castShadow = !(xray && shellSys.has(sysId));
+    });
+    allMaterials().forEach((m) => { if (m.isMaterial) m.wireframe = wire && m !== ghost; });
+    applyClip(true);
+  };
+  const hlCache = new Map();
+  const highlight = (m) => {
+    if (Array.isArray(m)) return m.map(highlight);
+    if (!hlCache.has(m)) { const c = m.clone(); if (c.emissive) { c.emissive = new THREE.Color(meta.accent || '#c8a75a'); c.emissiveIntensity = 0.35; } hlCache.set(m, c); }
+    return hlCache.get(m);
+  };
+  const allMaterials = () => { const s = new Set([ghost]); root.traverse((o) => { if (o.isMesh) [o.material, o.userData.baseMat].flat().forEach((m) => m && s.add(m)); }); hlCache.forEach((m) => s.add(m)); return s; };
+
+  const clipPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 10);
+  let cut = 0, cutAxis = 'z', clipOn = false;
+  const applyClip = (force) => {
+    const on = cut > 0.001;
+    // keep everything below the plane; it sweeps from the far edge of the box inward
+    const ax = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] }[cutAxis];
+    clipPlane.normal.set(-ax[0], -ax[1], -ax[2]);
+    const lo = box.min[cutAxis] - 0.02, hi = box.max[cutAxis] + 0.02;
+    clipPlane.constant = hi - cut * (hi - lo);
+    if (on !== clipOn || force) {
+      clipOn = on;
+      allMaterials().forEach((m) => { m.clippingPlanes = on ? [clipPlane] : null; m.clipShadows = true; m.needsUpdate = true; });
+    }
+  };
+
+  // ------------------------------------------------------------ selection
+  let selected = null;
+  const isInside = (o, anc) => { for (let p = o; p; p = p.parent) if (p === anc) return true; return false; };
+  const partOf = (o) => { for (let p = o; p; p = p.parent) if (p.userData.part) return p; return null; };
+
+  // ------------------------------------------------------------ UI
+  const app = $('#app');
+  const accentOf = (sysId) => sysInfo.get(sysId)?.color || '#888';
+  const head = h('div', { class: 'head ui' },
+    h('div', { class: 'brand' }, h('span', { class: 'no' }, '#' + String(meta.number || 1).padStart(3, '0')), h('a', { href: '../../index.html' }, 'ספריית התלת־ממד היומית'), h('span', {}, meta.dateHe || meta.date || '')),
+    h('h1', {}, meta.title || 'דגם', h('small', {}, meta.subtitle || '')));
+  const tip = h('div', { class: 'tip ui', hidden: true });
+  const card = h('div', { class: 'card ui', hidden: true });
+  const stats = h('div', { class: 'stats ui' });
+  app.append(head, tip, card, stats);
+
+  // panel
+  const panel = h('div', { class: 'panel ui' + (innerWidth < 900 ? ' closed' : '') });
+  const tabs = [['sys', 'מערכות'], ['parts', 'חלקים'], ['spec', 'מפרט'], ['facts', 'עובדות']];
+  const pbody = h('div', { class: 'pbody' });
+  const tabBar = h('div', { class: 'tabs' }, tabs.map(([id, he]) => h('button', { 'data-t': id, onclick: () => showTab(id) }, he)));
+  panel.append(
+    h('div', { class: 'ptop' }, h('b', {}, `${parts.length} חלקים · ${systems.size} מערכות`), h('button', { class: 'btn', onclick: () => { panel.classList.toggle('closed'); document.body.classList.toggle('panel-open', !panel.classList.contains('closed')); } }, '☰')),
+    tabBar, pbody);
+  app.append(panel);
+  const visible = new Map([...systems.keys()].map((k) => [k, true]));
+  function showTab(id) {
+    tabBar.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.t === id));
+    pbody.innerHTML = '';
+    if (id === 'sys') {
+      for (const [sid, g] of systems) {
+        const s = sysInfo.get(sid);
+        const cb = h('input', { type: 'checkbox', onchange: (e) => { visible.set(sid, e.target.checked); refreshVisibility(); } });
+        cb.checked = visible.get(sid);
+        pbody.append(h('div', { class: 'sys' }, h('span', { class: 'dot', style: `background:${s.color}` }),
+          h('div', {}, s.he, h('small', {}, s.desc || '')), h('span', { class: 'cnt' }, partsOf(sid).length),
+          h('div', { style: 'display:flex;gap:4px;align-items:center' }, h('button', { title: 'הצג רק מערכת זו', onclick: () => soloSystem(sid) }, 'סולו'), cb)));
+      }
+      pbody.append(h('div', { class: 'row', style: 'margin-top:10px' }, h('button', { class: 'btn', onclick: () => { for (const k of systems.keys()) visible.set(k, true); refreshVisibility(); showTab('sys'); } }, 'הצג הכול')));
+    }
+    if (id === 'parts') {
+      const q = h('input', { class: 'search', placeholder: 'חיפוש חלק… (למשל: בורג, צמיג, שריון)' });
+      const list = h('div');
+      const render = () => {
+        list.innerHTML = '';
+        const term = q.value.trim().toLowerCase();
+        for (const [sid] of systems) {
+          const ps = partsOf(sid).filter((p) => !term || (p.userData.part.he + ' ' + (p.userData.part.en || '') + ' ' + (p.userData.part.desc || '')).toLowerCase().includes(term));
+          if (!ps.length) continue;
+          const d = h('details', { class: 'grp', open: !!term },
+            h('summary', {}, h('span', { class: 'dot', style: `width:9px;height:9px;border-radius:50%;background:${accentOf(sid)}` }), sysInfo.get(sid).he, h('span', { class: 'cnt' }, ps.length)),
+            ps.map((p) => h('button', { class: 'prt' + (p.userData.parentPart ? ' sub' : '') + (p === selected ? ' on' : ''), onclick: () => { select(p); focusOn(p); } }, p.userData.part.he)));
+          list.append(d);
+        }
+      };
+      q.addEventListener('input', render); render();
+      pbody.append(q, list);
+    }
+    if (id === 'spec') {
+      pbody.append(h('table', { class: 'spec' }, (meta.specs || []).map(([k, v]) => h('tr', {}, h('td', {}, k), h('td', {}, v)))));
+      if (meta.specNote) pbody.append(h('div', { class: 'note' }, meta.specNote));
+    }
+    if (id === 'facts') {
+      pbody.append(h('ul', { class: 'facts' }, (meta.facts || []).map((f) => h('li', {}, f))));
+      if (meta.sources) pbody.append(h('div', { class: 'note', html: 'מקורות: ' + meta.sources.map((s) => `<a href="${s.url}" target="_blank" rel="noopener">${s.name}</a>`).join(' · ') }));
+      pbody.append(h('div', { class: 'note' }, `נבנה בקוד בלבד — בלי קבצי מודל או תמונות. ${window.__stats.meshes.toLocaleString()} רשתות, ${window.__stats.triangles.toLocaleString()} משולשים, נבנה ב-${window.__stats.buildMs}ms.`));
+    }
+  }
+  function soloSystem(sid) { for (const k of systems.keys()) visible.set(k, k === sid); refreshVisibility(); showTab('sys'); }
+  function refreshVisibility() {
+    root.traverse((o) => { if (o.isMesh) o.visible = visible.get(o.userData.sysId) !== false && (!isolated || isInside(o, isolated)); });
+  }
+  showTab('sys');
+
+  // toolbar
+  const exOut = h('output', {}, '0%'), cutOut = h('output', {}, '0%');
+  const exIn = h('input', { type: 'range', min: 0, max: 1, step: 0.001, value: 0, oninput: (e) => { setExplodeTarget(+e.target.value); } });
+  let zoomedForExplode = false;
+  function setExplodeTarget(v) {
+    explodeTarget = v; exIn.value = v; exOut.textContent = Math.round(v * 100) + '%';
+    // pulling the model apart from close up: back off so the pieces stay in frame
+    if (v > 0.35 && !zoomedForExplode && camera.position.distanceTo(controls.target) < radius * 3.4) { zoomedForExplode = true; goView('explode'); }
+    if (v < 0.05) zoomedForExplode = false;
+  }
+  const cutIn = h('input', { type: 'range', min: 0, max: 1, step: 0.001, value: 0, oninput: (e) => { cut = +e.target.value; cutOut.textContent = Math.round(cut * 100) + '%'; applyClip(); } });
+  const axisSeg = h('div', { class: 'seg' }, [['z', 'צד'], ['y', 'על'], ['x', 'חזית']].map(([a, he]) => h('button', { class: a === cutAxis ? 'on' : '', onclick: (e) => { cutAxis = a; axisSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === e.target)); applyClip(true); } }, he)));
+  let explodeTarget = 0;
+  const tbtn = (label, k, on, fn) => { const b = h('button', { class: 'btn' + (on ? ' on' : ''), onclick: () => b.classList.toggle('on', fn()) }, label, k ? h('span', { class: 'k' }, k) : null); return b; };
+  const bX = tbtn('רנטגן', 'X', false, () => { xray = !xray; setMaterials(); return xray; });
+  const bW = tbtn('שלד קווי', 'W', false, () => { wire = !wire; setMaterials(); return wire; });
+  let night = false;
+  const bN = tbtn('לילה', 'N', false, () => { night = !night; applyNight(); return night; });
+  const bR = tbtn('סיבוב', 'R', false, () => { controls.autoRotate = !controls.autoRotate; return controls.autoRotate; });
+  const toggles = K.registry.toggles;
+  const tgButtons = toggles.map((t, i) => tbtn(t.he, t.key || String(i + 1), t.target > 0.5, () => { t.target = t.target > 0.5 ? 0 : 1; return t.target > 0.5; }));
+  const views = buildViews();
+  const viewSel = h('select', { class: 'btn', onchange: (e) => { goView(e.target.value); e.target.value = ''; } }, h('option', { value: '' }, '🎥 מבטים'), Object.entries(views).map(([k, v]) => h('option', { value: k }, v.he)));
+  const bShot = h('button', { class: 'btn', onclick: screenshot }, '📷 צילום');
+  const bHelp = h('button', { class: 'btn', onclick: () => help.hidden = false }, '?');
+  const bar = h('div', { class: 'bar ui' },
+    h('div', { class: 'row' }, h('label', { class: 'sl' }, 'פירוק', exIn, exOut), h('label', { class: 'sl' }, 'חתך', cutIn, cutOut, axisSeg)),
+    h('div', { class: 'row tg' }, bX, bW, h('span', { class: 'sep' }), tgButtons, h('span', { class: 'sep' }), bN, bR, viewSel, bShot, bHelp));
+  app.append(bar);
+
+  const help = h('div', { class: 'help ui', hidden: true, onclick: () => help.hidden = true }, h('div', { html: `
+    <b>איך משתמשים</b><br>
+    גרירה — סיבוב · גלגלת / צביטה — זום · קליק ימני / שתי אצבעות — הזזה<br>
+    ריחוף מעל חלק — שם החלק · קליק — כרטיס מידע, <kbd>F</kbd> מתמקד, <kbd>I</kbd> מבודד<br>
+    <kbd>E</kbd> פירוק · <kbd>C</kbd> חתך · <kbd>X</kbd> רנטגן · <kbd>W</kbd> שלד קווי · <kbd>N</kbd> לילה · <kbd>R</kbd> סיבוב<br>
+    ${toggles.map((t, i) => `<kbd>${t.key || i + 1}</kbd> ${t.he}`).join(' · ')}<br>
+    <kbd>Esc</kbd> ביטול בחירה · <kbd>0</kbd> מבט פתיחה` }));
+  app.append(help);
+
+  function renderCard(p) {
+    if (!p) { card.hidden = true; return; }
+    const info = p.userData.part, sid = p.userData.sysId;
+    const crumbs = []; for (let q = p.userData.parentPart; q; q = q.userData.parentPart) crumbs.unshift(q.userData.part.he);
+    card.innerHTML = '';
+    card.append(...[
+      h('button', { class: 'x', onclick: () => select(null) }, '×'),
+      h('span', { class: 'chip' }, h('i', { style: `background:${accentOf(sid)}` }), sysInfo.get(sid)?.he || ''),
+      crumbs.length ? h('div', { class: 'crumbs' }, crumbs.join(' › ') + ' ›') : null,
+      h('h3', {}, info.he), info.en ? h('div', { class: 'en' }, info.en) : null,
+      info.desc ? h('p', {}, info.desc) : null,
+      info.mat ? h('div', { class: 'mat' }, 'חומר: ' + info.mat) : null,
+      h('div', { class: 'row' }, h('button', { class: 'btn', onclick: () => focusOn(p) }, 'מקד', h('span', { class: 'k' }, 'F')), h('button', { class: 'btn', onclick: () => isolate(p) }, isolated ? 'הצג הכול' : 'בודד', h('span', { class: 'k' }, 'I')))].filter(Boolean));
+    card.hidden = false;
+  }
+  function select(p) {
+    selected = p; setMaterials(); renderCard(p);
+    if (tabBar.querySelector('.on')?.dataset.t === 'parts') pbody.querySelectorAll('.prt').forEach((b) => b.classList.toggle('on', b.textContent === p?.userData.part.he));
+  }
+  function isolate(p) {
+    isolated = isolated || !p ? null : p;
+    if (isolated) for (const k of systems.keys()) visible.set(k, true);
+    refreshVisibility(); renderCard(selected);
+  }
+
+  // camera
+  function buildViews() {
+    // portrait screens need the camera further back to fit the model's length
+    const c = centre, r0 = radius, r = r0 * Math.max(1, 1.45 / camera.aspect);
+    const v = {
+      explode: { he: 'מבט פירוק', pos: [c.x + r * 2.3, c.y + r * 1.25, c.z + r * 2.6], target: [c.x, c.y + 0.5, c.z] },
+      hero: { he: 'מבט פתיחה', pos: [c.x + r * 1.55, c.y + r * 0.55, c.z + r * 1.75], target: [c.x, c.y * 0.8, c.z] },
+      front: { he: 'חזית', pos: [c.x + r * 2.4, c.y + 0.2, c.z], target: [c.x, c.y, c.z] },
+      side: { he: 'צד', pos: [c.x, c.y + 0.2, c.z + r * 2.4], target: [c.x, c.y, c.z] },
+      rear: { he: 'אחור', pos: [c.x - r * 2.4, c.y + 0.3, c.z + 0.001], target: [c.x, c.y, c.z] },
+      top: { he: 'מלמעלה', pos: [c.x + 0.001, c.y + r * 2.7, c.z], target: [c.x, c.y, c.z] },
+      under: { he: 'מלמטה (שלדה)', pos: [c.x + r * 0.8, 0.12, c.z + r * 1.3], target: [c.x, 0.5, c.z] },
+    };
+    for (const [k, w] of Object.entries(meta.views || {})) v[k] = w;
+    return v;
+  }
+  let camAnim = null;
+  function flyTo(pos, target, ms = 900, fov = 32) {
+    if (SHOT) { camera.position.set(...pos); controls.target.set(...target); camera.fov = fov; camera.updateProjectionMatrix(); controls.update(); return; }
+    camAnim = { p0: camera.position.clone(), t0: controls.target.clone(), p1: new THREE.Vector3(...pos), t1: new THREE.Vector3(...target), f0: camera.fov, f1: fov, start: performance.now(), ms };
+  }
+  function goView(k) {
+    const v = views[k]; if (!v) return;
+    // looking at the chassis needs the camera below the floor
+    controls.maxPolarAngle = k === 'under' || v.under ? Math.PI : Math.PI * 0.495;
+    floor.visible = grid.visible = contact.visible = !(k === 'under' || v.under);
+    // a view can open things first (e.g. the engine view opens the hood)
+    (v.toggles || []).forEach((id) => { const i = toggles.findIndex((t) => t.id === id); if (i >= 0) { toggles[i].target = 1; if (SHOT) { toggles[i].t = 1; toggles[i].apply(1); } tgButtons[i]?.classList.add('on'); } });
+    flyTo(v.pos, v.target, 900, v.fov || 32);
+  }
+  function focusOn(p) {
+    const b = new THREE.Box3().setFromObject(p); if (b.isEmpty()) return;
+    const c = b.getCenter(new THREE.Vector3()); const r = Math.max(b.getSize(new THREE.Vector3()).length() / 2, 0.08);
+    const dir = camera.position.clone().sub(controls.target).normalize();
+    const dist = r / Math.sin((camera.fov * Math.PI) / 360) * 1.25;
+    flyTo(c.clone().addScaledVector(dir, dist).toArray(), c.toArray());
+  }
+  const startView = views[meta.startView || 'hero'] || views.hero;
+  camera.position.set(...startView.pos); controls.target.set(...startView.target); controls.update();
+  const viewKeys = Object.keys(views);
+
+  // night mode: darker world, model toggles flagged night:true switch on
+  function applyNight() {
+    scene.background = night ? BG_NIGHT : BG_DAY;
+    scene.environmentIntensity = night ? 0.22 : 0.9;
+    hemi.intensity = night ? 0.12 : 0.55; key.intensity = night ? 0.25 : 2.2; rim.intensity = night ? 0.6 : 1.1; fill.intensity = night ? 0.08 : 0.5;
+    key.color.set(night ? 0x9db4ff : 0xffffff);
+    floor.material.color.set(night ? 0x3a3f48 : 0xffffff);
+    toggles.forEach((t, i) => { if (t.night) { t.target = night ? 1 : 0; tgButtons[i].classList.toggle('on', night); } });
+  }
+
+  function screenshot() {
+    renderer.render(scene, camera);
+    const a = h('a', { href: renderer.domElement.toDataURL('image/png'), download: (meta.id || 'model') + '.png' }); a.click();
+  }
+
+  // hover + click
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  let downAt = null, lastHover = 0, hoverPart = null;
+  const pick = (e) => {
+    const r = renderer.domElement.getBoundingClientRect();
+    ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    const hits = ray.intersectObject(root, true).filter((x) => x.object.visible && visibleChain(x.object) && x.object.material !== ghost && !(clipOn && clipPlane.distanceToPoint(x.point) < 0));
+    return hits.length ? partOf(hits[0].object) : null;
+  };
+  const visibleChain = (o) => { for (let p = o; p; p = p.parent) if (!p.visible) return false; return true; };
+  renderer.domElement.addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; tip.hidden = true; });
+  renderer.domElement.addEventListener('pointermove', (e) => {
+    if (e.buttons || e.pointerType === 'touch') return;
+    const now = performance.now(); if (now - lastHover < 50) return; lastHover = now;
+    hoverPart = pick(e);
+    if (hoverPart) {
+      tip.innerHTML = ''; tip.append(h('i', { style: `background:${accentOf(hoverPart.userData.sysId)}` }), hoverPart.userData.part.he);
+      tip.style.left = e.clientX + 'px'; tip.style.top = e.clientY + 'px'; tip.hidden = false; renderer.domElement.style.cursor = 'pointer';
+    } else { tip.hidden = true; renderer.domElement.style.cursor = ''; }
+  });
+  renderer.domElement.addEventListener('pointerleave', () => { tip.hidden = true; });
+  renderer.domElement.addEventListener('pointerup', (e) => {
+    if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 5) return;
+    const p = pick(e);
+    // clicking the same part again climbs to its parent assembly
+    if (p && selected && p === selected && p.userData.parentPart) select(p.userData.parentPart);
+    else select(p);
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
+    const k = e.key.toLowerCase();
+    if (k === 'e') setExplodeTarget(explodeTarget > 0.5 ? 0 : 1);
+    else if (k === 'c') { cut = cut > 0 ? 0 : 0.5; cutIn.value = cut; cutOut.textContent = Math.round(cut * 100) + '%'; applyClip(); }
+    else if (k === 'x') bX.click(); else if (k === 'w') bW.click(); else if (k === 'n') bN.click(); else if (k === 'r') bR.click();
+    else if (k === 'f' && selected) focusOn(selected); else if (k === 'i' && selected) isolate(selected);
+    else if (k === 'escape') { select(null); help.hidden = true; } else if (k === '0') goView(meta.startView || 'hero');
+    else { const i = toggles.findIndex((t, n) => (t.key || String(n + 1)) === k); if (i >= 0) tgButtons[i].click(); }
+  });
+
+  window.addEventListener('resize', () => {
+    renderer.setSize(stage.clientWidth, stage.clientHeight);
+    camera.aspect = stage.clientWidth / stage.clientHeight; camera.updateProjectionMatrix();
+  });
+
+  // ------------------------------------------------------------ loop
+  const clock = new THREE.Clock();
+  let frames = 0, fpsT = 0, fps = 0;
+  function tick() {
+    const dt = Math.min(clock.getDelta(), 0.1), t = clock.elapsedTime;
+    if (camAnim) {
+      const k = Math.min(1, (performance.now() - camAnim.start) / camAnim.ms), s = k * k * (3 - 2 * k);
+      camera.position.lerpVectors(camAnim.p0, camAnim.p1, s); controls.target.lerpVectors(camAnim.t0, camAnim.t1, s);
+      if (camAnim.f0 !== camAnim.f1) { camera.fov = camAnim.f0 + (camAnim.f1 - camAnim.f0) * s; camera.updateProjectionMatrix(); }
+      if (k >= 1) camAnim = null;
+    }
+    if (Math.abs(explode - explodeTarget) > 1e-4) { explode += (explodeTarget - explode) * Math.min(1, dt * 6); applyExplode(); }
+    for (const tg of toggles) {
+      if (Math.abs(tg.t - tg.target) > 1e-4) { tg.t += Math.sign(tg.target - tg.t) * Math.min(Math.abs(tg.target - tg.t), dt / (tg.seconds || 1.1)); tg.apply(tg.t); }
+    }
+    for (const f of K.registry.frames) f(t, dt);
+    controls.update();
+    renderer.render(scene, camera);
+    frames++; fpsT += dt;
+    if (fpsT > 0.5) { fps = Math.round(frames / fpsT); frames = 0; fpsT = 0; stats.textContent = `${parts.length} חלקים · ${meshCount.toLocaleString()} רשתות · ${Math.round(triCount).toLocaleString()} משולשים · ${fps} FPS`; }
+    requestAnimationFrame(tick);
+  }
+  const ld = $('.loading'); ld.style.opacity = 0; setTimeout(() => (ld.hidden = true), 500);
+  if (SHOT) {
+    // screenshot harness (tools/check.cjs): no render loop, it calls __render() per shot
+    window.__render = () => { for (const f of K.registry.frames) f(1.0, 0); controls.update(); renderer.render(scene, camera); };
+    window.__render();
+    window.__ready = true;
+  } else {
+    tick();
+    requestAnimationFrame(() => requestAnimationFrame(() => { window.__ready = true; }));
+  }
+  window.__viewer = { scene, camera, controls, renderer, root, goView, setExplode: (v) => { explodeTarget = explode = v; applyExplode(); }, toggles, select, focusOn, parts, setCut: (v, a = 'z') => { cutAxis = a; cut = v; applyClip(true); }, setXray: (v) => { xray = v; setMaterials(); }, setNight: (v) => { night = v; applyNight(); } };
+}
+
+main().catch(showError);
+
+</script>
+</body>
+</html>
