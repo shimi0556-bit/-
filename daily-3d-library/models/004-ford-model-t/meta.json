@@ -390,5 +390,23 @@
       "name": "Wikimedia Commons — Ford Model T category",
       "url": "https://commons.wikimedia.org/wiki/Category:Ford_Model_T"
     }
-  ]
+  ],
+  "game": {
+    "kind": "car",
+    "drive": "rwd",
+    "massKg": 650,
+    "topSpeedKmh": 72,
+    "accelMs2": 0.9,
+    "steerMaxRad": 0.55,
+    "wheelbase": 2.54,
+    "track": 1.42,
+    "wheelRadius": 0.381,
+    "grip": 0.7,
+    "lodHide": [
+      "engine",
+      "ignition",
+      "drivetrain"
+    ],
+    "note": "מסת טוריסט ותאוצה: הערכה. מהירות מרבית כ־65–72 קמ״ש."
+  }
 }

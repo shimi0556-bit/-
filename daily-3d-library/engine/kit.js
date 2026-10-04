@@ -553,9 +553,15 @@ function toggle(id, info, apply, initial = 0) {
   apply(initial);
 }
 function onFrame(fn) { registry.frames.push(fn); }
+// Game rig: the handles a game needs to drive the model without knowing how it was built.
+//   { kind: 'car', wheels: [{ steer, spin, s, front, r }] }   steer: Object3D turned about local y (null = fixed),
+//                                                              spin: Object3D turned about local z, s = ±1 side, r = rolling radius
+//   { kind: 'tracked', setTravel(metres), wheelsR }            tracks/road wheels follow the distance travelled
+// Every daily model calls it once at the end of build(); tools/sanity.cjs fails a model that has meta.game but no rig.
+function gameRig(o) { for (const w of o.wheels || []) w.steerBase = w.steer ? w.steer.rotation.y : 0; registry.rig = o; }
 
 L3D.kit = {
   THREE, V3, clamp, lerp, smooth, rng, M, G, samples, surface, cap,
   canvasTexture, textTexture, noiseTexture, mesh, group, part, instances, mirrorZ, panel, smoothNormals,
-  toggle, onFrame, registry, mergeGeometries,
+  toggle, onFrame, gameRig, registry, mergeGeometries,
 };

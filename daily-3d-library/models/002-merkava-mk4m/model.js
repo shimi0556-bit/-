@@ -1139,5 +1139,6 @@ window.L3D_MODEL = {
     // went 22 mm into the ground (found by tools/sanity.cjs). Lift the whole model instead of the
     // sprung system groups, which the firing rock (rockSet) positions absolutely.
     sys('hull').parent.position.y = 0.022;
+    K.gameRig({ kind: 'tracked', setTravel: (d) => { travel = d; K.__updateTracks(); } });
   },
 };

@@ -28,9 +28,11 @@ const gapB=(a,b)=>Math.max(0,a.min.x-b.max.x,b.min.x-a.max.x,a.min.y-b.max.y,b.m
 const list=[...parts];for(const [k,bb] of list){let g=1e9;for(const [k2,b2] of list){if(k2===k)continue;g=Math.min(g,gapB(bb,b2));if(g<=FAR)break;}if(g>FAR)stray.push([k,+g.toFixed(2),bb.getCenter(new T.Vector3()).toArray().map(n=>+n.toFixed(2))]);}
 const tg=[];for(const t of v.toggles){t.apply(1);const s=snap();const moved=new Map();s.forEach((bb,o)=>{const b0=base.get(o);if(!b0)return;const d=bb.getCenter(new T.Vector3()).sub(b0.getCenter(new T.Vector3()));if(d.length()>0.01){const k=partOf(o);if(!moved.has(k))moved.set(k,{d:d.toArray().map(n=>+n.toFixed(2)),min:bb.min.toArray().map(n=>+n.toFixed(2)),max:bb.max.toArray().map(n=>+n.toFixed(2))});}});
  tg.push([t.id,t.he,[...moved].slice(0,8)]);t.apply(t.init);}
-return {core:[core.min.toArray(),core.max.toArray()].map(a=>a.map(n=>+n.toFixed(2))),all:[all.min.toArray(),all.max.toArray()].map(a=>a.map(n=>+n.toFixed(2))),stray,under:under.slice(0,10),tg};},FAR);
+const rig=window.L3D.kit.registry.rig,noRig=!!(window.L3D_META.game&&!rig);
+return {noRig,core:[core.min.toArray(),core.max.toArray()].map(a=>a.map(n=>+n.toFixed(2))),all:[all.min.toArray(),all.max.toArray()].map(a=>a.map(n=>+n.toFixed(2))),stray,under:under.slice(0,10),tg};},FAR);
+if(out.noRig)console.log('  ✗ meta.game is set but the model never calls K.gameRig() (BUILD_GUIDE §8)');
 console.log('core box',JSON.stringify(out.core),' full box',JSON.stringify(out.all));
 console.log(out.stray.length?'STRAY (far from the model):':'stray: none');out.stray.forEach(s=>console.log('  ✗',s[0],'gap',s[1],'m at',JSON.stringify(s[2])));
 console.log(out.under.length?'BELOW GROUND:':'below ground: none');out.under.forEach(s=>console.log('  ✗',s[0],s[1]));
 console.log('toggles at t=1 (part: centre shift [dx,dy,dz] → box):');out.tg.forEach(([id,he,m])=>{console.log(' •',id,he);m.forEach(([k,v])=>console.log('    ',k,JSON.stringify(v.d),'→',JSON.stringify(v.min),JSON.stringify(v.max)));});
-await b.close();process.exit(out.stray.length||out.under.length?1:0);})();
+await b.close();process.exit(out.stray.length||out.under.length||out.noRig?1:0);})();

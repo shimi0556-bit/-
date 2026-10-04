@@ -5,3 +5,6 @@ daily-3d-library/models/*/shots/
 # Python bytecode
 __pycache__/
 *.pyc
+
+# Node deps of daily-3d-library/tools (npm i)
+daily-3d-library/tools/node_modules/

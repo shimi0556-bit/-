@@ -1,0 +1,11 @@
+{
+  "name": "daily-3d-library-tools",
+  "private": true,
+  "description": "Node deps for tools/export_glb.cjs (glTF optimisation). Install with: cd tools && npm i",
+  "dependencies": {
+    "@gltf-transform/core": "^4.1.0",
+    "@gltf-transform/extensions": "^4.1.0",
+    "@gltf-transform/functions": "^4.1.0",
+    "meshoptimizer": "^0.22.0"
+  }
+}

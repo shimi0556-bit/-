@@ -9,7 +9,7 @@ tools/check.cjs has produced one).
 
     python3 build.py            # build every model + gallery
     python3 build.py <id>       # build one model + gallery
-    python3 build.py --check    # build, then render + screenshot + stats every model + tools/sanity.cjs (needs Playwright)
+    python3 build.py --check    # build, then render + screenshot + stats every model + tools/sanity.cjs + game-ready GLB export & check (needs Playwright, npm)
 """
 import html
 import json
@@ -109,6 +109,14 @@ def main(argv):
                 print(f"  ok   sanity {d.name}: no stray parts, nothing below ground")
         if bad:
             sys.exit("sanity check failed: " + ", ".join(bad))
+        # game-ready files (BUILD_GUIDE §8): models/<id>/game/<id>.glb, <id>.race.glb, <id>.game.json,
+        # then load them back as a game engine would and test wheel/steer directions
+        if not (ROOT / "tools" / "node_modules").exists():
+            subprocess.run(["npm", "i", "--silent"], cwd=ROOT / "tools", check=True)
+        names = [d.name for d in targets]
+        subprocess.run(["node", str(ROOT / "tools" / "export_glb.cjs"), *names], check=True)
+        if subprocess.run(["node", str(ROOT / "tools" / "glb_check.cjs"), *names]).returncode != 0:
+            sys.exit("game-ready check failed (tools/glb_check.cjs)")
     build_gallery([entry(d) for d in dirs])
 
 

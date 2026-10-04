@@ -84,4 +84,6 @@ A library that grows by one procedurally-modelled object a day, starting with ca
     - Parts on the end faces must be placed with `surfAt()`, which needs a "section reaches this height" test or the centre point runs off to the tip.
     - Coplanar decals on the thick liftgate skin vanish, so push them about 3 cm out or use a matte, double-sided material.
   - **Still open:** hood creases, the lip overhang, twisted wheel blades, paint depth.
-
+- **2026-10-04: every model is game-ready (user: "ready for games, mainly racing", and explicitly: don't build a game, just make the models ready).** Added `meta.game` (physics), `K.gameRig()` in every model.js, `tools/export_glb.cjs` (GLB full + `.race.glb` + `.game.json`, gltf-transform weld/dedup/quantize, meshopt simplify for race; deps in `tools/package.json`), `tools/glb_check.cjs` (loads with GLTFLoader, tests roll and steer directions numerically), all run by `build.py --check`. Docs: `GAME_READY.md`, BUILD_GUIDE §8.
+  - I first started building a racing game; the user stopped it ("I didn't want a game"). Removed. Lesson: "ready for X" means prepare the asset, not build X.
+  - Pitfalls: `userData` holding an Object3D made a GLB 22 MB instead of 1 MB; left wheels with rest rotation π steered the wrong way after import (fixed with identity `Steer_*` pivots); a `//` comment inserted mid-line by a script edit swallowed the rest of the line, twice. Use `/* */` in one-line edits.

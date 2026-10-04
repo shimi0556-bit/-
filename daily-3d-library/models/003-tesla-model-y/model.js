@@ -419,7 +419,7 @@ window.L3D_MODEL = {
     // ================================================================== WHEELS
     const wheelSpots = [];
     for (const x of [AXF, AXR]) for (const s of [1, -1]) wheelSpots.push({ x, s, front: x > 0 });
-    const spinners = [];
+    const spinners = [], rigWheels = [];
     {
       const wheels = sys('wheels');
       const RIM = 0.2413;
@@ -467,7 +467,7 @@ window.L3D_MODEL = {
         const name = `${w.front ? 'קדמי' : 'אחורי'} ${sideHe(w.s)}`, en = `${w.front ? 'Front' : 'Rear'} ${sideEn(w.s)}`;
         const wp = part(wheels, { he: `גלגל ${name}`, en: `${en} wheel`, mat: 'צמיג + חישוק אלומיניום 19״', desc: 'גלגל 19 אינץ׳ עם חישוק אווירודינמי וצמיג 255/45. הצורה הסגורה של החישוק מוסיפה כמה קילומטרים לטווח.' }, { pos: [w.x, TIRE_R, w.s * WHEEL_Z] });
         if (w.s < 0) wp.rotation.y = PI;
-        const spin = new THREE.Group(); wp.add(spin); spinners.push({ o: spin, s: w.s });
+        const spin = new THREE.Group(); wp.add(spin); spinners.push({ o: spin, s: w.s }); rigWheels.push({ steer: w.front ? wp : null, spin, s: w.s, front: w.front, r: TIRE_R });
         const tire = part(spin, { he: `צמיג ${name}`, en: `${en} tyre`, mat: 'גומי, 255/45 R19', desc: 'צמיג עם ארבעה חריצים היקפיים וכיתוב על הדופן. בצמיגים של טסלה יש לפעמים שכבת קצף פנימית שמשתיקה רעש כביש.' });
         mesh(tireGeo, tireMat, { parent: tire }); mesh(grooves, M.black(), { parent: tire, cast: false });
         const sl = []; for (let i = 0; i < 72; i++) for (const zz of [-0.09, -0.042, 0.003, 0.048, 0.093]) { const a = (i / 72) * PI * 2 + zz; sl.push({ pos: [Math.cos(a) * 0.3555, Math.sin(a) * 0.3555, zz], rot: [0, 0, a] }); }
@@ -737,5 +737,6 @@ window.L3D_MODEL = {
     let speed = 0;
     K.toggle('drive', { he: 'נסיעה', key: 'g', seconds: 1.4 }, (t) => { speed = t * 6; });
     K.onFrame((time, dt) => { if (speed > 0.01) for (const sp of spinners) sp.o.rotation.z -= (sp.s * speed * dt) / TIRE_R; });
+    K.gameRig({ kind: 'car', wheels: rigWheels });
   },
 };
