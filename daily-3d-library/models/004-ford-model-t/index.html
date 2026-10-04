@@ -1021,9 +1021,9 @@ window.L3D_MODEL = {
     cush(-0.07, 'כרית מושב קדמי', 'Front seat cushion', 0.5); cush(-1.12, 'כרית מושב אחורי', 'Rear seat cushion', 0.58);
     {
       const sw = P(inter, 'הגה', 'Steering wheel', 'עץ שחור + ספיידר פליז', 'חישוק עץ בקוטר 40 ס״מ על ארבעה חישורי פלדה. במרכז ה״ספיידר״: ידיות ההצתה והמצערת.');
-      sw.position.set(0.52, 1.12, -0.28); sw.rotation.z = Math.atan2(0.3, 0.3) + 0.0; // tilted ~45°
+      sw.position.set(0.52, 1.12, -0.28); sw.rotation.z = -Math.atan2(0.78 - 1.12, 0.9 - 0.52) * -1; // wheel axis = column direction (forward-down, ~42°)
       const swg = new THREE.Group(); swg.rotation.y = PI / 2; sw.add(swg);
-      mesh(G.torus(0.19, 0.012, 10, 48), woodDark, { parent: swg });
+      mesh(G.torus(0.19, 0.016, 12, 56), woodDark, { parent: swg });
       for (let k = 0; k < 4; k++) { const a = k * PI / 2 + PI / 4; rod(swg, [Math.cos(a) * 0.02, Math.sin(a) * 0.02, 0], [Math.cos(a) * 0.185, Math.sin(a) * 0.185, 0], 0.006, M.darkSteel()); }
       mesh(G.cyl(0.03, 0.03, 0.03, 20, 'z'), BRASS, { parent: swg });
       const sp = P(inter, 'ידיות צינור: הצתה ומצערת', 'Spark & throttle levers', 'פליז + פלדה', 'שתי ידיות קטנות מתחת להגה: משמאל מקדמים את ההצתה, מימין נותנים גז. בלי דוושת גז!');
@@ -1042,7 +1042,7 @@ window.L3D_MODEL = {
       put(new THREE.BoxGeometry(0.01, 0.1, 0.01), STEEL, hb, [0.44, FLOOR + 0.03, -0.505]);
       const fm = P(inter, 'שטיח רצפה', 'Floor mat', 'גומי', 'שטיח גומי שחור עם הכיתוב Ford בבליטה.');
       const ft = K.textTexture('Ford', { font: 'italic 700 150px "Brush Script MT","URW Chancery L",cursive', color: '#2a2a2c', bg: '#0e0e0f', pad: 12 });
-      mesh(new THREE.PlaneGeometry(0.34, 0.34 / ft.aspect), M.decal(ft.tex, { roughness: 0.9, clearcoat: 0 }), { parent: fm, pos: [0.48, FLOOR + 0.0075, 0.25], rot: [-PI / 2, 0, PI / 2], cast: false });
+      mesh(new THREE.PlaneGeometry(0.34, 0.34 / ft.aspect), M.decal(ft.tex, { roughness: 0.9, clearcoat: 0 }), { parent: fm, pos: [0.48, FLOOR + 0.0075, 0.25], rot: [-PI / 2, 0, -PI / 2], cast: false });
       const rr = P(inter, 'מסילת שמיכה וחגורה', 'Robe rail & foot rail', 'פליז', 'מוט פליז מאחורי המושב הקדמי להחזקת שמיכת צמר; נחוצה בחורף כי לטוריסט אין חימום.');
       rod(rr, [-0.36, 0.88, -0.55], [-0.36, 0.88, 0.55], 0.009, BRASS);
       for (const s of [-0.55, 0.55]) rod(rr, [-0.36, 0.88, s], [-0.34, 0.82, s], 0.007, BRASS);
