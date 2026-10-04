@@ -719,16 +719,16 @@ window.L3D_MODEL = {
     const sideHe = (s) => (s > 0 ? 'ימין' : 'שמאל'), sideEn = (s) => (s > 0 ? 'right' : 'left');
 
     // ------------------------------------------------------------------ key dimensions
-    const XF = 2.36, XR = -2.43;               // nose / tail → length 4.79 m
+    const XF = 2.36, XR = -2.40;               // nose / body tail (the tail lip adds 2 cm) → 4.78 m
     const AXF = 1.445, AXR = -1.445;           // wheelbase 2.89 m
     const TIRE_R = 0.356, TIRE_W = 0.255;      // 255/45 R19
     const WHEEL_Z = 0.818;                     // track 1.636 m
     const HW = 0.96;                           // half width 1.92 m
     const ARCH_R = 0.405, ARCH_Y = 0.36;        // wheel-arch circle
     const W_IN = 0.69;                         // inner wheelhouse wall
-    const COWL = 1.06, WS_TOP = -0.05, ROOF_END = -0.92, BL_END = -2.24;
+    const COWL = 1.05, WS_TOP = -0.05, ROOF_END = -0.92, BL_END = -2.24;
     const ROOF = 1.622 - 0.5 * 0.27 * 0.27;                        // roof peak ≈ 1.62 with the crown
-    const GA_TOP = 0.215, GA_BOT = 0.412, A_G = 0.42; // side-glass band in v; greenhouse ends at A_G
+    const GA_TOP = 0.275, GA_BOT = 0.412, A_G = 0.42, RG = 0.2; // side-glass band in v; greenhouse ends at A_G; roof-glass edge
     const FD = [0.98, -0.155], RD = [-0.185, -1.06], QG = [-1.10, -1.62]; // front / rear door, quarter glass
     const FR = [1.10, 2.18];                   // frunk lid x range
     const LG = -0.95;                          // liftgate hinge line
@@ -751,76 +751,109 @@ window.L3D_MODEL = {
         return (2 * t3 - 3 * t2 + 1) * ys[i] + (t3 - 2 * t2 + t) * hh * m[i] + (-2 * t3 + 3 * t2) * ys[i + 1] + (t3 - t2) * hh * m[i + 1];
       };
     };
-    // plan view: rounded nose and tail (real corners sit ~0.26 m behind the tip at |z| = 0.6)
-    const NOSE = 0.42, NOSE_P = 3.2;
-    const W = (x) => {
-      const rr = 0.5;
-      const haunch = 0.022 * (Math.exp(-Math.pow((x - AXR) / 0.55, 2)) + 0.6 * Math.exp(-Math.pow((x - AXF) / 0.5, 2)));
-      let w = HW;
-      // front: rounded plan (superellipse over the last 0.42 m; corners ~0.15 m behind the tip, measured on top/front photos)
-      if (x > XF - NOSE) { const u = clamp((x - (XF - NOSE)) / NOSE); w = HW * Math.pow(Math.max(0, 1 - Math.pow(u, NOSE_P)), 1 / NOSE_P); }
-      else if (x < XR + rr) { const u = clamp((XR + rr - x) / rr); w = HW - (HW - 0.68) * Math.pow(u, 2.6); }
-      return w + haunch * (w / HW);
-    };
-    // centre-line top: hood → windshield → roof → fastback → spoiler
-    const YT = table([[XR, 1.11], [-2.36, 1.13], [-2.28, 1.23], [-2.10, 1.35], [-1.92, 1.426], [-1.745, 1.48], [-1.565, 1.53], [-1.307, 1.565], [-1.052, 1.58], [-0.801, 1.587], [-0.553, 1.586], [-0.37, 1.565], [-0.13, 1.545], [0.11, 1.50], [0.34, 1.42], [0.57, 1.32], [0.82, 1.2], [1.06, 1.08], [1.32, 0.99], [1.54, 0.945], [1.76, 0.9], [1.98, 0.855], [2.19, 0.81], [XF, 0.75]]);
-    // beltline (bottom of the side glass); in front of the cowl it is the hood edge, 5 cm below the hood crown
-    const YB = table([[XR, 1.09], [-2.3, 1.12], [-1.9, 1.16], [-1.36, 1.16], [-1.11, 1.15], [-0.37, 1.13], [0.34, 1.11], [0.97, 1.075]]);
-    const Yb = (x) => (x > COWL ? YT(x) - 0.05 - 0.05 * smooth(XF - 0.3, XF, x) : x > 0.97 ? lerp(1.075, YT(COWL) - 0.05, (x - 0.97) / (COWL - 0.97)) : YB(x));
+    // ---- every table below is measured on a 1:25 four-view drawing of the 2025 Model Y (the-blueprints.com
+    // "Tesla Model Y Juniper (2025)"): silhouettes extracted per pixel column/row (5.86 mm per px), x from the
+    // tyre centres, overhangs stretched to the official 4.79 m. The body is a loft through these curves.
+    // plan view: half width at the widest point of each station (front and rear hips 0.958, waist 0.923)
+    const W = table([[XR, 0], [-2.399, 0.2], [-2.392, 0.3], [-2.377, 0.4], [-2.362, 0.5], [-2.345, 0.6], [-2.321, 0.65], [-2.283, 0.7], [-2.235, 0.75], [-2.18, 0.8], [-2.11, 0.85], [-2.0, 0.902], [-1.9, 0.926], [-1.8, 0.94], [-1.6, 0.955], [-1.4, 0.958], [-1.2, 0.958], [-1.0, 0.949], [-0.8, 0.931], [-0.6, 0.923], [0.4, 0.926], [0.9, 0.931], [1.0, 0.949], [1.1, 0.958], [1.6, 0.955], [1.8, 0.943], [1.9, 0.929], [1.98, 0.9], [2.063, 0.85], [2.12, 0.8], [2.17, 0.75], [2.216, 0.7], [2.247, 0.65], [2.277, 0.6], [2.313, 0.5], [2.331, 0.4], [2.346, 0.3], [2.354, 0.2], [XF, 0]]);
+    // side view: centre-line top (tail lip → fastback → roof peak 1.629 at x = -0.3 → windshield → hood → nose lip)
+    const YT = table([[XR, 0.75], [-2.38, 0.95], [-2.35, 1.1], [-2.3, 1.2], [-2.2, 1.272], [-2.1, 1.30], [-2.0, 1.318], [-1.8, 1.394], [-1.6, 1.445], [-1.4, 1.495], [-1.2, 1.547], [-1.0, 1.582], [-0.8, 1.605], [-0.6, 1.617], [-0.3, 1.629], [0.0, 1.605], [0.2, 1.56], [0.4, 1.475], [0.6, 1.375], [0.8, 1.26], [1.0, 1.15], [1.08, 1.14], [1.2, 1.119], [1.4, 1.072], [1.6, 1.025], [1.8, 0.972], [2.0, 0.902], [2.1, 0.855], [2.2, 0.803], [2.25, 0.775], [2.3, 0.762], [2.34, 0.752], [XF, 0.74]]);
+    // beltline = bottom of the side glass (behind the cowl); in front of it the hood edge sits HE below the crown
+    const YB = table([[XR, 0.70], [-2.38, 0.88], [-2.35, 1.02], [-2.3, 1.12], [-2.2, 1.17], [-2.0, 1.205], [-1.6, 1.205], [-1.2, 1.19], [-0.9, 1.172], [-0.6, 1.15], [-0.2, 1.131], [0.1, 1.119], [0.4, 1.102], [0.8, 1.092], [COWL, 1.09]]);
+    const HE = table([[COWL, 0.05], [1.6, 0.05], [2.1, 0.045], [2.25, 0.03], [XF, 0.02]]);
+    const Yb = (x) => (x > COWL ? YT(x) - HE(x) : YB(x));
     const Yt = (x) => YT(x);
-    const Y0 = (x) => {
-      let y = 0.17;
-      if (x > 1.95) y += 0.11 * Math.pow((x - 1.95) / (XF - 1.95), 1.8);
-      if (x < -1.95) y += 0.11 * Math.pow((-1.95 - x) / (-1.95 - XR), 1.6);
-      return y;
-    };
+    // half width of the greenhouse at the belt (top view) / of the hood between its two creases (front view)
+    const WG = table([[XR, 0.62], [-2.2, 0.70], [-1.9, 0.745], [-1.6, 0.765], [-1.2, 0.79], [-0.8, 0.815], [-0.4, 0.826], [0.4, 0.826], [0.8, 0.812], [COWL, 0.795], [1.2, 0.74], [1.6, 0.68], [2.0, 0.61], [2.2, 0.56], [XF, 0.5]]);
+    // shoulder: how far below the belt the body reaches full width (front / rear views: ~0.85 m at the hips)
+    const DROP = table([[XR, 0.05], [-2.35, 0.15], [-2.2, 0.28], [-1.8, 0.35], [-1.4, 0.36], [-1.0, 0.32], [-0.4, 0.27], [0.4, 0.25], [1.0, 0.24], [1.6, 0.21], [2.0, 0.17], [2.2, 0.12], [2.3, 0.08], [XF, 0.06]]);
+    // sag of the top across the car: windshield wraps, roof is almost flat
+    const CROWN = table([[XR, 0.03], [-2.0, 0.04], [-1.2, 0.02], [-0.4, 0.01], [0.0, 0.03], [0.5, 0.06], [1.0, 0.07], [1.1, 0.04], [XF, 0.03]]);
+    // bottom silhouette: rocker 0.19 m, front chin and rear diffuser rise toward the ends
+    const Y0 = table([[XR, 0.62], [-2.37, 0.5], [-2.33, 0.4], [-2.3, 0.357], [-2.2, 0.305], [-2.1, 0.275], [-2.0, 0.258], [-1.9, 0.25], [-1.85, 0.24], [-1.0, 0.19], [1.0, 0.19], [1.85, 0.22], [2.0, 0.223], [2.1, 0.234], [2.2, 0.246], [2.3, 0.264], [2.34, 0.275], [XF, 0.29]]);
     const YA = (x) => {
       for (const ax of [AXF, AXR]) { const d = Math.abs(x - ax); if (d < ARCH_R) return Math.max(Y0(x), ARCH_Y + Math.sqrt(ARCH_R * ARCH_R - d * d)); }
       return Y0(x);
     };
     const LV = { glass: A_G, shoulder: 0.50, side: 0.80, cornerB: 0.86, well: 0.91, wellIn: 0.95 };
+    // per-station parameters, cached (sec is called thousands of times per x)
+    const prmCache = new Map();
+    const prm = (x) => {
+      let c = prmCache.get(x); if (c) return c;
+      const w = W(x), yt = YT(x), yb = Yb(x), H = Math.max(0.004, yt - yb), k = clamp(H / 0.45), fi = clamp(w / 0.35);
+      const wg = Math.min(WG(x), 0.88 * w), tum = 0.32 * k, drop = DROP(x);
+      // greenhouse / hood half-section: flat crown → tight corner (cubic Bezier) → straight tumblehome side down to the belt
+      const cH = Math.min(0.07, 0.45 * H), ys = yt - cH, zs = Math.max(0, wg - tum * (ys - yb)), cr = CROWN(x) * clamp(zs / 0.5);
+      const P = [0, yt, 0.62 * zs, yt - cr, zs - tum * 0.6 * cH, ys + 0.6 * cH, zs, ys];
+      const bz = (t) => { const u = 1 - t; return [u * u * u * P[0] + 3 * u * u * t * P[2] + 3 * u * t * t * P[4] + t * t * t * P[6], u * u * u * P[1] + 3 * u * u * t * P[3] + 3 * u * t * t * P[5] + t * t * t * P[7]]; };
+      const L = [0]; let q = bz(0); for (let i = 1; i <= 32; i++) { const r = bz(i / 32); L.push(L[i - 1] + Math.hypot(r[0] - q[0], r[1] - q[1])); q = r; }
+      const lb = L[32], ltot = lb + Math.hypot(zs - wg, ys - yb);
+      const sS = lerp(5, 0.32, k), p1y = yb - Math.min(0.7 * drop, (w - wg) / sS);
+      c = { w, yt, yb, H, k, fi, wg, tum, drop, zs, ys, bz, L, lb, ltot, p1y, wi: Math.min(W_IN, Math.max(0, w - 0.15 * fi)) };
+      if (prmCache.size > 6000) prmCache.clear(); prmCache.set(x, c); return c;
+    };
     const sec = (x, v) => {
       const s = v < 0 ? -1 : 1, a = Math.min(1, Math.abs(v));
-      const w = W(x), yb = Yb(x), hh = Math.max(0.004, Yt(x) - yb), y0 = Y0(x), ya = YA(x);
-      const nf = smooth(1.3, XF, x), k = clamp(hh / 0.5), wg = w - Math.min(lerp(0.12, 0.16, k) + 0.1 * nf + 0.1 * smooth(-0.9, -2.3, x), 0.3 * w), n = lerp(5.5, 2.1, k), drop = 0.07 + 0.1 * nf, fi = clamp(w / 0.35), ws = w - 0.03 * fi, wi = Math.min(W_IN, Math.max(0, w - 0.15 * fi));
+      const c = prm(x), { w, yb, fi, wg, drop, wi } = c, y0 = Y0(x), ya = YA(x);
       let y, z;
       const seg = (a0, a1) => (a - a0) / (a1 - a0);
-      if (a <= LV.glass) { const t = (a / LV.glass) * PI / 2; z = wg * Math.pow(Math.sin(t), 2 / n); y = yb + hh * Math.pow(Math.cos(t), 2 / n); }
-      else if (a <= LV.shoulder) { const t = seg(LV.glass, LV.shoulder) * PI / 2; z = wg + (ws - wg) * Math.sin(t); y = yb - drop * (1 - Math.cos(t)); }
-      else if (a <= LV.side) { const t = seg(LV.shoulder, LV.side); y = lerp(yb - drop, ya + 0.05, t); z = w - fi * (0.03 + 0.045 * Math.pow(Math.abs(t - 0.4) / 0.6, 2.2) + 0.05 * Math.pow(t, 3)); }
-      else if (a <= LV.cornerB) { const t = seg(LV.side, LV.cornerB) * PI / 2; z = w - fi * (0.08 + 0.06 * (1 - Math.cos(t))); y = ya + 0.05 - 0.05 * Math.sin(t); }
-      else if (a <= LV.well) { const t = seg(LV.cornerB, LV.well); z = lerp(w - 0.14 * fi, wi, t); y = ya; }
+      if (a <= LV.glass) {
+        const sl = (a / LV.glass) * c.ltot;   // arc length from the roof centre
+        if (sl <= c.lb) { let i = 0; while (i < 31 && c.L[i + 1] < sl) i++; const t = (i + (sl - c.L[i]) / Math.max(1e-9, c.L[i + 1] - c.L[i])) / 32; [z, y] = c.bz(t); }
+        else { const t = (sl - c.lb) / Math.max(1e-9, c.ltot - c.lb); z = lerp(c.zs, wg, t); y = lerp(c.ys, yb, t); }
+      }
+      else if (a <= LV.shoulder) { const t = seg(LV.glass, LV.shoulder), u = 1 - t; z = u * u * wg + (1 - u * u) * w; y = u * u * yb + 2 * u * t * c.p1y + t * t * (yb - drop); }
+      else if (a <= LV.side) { const t = seg(LV.shoulder, LV.side); y = lerp(yb - drop, ya + 0.05, t); z = w - fi * 0.04 * Math.pow(t, 3); }
+      else if (a <= LV.cornerB) { const t = seg(LV.side, LV.cornerB) * PI / 2; z = w - fi * (0.04 + 0.05 * (1 - Math.cos(t))); y = ya + 0.05 - 0.05 * Math.sin(t); }
+      else if (a <= LV.well) { const t = seg(LV.cornerB, LV.well); z = lerp(w - 0.09 * fi, wi, t); y = ya; }
       else if (a <= LV.wellIn) { const t = seg(LV.well, LV.wellIn); z = wi; y = lerp(ya, y0, t); }
       else { const t = seg(LV.wellIn, 1); z = lerp(wi, 0, t); y = y0; }
-      return V3(x, y, s * z);
+      const rk = smooth(XF - 0.45, XF - 0.03, x) * 0.065 * clamp((y - 0.42) / 0.33);
+      return V3(x - rk, y, s * z);
     };
-    const out = (p, x) => V3(0, p.y - (Y0(x) + Yb(x)) / 2, p.z);
+    const out = (p, x) => V3(2 * smooth(XF - 0.25, XF, x) - 2 * smooth(XR + 0.25, XR, x), p.y - (Y0(x) + Yb(x)) / 2, p.z);   // nose / tail faces point along ±x
     // outward unit normal of the section at (x, v)
     const nrm = (x, v) => { const e = 1e-3; const du = sec(x + e, v).sub(sec(x - e, v)), dv = sec(x, v + e).sub(sec(x, v - e)); const n = du.cross(dv).normalize(); const p = sec(x, v); if (n.dot(out(p, x)) < 0) n.negate(); return n; };
     const onBody = (x, v, d = 0) => sec(x, v).addScaledVector(nrm(x, v), d);
     // v for a given height on the door side (s = side)
-    const vAtY = (x, y, s = 1) => { const dr = 0.055 + 0.1 * smooth(1.3, XF, x); return s * (LV.shoulder + (LV.side - LV.shoulder) * clamp((Yb(x) - dr - y) / (Yb(x) - dr - YA(x) - 0.05))); };
+    const vAtY = (x, y, s = 1) => {
+      const c = prm(x), y2 = c.yb - c.drop;
+      if (y >= c.yb) return s * LV.glass;
+      if (y >= y2) { const A = c.yb - 2 * c.p1y + y2, B = 2 * (c.p1y - c.yb), C = c.yb - y; const t = Math.abs(A) < 1e-9 ? -C / B : (-B - Math.sqrt(Math.max(0, B * B - 4 * A * C))) / (2 * A); return s * (LV.glass + (LV.shoulder - LV.glass) * clamp(t)); }
+      return s * (LV.shoulder + (LV.side - LV.shoulder) * clamp((y2 - y) / (y2 - YA(x) - 0.05)));
+    };
+
+    // v on section x where the surface is at height y (y falls monotonically from the roof centre down the side)
+    const vY = (x, y) => { let lo = 0, hi = LV.side; for (let i = 0; i < 28; i++) { const m = (lo + hi) / 2; if (sec(x, m).y > y) lo = m; else hi = m; } return (lo + hi) / 2; };
+    // point on the nose / tail face at lateral z and height y (bisection along x; |z| shrinks toward the tip)
+    const surfAt = (z, y, end, d = 0) => {
+      const sd = z < 0 ? -1 : 1, az = Math.abs(z); let lo = end > 0 ? XF - 0.7 : XR + 0.7, hi = end > 0 ? XF : XR;
+      for (let i = 0; i < 28; i++) { const m = (lo + hi) / 2; if (sec(m, 0).y > y && Math.abs(sec(m, vY(m, y)).z) > az) lo = m; else hi = m; }
+      const x = (lo + hi) / 2, v = sd * vY(x, y); return { p: onBody(x, v, d), n: nrm(x, v), x, v };
+    };
+    const GATE_X = -2.34;                      // behind this the liftgate also covers the rear face (|z| < ~0.62)
 
     const inX = (x, r) => x <= Math.max(...r) && x >= Math.min(...r);
-    const aP = (x) => lerp(0.165, 0.372, clamp((x - WS_TOP) / (COWL - WS_TOP)));          // A-pillar line (v at x)
-    const aD = (x) => (x >= LG ? 0.165 : x >= BL_END ? lerp(0.165, 0.36, (LG - x) / (LG - BL_END)) : 0.39); // D-pillar / liftgate edge
+    const aP = (x) => lerp(RG, 0.372, clamp((x - WS_TOP) / (COWL - WS_TOP)));          // A-pillar line (v at x)
+    const aD = (x) => (x >= LG ? RG : x >= BL_END ? lerp(RG, 0.36, (LG - x) / (LG - BL_END)) : 0.39); // D-pillar / liftgate edge
     const fdFront = () => FD[0];
     const inFD = (x, a) => a >= GA_TOP && a <= LV.side && x <= fdFront(a) && x >= FD[1] && !(a < GA_BOT && a < aP(x) + 0.035);
     const inRD = (x, a) => a >= GA_TOP && a <= LV.side && inX(x, RD);
     const inQG = (x, a) => a >= GA_TOP && a <= GA_BOT && inX(x, QG) && (x > LG || a > aD(x) + 0.04);
     const WSA = 0.375;
     const inWS = (x, a) => a < aP(x) - 0.012 && x <= COWL && x >= WS_TOP;
-    const inRoofGlass = (x, a) => a < 0.165 && x <= WS_TOP - 0.04 && x >= ROOF_END + 0.05;
+    const inRoofGlass = (x, a) => a < RG && x <= WS_TOP - 0.04 && x >= ROOF_END + 0.05;
     const inFrunk = (x, a) => a < 0.405 && inX(x, FR);
-    const inGate = (x, a) => x <= LG && a < aD(x) + 0.03;
+    const inGate = (x, a) => x <= LG && (a < aD(x) + 0.03 || (x < GATE_X && a < vY(x, 0.66)));
 
     // shared samplers
-    const aBreaks = [0.165, GA_TOP, WSA, GA_BOT, A_G, LV.shoulder, 0.65, LV.side, LV.cornerB, LV.well, LV.wellIn];
+    const aBreaks = [RG, GA_TOP, WSA, GA_BOT, A_G, LV.shoulder, 0.65, LV.side, LV.cornerB, LV.well, LV.wellIn];
     const arcStep = (v) => { const a = Math.abs(v); return (a > A_G && a < LV.shoulder) || (a > LV.side && a < LV.cornerB) ? 0.011 : a < A_G ? 0.009 : 0.03; };
     const vs = samples(-1, 1, arcStep, [...aBreaks, ...aBreaks.map((b) => -b), 0]);
     const xBreaks = [...FD, 0.88, ...RD, ...QG, ...FR, LG, COWL, WS_TOP, WS_TOP - 0.04, ROOF_END, ROOF_END + 0.05, BL_END, AXF - ARCH_R, AXF + ARCH_R, AXR - ARCH_R, AXR + ARCH_R];
     const xStep = (x) => (x > XF - 0.6 || x < XR + 0.32 ? 0.016 : Math.abs(x - AXF) < ARCH_R + 0.02 || Math.abs(x - AXR) < ARCH_R + 0.02 ? 0.022 : (x < COWL && x > WS_TOP) || (x < LG && x > BL_END) ? 0.012 : 0.04);
-    const noseBreaks = Array.from({ length: 30 }, (_, k) => { const z = (k + 0.5) / 30; return XF - NOSE + NOSE * Math.pow(1 - Math.pow(z, NOSE_P), 1 / NOSE_P); }).filter((x) => x > XF - 0.1);
+    const tipX = (x0, x1, z) => { let lo = x0, hi = x1; for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (W(m) > z) lo = m; else hi = m; } return (lo + hi) / 2; };
+    const noseBreaks = Array.from({ length: 24 }, (_, k) => (k + 0.5) / 24 * 0.75).flatMap((z) => [tipX(XF - 0.4, XF, z), tipX(XR + 0.4, XR, z)]);
     const xs = samples(XR, XF, xStep, [...xBreaks, ...noseBreaks]);
     // sub-ranges of the shared grids, so every patch is cut on exactly the same lines as its hole
     const subX = (a, b) => { const lo = Math.min(a, b), hi = Math.max(a, b); return [lo, ...xs.filter((x) => x > lo + 1e-4 && x < hi - 1e-4), hi]; };
@@ -840,35 +873,32 @@ window.L3D_MODEL = {
       const skip = (x, v) => { const a = Math.abs(v); return inFD(x, a) || inRD(x, a) || inQG(x, a) || inWS(x, a) || inRoofGlass(x, a) || inFrunk(x, a) || inGate(x, a); };
       mesh(surface(sec, xs, vs, { skip, out }), [PAINT, M.black()], { parent: shell, name: 'body skin' });
       const ring = (x) => vs.map((v) => sec(x, v));
-      // rear face: lower part is the bumper (body), upper part belongs to the liftgate
-      const rr = ring(XR).slice(0, -1), YC = 0.66;
-      const clip = (pts, keepAbove) => { const o = []; for (let i = 0; i < pts.length; i++) { const p = pts[i], q = pts[(i + 1) % pts.length], pa = (p.y >= YC) === keepAbove, qa = (q.y >= YC) === keepAbove; if (pa) o.push(p); if (pa !== qa) { const t = (YC - p.y) / (q.y - p.y); o.push(p.clone().lerp(q, t)); } } return o; };
-      const clipAt = (pts, yc, keepAbove) => { const o = []; for (let i = 0; i < pts.length; i++) { const p = pts[i], q = pts[(i + 1) % pts.length], pa = (p.y >= yc) === keepAbove, qa = (q.y >= yc) === keepAbove; if (pa) o.push(p); if (pa !== qa) { const t = (yc - p.y) / (q.y - p.y); o.push(p.clone().lerp(q, t)); } } return o; };
-      const lowerR = clip(rr, false);
-      mesh(cap(clipAt(lowerR, 0.5, false), V3(-1, 0, 0)), M.plastic(0x141516, 0.6), { parent: shell, name: 'rear lower bumper (black)' });
-      mesh(cap(clipAt(lowerR, 0.5, true), V3(-1, 0, 0)), PAINT, { parent: shell, name: 'rear bumper face' });
-      // black lower bumper wraps around the rear corners
-      for (const s2 of [1, -1]) mesh(surface(sec, subX(XR, XR + 0.32), subV(s2 * vAtY(XR + 0.2, 0.5, 1), s2 * 1), { out, offset: 0.004, skip: (x, v) => sec(x, v).y > 0.5 }), M.plastic(0x141516, 0.6), { parent: shell, name: 'rear corner cladding' });
-      ctx.rearUpper = clip(rr, true);
+      // black lower bumper: the rear face below 0.56 m, wrapping round the corners to the wheel arches (rear view of the drawing)
+      for (const s2 of [1, -1]) mesh(band(XR, AXR - ARCH_R - 0.02, (x) => s2 * vY(x, 0.56), () => s2 * 1, { offset: 0.004 }), M.plastic(0x141516, 0.6), { parent: shell, name: 'rear lower bumper (black)' });
       // B-pillar gloss-black appliqués + A-pillar trim between windshield and door glass
       const bp = part(bodySys, { he: 'עמודי B בשחור מבריק', en: 'Gloss-black B-pillar trims', mat: 'פלסטיק פסנתר שחור', desc: 'כיסוי שחור מבריק על העמוד שבין הדלתות, כדי שהחלונות ייראו כפס זכוכית אחד רציף.' });
       for (const s of [1, -1]) mesh(surface(sec, samples(RD[0] + 0.004, FD[1] - 0.004, 0.01), samples(s * GA_TOP, s * GA_BOT, 0.02), { out, offset: 0.002 }), GLOSSBLK, { parent: bp });
       // black lower body cladding + rocker
       const cl = part(bodySys, { he: 'ספים וחיפוי תחתון', en: 'Rocker panels & lower cladding', mat: 'פלסטיק מצופה + פלדה', desc: 'הסף שבין הגלגלים. הוא מחזק את המרכב ומגן על מארז הסוללה מאבנים בצד.' });
-      for (const s of [1, -1]) mesh(surface(sec, samples(AXR + ARCH_R + 0.01, AXF - ARCH_R - 0.01, 0.05), samples(s * 0.75, s * LV.cornerB, 0.012), { out, offset: 0.003 }), M.plastic(0x16171a, 0.45), { parent: cl });
+      for (const s of [1, -1]) mesh(band(AXR + ARCH_R + 0.01, AXF - ARCH_R - 0.01, (x) => s * vY(x, 0.27), () => s * LV.cornerB, { offset: 0.003 }), M.plastic(0x16171a, 0.45), { parent: cl });
+      // black wheel-arch liners (seen above the tyres in every photo)
+      const wl = part(bodySys, { he: 'ביטנות קשתות הגלגלים', en: 'Wheel-arch liners', mat: 'פוליפרופילן שחור לבד', desc: 'ביטנה שחורה מפלסטיק ולבד בתוך כל קשת גלגל. היא מגינה מאבנים ומים ומשתיקה את רעש הצמיגים.' });
+      for (const ax of [AXF, AXR]) for (const s2 of [1, -1]) mesh(band(ax - ARCH_R + 0.005, ax + ARCH_R - 0.005, () => s2 * (LV.side + 0.01), () => s2 * LV.wellIn, { offset: 0.004 }), M.plastic(0x0e0f10, 0.9), { parent: wl, name: 'liner' });
       // front: lower intake + grille mesh + splitter
       const fr = part(bodySys, { he: 'פגוש קדמי, פתח אוויר תחתון וספליטר', en: 'Front fascia, lower intake & splitter', mat: 'פוליפרופילן צבוע + רשת שחורה', desc: 'בחזית אין גריל כמו ברכב בנזין — רק פתח תחתון שמכניס אוויר לרדיאטור של משאבת החום, עם תריסים אקטיביים שנסגרים בנסיעה מהירה.' });
       const fxz = (z) => { let lo = XF - 0.5, hi = XF; for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (W(m) > Math.abs(z)) lo = m; else hi = m; } return lo; };
-      // wide black lower intake and lip: bands of the nose surface that follow constant heights
+      // black intake (0.32–0.445 m, |z| < 0.68) and full-width black lower lip (0.21–0.32 m), front view of the drawing
+      const xI = tipX(XF - 0.4, XF, 0.68);
       for (const s2 of [1, -1]) {
-        mesh(band(XF - 0.34, XF, (x) => s2 * vAtY(x, 0.42, 1), (x) => s2 * vAtY(x, 0.28, 1), { offset: 0.004 }), GLOSSBLK, { parent: fr, name: 'lower intake' });
-        mesh(band(XF - 0.34, XF, (x) => s2 * vAtY(x, 0.28, 1), (x) => s2 * vAtY(x, 0.235, 1), { offset: 0.004 }), M.plastic(0x2a2c30, 0.5), { parent: fr, name: 'lower lip' });
+        mesh(band(xI, XF, (x) => s2 * vY(x, 0.445), (x) => s2 * vY(x, 0.32), { offset: 0.004 }), M.plastic(0x0b0c0d, 0.75), { parent: fr, name: 'lower intake' });
+        mesh(band(AXF + ARCH_R + 0.02, XF, (x) => s2 * vY(x, 0.32), () => s2 * LV.cornerB, { offset: 0.004 }), M.plastic(0x18191b, 0.55), { parent: fr, name: 'lower lip' });
       }
-      instances(new THREE.BoxGeometry(0.01, 0.006, 0.7), M.plastic(0x050506, 0.6), Array.from({ length: 7 }, (_, i) => ({ pos: [fxz(0.35) - 0.006, 0.3 + i * 0.016, 0] })), { parent: fr });
+      // grille slats behind the intake opening, following the curve of the face
+      const slats = []; for (let i = 0; i < 7; i++) for (let j = 0; j < 24; j++) { const z = -0.62 + (j + 0.5) * (1.24 / 24), y = 0.34 + i * 0.016, q = surfAt(z, y, 1); slats.push({ pos: [q.p.x - 0.01, y, z], rot: [0, Math.atan2(q.n.z, q.n.x), 0] }); }
+      instances(new THREE.BoxGeometry(0.008, 0.006, 0.054), M.plastic(0x050506, 0.6), slats, { parent: fr });
       // rear diffuser + reflectors
       const rd = part(bodySys, { he: 'מפזר אוויר אחורי', en: 'Rear diffuser', mat: 'פלסטיק שחור מרקם', desc: 'החלק השחור התחתון בפגוש האחורי. הוא מכוון את זרימת האוויר מתחת לרכב ומקטין גרר.' });
-      put(G.box(0.05, 0.05, 1.4, 0.015), M.plastic(0x141516, 0.75), rd, [XR + 0.03, Y0(XR) + 0.0, 0]);
-      instances(new THREE.BoxGeometry(0.2, 0.06, 0.008), M.plastic(0x141516, 0.75), [-0.45, -0.15, 0.15, 0.45].map((z) => ({ pos: [XR + 0.09, Y0(XR) + 0.03, z] })), { parent: rd });
+            instances(new THREE.BoxGeometry(0.22, 0.03, 0.008), M.plastic(0x141516, 0.75), [-0.45, -0.15, 0.15, 0.45].map((z) => ({ pos: [-2.2, Y0(-2.2) - 0.012, z] })), { parent: rd });
       // underbody aero tray
       const ut = part(bodySys, { he: 'מגש תחתון אווירודינמי', en: 'Underbody aero tray', mat: 'פלסטיק מחוזק סיבים', desc: 'כיסוי חלק לכל התחתית. הוא מגן על הסוללה ומאפשר לאוויר לזרום מתחת לרכב בלי מערבולות.' });
       put(new THREE.BoxGeometry(3.7, 0.006, 1.3), M.plastic(0x1d1e20, 0.8), ut, [-0.1, 0.165, 0]);
@@ -904,13 +934,12 @@ window.L3D_MODEL = {
       const gp = V3(LG, Yt(LG) - 0.01, 0);
       const gate = part(bodySys, { he: 'דלת תא המטען האחורית', en: 'Power liftgate', mat: 'אלומיניום/פלדה + צבע', desc: 'דלת אחורית חשמלית שנפתחת עם שני בוכנות חשמליות. נושאת את השמשה האחורית, את פס האור האחורי ואת הכיתוב TESLA.' });
       gate.position.copy(gp);
-      const gx = subX(XR, LG - GAP), gv = subV(-0.43, 0.43);
+      const gx = subX(XR, LG - GAP), gv = subV(-LV.side, LV.side);
       const gs = surface(sec, gx, gv, { out, thickness: 0.016, skip: (x, v) => { const a = Math.abs(v); return !inGate(x, a) || (x < LG - 0.03 && x > BL_END + 0.04 && a < aD(x) - 0.025); } }); gs.translate(-gp.x, -gp.y, 0);
       mesh(gs, [PAINT, M.black()], { parent: gate, name: 'gate skin' });
-      const ru = ctx.rearUpper.map((p) => p.clone().sub(gp)); mesh(cap(ru, V3(-1, 0, 0)), PAINT, { parent: gate, name: 'gate rear face' });
       const gi = part(gate, { he: 'חיפוי פנימי של דלת תא המטען', en: 'Liftgate inner trim', mat: 'פלסטיק + בד', desc: 'חיפוי פנימי עם ידית משיכה ונורת תאורה לתא המטען.' });
-      put(G.box(0.03, 0.34, 1.1, 0.01), M.plastic(0x1a1b1e, 0.8), gi, [XR - gp.x + 0.03, 0.82 - gp.y, 0]);
-      put(G.tube([V3(XR - gp.x + 0.05, 0.7 - gp.y, -0.08), V3(XR - gp.x + 0.08, 0.68 - gp.y, 0), V3(XR - gp.x + 0.05, 0.7 - gp.y, 0.08)], 0.01, 10, 6), M.plastic(0x2a2b2e, 0.5), gi);
+      const gix = surfAt(0, 0.85, -1).p.x; put(G.box(0.03, 0.3, 0.9, 0.01), M.plastic(0x1a1b1e, 0.8), gi, [gix - gp.x + 0.06, 0.85 - gp.y, 0]);
+      { const hx = surfAt(0, 0.7, -1).p.x - gp.x + 0.05; put(G.tube([V3(hx, 0.7 - gp.y, -0.08), V3(hx + 0.03, 0.68 - gp.y, 0), V3(hx, 0.7 - gp.y, 0.08)], 0.01, 10, 6), M.plastic(0x2a2b2e, 0.5), gi); }
       ctx.gate = gate;
       const st = part(bodySys, { he: 'בוכנות חשמליות לדלת האחורית (2)', en: 'Liftgate power struts (×2)', mat: 'פלדה + מנוע חשמלי קטן', desc: 'שתי בוכנות עם מנוע חשמלי וקפיץ פנימי. הן מרימות את הדלת וגם עוצרות אותה בגובה שנקבע במסך.' });
       const struts = [];
@@ -966,11 +995,11 @@ window.L3D_MODEL = {
         put(G.box(0.05, 0.03, 0.008, 0.008), M.plastic(0x1e1f22, 0.4), hd, [hpnt.x + 0.055 * Math.sign(x0 - x1), hpnt.y, hpnt.z + s * 0.004]);
         // mirror on the front doors
         if (front) {
-          const mp = onBody(0.82, vAtY(0.82, 1.0, s), 0.01).sub(pivot);
+          const mp = onBody(0.72, vAtY(0.72, 1.07, s), 0.006).sub(pivot);
           const mir = part(door, { he: `מראה צד ${sHe}`, en: `${sideEn(s)} mirror`, mat: 'פלסטיק צבוע + זכוכית מחוממת', desc: 'מראה חשמלית מתקפלת ומחוממת. הבית שלה מעוצב בצורה אווירודינמית כדי להקטין רעש רוח.' });
-          put(G.cyl(0.018, 0.022, 0.08, 10, 'z'), TRIM, mir, [mp.x, mp.y, mp.z + s * 0.04]);
-          put(G.soft(0.15, 0.13, 0.22, { r: 0.05, seg: 6, deform: (p) => { p.x += (p.z * s + 0.5) * -0.02; return p; } }), PAINT, mir, [mp.x - 0.04, mp.y + 0.02, mp.z + s * 0.17]);
-          put(G.box(0.008, 0.11, 0.19, 0.03), M.chrome(), mir, [mp.x - 0.115, mp.y + 0.02, mp.z + s * 0.17]);
+          put(G.cyl(0.018, 0.022, 0.09, 10, 'z'), TRIM, mir, [mp.x - 0.02, mp.y + 0.04, mp.z + s * 0.04], [0.5 * s, 0, 0]);
+          put(G.soft(0.15, 0.13, 0.22, { r: 0.05, seg: 6, deform: (p) => { p.x += (p.z * s + 0.5) * -0.02; return p; } }), PAINT, mir, [mp.x - 0.06, mp.y + 0.07, mp.z + s * 0.15]);
+          put(G.box(0.008, 0.11, 0.19, 0.03), M.chrome(), mir, [mp.x - 0.135, mp.y + 0.07, mp.z + s * 0.15]);
         }
         doors.push({ door, s, front });
       }
@@ -1005,7 +1034,7 @@ window.L3D_MODEL = {
         mesh(band(BL_END + 0.04, LG - 0.01, (x) => sg * (aD(x) + 0.018), (x) => sg * Math.min(GA_BOT, aD(x) + 0.05), { offset: 0.004 }), PAINT, { parent: pc });
       }
       // roof header between windshield and roof glass
-      mesh(surface(sec, subX(WS_TOP, WS_TOP - 0.04), subV(-0.165, 0.165), { out, offset: 0.0015 }), GLOSSBLK, { parent: frit });
+      mesh(surface(sec, subX(WS_TOP, WS_TOP - 0.04), subV(-RG, RG), { out, offset: 0.0015 }), GLOSSBLK, { parent: frit });
     }
 
     // ================================================================== LIGHTS
@@ -1017,42 +1046,36 @@ window.L3D_MODEL = {
       const lights = sys('lights');
       const bar = part(lights, { he: 'פס אור קדמי לרוחב החזית', en: 'Front full-width light bar', mat: 'נורות LED מתחת לעדשה', desc: 'פס אור דק שחוצה את כל החזית — סימן ההיכר של ג׳וניפר. משמש כאור יום ומשנה צבע לכתום כאיתות בקצוות.' });
       // point on the nose at lateral position z along a fixed section line v (bisection along x; |z| shrinks toward the tip)
-      const lineAt = (z, v, d = 0.003) => {
-        const sd = z < 0 ? -1 : 1, az = Math.abs(z); let lo = XF - 0.6, hi = XF;
-        for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (Math.abs(sec(m, sd * v).z) > az) lo = m; else hi = m; }
-        return onBody(lo, sd * v, d);
-      };
-      // DRL bar right under the hood lip, across the full width (the lip is where the hood rolls into the face)
-      const V_LIP = A_G + 0.003;
-      const barPts = []; for (let i = 0; i <= 64; i++) { const z = -0.6 + (i / 64) * 1.2; barPts.push(lineAt(z, V_LIP, 0.004)); }
+      // DRL bar just under the hood lip, across the face (front view: 0.74 m, ends lift slightly)
+      const barPts = []; for (let i = 0; i <= 64; i++) { const z = -0.8 + (i / 64) * 1.6; barPts.push(surfAt(z, 0.735 + 0.012 * Math.pow(Math.abs(z) / 0.8, 3), 1, 0.004).p); }
       put(G.tube(barPts, 0.0045, 96, 6), L.drl, bar);
       put(G.tube(barPts.map((p) => p.clone().add(V3(0, -0.01, 0))), 0.006, 96, 5), GLOSSBLK, bar);
       for (const s of [1, -1]) {
-        const hl = part(lights, { he: `פנס ראשי ${sideHe(s)}`, en: `Headlamp (${sideEn(s)})`, mat: 'פוליקרבונט + מטריצת LED', desc: 'פנס צר ונסתר בפינת הפגוש, מתחת לקצה פס האור: חריץ שחור דק שיורד כלפי הפינה, ובתוכו עדשת הקרנה ומטריצת LED שמכבה אזורים כדי לא לסנוור נהגים ממול.' });
-        // dark slit that drops toward the outer corner (inner end 0.65 m, outer end 0.60 m)
-        const vSl = (t) => V_LIP + 0.005 + 0.025 * t * t;
-        const slit = []; for (let k = 0; k <= 12; k++) { const t = k / 12, z = s * lerp(0.52, 0.86, t); slit.push(lineAt(z, vSl(t), 0.006)); }
-        put(G.tube(slit, 0.017, 24, 8), GLOSSBLK, hl, null, null, { name: 'slit' });
-        put(G.tube(slit.slice(5), 0.004, 16, 5).translate(0, 0.006, 0), L.head, hl, null, null, { name: 'LED strip' });
-        for (const t of [0.72, 0.86]) { const p = lineAt(s * lerp(0.52, 0.86, t), vSl(t), 0.012); put(G.sphere(0.011, 12, 8), M.clearLens(), hl, p.toArray()); }
-        put(G.tube(slit.slice(2, 7).map((p) => p.clone().add(V3(0, -0.012, 0))), 0.003, 12, 5), L.amber, hl, null, null, { name: 'turn strip' });
+        const hl = part(lights, { he: `פנס ראשי ${sideHe(s)}`, en: `Headlamp (${sideEn(s)})`, mat: 'פוליקרבונט + מטריצת LED', desc: 'הפנס הראשי של ג׳וניפר יושב נמוך בפינת הפגוש, מתחת לקצה פס האור: יחידה כהה וצרה עם עדשת הקרנה ומטריצת LED שמכבה אזורים כדי לא לסנוור נהגים ממול.' });
+        // dark unit in the bumper corner (0.60–0.66 m, |z| 0.58–0.80), with two projector lenses and an amber strip
+        const unit = []; for (let k = 0; k <= 10; k++) { const t = k / 10; unit.push(surfAt(s * lerp(0.58, 0.8, t), 0.635 - 0.012 * t, 1, 0.006).p); }
+        put(G.tube(unit, 0.026, 24, 8).scale(1, 0.85, 1), GLOSSBLK, hl, null, null, { name: 'housing' });
+        for (const t of [0.55, 0.8]) { const q = surfAt(s * lerp(0.58, 0.8, t), 0.635 - 0.012 * t, 1, 0.012); put(G.sphere(0.013, 14, 10), M.clearLens(), hl, q.p.toArray()); put(G.sphere(0.009, 10, 8), L.head, hl, q.p.toArray()); }
+        put(G.tube(unit.slice(1, 6).map((p) => p.clone().add(V3(0.012, -0.014, 0))), 0.003, 12, 5), L.amber, hl, null, null, { name: 'turn strip' });
         // tail lamp (body corner, C-shape) + reverse lamp
         const tz = s * 0.78, tl = part(lights, { he: `פנס אחורי ${sideHe(s)}`, en: `Tail lamp (${sideEn(s)})`, mat: 'אקריליק אדום + LED', desc: 'פנס אחורי בצורת C עם אור ״מרחף״ שנוצר מהשתקפות פנימית. משתלב בפס האחורי.' });
-        // upper lamp sits in the liftgate's outer corner, so it rides with the gate
-        const tu = part(lights, { he: `פנס אחורי עליון ${sideHe(s)}`, en: `Upper tail lamp (${sideEn(s)})`, mat: 'אקריליק אדום + LED', desc: 'החלק העליון של הפנס האחורי, בפינת הדלת האחורית מתחת לספוילר. נפתח יחד עם הדלת, ולכן גם כשהיא פתוחה רואים את הפנסים הנמוכים בפגוש.' });
-        ctx.gate.add(tu); tu.userData.sysOverride = 'lights'; tu.position.set(-ctx.gate.position.x, -ctx.gate.position.y, 0);
-        for (let k = 0; k < 3; k++) { const zz = s * (0.6 + k * 0.07); const x = rearX(zz); put(G.box(0.03, 0.045 - k * 0.008, 0.085, 0.01), L.tail, tu, [x + 0.006, 1.02 - k * 0.006, zz], [0, -s * (k * 0.35), 0]); }
-        put(G.box(0.02, 0.012, 0.22, 0.004), L.brake, tu, [rearX(s * 0.66) + 0.01, 0.99, s * 0.66], [0, -s * 0.3, 0]);
-        put(G.box(0.02, 0.035, 0.1, 0.01), L.rev, tl, [XR + 0.004, 0.47, s * 0.58]);
-        put(G.box(0.012, 0.02, 0.1, 0.006), M.lens(0xb01010, 0.8), tl, [rearX(s * 0.6) + 0.004, 0.36, s * 0.6]);
+        // lamp ends of the light bar sit in the body corners (outside the liftgate), reverse lamp + reflector in the black bumper
+        for (let k = 0; k < 4; k++) { const zz = s * (0.66 + k * 0.03), q = surfAt(zz, 1.035, -1, 0.002); const g = new THREE.Group(); g.position.copy(q.p); g.quaternion.setFromUnitVectors(V3(0, 0, 1), q.n); tl.add(g); put(G.box(0.036, 0.1 - k * 0.012, 0.008, 0.003), L.tail, g); }
+        { const q = surfAt(s * 0.5, 0.5, -1, 0.006); put(G.box(0.012, 0.035, 0.1, 0.006), L.rev, tl, q.p.toArray()); }
+        { const q = surfAt(s * 0.62, 0.42, -1, 0.006); put(G.box(0.012, 0.02, 0.12, 0.006), M.lens(0xb01010, 0.8), tl, q.p.toArray()); }
       }
       // rear light bar on the liftgate (rides with the gate)
       const rb = part(lights, { he: 'פס אור אחורי', en: 'Rear light bar', mat: 'אקריליק אדום + LED', desc: 'פס אדום דק לרוחב הדלת האחורית שמחבר בין שני הפנסים.' });
       const gpX = ctx.gate.position.x, gpY = ctx.gate.position.y;
-      const spPts = []; for (let i = 0; i <= 40; i++) { const z = -0.84 + (i / 40) * 1.68; spPts.push(V3(rearX(z) - 0.035 * (1 - Math.pow(Math.abs(z) / 0.84, 4)) - gpX, 1.075 - gpY, z)); }
-      const spoiler = part(rb, { he: 'ספוילר שחור אחורי (״ברווז״)', en: 'Black ducktail spoiler', mat: 'פלסטיק שחור מבריק', desc: 'פס שחור עבה בראש הדלת האחורית שבולט לאחור ומשמש כספוילר. בתוכו הכיתוב TESLA, ובקצוותיו הפנסים האחוריים.' });
-      const spm = put(G.tube(spPts, 0.065, 60, 14), GLOSSBLK, spoiler); void spm;
-      put(G.tube(spPts.map((p) => p.clone().add(V3(-0.03, -0.06, 0))), 0.005, 60, 5), L.tail, rb, null, null, { name: 'light strip' });
+      // smoked red bar across the liftgate under the lip (0.96–1.11 m in the rear view), and the body-colour lip above it
+      const bar2 = (y, d) => Array.from({ length: 41 }, (_, i) => surfAt(-0.64 + (i / 40) * 1.28, y, -1, d).p.sub(V3(gpX, gpY, 0)));
+      const bandGeo = (A, B) => surface((u, t) => A[Math.round(u)].clone().lerp(B[Math.round(u)], t), samples(0, 40, 1), [0, 1], { out: () => V3(-1, 0, 0) });
+      const smoked = new THREE.MeshStandardMaterial({ color: 0x160708, roughness: 0.3, metalness: 0.1, side: THREE.DoubleSide });
+      put(bandGeo(bar2(1.12, 0.03), bar2(0.975, 0.03)), smoked, rb, null, null, { name: 'smoked lens' });
+      put(G.tube(bar2(0.99, 0.033), 0.005, 60, 5), L.tail, rb, null, null, { name: 'light strip' });
+      const spoiler = part(rb, { he: 'שפת ספוילר אחורית', en: 'Rear lip spoiler', mat: 'פלסטיק שחור מבריק', desc: 'שפה שחורה בקצה התחתון של השמשה האחורית. היא בולטת כ־3 ס״מ לאחור מעל פס האור וגורמת לאוויר להינתק נקי מהרכב.' });
+      const lipPts = Array.from({ length: 41 }, (_, i) => { const z = -0.74 + (i / 40) * 1.48, q = surfAt(z, 1.15, -1, 0.014); return q.p.sub(V3(gpX, gpY, 0)); });
+      put(G.tube(lipPts, 0.026, 60, 10), GLOSSBLK, spoiler);
       ctx.gate.add(rb); rb.userData.sysOverride = 'lights';
       const cb = part(lights, { he: 'פנס בלימה עליון', en: 'Centre high-mount stop lamp', mat: 'LED', desc: 'פנס בלימה שלישי בקצה העליון של השמשה האחורית.' });
       put(new THREE.BoxGeometry(0.03, 0.01, 0.35), L.brake, cb, [LG - 0.02 - ctx.gate.position.x, Yt(LG - 0.02) - 0.01 - ctx.gate.position.y, 0]);
@@ -1068,14 +1091,14 @@ window.L3D_MODEL = {
     {
       const ins = sys('insignia');
       const word = part(ins, { he: 'כיתוב TESLA על הדלת האחורית', en: 'TESLA wordmark', mat: 'אותיות כרום כהה', desc: 'בג׳וניפר הוחלף סמל ה־T בכיתוב TESLA ברוחב הדלת האחורית.' });
-      const wt = K.textTexture('T E S L A', { font: '700 120px "Helvetica Neue", Arial', color: '#8d9298', pad: 10 });
-      put(new THREE.PlaneGeometry(0.55, 0.55 / wt.aspect), M.decal(wt.tex, { metalness: 0.8, roughness: 0.25 }), word, [rearX(0) - 0.1 - ctx.gate.position.x, 1.075 - ctx.gate.position.y, 0], [0, -PI / 2, 0], { cast: false });
+      const wt = K.textTexture('T E S L A', { font: '700 120px "Helvetica Neue", Arial', color: '#b9bec4', pad: 10 });
+      put(new THREE.PlaneGeometry(0.42, 0.42 / wt.aspect), M.decal(wt.tex, { metalness: 0.8, roughness: 0.25 }), word, [surfAt(0, 1.055, -1, 0.036).p.x - ctx.gate.position.x, 1.055 - ctx.gate.position.y, 0], [0, -PI / 2, 0], { cast: false });
       ctx.gate.add(word); word.userData.sysOverride = 'insignia';
       const plateTex = K.canvasTexture(520, 112, (g, w, h) => { g.fillStyle = '#f7d117'; g.fillRect(0, 0, w, h); g.fillStyle = '#1d4fb8'; g.fillRect(0, 0, 70, h); g.fillStyle = '#fff'; g.font = '700 30px Arial'; g.textAlign = 'center'; g.fillText('IL', 35, 92); g.strokeStyle = '#111'; g.lineWidth = 5; g.strokeRect(2.5, 2.5, w - 5, h - 5); g.fillStyle = '#111'; g.font = '800 82px Arial'; g.fillText('123-45-678', 292, 86); });
       const pl = part(ins, { he: 'לוחיות רישוי (2)', en: 'Licence plates (×2)', mat: 'אלומיניום מוטבע', desc: 'לוחיות רישוי ישראליות צהובות, עם פס כחול ו־IL בצד שמאל.' });
-      put(new THREE.BoxGeometry(0.006, 0.12, 0.53), M.plastic(0x111214, 0.5), pl, [XF - 0.0, 0.48, 0]);
-      const rp = put(new THREE.PlaneGeometry(0.52, 0.11), M.decal(plateTex), pl, [XR - 0.012, 0.45, 0], [0, -PI / 2, 0], { cast: false }); void rp;
-      const fp = put(new THREE.PlaneGeometry(0.52, 0.11), M.decal(plateTex), pl, [XF + 0.004, 0.48, 0], [0, PI / 2, 0], { cast: false }); void fp;
+      const fpx = surfAt(0, 0.55, 1).p.x; put(new THREE.BoxGeometry(0.006, 0.12, 0.53), M.plastic(0x111214, 0.5), pl, [fpx, 0.55, 0]);
+      const rp = put(new THREE.PlaneGeometry(0.52, 0.11), M.decal(plateTex), pl, [surfAt(0, 0.47, -1).p.x - 0.012, 0.47, 0], [0, -PI / 2, 0], { cast: false }); void rp;
+      const fp = put(new THREE.PlaneGeometry(0.52, 0.11), M.decal(plateTex), pl, [fpx + 0.004, 0.55, 0], [0, PI / 2, 0], { cast: false }); void fp;
       // charge port (left rear, behind a flap in the tail-lamp corner)
       const cpx = -2.1, cpy = 0.93, cpp = onBody(cpx, vAtY(cpx, cpy, -1)), cpn = nrm(cpx, vAtY(cpx, cpy, -1));
       const port = part(ins, { he: 'שקע טעינה', en: 'Charge port', mat: 'פלסטיק + מגעי נחושת + LED', desc: 'שקע טעינה מהיר (NACS/CCS לפי שוק) מאחורי דלתית קטנה בפינה השמאלית האחורית. טבעת LED משנה צבע: כחול מוכן, ירוק טוען, אדום תקלה.' });
@@ -1119,20 +1142,28 @@ window.L3D_MODEL = {
       const swMat = M.decal(swTex, { roughness: 0.85, clearcoat: 0 });
       // rim: barrel + aero face with 5 twin-spoke windows
       const barrel = G.lathe([[RIM - 0.006, -0.12], [RIM + 0.012, -0.118], [RIM, -0.1], [RIM - 0.03, -0.05], [RIM - 0.03, 0.06], [RIM, 0.1], [RIM + 0.012, 0.115], [RIM - 0.004, 0.12]], 64, 'z');
-      // 19" aero wheel with 10 swept blades (Juniper style): holes are curved windows between the blades
-      const faceShape = new THREE.Shape(); faceShape.absarc(0, 0, RIM + 0.006, 0, PI * 2, false);
-      const NB = 5, tw = 0.75, r0 = 0.085, r1 = 0.22;
-      for (let k = 0; k < NB; k++) {
-        const a0 = (k / NB) * PI * 2, wA = (PI * 2 / NB) * 0.72, hole = new THREE.Path(), pts = [];
-        for (let i = 0; i <= 10; i++) { const t = i / 10, r = lerp(r0, r1, t), a = a0 + tw * t * t; pts.push([Math.cos(a) * r, Math.sin(a) * r]); }
-        for (let i = 10; i >= 0; i--) { const t = i / 10, r = lerp(r0 + 0.012, r1, t), a = a0 + wA * (0.35 + 0.65 * t) + tw * t * t; pts.push([Math.cos(a) * r, Math.sin(a) * r]); }
-        hole.moveTo(...pts[0]); for (const p of pts.slice(1)) hole.lineTo(...p); hole.closePath(); faceShape.holes.push(hole);
-      }
-      const bladeGeo = G.merge(Array.from({ length: NB }, (_, k) => { const a0 = (k / NB) * PI * 2, wA = (PI * 2 / NB) * 0.72; const pts = []; for (let i = 0; i <= 8; i++) { const t = i / 8, r = lerp(0.1, 0.215, t), a = a0 + wA * (0.5 + 0.2 * t) + tw * t * t; pts.push(V3(Math.cos(a) * r, Math.sin(a) * r, 0.097)); } return G.tube(pts, 0.009, 16, 6); }));
-      const faceGeo = new THREE.ExtrudeGeometry(faceShape, { depth: 0.02, bevelEnabled: true, bevelSize: 0.003, bevelThickness: 0.004, bevelSegments: 2, curveSegments: 40 }); faceGeo.translate(0, 0, 0.088);
+      // 19" Juniper wheel (photo close-up): 14 slim blades swept clockwise from a small hub to a thin outer ring, open between
+      // the blades so the dark barrel shows through; the face is dished (hub stands proud of the ring)
+      const NB = 14, tw = 0.55, r0 = 0.07, r1 = 0.212;
+      const faceGeo = G.merge([
+        new THREE.RingGeometry(r1 - 0.004, RIM + 0.006, 72, 1).translate(0, 0, 0.104),
+        G.lathe([[r1 - 0.006, 0.098], [RIM + 0.004, 0.1], [RIM + 0.006, 0.108], [r1 - 0.006, 0.108]], 72, 'z'),
+        G.lathe([[0.07, 0.1], [0.078, 0.112], [0.074, 0.124], [0.05, 0.13], [0, 0.132]], 40, 'z'),
+      ]);
+      const bladeGeo = G.merge(Array.from({ length: NB }, (_, k) => {
+        const a0 = (k / NB) * PI * 2, sh = new THREE.Shape(), pts = [];
+        const ang = (t) => a0 + tw * Math.pow(t, 1.3), wid = (t) => lerp(0.11, 0.25, Math.pow(t, 0.8));
+        for (let i = 0; i <= 12; i++) { const t = i / 12, r = lerp(r0, r1, t), a = ang(t); pts.push([Math.cos(a) * r, Math.sin(a) * r]); }
+        for (let i = 12; i >= 0; i--) { const t = i / 12, r = lerp(r0, r1, t), a = ang(t) + wid(t); pts.push([Math.cos(a) * r, Math.sin(a) * r]); }
+        sh.moveTo(...pts[0]); for (const p of pts.slice(1)) sh.lineTo(...p); sh.closePath();
+        const g = new THREE.ExtrudeGeometry(sh, { depth: 0.014, bevelEnabled: true, bevelSize: 0.0025, bevelThickness: 0.003, bevelSegments: 2, curveSegments: 4 });
+        const pos = g.attributes.position; for (let i = 0; i < pos.count; i++) { const r = Math.hypot(pos.getX(i), pos.getY(i)); pos.setZ(i, pos.getZ(i) + 0.112 - 0.02 * clamp((r - r0) / (r1 - r0))); }
+        g.computeVertexNormals(); return g;
+      }));
+      const backGeo = new THREE.RingGeometry(0.08, RIM - 0.01, 64, 1).translate(0, 0, 0.05);
       const rimMat = M.metal(0xa3a8ae, 0.3), lipMat = M.metal(0x8f949a, 0.3);
       const logoTex = K.textTexture('T', { font: '800 220px Arial', color: '#e9ecef', bg: '#1b1d20', w: 256, h: 256 });
-      const nutGeo = G.merge(Array.from({ length: 5 }, (_, k) => { const a = (k / 5) * PI * 2; return G.at(G.hexNut(0.011, 0.02), [Math.cos(a) * 0.057, Math.sin(a) * 0.057, 0.09], [PI / 2, 0, 0]); }));
+      const nutGeo = G.merge(Array.from({ length: 5 }, (_, k) => { const a = (k / 5) * PI * 2; return G.at(G.hexNut(0.011, 0.02), [Math.cos(a) * 0.057, Math.sin(a) * 0.057, 0.07], [PI / 2, 0, 0]); }));
       const disc = G.merge([G.cyl(0.178, 0.178, 0.026, 48, 'z'), G.cyl(0.09, 0.09, 0.05, 32, 'z').translate(0, 0, 0.02)]);
       const hubGeo = G.cyl(0.095, 0.1, 0.06, 32, 'z').translate(0, 0, 0.07);
       for (const w of wheelSpots) {
@@ -1145,11 +1176,11 @@ window.L3D_MODEL = {
         const sl = []; for (let i = 0; i < 72; i++) for (const zz of [-0.09, -0.042, 0.003, 0.048, 0.093]) { const a = (i / 72) * PI * 2 + zz; sl.push({ pos: [Math.cos(a) * 0.3555, Math.sin(a) * 0.3555, zz], rot: [0, 0, a] }); }
         instances(sipe, M.black(), sl, { parent: tire });
         mesh(swGeo, swMat, { parent: tire, pos: [0, 0, 0.1265], cast: false });
-        const rim = part(spin, { he: `חישוק ${name}`, en: `${en} rim`, mat: 'אלומיניום יצוק, צבע אפור כהה', desc: 'חישוק 19 אינץ׳ עם חמישה זוגות חישורים ושפה מבריקה. הפתחים קטנים בכוונה כדי להקטין מערבולות.' });
-        mesh(barrel, lipMat, { parent: rim }); mesh(faceGeo, rimMat, { parent: rim }); mesh(hubGeo, M.metal(0x3a3d42, 0.4), { parent: rim }); mesh(bladeGeo, rimMat, { parent: rim });
+        const rim = part(spin, { he: `חישוק ${name}`, en: `${en} rim`, mat: 'אלומיניום יצוק, צבע אפור כהה', desc: 'חישוק 19 אינץ׳ של ג׳וניפר: 14 להבים דקים שמסתובבים בכיוון השעון מרכזת קטנה אל טבעת חיצונית דקה, כמו טורבינה. הפנים קעורות מעט, והרכזת בולטת מעל הטבעת.' });
+        mesh(barrel, lipMat, { parent: rim }); mesh(faceGeo, rimMat, { parent: rim }); mesh(hubGeo, M.metal(0x3a3d42, 0.4), { parent: rim }); mesh(bladeGeo, rimMat, { parent: rim }); mesh(backGeo, M.metal(0x1e2023, 0.6), { parent: rim, cast: false });
         mesh(G.torus(RIM + 0.004, 0.006, 8, 64, PI * 2, 'z'), lipMat, { parent: rim, pos: [0, 0, 0.116] });
         const cap = part(spin, { he: `מכסה מרכזי ${name}`, en: `${en} centre cap`, mat: 'פלסטיק + סמל T', desc: 'מכסה קטן עם סמל T שמכסה את אומי הגלגל.' });
-        mesh(G.cyl(0.05, 0.052, 0.012, 32, 'z'), M.decal(logoTex.tex, { metalness: 0.4 }), { parent: cap, pos: [0, 0, 0.118] });
+        mesh(G.cyl(0.045, 0.047, 0.01, 32, 'z'), M.decal(logoTex.tex, { metalness: 0.4 }), { parent: cap, pos: [0, 0, 0.134] });
         mesh(nutGeo, M.chrome(), { parent: cap });
         put(G.cyl(0.004, 0.004, 0.03, 8, 'z'), M.chrome(), spin, [Math.cos(0.3) * 0.225, Math.sin(0.3) * 0.225, 0.1]);
         // brake (does not spin: caliper fixed, disc spins)
@@ -1357,7 +1388,7 @@ window.L3D_MODEL = {
       const rc = part(ap, { he: 'מצלמות צד בכנפיים (2)', en: 'Fender repeater cameras (×2)', mat: 'עדשה + פנס איתות', desc: 'מצלמות שמסתכלות אחורה מהכנפיים הקדמיות, יחד עם פנס איתות קטן.' });
       for (const s of [1, -1]) { const v = vAtY(1.25, 0.8, s), p = onBody(1.25, v, 0.002), n = nrm(1.25, v); const g = new THREE.Group(); g.position.copy(p); g.quaternion.setFromUnitVectors(V3(0, 0, 1), n); rc.add(g); put(G.box(0.07, 0.025, 0.008, 0.004), M.gloss(0x0b0b0c), g); put(G.cyl(0.006, 0.006, 0.004, 10, 'z'), lensMat, g, [0.02, 0, 0.004]); put(new THREE.BoxGeometry(0.03, 0.006, 0.003), L.amber, g, [-0.015, 0, 0.004]); }
       const rcam = part(ap, { he: 'מצלמה אחורית', en: 'Rear camera', mat: 'עדשה עם מחמם', desc: 'מצלמה מעל לוחית הרישוי עם מחמם שמונע אדים. משמשת לחניה ולאוטופיילוט.' });
-      put(G.cyl(0.012, 0.012, 0.02, 12, 'x'), lensMat, rcam, [XR - 0.005, 0.5, 0]);
+      put(G.cyl(0.012, 0.012, 0.02, 12, 'x'), lensMat, rcam, [surfAt(0, 0.56, -1).p.x - 0.005, 0.56, 0]);
       const fcam = part(ap, { he: 'מצלמת פגוש קדמית', en: 'Front bumper camera', mat: 'עדשה + מתז ניקוי', desc: 'חדש בג׳וניפר (בחלק מהשווקים): מצלמה נמוכה בפגוש שרואה מכשולים קרובים בחניה.' });
       put(G.cyl(0.012, 0.012, 0.02, 12, 'x'), lensMat, fcam, [XF - 0.002, 0.57, 0]);
       const cpu = part(ap, { he: 'מחשב האוטופיילוט (HW4)', en: 'Autopilot computer (HW4)', mat: 'לוח מעגלים + שבבי AI + קירור נוזלי', desc: 'מחשב עם שני שבבי בינה מלאכותית שמעבד את תמונות כל המצלמות בזמן אמת. מקורר בנוזל מאחורי תא הכפפות.' });

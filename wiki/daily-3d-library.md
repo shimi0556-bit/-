@@ -72,3 +72,16 @@ A library that grows by one procedurally-modelled object a day, starting with ca
 - **2026-10-04, #004 fix (user: "check the steering wheel"):** the wheel was tilted +45° (leaning toward the windshield), so the column lay in the wheel's plane instead of entering its centre. Now the wheel axis = the column direction (`rotation.z = -0.73`), rim thicker (16 mm), and the floor-mat "Ford" faces the driver (it read upside-down and mirrored). Rule: derive a wheel/knob orientation from the shaft vector, never a hand-typed angle; check it in a pure side view.
 - **2026-10-04, lessons pass (user asked to learn from the #004 session):** new `tools/sanity.cjs` (stray parts that touch nothing, parts below ground, per-toggle movement), now run by `build.py --check`, which fails on a stray part. It caught the old spring bug when reintroduced (4.07/4.52 m) and found the **Merkava tracks 22 mm below ground** (pads hang 52 mm under link pivots, bottom run at y 0.03). Fixed by lifting the model root (`sys('hull').parent.position.y = 0.022`), because `rockSet` positions the sprung system groups absolutely. New skill `boneh-rechev-vatik-3d` (vintage vehicles); rules added to `boneh-dgamim-3d`, BUILD_GUIDE §5/§6 and `threejs-qa-release/references/eye-point-qa.md`. `.gitignore` now ignores `__pycache__`.
   - #004 got live steering (`steer` toggle: king-pin group inside the wheel group, steering arm inside it, tie rod slides 0.12·sinθ, steering wheel ×4) and a subtle brass patina. Pitfall: the first patina (blotch alpha 8–30 %) looked dirty, not aged; 2–7 % reads right.
+- **2026-10-04, #003 round 4 (user: "not even close"):** rebuilt the Tesla body as a loft from a measured 1:25 four-view drawing (the-blueprints.com preview) instead of tuning guessed constants. The tables (`W`, `YT`, `YB`, `HE`, `WG`, `DROP`, `CROWN`, `Y0`) feed a new section:
+  - an arc-length-parametrised Bezier crown with straight tumblehome sides;
+  - a Bezier shoulder;
+  - `prm(x)` caches the parameters per station.
+  The orthographic overlay (`tools/ortho.cjs`) now matches all four views within 1–2 cm (it was 5–8 cm). New wheels (14 swept blades), black arch liners, a rear lip and smoked light band with the wordmark, and mirrors at the window corner. 155 parts, ~458K triangles.
+  - **Lesson:** the photo with the solved camera had misled the earlier rounds (roof 4 cm low). Prefer a dimensioned drawing for proportions, and use photos for details.
+  - **Pitfalls:**
+    - An x-major loft cannot represent a flat front plate unless the top and bottom tables stay put while `W` → 0 over the last centimetres, with dense columns there.
+    - `out()` must point along ±x at the nose and tail faces, or their normals flip and render black.
+    - Parts on the end faces must be placed with `surfAt()`, which needs a "section reaches this height" test or the centre point runs off to the tip.
+    - Coplanar decals on the thick liftgate skin vanish, so push them about 3 cm out or use a matte, double-sided material.
+  - **Still open:** hood creases, the lip overhang, twisted wheel blades, paint depth.
+
