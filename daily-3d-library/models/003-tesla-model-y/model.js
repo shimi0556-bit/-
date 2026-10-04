@@ -108,7 +108,7 @@ window.L3D_MODEL = {
       const rk = smooth(XF - 0.45, XF - 0.03, x) * 0.065 * clamp((y - 0.42) / 0.33);
       return V3(x - rk, y, s * z);
     };
-    const out = (p, x) => V3(0, p.y - (Y0(x) + Yb(x)) / 2, p.z);
+    const out = (p, x) => V3(2 * smooth(XF - 0.25, XF, x) - 2 * smooth(XR + 0.25, XR, x), p.y - (Y0(x) + Yb(x)) / 2, p.z);   // nose / tail faces point along ±x
     // outward unit normal of the section at (x, v)
     const nrm = (x, v) => { const e = 1e-3; const du = sec(x + e, v).sub(sec(x - e, v)), dv = sec(x, v + e).sub(sec(x, v - e)); const n = du.cross(dv).normalize(); const p = sec(x, v); if (n.dot(out(p, x)) < 0) n.negate(); return n; };
     const onBody = (x, v, d = 0) => sec(x, v).addScaledVector(nrm(x, v), d);
@@ -129,7 +129,7 @@ window.L3D_MODEL = {
       const x = (lo + hi) / 2, v = sd * vY(x, y); return { p: onBody(x, v, d), n: nrm(x, v), x, v };
     };
     const GATE_X = -2.34;                      // behind this the liftgate also covers the rear face (|z| < ~0.62)
-    window.__ty = { get sec() { return sec; }, get vY() { return vY; }, get surfAt() { return surfAt; }, get prm() { return prm; } };
+
     const inX = (x, r) => x <= Math.max(...r) && x >= Math.min(...r);
     const aP = (x) => lerp(RG, 0.372, clamp((x - WS_TOP) / (COWL - WS_TOP)));          // A-pillar line (v at x)
     const aD = (x) => (x >= LG ? RG : x >= BL_END ? lerp(RG, 0.36, (LG - x) / (LG - BL_END)) : 0.39); // D-pillar / liftgate edge
@@ -171,13 +171,16 @@ window.L3D_MODEL = {
       mesh(surface(sec, xs, vs, { skip, out }), [PAINT, M.black()], { parent: shell, name: 'body skin' });
       const ring = (x) => vs.map((v) => sec(x, v));
       // black lower bumper: the rear face below 0.56 m, wrapping round the corners to the wheel arches (rear view of the drawing)
-      for (const s2 of [1, -1]) mesh(band(XR, AXR - ARCH_R - 0.02, (x) => s2 * vY(x, 0.56), () => s2 * LV.cornerB, { offset: 0.004 }), M.plastic(0x141516, 0.6), { parent: shell, name: 'rear lower bumper (black)' });
+      for (const s2 of [1, -1]) mesh(band(XR, AXR - ARCH_R - 0.02, (x) => s2 * vY(x, 0.56), () => s2 * 1, { offset: 0.004 }), M.plastic(0x141516, 0.6), { parent: shell, name: 'rear lower bumper (black)' });
       // B-pillar gloss-black appliqués + A-pillar trim between windshield and door glass
       const bp = part(bodySys, { he: 'עמודי B בשחור מבריק', en: 'Gloss-black B-pillar trims', mat: 'פלסטיק פסנתר שחור', desc: 'כיסוי שחור מבריק על העמוד שבין הדלתות, כדי שהחלונות ייראו כפס זכוכית אחד רציף.' });
       for (const s of [1, -1]) mesh(surface(sec, samples(RD[0] + 0.004, FD[1] - 0.004, 0.01), samples(s * GA_TOP, s * GA_BOT, 0.02), { out, offset: 0.002 }), GLOSSBLK, { parent: bp });
       // black lower body cladding + rocker
       const cl = part(bodySys, { he: 'ספים וחיפוי תחתון', en: 'Rocker panels & lower cladding', mat: 'פלסטיק מצופה + פלדה', desc: 'הסף שבין הגלגלים. הוא מחזק את המרכב ומגן על מארז הסוללה מאבנים בצד.' });
       for (const s of [1, -1]) mesh(band(AXR + ARCH_R + 0.01, AXF - ARCH_R - 0.01, (x) => s * vY(x, 0.27), () => s * LV.cornerB, { offset: 0.003 }), M.plastic(0x16171a, 0.45), { parent: cl });
+      // black wheel-arch liners (seen above the tyres in every photo)
+      const wl = part(bodySys, { he: 'ביטנות קשתות הגלגלים', en: 'Wheel-arch liners', mat: 'פוליפרופילן שחור לבד', desc: 'ביטנה שחורה מפלסטיק ולבד בתוך כל קשת גלגל. היא מגינה מאבנים ומים ומשתיקה את רעש הצמיגים.' });
+      for (const ax of [AXF, AXR]) for (const s2 of [1, -1]) mesh(band(ax - ARCH_R + 0.005, ax + ARCH_R - 0.005, () => s2 * (LV.side + 0.01), () => s2 * LV.wellIn, { offset: 0.004 }), M.plastic(0x0e0f10, 0.9), { parent: wl, name: 'liner' });
       // front: lower intake + grille mesh + splitter
       const fr = part(bodySys, { he: 'פגוש קדמי, פתח אוויר תחתון וספליטר', en: 'Front fascia, lower intake & splitter', mat: 'פוליפרופילן צבוע + רשת שחורה', desc: 'בחזית אין גריל כמו ברכב בנזין — רק פתח תחתון שמכניס אוויר לרדיאטור של משאבת החום, עם תריסים אקטיביים שנסגרים בנסיעה מהירה.' });
       const fxz = (z) => { let lo = XF - 0.5, hi = XF; for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (W(m) > Math.abs(z)) lo = m; else hi = m; } return lo; };
@@ -192,7 +195,7 @@ window.L3D_MODEL = {
       instances(new THREE.BoxGeometry(0.008, 0.006, 0.054), M.plastic(0x050506, 0.6), slats, { parent: fr });
       // rear diffuser + reflectors
       const rd = part(bodySys, { he: 'מפזר אוויר אחורי', en: 'Rear diffuser', mat: 'פלסטיק שחור מרקם', desc: 'החלק השחור התחתון בפגוש האחורי. הוא מכוון את זרימת האוויר מתחת לרכב ומקטין גרר.' });
-            instances(new THREE.BoxGeometry(0.2, 0.06, 0.008), M.plastic(0x141516, 0.75), [-0.45, -0.15, 0.15, 0.45].map((z) => ({ pos: [surfAt(z, 0.33, -1).p.x + 0.09, 0.3, z] })), { parent: rd });
+            instances(new THREE.BoxGeometry(0.22, 0.03, 0.008), M.plastic(0x141516, 0.75), [-0.45, -0.15, 0.15, 0.45].map((z) => ({ pos: [-2.2, Y0(-2.2) - 0.012, z] })), { parent: rd });
       // underbody aero tray
       const ut = part(bodySys, { he: 'מגש תחתון אווירודינמי', en: 'Underbody aero tray', mat: 'פלסטיק מחוזק סיבים', desc: 'כיסוי חלק לכל התחתית. הוא מגן על הסוללה ומאפשר לאוויר לזרום מתחת לרכב בלי מערבולות.' });
       put(new THREE.BoxGeometry(3.7, 0.006, 1.3), M.plastic(0x1d1e20, 0.8), ut, [-0.1, 0.165, 0]);
@@ -363,9 +366,10 @@ window.L3D_MODEL = {
       const gpX = ctx.gate.position.x, gpY = ctx.gate.position.y;
       // smoked red bar across the liftgate under the lip (0.96–1.11 m in the rear view), and the body-colour lip above it
       const bar2 = (y, d) => Array.from({ length: 41 }, (_, i) => surfAt(-0.64 + (i / 40) * 1.28, y, -1, d).p.sub(V3(gpX, gpY, 0)));
-      const bandGeo = (A, B) => surface((u, t) => A[Math.round(u)].clone().lerp(B[Math.round(u)], t), samples(0, 40, 1), [0, 1]);
-      put(bandGeo(bar2(1.12, 0.006), bar2(0.975, 0.006)), M.gloss(0x14090a), rb, null, null, { name: 'smoked lens' });
-      put(G.tube(bar2(0.99, 0.009), 0.005, 60, 5), L.tail, rb, null, null, { name: 'light strip' });
+      const bandGeo = (A, B) => surface((u, t) => A[Math.round(u)].clone().lerp(B[Math.round(u)], t), samples(0, 40, 1), [0, 1], { out: () => V3(-1, 0, 0) });
+      const smoked = new THREE.MeshStandardMaterial({ color: 0x160708, roughness: 0.3, metalness: 0.1, side: THREE.DoubleSide });
+      put(bandGeo(bar2(1.12, 0.03), bar2(0.975, 0.03)), smoked, rb, null, null, { name: 'smoked lens' });
+      put(G.tube(bar2(0.99, 0.033), 0.005, 60, 5), L.tail, rb, null, null, { name: 'light strip' });
       const spoiler = part(rb, { he: 'שפת ספוילר אחורית', en: 'Rear lip spoiler', mat: 'פלסטיק שחור מבריק', desc: 'שפה שחורה בקצה התחתון של השמשה האחורית. היא בולטת כ־3 ס״מ לאחור מעל פס האור וגורמת לאוויר להינתק נקי מהרכב.' });
       const lipPts = Array.from({ length: 41 }, (_, i) => { const z = -0.74 + (i / 40) * 1.48, q = surfAt(z, 1.15, -1, 0.014); return q.p.sub(V3(gpX, gpY, 0)); });
       put(G.tube(lipPts, 0.026, 60, 10), GLOSSBLK, spoiler);
@@ -385,7 +389,7 @@ window.L3D_MODEL = {
       const ins = sys('insignia');
       const word = part(ins, { he: 'כיתוב TESLA על הדלת האחורית', en: 'TESLA wordmark', mat: 'אותיות כרום כהה', desc: 'בג׳וניפר הוחלף סמל ה־T בכיתוב TESLA ברוחב הדלת האחורית.' });
       const wt = K.textTexture('T E S L A', { font: '700 120px "Helvetica Neue", Arial', color: '#b9bec4', pad: 10 });
-      put(new THREE.PlaneGeometry(0.42, 0.42 / wt.aspect), M.decal(wt.tex, { metalness: 0.8, roughness: 0.25 }), word, [surfAt(0, 1.055, -1, 0.012).p.x - ctx.gate.position.x, 1.055 - ctx.gate.position.y, 0], [0, -PI / 2, 0], { cast: false });
+      put(new THREE.PlaneGeometry(0.42, 0.42 / wt.aspect), M.decal(wt.tex, { metalness: 0.8, roughness: 0.25 }), word, [surfAt(0, 1.055, -1, 0.036).p.x - ctx.gate.position.x, 1.055 - ctx.gate.position.y, 0], [0, -PI / 2, 0], { cast: false });
       ctx.gate.add(word); word.userData.sysOverride = 'insignia';
       const plateTex = K.canvasTexture(520, 112, (g, w, h) => { g.fillStyle = '#f7d117'; g.fillRect(0, 0, w, h); g.fillStyle = '#1d4fb8'; g.fillRect(0, 0, 70, h); g.fillStyle = '#fff'; g.font = '700 30px Arial'; g.textAlign = 'center'; g.fillText('IL', 35, 92); g.strokeStyle = '#111'; g.lineWidth = 5; g.strokeRect(2.5, 2.5, w - 5, h - 5); g.fillStyle = '#111'; g.font = '800 82px Arial'; g.fillText('123-45-678', 292, 86); });
       const pl = part(ins, { he: 'לוחיות רישוי (2)', en: 'Licence plates (×2)', mat: 'אלומיניום מוטבע', desc: 'לוחיות רישוי ישראליות צהובות, עם פס כחול ו־IL בצד שמאל.' });
@@ -435,20 +439,28 @@ window.L3D_MODEL = {
       const swMat = M.decal(swTex, { roughness: 0.85, clearcoat: 0 });
       // rim: barrel + aero face with 5 twin-spoke windows
       const barrel = G.lathe([[RIM - 0.006, -0.12], [RIM + 0.012, -0.118], [RIM, -0.1], [RIM - 0.03, -0.05], [RIM - 0.03, 0.06], [RIM, 0.1], [RIM + 0.012, 0.115], [RIM - 0.004, 0.12]], 64, 'z');
-      // 19" aero wheel with 10 swept blades (Juniper style): holes are curved windows between the blades
-      const faceShape = new THREE.Shape(); faceShape.absarc(0, 0, RIM + 0.006, 0, PI * 2, false);
-      const NB = 5, tw = 0.75, r0 = 0.085, r1 = 0.22;
-      for (let k = 0; k < NB; k++) {
-        const a0 = (k / NB) * PI * 2, wA = (PI * 2 / NB) * 0.72, hole = new THREE.Path(), pts = [];
-        for (let i = 0; i <= 10; i++) { const t = i / 10, r = lerp(r0, r1, t), a = a0 + tw * t * t; pts.push([Math.cos(a) * r, Math.sin(a) * r]); }
-        for (let i = 10; i >= 0; i--) { const t = i / 10, r = lerp(r0 + 0.012, r1, t), a = a0 + wA * (0.35 + 0.65 * t) + tw * t * t; pts.push([Math.cos(a) * r, Math.sin(a) * r]); }
-        hole.moveTo(...pts[0]); for (const p of pts.slice(1)) hole.lineTo(...p); hole.closePath(); faceShape.holes.push(hole);
-      }
-      const bladeGeo = G.merge(Array.from({ length: NB }, (_, k) => { const a0 = (k / NB) * PI * 2, wA = (PI * 2 / NB) * 0.72; const pts = []; for (let i = 0; i <= 8; i++) { const t = i / 8, r = lerp(0.1, 0.215, t), a = a0 + wA * (0.5 + 0.2 * t) + tw * t * t; pts.push(V3(Math.cos(a) * r, Math.sin(a) * r, 0.097)); } return G.tube(pts, 0.009, 16, 6); }));
-      const faceGeo = new THREE.ExtrudeGeometry(faceShape, { depth: 0.02, bevelEnabled: true, bevelSize: 0.003, bevelThickness: 0.004, bevelSegments: 2, curveSegments: 40 }); faceGeo.translate(0, 0, 0.088);
+      // 19" Juniper wheel (photo close-up): 14 slim blades swept clockwise from a small hub to a thin outer ring, open between
+      // the blades so the dark barrel shows through; the face is dished (hub stands proud of the ring)
+      const NB = 14, tw = 0.55, r0 = 0.07, r1 = 0.212;
+      const faceGeo = G.merge([
+        new THREE.RingGeometry(r1 - 0.004, RIM + 0.006, 72, 1).translate(0, 0, 0.104),
+        G.lathe([[r1 - 0.006, 0.098], [RIM + 0.004, 0.1], [RIM + 0.006, 0.108], [r1 - 0.006, 0.108]], 72, 'z'),
+        G.lathe([[0.07, 0.1], [0.078, 0.112], [0.074, 0.124], [0.05, 0.13], [0, 0.132]], 40, 'z'),
+      ]);
+      const bladeGeo = G.merge(Array.from({ length: NB }, (_, k) => {
+        const a0 = (k / NB) * PI * 2, sh = new THREE.Shape(), pts = [];
+        const ang = (t) => a0 + tw * Math.pow(t, 1.3), wid = (t) => lerp(0.11, 0.25, Math.pow(t, 0.8));
+        for (let i = 0; i <= 12; i++) { const t = i / 12, r = lerp(r0, r1, t), a = ang(t); pts.push([Math.cos(a) * r, Math.sin(a) * r]); }
+        for (let i = 12; i >= 0; i--) { const t = i / 12, r = lerp(r0, r1, t), a = ang(t) + wid(t); pts.push([Math.cos(a) * r, Math.sin(a) * r]); }
+        sh.moveTo(...pts[0]); for (const p of pts.slice(1)) sh.lineTo(...p); sh.closePath();
+        const g = new THREE.ExtrudeGeometry(sh, { depth: 0.014, bevelEnabled: true, bevelSize: 0.0025, bevelThickness: 0.003, bevelSegments: 2, curveSegments: 4 });
+        const pos = g.attributes.position; for (let i = 0; i < pos.count; i++) { const r = Math.hypot(pos.getX(i), pos.getY(i)); pos.setZ(i, pos.getZ(i) + 0.112 - 0.02 * clamp((r - r0) / (r1 - r0))); }
+        g.computeVertexNormals(); return g;
+      }));
+      const backGeo = new THREE.RingGeometry(0.08, RIM - 0.01, 64, 1).translate(0, 0, 0.05);
       const rimMat = M.metal(0xa3a8ae, 0.3), lipMat = M.metal(0x8f949a, 0.3);
       const logoTex = K.textTexture('T', { font: '800 220px Arial', color: '#e9ecef', bg: '#1b1d20', w: 256, h: 256 });
-      const nutGeo = G.merge(Array.from({ length: 5 }, (_, k) => { const a = (k / 5) * PI * 2; return G.at(G.hexNut(0.011, 0.02), [Math.cos(a) * 0.057, Math.sin(a) * 0.057, 0.09], [PI / 2, 0, 0]); }));
+      const nutGeo = G.merge(Array.from({ length: 5 }, (_, k) => { const a = (k / 5) * PI * 2; return G.at(G.hexNut(0.011, 0.02), [Math.cos(a) * 0.057, Math.sin(a) * 0.057, 0.07], [PI / 2, 0, 0]); }));
       const disc = G.merge([G.cyl(0.178, 0.178, 0.026, 48, 'z'), G.cyl(0.09, 0.09, 0.05, 32, 'z').translate(0, 0, 0.02)]);
       const hubGeo = G.cyl(0.095, 0.1, 0.06, 32, 'z').translate(0, 0, 0.07);
       for (const w of wheelSpots) {
@@ -461,11 +473,11 @@ window.L3D_MODEL = {
         const sl = []; for (let i = 0; i < 72; i++) for (const zz of [-0.09, -0.042, 0.003, 0.048, 0.093]) { const a = (i / 72) * PI * 2 + zz; sl.push({ pos: [Math.cos(a) * 0.3555, Math.sin(a) * 0.3555, zz], rot: [0, 0, a] }); }
         instances(sipe, M.black(), sl, { parent: tire });
         mesh(swGeo, swMat, { parent: tire, pos: [0, 0, 0.1265], cast: false });
-        const rim = part(spin, { he: `חישוק ${name}`, en: `${en} rim`, mat: 'אלומיניום יצוק, צבע אפור כהה', desc: 'חישוק 19 אינץ׳ עם חמישה זוגות חישורים ושפה מבריקה. הפתחים קטנים בכוונה כדי להקטין מערבולות.' });
-        mesh(barrel, lipMat, { parent: rim }); mesh(faceGeo, rimMat, { parent: rim }); mesh(hubGeo, M.metal(0x3a3d42, 0.4), { parent: rim }); mesh(bladeGeo, rimMat, { parent: rim });
+        const rim = part(spin, { he: `חישוק ${name}`, en: `${en} rim`, mat: 'אלומיניום יצוק, צבע אפור כהה', desc: 'חישוק 19 אינץ׳ של ג׳וניפר: 14 להבים דקים שמסתובבים בכיוון השעון מרכזת קטנה אל טבעת חיצונית דקה, כמו טורבינה. הפנים קעורות מעט, והרכזת בולטת מעל הטבעת.' });
+        mesh(barrel, lipMat, { parent: rim }); mesh(faceGeo, rimMat, { parent: rim }); mesh(hubGeo, M.metal(0x3a3d42, 0.4), { parent: rim }); mesh(bladeGeo, rimMat, { parent: rim }); mesh(backGeo, M.metal(0x1e2023, 0.6), { parent: rim, cast: false });
         mesh(G.torus(RIM + 0.004, 0.006, 8, 64, PI * 2, 'z'), lipMat, { parent: rim, pos: [0, 0, 0.116] });
         const cap = part(spin, { he: `מכסה מרכזי ${name}`, en: `${en} centre cap`, mat: 'פלסטיק + סמל T', desc: 'מכסה קטן עם סמל T שמכסה את אומי הגלגל.' });
-        mesh(G.cyl(0.05, 0.052, 0.012, 32, 'z'), M.decal(logoTex.tex, { metalness: 0.4 }), { parent: cap, pos: [0, 0, 0.118] });
+        mesh(G.cyl(0.045, 0.047, 0.01, 32, 'z'), M.decal(logoTex.tex, { metalness: 0.4 }), { parent: cap, pos: [0, 0, 0.134] });
         mesh(nutGeo, M.chrome(), { parent: cap });
         put(G.cyl(0.004, 0.004, 0.03, 8, 'z'), M.chrome(), spin, [Math.cos(0.3) * 0.225, Math.sin(0.3) * 0.225, 0.1]);
         // brake (does not spin: caliper fixed, disc spins)

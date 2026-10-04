@@ -2,7 +2,7 @@
 
 The 2025 "Juniper" Model Y, modelled procedurally in [`model.js`](model.js). Open [`index.html`](index.html).
 
-**154 named parts in 11 systems, ~480 meshes, ~415K triangles, no model or image files.**
+**155 named parts in 11 systems, ~490 meshes, ~458K triangles, no model or image files.**
 
 ## What's modelled
 
@@ -26,6 +26,24 @@ Toggles: doors, frunk, liftgate (with animated power struts), charge port + cabl
 
 Length 4.79 m, height 1.624 m, wheelbase 2.89 m, ground clearance 167 mm, 255/45 R19 tyres. Sources: [Wikipedia](https://en.wikipedia.org/wiki/Tesla_Model_Y), [Basenor](https://www.basenor.com/pages/model-y-juniper-dimensions), [EV Database](https://ev-database.org/car/3103/Tesla-Model-Y-RWD), [carsized](https://www.carsized.com/en/cars/tesla-model-y-2025-suv/). Width varies between sources (1.92–1.98 m without mirrors); the model uses 1.92 m. Cell layout, motors and interior are informed reconstructions.
 
+## Body: lofted from a measured four-view drawing (round 4)
+
+The user said the car was "not even close", so the body was rebuilt instead of tuned. The earlier section was one formula with guessed constants (and a profile measured on a photo whose solved camera turned out to put the roof 4 cm too low).
+
+- **Source:** a 1:25 four-view drawing of the 2025 Model Y Juniper (the-blueprints.com, watermarked preview, used only for measurement and never committed). Silhouettes were extracted per pixel column and row (5.86 mm per pixel). x comes from the tyre centres, and the overhangs are stretched to the official 4.79 m.
+- **Tables in `model.js`:** plan half-width `W`, centre-line top `YT`, belt `YB`, hood-edge drop `HE`, greenhouse and hood half-width `WG`, shoulder drop `DROP`, crown `CROWN` and bottom silhouette `Y0`. The section at each x is built from these values:
+  - a flat-crowned roof or hood with a tight corner (a cubic Bezier, sampled by arc length);
+  - straight tumblehome sides down to the belt;
+  - a big shoulder (quadratic Bezier) out to full width about 0.27 m below the belt (0.36 m at the rear hips);
+  - near-vertical sides, then the rocker and wheel well.
+- **Nose and tail:** the plan view is almost flat across the front and rear with large corner radii. Dense grid columns are spaced at even half-width steps, and the front face leans back 6.5 cm at the lip.
+- **Result:** the orthographic silhouettes (`tools/ortho.cjs`) now sit within about 1–2 cm of the drawing in the side, front, rear and top views. Before, the gaps were 5–8 cm (roof, hood, windshield, shoulder width).
+- **Parts on the new surface:** everything on the nose and tail faces is placed with `surfAt(z, y, end)`, which finds the point of the surface at a given lateral position and height:
+  - DRL bar, headlamp units, intake and grille slats;
+  - plates, rear light band, lip, wordmark, reflectors and reverse lamps.
+- **Wheels:** rebuilt from a close-up as 14 slim swept blades on a dark barrel.
+- **Also added:** black wheel-arch liners. The mirrors moved up to the window corner (1.07–1.21 m), as in the front and side views.
+
 ## Reference photos (part-by-part comparison)
 
 Compared against 19 photos of a Quicksilver Model Y Juniper (Dual Motor First Edition) on Wikimedia Commons ("Tesla Model Y Dual Motor First Edition Juniper Quicksilver (1)…(19).jpg"), front, side, 3/4 and rear, using `tools/refs.py` + `tools/shot.cjs`. Changes made from the comparison:
@@ -42,7 +60,13 @@ Round 3 (front photo + overlay): the front view (Commons, dllu, Juniper head-on)
 
 Still clearly different (honest list): the face below the light bar is smoother and rounder than the real one (no sharp bumper corners or vertical corner inlets); the rear window and liftgate are still too wide and flat; the side surfaces lack the real door-panel feature lines; wheel-arch liners are not black.
 
-## Known simplifications / open
+## Known simplifications / open (after round 4)
+
+- **Hood creases:** the front-view creases that run from the windshield corners to the lamps are not modelled as feature lines, and the fender crests are not raised above the hood centre.
+- **Lip overhang:** the rear lip does not overhang a recessed light bar. The bar sits on the rear face under a separate black lip.
+- **Wheels:** the blades are flat, extruded and evenly spaced. The real blades are twisted 3D surfaces arranged in pairs.
+- **Paint:** reads flatter and lighter than real Quicksilver.
+
 
 - The battery is only visible in the cutaway/x-ray (the aero tray covers it from below).
 - The A-pillar glass shows strong studio reflections; on a real GPU with the full environment it reads as normal glass.
