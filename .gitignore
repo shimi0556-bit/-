@@ -1,3 +1,7 @@
 
 # daily-3d-library QA renders (tools/check.cjs --qa)
 daily-3d-library/models/*/shots/
+
+# Python bytecode
+__pycache__/
+*.pyc
