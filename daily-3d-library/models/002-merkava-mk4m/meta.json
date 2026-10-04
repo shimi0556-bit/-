@@ -406,5 +406,21 @@
       "name": "Armored Warfare — Merkava Mk.4M Windbreaker",
       "url": "https://armoredwarfare.com/en/news/general/development-merkava-mk4m-windbreaker"
     }
-  ]
+  ],
+  "game": {
+    "kind": "tracked",
+    "drive": "tracks",
+    "massKg": 65000,
+    "topSpeedKmh": 64,
+    "accelMs2": 1.1,
+    "turnRateRad": 0.7,
+    "wheelbase": 4.9,
+    "track": 2.92,
+    "grip": 1.0,
+    "lodHide": [
+      "power",
+      "crew"
+    ],
+    "note": "טנק: היגוי בזחלים (סיבוב במקום). מהירות 64 קמ״ש בכביש לפי פרסומים; התאוצה הערכה."
+  }
 }

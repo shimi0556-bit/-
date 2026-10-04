@@ -244,7 +244,7 @@ window.L3D_MODEL = {
     // Built along a local z axle (outer face = +z) and turned 180° for the left
     // side, so sidewall lettering always reads correctly (a mirror would flip it).
     const RIM_R = 0.2858; // 22.5" bead seat
-    const wheelSpots = [], wheelPos = [];
+    const wheelSpots = [], wheelPos = [], rigWheels = [];
     for (const x of [AXF, AXR]) for (const s of [1, -1]) wheelSpots.push({ x, s, front: x > 0 });
     {
       const wheels = sys('wheels');
@@ -301,6 +301,7 @@ window.L3D_MODEL = {
         const sideHe = ws.s > 0 ? 'ימני' : 'שמאלי', posHe = ws.front ? 'קדמי' : 'אחורי';
         const wheel = part(wheels, { he: `גלגל ${posHe} ${sideHe}`, en: `${ws.front ? 'Front' : 'Rear'} ${ws.s > 0 ? 'right' : 'left'} wheel`, desc: 'מכלול גלגל של משאית: צמיג 255/70R22.5, חישוק אלומיניום מלוטש 22.5 אינץ׳, 10 אומים, טבעת ראן־פלאט פנימית. כל מכלול שוקל קרוב ל־100 ק״ג.' }, { pos: [ws.x, TIRE_R, ws.s * WHEEL_Z], rot: [0, ws.s > 0 ? 0 : Math.PI, 0] });
         wheelPos.push(wheel.position.clone());
+        rigWheels.push({ steer: ws.front ? wheel : null, spin: wheel, s: ws.s, front: ws.front, r: TIRE_R });
         const tire = part(wheel, { he: 'צמיג Goodyear Regional RHS', en: 'Goodyear Regional RHS 255/70R22.5', mat: 'גומי, חגורות פלדה, שכבות קבלר', desc: 'צמיג משאית מחוזק בקבלר בעובי של 16 שכבות. גם אם יינקב, הרכב ימשיך לנסוע על טבעת הראן־פלאט שבתוכו.' });
         tire.userData.explodeLocal = V3(0, 0, 0.42);
         mesh(tireGeo, tireMat, { parent: tire, name: 'carcass' });
@@ -1343,6 +1344,7 @@ window.L3D_MODEL = {
     // DETAILS-PLACEHOLDER
 
     Object.assign(window.L3D, { beast: ctxShared });
+    K.gameRig({ kind: 'car', wheels: rigWheels });
   },
 };
 

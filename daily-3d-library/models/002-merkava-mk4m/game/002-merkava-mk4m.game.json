@@ -1,0 +1,57 @@
+{
+  "id": "002-merkava-mk4m",
+  "title": "טנק מרכבה סימן 4M",
+  "titleEn": "Merkava Mk 4M (IDF main battle tank)",
+  "units": "metres",
+  "up": "+Y",
+  "forward": "+Z",
+  "left": "+X",
+  "origin": "ground, middle of the vehicle",
+  "dimensions": {
+    "length": 9.631,
+    "width": 3.839,
+    "height": 3.764
+  },
+  "collider": {
+    "type": "box",
+    "center": [
+      0,
+      1.882,
+      0.436
+    ],
+    "halfExtents": [
+      1.919,
+      1.882,
+      4.816
+    ]
+  },
+  "physics": {
+    "kind": "tracked",
+    "drive": "tracks",
+    "massKg": 65000,
+    "topSpeedKmh": 64,
+    "accelMs2": 1.1,
+    "turnRateRad": 0.7,
+    "wheelbase": 4.9,
+    "track": 2.92,
+    "grip": 1,
+    "lodHide": [
+      "power",
+      "crew"
+    ],
+    "note": "טנק: היגוי בזחלים (סיבוב במקום). מהירות 64 קמ״ש בכביש לפי פרסומים; התאוצה הערכה."
+  },
+  "wheels": [],
+  "tracked": true,
+  "nodes": {
+    "spin": "rotate each Wheel_* node about its own local Z by spinRadPerMetre × metres driven forward (three.js: wheel.rotateZ(...))",
+    "steer": "set Steer_* rotation about local Y (rest rotation is identity): a positive angle turns toward the vehicle's left (+X)"
+  },
+  "files": {
+    "full": "002-merkava-mk4m.glb",
+    "race": "002-merkava-mk4m.race.glb"
+  },
+  "triangles": {
+    "full": 400316
+  }
+}

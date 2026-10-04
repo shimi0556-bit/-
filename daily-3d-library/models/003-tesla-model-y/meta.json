@@ -382,5 +382,22 @@
       "name": "carsized — Model Y 2025",
       "url": "https://www.carsized.com/en/cars/tesla-model-y-2025-suv/"
     }
-  ]
+  ],
+  "game": {
+    "kind": "car",
+    "drive": "awd",
+    "massKg": 1990,
+    "topSpeedKmh": 201,
+    "accel0to100s": 4.8,
+    "steerMaxRad": 0.6,
+    "wheelbase": 2.89,
+    "track": 1.636,
+    "wheelRadius": 0.356,
+    "grip": 1.0,
+    "lodHide": [
+      "battery",
+      "drive"
+    ],
+    "note": "Long Range AWD לפי נתוני יצרן מפורסמים (בקירוב)."
+  }
 }

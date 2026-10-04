@@ -123,3 +123,14 @@ python3 tools/refs.py pair $SCRATCH/ref/01.jpg $SCRATCH/m/m01.png $SCRATCH/cmp_0
 2. Add the model's row to the table in `README.md`, and a dated line under `## Notes` in `wiki/daily-3d-library.md` (what was built, anything surprising, open issues).
 3. Commit (`Add #NNN <name> to the daily 3D library`), push, and get it onto `main` as the routine instructs.
 4. Send the model's `index.html` to the user (`SendUserFile`), with a two-line Hebrew summary: what it is and how many parts it has. Mention which reference photos it was compared against and what still differs.
+
+## 8. Game-ready (every model, required)
+
+The user wants every model ready to use the moment they decide to build a game, mainly a racing game. No game is built here; the model just has to carry what a game needs. Full contract: [`GAME_READY.md`](GAME_READY.md).
+
+1. **`meta.game`** in `meta.json`: `kind` (`car` / `tracked`), `drive`, `massKg`, `topSpeedKmh`, `accel0to100s` or `accelMs2`, `steerMaxRad` (cars) or `turnRateRad` (tracked), `wheelbase`, `track`, `wheelRadius`, `grip`, `lodHide` (systems a racing camera never sees: engine internals, armour layers, battery…), `note` (which numbers are estimates).
+2. **`K.gameRig(...)`** at the end of `build()`: `{ kind: 'car', wheels: [{ steer, spin, s, front, r }] }`, where `spin` turns about its local z and `steer` (front wheels, or `null`) about its local y; or `{ kind: 'tracked', setTravel(metres) }`. Build each wheel so that one group spins (tyre + rim + hub cap, not the brake caliper) and, for front wheels, a parent group steers.
+3. `python3 build.py --check` then exports `models/<id>/game/<id>.glb`, `<id>.race.glb` and `<id>.game.json`, and `tools/glb_check.cjs` loads them as a game would. It fails on missing wheel nodes, a model that isn't facing +Z or isn't resting on the ground, **a wheel that rolls the wrong way, or a steer that turns the wrong way**.
+4. Re-export whenever `model.js` changes (`--check` does it), and commit the `game/` folder with the model.
+
+Pitfalls already hit: (1) a wheel group with rest rotation `y = π` (left wheels built by rotating 180°) re-imports as Euler `(π, 0, π)`, so adding to `.y` steers the other way; the exporter therefore wraps every steered wheel in a `Steer_*` pivot with identity rotation. (2) `GLTFExporter` writes `userData` as JSON: an Object3D or typed array parked in `userData` made a 1 MB model 22 MB; the exporter keeps only the part cards. (3) Box3 of a group includes hidden meshes: measure only visible ones.

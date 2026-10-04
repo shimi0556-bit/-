@@ -384,5 +384,24 @@
       "name": "CarBuzz — The Beast",
       "url": "https://carbuzz.com/the-beast-presidential-car/"
     }
-  ]
+  ],
+  "game": {
+    "kind": "car",
+    "drive": "rwd",
+    "massKg": 9000,
+    "topSpeedKmh": 100,
+    "accel0to100s": 15,
+    "steerMaxRad": 0.55,
+    "wheelbase": 3.45,
+    "track": 1.77,
+    "wheelRadius": 0.464,
+    "grip": 0.85,
+    "lodHide": [
+      "engine",
+      "armor",
+      "security",
+      "interior"
+    ],
+    "note": "מסה ותאוצה: הערכה לפי דיווחים (6.8–9 טון). מהירות מרבית מדווחת כ־100 קמ״ש."
+  }
 }

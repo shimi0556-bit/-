@@ -47,7 +47,7 @@ window.L3D_MODEL = {
     const woodNat = (() => { const m = new THREE.MeshStandardMaterial({ color: 0x101012, roughness: 0.4, metalness: 0, bumpMap: K.noiseTexture(256, 'fabric'), bumpScale: 0.3, name: 'עץ היקורי צבוע שחור' }); return m; })();
     const woodDark = new THREE.MeshStandardMaterial({ color: 0x4a2c16, roughness: 0.6, bumpMap: K.noiseTexture(256, 'leather'), bumpScale: 0.3, name: 'עץ אפר' });
     const fabricTop = new THREE.MeshStandardMaterial({ color: 0x17171a, roughness: 0.95, side: THREE.DoubleSide, bumpMap: K.noiseTexture(256, 'fabric'), bumpScale: 0.6, name: 'בד גג מגומם' });
-    const spinners = [], steerGroups = [];
+    const spinners = [], steerGroups = [], rigWheels = [];
     let steerWheel = null, steerLink = null;
 
     // ================================================================== WHEELS
@@ -76,7 +76,7 @@ window.L3D_MODEL = {
           arm.userData.sysOverride = 'chassis';
           rod(arm, [0, 0, 0], [-0.12 * w.s, 0.03, 0.06], 0.011, IRON);
         }
-        const spin = new THREE.Group(); hold.add(spin); spinners.push({ o: spin, s: w.s });
+        const spin = new THREE.Group(); hold.add(spin); spinners.push({ o: spin, s: w.s }); rigWheels.push({ steer: w.front ? steerGroups[steerGroups.length - 1] : null, spin, s: w.s, front: w.front, r: TR });
         const tire = part(spin, { he: `צמיג ${name}`, en: `${en} tyre`, mat: 'גומי מוואלקן + בד, 30×3' + (w.front ? '' : '½'), desc: 'צמיג קלינצ׳ר (נכנס לתוך שפת החישוק) עם שתי שכבות בד, שפופרת פנימית וכיתוב מידה על הדופן. נתקע לעיתים קרובות — מנהגים נסעו עם ערכת תיקון.' });
         mesh(G.torus(0.343, 0.038, 14, 64, PI * 2, 'z'), M.tire(), { parent: tire, scale: [1, 1, tw] });
         if (w.front) for (const z of [-0.016, 0.016]) mesh(G.torus(0.3805, 0.0018, 4, 64, PI * 2, 'z'), M.black(), { parent: tire, pos: [0, 0, z], cast: false });
@@ -632,5 +632,6 @@ window.L3D_MODEL = {
     setEngine();
     K.toggle('engine', { he: 'מנוע פועל', key: 'e', seconds: 1.0 }, (t) => { engineSpeed = t * 14; });
     K.onFrame((time, dt) => { if (engineSpeed > 0.01) { crankAngle += engineSpeed * dt; setEngine(); } });
+    K.gameRig({ kind: 'car', wheels: rigWheels });
   },
 };
