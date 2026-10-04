@@ -552,7 +552,7 @@ export class Wilds {
           '#include <emissivemap_fragment>',
           `#include <emissivemap_fragment>
           // Saturated and below the tone-mapping knee, or ACES bleaches the melt to white.
-          totalEmissiveRadiance = (mix(vec3(0.9, 0.16, 0.01), vec3(1.0, 0.5, 0.08), wHot * wHot) * wHot + vec3(0.25, 0.03, 0.0) * smoothstep(0.75, 0.5, 1.0 - wHot) * (1.0 - wHot)) * emissive * 0.9;`,
+          totalEmissiveRadiance = (mix(vec3(0.85, 0.11, 0.0), vec3(1.0, 0.36, 0.03), wHot * wHot) * wHot + vec3(0.25, 0.03, 0.0) * smoothstep(0.75, 0.5, 1.0 - wHot) * (1.0 - wHot)) * emissive * 0.9;`,
         );
     };
     mat.customProgramCacheKey = () => 'wild-lava';
