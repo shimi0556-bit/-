@@ -739,14 +739,19 @@ window.L3D_MODEL = {
     const AXF = 1.27, AXR = -1.27, TR = 0.381, WZ = 0.711;     // wheelbase 2.54 m (100 in), track 1.42 m (56 in)
     const FRAME_Y = 0.58, FLOOR = 0.70, BZ = 0.575, BELT = 1.06;
     const BLACK = new THREE.MeshPhysicalMaterial({ color: 0x0a0a0b, metalness: 0.1, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.08, side: THREE.DoubleSide, name: 'לכה שחורה (ג׳פאן)' }), BLACKM = M.paintFlat(0x0c0c0d, 0.5);
-    const BRASS = M.brass(), BRASSD = (() => { const m = M.brass().clone(); m.color.setHex(0xb98f3a); m.roughness = 0.42; return m; })();
+    // brass with a light patina: darker, slightly green blotches and rougher spots where polish never reaches
+    const patina = (seed, k) => K.canvasTexture(256, 256, (g, w, h) => { const r = K.rng(seed); g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); for (let i = 0; i < 70; i++) { const x = r() * w, y = r() * h, rad = 6 + r() * 26, gr = g.createRadialGradient(x, y, 0, x, y, rad); const a = (0.02 + r() * 0.05) * k; gr.addColorStop(0, `rgba(92,104,70,${a})`); gr.addColorStop(1, 'rgba(92,104,70,0)'); g.fillStyle = gr; g.fillRect(x - rad, y - rad, rad * 2, rad * 2); } for (let i = 0; i < 900; i++) { g.fillStyle = `rgba(60,48,20,${0.025 * k})`; g.fillRect(r() * w, r() * h, 1 + r() * 2, 1); } }, { repeat: [2, 2] });
+    const roughMap = K.canvasTexture(256, 256, (g, w, h) => { const r = K.rng(77); g.fillStyle = '#6a6a6a'; g.fillRect(0, 0, w, h); for (let i = 0; i < 90; i++) { const x = r() * w, y = r() * h, rad = 3 + r() * 18, gr = g.createRadialGradient(x, y, 0, x, y, rad); gr.addColorStop(0, `rgba(170,170,170,${0.15 + r() * 0.2})`); gr.addColorStop(1, 'rgba(230,230,230,0)'); g.fillStyle = gr; g.fillRect(x - rad, y - rad, rad * 2, rad * 2); } }, { linear: true, repeat: [2, 2] });
+    const BRASS = (() => { const m = M.brass().clone(); m.map = patina(11, 1); m.roughnessMap = roughMap; m.roughness = 0.42; m.name = 'פליז עם פטינה קלה'; return m; })();
+    const BRASSD = (() => { const m = M.brass().clone(); m.color.setHex(0xb98f3a); m.map = patina(23, 1.6); m.roughnessMap = roughMap; m.roughness = 0.55; m.name = 'פליז מוכהה'; return m; })();
     const STEEL = M.steel(), DSTEEL = M.darkSteel(), CAST = M.castIron();
     const IRON = M.metal(0x1d1e21, 0.5);
     const SHEET = dbl(M.metal(0x131315, 0.4));
     const woodNat = (() => { const m = new THREE.MeshStandardMaterial({ color: 0x101012, roughness: 0.4, metalness: 0, bumpMap: K.noiseTexture(256, 'fabric'), bumpScale: 0.3, name: 'עץ היקורי צבוע שחור' }); return m; })();
     const woodDark = new THREE.MeshStandardMaterial({ color: 0x4a2c16, roughness: 0.6, bumpMap: K.noiseTexture(256, 'leather'), bumpScale: 0.3, name: 'עץ אפר' });
     const fabricTop = new THREE.MeshStandardMaterial({ color: 0x17171a, roughness: 0.95, side: THREE.DoubleSide, bumpMap: K.noiseTexture(256, 'fabric'), bumpScale: 0.6, name: 'בד גג מגומם' });
-    const spinners = [];
+    const spinners = [], steerGroups = [];
+    let steerWheel = null, steerLink = null;
 
     // ================================================================== WHEELS
     const wheelsSys = sys('wheels');
@@ -765,7 +770,16 @@ window.L3D_MODEL = {
         const tw = w.front ? 1.0 : 1.17;
         const wp = part(wheelsSys, { he: `גלגל ${name}`, en: `${en} wheel`, mat: 'עץ היקורי + חישוק פלדה + צמיג', desc: `גלגל ארטילריה מעץ עם 12 חישורים, ${w.front ? 'צמיג 30×3 קדמי' : 'צמיג 30×3½ אחורי רחב יותר'}. את הגלגל בנו כמו עגלה: חישורי עץ היקורי שנדחסים לתוך נבות וחישוק.` });
         wp.position.set(w.x, TR, w.s * WZ); if (w.s < 0) wp.rotation.y = PI;
-        const spin = new THREE.Group(); wp.add(spin); spinners.push({ o: spin, s: w.s });
+        let hold = wp;
+        if (w.front) { // steer group at the king pin (13 cm inboard of the wheel centre, local -z is inboard on both sides)
+          const kp = new THREE.Group(); kp.position.set(0, 0, -(WZ - 0.58)); wp.add(kp);
+          hold = new THREE.Group(); hold.position.set(0, 0, WZ - 0.58); kp.add(hold); steerGroups.push(kp);
+          // steering arm turns with the wheel; in wp-local space the world arm (-0.12, 0.03, s·0.06) becomes (-0.12·s, 0.03, 0.06)
+          const arm = P(kp, `זרוע היגוי ${name}`, `${en} steering arm`, 'פלדה מחושלת', 'זרוע קצרה שיוצאת אחורה מהציפורן. מוט החיבור מושך אותה, והיא מסובבת את הגלגל על הקינגפין.');
+          arm.userData.sysOverride = 'chassis';
+          rod(arm, [0, 0, 0], [-0.12 * w.s, 0.03, 0.06], 0.011, IRON);
+        }
+        const spin = new THREE.Group(); hold.add(spin); spinners.push({ o: spin, s: w.s });
         const tire = part(spin, { he: `צמיג ${name}`, en: `${en} tyre`, mat: 'גומי מוואלקן + בד, 30×3' + (w.front ? '' : '½'), desc: 'צמיג קלינצ׳ר (נכנס לתוך שפת החישוק) עם שתי שכבות בד, שפופרת פנימית וכיתוב מידה על הדופן. נתקע לעיתים קרובות — מנהגים נסעו עם ערכת תיקון.' });
         mesh(G.torus(0.343, 0.038, 14, 64, PI * 2, 'z'), M.tire(), { parent: tire, scale: [1, 1, tw] });
         if (w.front) for (const z of [-0.016, 0.016]) mesh(G.torus(0.3805, 0.0018, 4, 64, PI * 2, 'z'), M.black(), { parent: tire, pos: [0, 0, z], cast: false });
@@ -1022,7 +1036,7 @@ window.L3D_MODEL = {
     {
       const sw = P(inter, 'הגה', 'Steering wheel', 'עץ שחור + ספיידר פליז', 'חישוק עץ בקוטר 40 ס״מ על ארבעה חישורי פלדה. במרכז ה״ספיידר״: ידיות ההצתה והמצערת.');
       sw.position.set(0.52, 1.12, -0.28); sw.rotation.z = -Math.atan2(0.78 - 1.12, 0.9 - 0.52) * -1; // wheel axis = column direction (forward-down, ~42°)
-      const swg = new THREE.Group(); swg.rotation.y = PI / 2; sw.add(swg);
+      const swg = new THREE.Group(); swg.rotation.y = PI / 2; sw.add(swg); steerWheel = swg;
       mesh(G.torus(0.19, 0.016, 12, 56), woodDark, { parent: swg });
       for (let k = 0; k < 4; k++) { const a = k * PI / 2 + PI / 4; rod(swg, [Math.cos(a) * 0.02, Math.sin(a) * 0.02, 0], [Math.cos(a) * 0.185, Math.sin(a) * 0.185, 0], 0.006, M.darkSteel()); }
       mesh(G.cyl(0.03, 0.03, 0.03, 20, 'z'), BRASS, { parent: swg });
@@ -1142,9 +1156,8 @@ window.L3D_MODEL = {
         const sp = P(ch, `ציפורן היגוי ${sideHe(s)}`, `Steering spindle ${sideEn(s)}`, 'פלדה מחושלת', 'בולט שפונה החוצה: עליו נסמך הגלגל. הוא מסתובב על ציר אנכי (קינגפין) כשהנהג מפנה את ההגה.');
         put(G.cyl(0.025, 0.02, 0.1, 14, 'z'), STEEL, sp, [AXF, TR, s * 0.62]);
         put(G.cyl(0.015, 0.015, 0.15, 10, 'y'), DSTEEL, sp, [AXF, TR + 0.03, s * 0.58]); put(G.cyl(0.026, 0.026, 0.02, 12, 'y'), BRASS, sp, [AXF, TR + 0.105, s * 0.58]);
-        rod(sp, [AXF - 0.0, TR + 0.0, s * 0.58], [AXF - 0.12, TR + 0.03, s * 0.64], 0.011, IRON);
       }
-      const tr = P(ch, 'מוט חיבור (טיירוד)', 'Tie rod', 'פלדה', 'מוט שמחבר את שני ציפורני הגלגלים כדי שיתכנסו יחד. אורכו נקבע בכיוון הידיני.');
+      const tr = steerLink = P(ch, 'מוט חיבור (טיירוד)', 'Tie rod', 'פלדה', 'מוט שמחבר את שני ציפורני הגלגלים כדי שיתכנסו יחד. אורכו נקבע בכיוון הידיני.');
       rod(tr, [AXF - 0.12, TR + 0.03, -0.64], [AXF - 0.12, TR + 0.03, 0.64], 0.011, IRON); for (const s of [1, -1]) put(G.sphere(0.017, 10, 8), STEEL, tr, [AXF - 0.12, TR + 0.03, s * 0.64]);
       const dl = P(ch, 'מוט היגוי (דראג־לינק)', 'Drag link', 'פלדה', 'מוט ארוך מזרוע פיטמן בתיבת ההיגוי אל הציפורן השמאלי, שדרכו הכיוון עובר לשני הגלגלים.');
       rod(dl, [0.93, 0.66, -0.3], [AXF - 0.12, TR + 0.03, -0.64], 0.01, IRON); put(G.sphere(0.014, 8, 6), STEEL, dl, [0.93, 0.66, -0.3]);
@@ -1295,6 +1308,16 @@ window.L3D_MODEL = {
       const axs = P(dt, 'סרנים (2)', 'Axle shafts (×2)', 'פלדה', 'שני סרנים בתוך בית הציר שמעבירים כוח מהדיפרנציאל לגלגלים.');
       for (const s of [1, -1]) rod(axs, [AXR, TR, s * 0.1], [AXR, TR, s * 0.7], 0.022, STEEL);
     }
+    // ================================================================== STEERING (live)
+    // a turn to the left: the steering wheel goes ~4 turns-worth of the 4:1 planetary ratio scaled down,
+    // the front wheels pivot on their king pins and the tie rod slides across with the steering arms
+    K.toggle('steer', { he: 'היגוי', key: 's', seconds: 1.2 }, (t) => {
+      const th = 0.42 * Math.sin(t * PI / 2);
+      for (const g of steerGroups) g.rotation.y = th;
+      if (steerWheel) steerWheel.rotation.z = th * 4;
+      if (steerLink) steerLink.position.z = Math.sin(th) * 0.12;
+    });
+
     // ================================================================== ENGINE ANIMATION
     let engineSpeed = 0, crankAngle = 0;
     const setEngine = () => {

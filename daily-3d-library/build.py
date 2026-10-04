@@ -9,7 +9,7 @@ tools/check.cjs has produced one).
 
     python3 build.py            # build every model + gallery
     python3 build.py <id>       # build one model + gallery
-    python3 build.py --check    # build, then render + screenshot + stats every model (needs Playwright)
+    python3 build.py --check    # build, then render + screenshot + stats every model + tools/sanity.cjs (needs Playwright)
 """
 import html
 import json
@@ -97,6 +97,18 @@ def main(argv):
         build_model(d)
     if check:
         subprocess.run(["node", str(ROOT / "tools" / "check.cjs"), *[d.name for d in targets]], check=True)
+        # geometric sanity: stray parts (touching nothing) and parts below ground fail the check
+        bad = []
+        for d in targets:
+            r = subprocess.run(["node", str(ROOT / "tools" / "sanity.cjs"), d.name], capture_output=True, text=True)
+            lines = [l for l in r.stdout.splitlines() if l.lstrip().startswith("✗") or l.startswith(("STRAY", "BELOW", "ERR"))]
+            if r.returncode != 0:
+                bad.append(d.name)
+                print(f"  FAIL sanity {d.name}:\n    " + "\n    ".join(lines or [r.stderr.strip()[-400:]]))
+            else:
+                print(f"  ok   sanity {d.name}: no stray parts, nothing below ground")
+        if bad:
+            sys.exit("sanity check failed: " + ", ".join(bad))
     build_gallery([entry(d) for d in dirs])
 
 

@@ -13,10 +13,10 @@
       "page": "models/004-ford-model-t/index.html",
       "thumb": "models/004-ford-model-t/thumb.jpg",
       "stats": {
-        "parts": 164,
+        "parts": 166,
         "meshes": 509,
         "triangles": 111998,
-        "buildMs": 244
+        "buildMs": 258
       }
     },
     {
@@ -35,7 +35,7 @@
         "parts": 156,
         "meshes": 479,
         "triangles": 427465,
-        "buildMs": 938
+        "buildMs": 1123
       }
     },
     {
@@ -54,7 +54,7 @@
         "parts": 258,
         "meshes": 1225,
         "triangles": 400316,
-        "buildMs": 667
+        "buildMs": 696
       }
     },
     {
@@ -73,7 +73,7 @@
         "parts": 246,
         "meshes": 1151,
         "triangles": 612682,
-        "buildMs": 1322
+        "buildMs": 1129
       }
     }
   ]
