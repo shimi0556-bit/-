@@ -752,11 +752,15 @@ window.L3D_MODEL = {
       };
     };
     // plan view: rounded nose and tail (real corners sit ~0.26 m behind the tip at |z| = 0.6)
+    const NOSE = 0.42, NOSE_P = 3.2;
     const W = (x) => {
-      const rf = 0.6, rr = 0.30;
-      if (x > XF - rf) { const u = clamp((x - (XF - rf)) / rf); return HW * Math.pow(Math.max(0, 1 - Math.pow(u, 2.4)), 1 / 2.4); }
-      if (x < XR + rr) { const d = XR + rr - x; return HW - rr + Math.sqrt(Math.max(0, rr * rr - d * d)); }
-      return HW;
+      const rr = 0.5;
+      const haunch = 0.022 * (Math.exp(-Math.pow((x - AXR) / 0.55, 2)) + 0.6 * Math.exp(-Math.pow((x - AXF) / 0.5, 2)));
+      let w = HW;
+      // front: rounded plan (superellipse over the last 0.42 m; corners ~0.15 m behind the tip, measured on top/front photos)
+      if (x > XF - NOSE) { const u = clamp((x - (XF - NOSE)) / NOSE); w = HW * Math.pow(Math.max(0, 1 - Math.pow(u, NOSE_P)), 1 / NOSE_P); }
+      else if (x < XR + rr) { const u = clamp((XR + rr - x) / rr); w = HW - (HW - 0.68) * Math.pow(u, 2.6); }
+      return w + haunch * (w / HW);
     };
     // centre-line top: hood → windshield → roof → fastback → spoiler
     const YT = table([[XR, 1.11], [-2.36, 1.13], [-2.28, 1.23], [-2.10, 1.35], [-1.92, 1.426], [-1.745, 1.48], [-1.565, 1.53], [-1.307, 1.565], [-1.052, 1.58], [-0.801, 1.587], [-0.553, 1.586], [-0.37, 1.565], [-0.13, 1.545], [0.11, 1.50], [0.34, 1.42], [0.57, 1.32], [0.82, 1.2], [1.06, 1.08], [1.32, 0.99], [1.54, 0.945], [1.76, 0.9], [1.98, 0.855], [2.19, 0.81], [XF, 0.75]]);
@@ -778,14 +782,14 @@ window.L3D_MODEL = {
     const sec = (x, v) => {
       const s = v < 0 ? -1 : 1, a = Math.min(1, Math.abs(v));
       const w = W(x), yb = Yb(x), hh = Math.max(0.004, Yt(x) - yb), y0 = Y0(x), ya = YA(x);
-      const nf = smooth(1.3, XF, x), k = clamp(hh / 0.5), wg = w - lerp(0.09, 0.2, k) - 0.12 * nf - 0.14 * smooth(-0.9, -2.3, x), n = lerp(5.5, 2.8, k), drop = 0.07 + 0.1 * nf, ws = w - 0.075, wi = Math.min(W_IN, Math.max(0, w - 0.17));
+      const nf = smooth(1.3, XF, x), k = clamp(hh / 0.5), wg = w - Math.min(lerp(0.12, 0.16, k) + 0.1 * nf + 0.1 * smooth(-0.9, -2.3, x), 0.3 * w), n = lerp(5.5, 2.1, k), drop = 0.07 + 0.1 * nf, fi = clamp(w / 0.35), ws = w - 0.03 * fi, wi = Math.min(W_IN, Math.max(0, w - 0.15 * fi));
       let y, z;
       const seg = (a0, a1) => (a - a0) / (a1 - a0);
       if (a <= LV.glass) { const t = (a / LV.glass) * PI / 2; z = wg * Math.pow(Math.sin(t), 2 / n); y = yb + hh * Math.pow(Math.cos(t), 2 / n); }
       else if (a <= LV.shoulder) { const t = seg(LV.glass, LV.shoulder) * PI / 2; z = wg + (ws - wg) * Math.sin(t); y = yb - drop * (1 - Math.cos(t)); }
-      else if (a <= LV.side) { const t = seg(LV.shoulder, LV.side); y = lerp(yb - drop, ya + 0.05, t); z = w - 0.075 * Math.pow(Math.abs(t - 0.45) / 0.55, 2) - 0.035 * t * t; }
-      else if (a <= LV.cornerB) { const t = seg(LV.side, LV.cornerB) * PI / 2; z = w - 0.11 - 0.05 * (1 - Math.cos(t)); y = ya + 0.05 - 0.05 * Math.sin(t); }
-      else if (a <= LV.well) { const t = seg(LV.cornerB, LV.well); z = lerp(w - 0.16, wi, t); y = ya; }
+      else if (a <= LV.side) { const t = seg(LV.shoulder, LV.side); y = lerp(yb - drop, ya + 0.05, t); z = w - fi * (0.03 + 0.045 * Math.pow(Math.abs(t - 0.4) / 0.6, 2.2) + 0.05 * Math.pow(t, 3)); }
+      else if (a <= LV.cornerB) { const t = seg(LV.side, LV.cornerB) * PI / 2; z = w - fi * (0.08 + 0.06 * (1 - Math.cos(t))); y = ya + 0.05 - 0.05 * Math.sin(t); }
+      else if (a <= LV.well) { const t = seg(LV.cornerB, LV.well); z = lerp(w - 0.14 * fi, wi, t); y = ya; }
       else if (a <= LV.wellIn) { const t = seg(LV.well, LV.wellIn); z = wi; y = lerp(ya, y0, t); }
       else { const t = seg(LV.wellIn, 1); z = lerp(wi, 0, t); y = y0; }
       return V3(x, y, s * z);
@@ -816,7 +820,8 @@ window.L3D_MODEL = {
     const vs = samples(-1, 1, arcStep, [...aBreaks, ...aBreaks.map((b) => -b), 0]);
     const xBreaks = [...FD, 0.88, ...RD, ...QG, ...FR, LG, COWL, WS_TOP, WS_TOP - 0.04, ROOF_END, ROOF_END + 0.05, BL_END, AXF - ARCH_R, AXF + ARCH_R, AXR - ARCH_R, AXR + ARCH_R];
     const xStep = (x) => (x > XF - 0.6 || x < XR + 0.32 ? 0.016 : Math.abs(x - AXF) < ARCH_R + 0.02 || Math.abs(x - AXR) < ARCH_R + 0.02 ? 0.022 : (x < COWL && x > WS_TOP) || (x < LG && x > BL_END) ? 0.012 : 0.04);
-    const xs = samples(XR, XF, xStep, xBreaks);
+    const noseBreaks = Array.from({ length: 30 }, (_, k) => { const z = (k + 0.5) / 30; return XF - NOSE + NOSE * Math.pow(1 - Math.pow(z, NOSE_P), 1 / NOSE_P); }).filter((x) => x > XF - 0.1);
+    const xs = samples(XR, XF, xStep, [...xBreaks, ...noseBreaks]);
     // sub-ranges of the shared grids, so every patch is cut on exactly the same lines as its hole
     const subX = (a, b) => { const lo = Math.min(a, b), hi = Math.max(a, b); return [lo, ...xs.filter((x) => x > lo + 1e-4 && x < hi - 1e-4), hi]; };
     const subV = (a, b) => { const lo = Math.min(a, b), hi = Math.max(a, b); return [lo, ...vs.filter((v) => v > lo + 1e-4 && v < hi - 1e-4), hi]; };
@@ -856,8 +861,8 @@ window.L3D_MODEL = {
       const fxz = (z) => { let lo = XF - 0.5, hi = XF; for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (W(m) > Math.abs(z)) lo = m; else hi = m; } return lo; };
       // wide black lower intake and lip: bands of the nose surface that follow constant heights
       for (const s2 of [1, -1]) {
-        mesh(band(XF - 0.34, XF - 0.001, (x) => s2 * vAtY(x, 0.42, 1), (x) => s2 * vAtY(x, 0.28, 1), { offset: 0.004 }), GLOSSBLK, { parent: fr, name: 'lower intake' });
-        mesh(band(XF - 0.34, XF - 0.001, (x) => s2 * vAtY(x, 0.28, 1), (x) => s2 * vAtY(x, 0.235, 1), { offset: 0.004 }), M.plastic(0x2a2c30, 0.5), { parent: fr, name: 'lower lip' });
+        mesh(band(XF - 0.34, XF, (x) => s2 * vAtY(x, 0.42, 1), (x) => s2 * vAtY(x, 0.28, 1), { offset: 0.004 }), GLOSSBLK, { parent: fr, name: 'lower intake' });
+        mesh(band(XF - 0.34, XF, (x) => s2 * vAtY(x, 0.28, 1), (x) => s2 * vAtY(x, 0.235, 1), { offset: 0.004 }), M.plastic(0x2a2c30, 0.5), { parent: fr, name: 'lower lip' });
       }
       instances(new THREE.BoxGeometry(0.01, 0.006, 0.7), M.plastic(0x050506, 0.6), Array.from({ length: 7 }, (_, i) => ({ pos: [fxz(0.35) - 0.006, 0.3 + i * 0.016, 0] })), { parent: fr });
       // rear diffuser + reflectors
@@ -1011,23 +1016,35 @@ window.L3D_MODEL = {
     {
       const lights = sys('lights');
       const bar = part(lights, { he: 'פס אור קדמי לרוחב החזית', en: 'Front full-width light bar', mat: 'נורות LED מתחת לעדשה', desc: 'פס אור דק שחוצה את כל החזית — סימן ההיכר של ג׳וניפר. משמש כאור יום ומשנה צבע לכתום כאיתות בקצוות.' });
-      const barPts = []; for (let i = 0; i <= 48; i++) { const sd = i < 24 ? -1 : 1, u = sd < 0 ? i / 24 : (48 - i) / 24, x = lerp(XF - 0.5, XF - 0.002, u); barPts.push(onBody(x, sd * vAtY(x, Yb(x) - 0.05 - 0.02 * u, 1), 0.003)); }
+      // point on the nose at lateral position z along a fixed section line v (bisection along x; |z| shrinks toward the tip)
+      const lineAt = (z, v, d = 0.003) => {
+        const sd = z < 0 ? -1 : 1, az = Math.abs(z); let lo = XF - 0.6, hi = XF;
+        for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (Math.abs(sec(m, sd * v).z) > az) lo = m; else hi = m; }
+        return onBody(lo, sd * v, d);
+      };
+      // DRL bar right under the hood lip, across the full width (the lip is where the hood rolls into the face)
+      const V_LIP = A_G + 0.003;
+      const barPts = []; for (let i = 0; i <= 64; i++) { const z = -0.6 + (i / 64) * 1.2; barPts.push(lineAt(z, V_LIP, 0.004)); }
       put(G.tube(barPts, 0.0045, 96, 6), L.drl, bar);
-      put(G.tube(barPts.map((p) => p.clone().add(V3(-0.004, -0.008, 0))), 0.006, 96, 5), GLOSSBLK, bar);
+      put(G.tube(barPts.map((p) => p.clone().add(V3(0, -0.01, 0))), 0.006, 96, 5), GLOSSBLK, bar);
       for (const s of [1, -1]) {
-        const z = s * 0.72, hx = frontX(z), hy = Yb(hx) - 0.085, ang = Math.atan2(-(frontX(z + 0.01 * s) - hx), 0.01) * -s;
-        const hl = part(lights, { he: `פנס ראשי ${sideHe(s)}`, en: `Headlamp (${sideEn(s)})`, mat: 'פוליקרבונט + מטריצת LED', desc: 'פנס צר ונסתר בפינת הפגוש, מתחת לקצה פס האור, עם עדשת הקרנה ומטריצת LED שמכבה אזורים כדי לא לסנוור נהגים ממול.' });
-        const g = new THREE.Group(); g.position.set(hx, hy, z); g.rotation.y = s * Math.atan2(W(hx - 0.02) - W(hx), 0.02) * 0 - s * 0.45; hl.add(g);
-        put(G.soft(0.03, 0.05, 0.22, { r: 0.015, seg: 4 }), GLOSSBLK, g, [-0.008, 0, 0]);
-        for (const dz of [-0.05, 0.04]) { put(G.cyl(0.018, 0.018, 0.014, 20, 'x'), M.clearLens(), g, [0.006, 0, dz]); put(G.cyl(0.013, 0.013, 0.01, 18, 'x'), L.head, g, [0.0, 0, dz]); }
-        put(new THREE.BoxGeometry(0.006, 0.005, 0.16), L.amber, g, [0.008, -0.02, 0]);
-        void ang;
+        const hl = part(lights, { he: `פנס ראשי ${sideHe(s)}`, en: `Headlamp (${sideEn(s)})`, mat: 'פוליקרבונט + מטריצת LED', desc: 'פנס צר ונסתר בפינת הפגוש, מתחת לקצה פס האור: חריץ שחור דק שיורד כלפי הפינה, ובתוכו עדשת הקרנה ומטריצת LED שמכבה אזורים כדי לא לסנוור נהגים ממול.' });
+        // dark slit that drops toward the outer corner (inner end 0.65 m, outer end 0.60 m)
+        const vSl = (t) => V_LIP + 0.005 + 0.025 * t * t;
+        const slit = []; for (let k = 0; k <= 12; k++) { const t = k / 12, z = s * lerp(0.52, 0.86, t); slit.push(lineAt(z, vSl(t), 0.006)); }
+        put(G.tube(slit, 0.017, 24, 8), GLOSSBLK, hl, null, null, { name: 'slit' });
+        put(G.tube(slit.slice(5), 0.004, 16, 5).translate(0, 0.006, 0), L.head, hl, null, null, { name: 'LED strip' });
+        for (const t of [0.72, 0.86]) { const p = lineAt(s * lerp(0.52, 0.86, t), vSl(t), 0.012); put(G.sphere(0.011, 12, 8), M.clearLens(), hl, p.toArray()); }
+        put(G.tube(slit.slice(2, 7).map((p) => p.clone().add(V3(0, -0.012, 0))), 0.003, 12, 5), L.amber, hl, null, null, { name: 'turn strip' });
         // tail lamp (body corner, C-shape) + reverse lamp
         const tz = s * 0.78, tl = part(lights, { he: `פנס אחורי ${sideHe(s)}`, en: `Tail lamp (${sideEn(s)})`, mat: 'אקריליק אדום + LED', desc: 'פנס אחורי בצורת C עם אור ״מרחף״ שנוצר מהשתקפות פנימית. משתלב בפס האחורי.' });
-        for (let k = 0; k < 3; k++) { const zz = s * (0.66 + k * 0.08); const x = rearX(zz); put(G.box(0.03, 0.045 - k * 0.008, 0.085, 0.01), L.tail, tl, [x + 0.006, 1.02 - k * 0.006, zz], [0, -s * (k * 0.35), 0]); }
-        put(G.box(0.02, 0.012, 0.22, 0.004), L.brake, tl, [rearX(s * 0.72) + 0.01, 0.99, s * 0.72], [0, -s * 0.3, 0]);
+        // upper lamp sits in the liftgate's outer corner, so it rides with the gate
+        const tu = part(lights, { he: `פנס אחורי עליון ${sideHe(s)}`, en: `Upper tail lamp (${sideEn(s)})`, mat: 'אקריליק אדום + LED', desc: 'החלק העליון של הפנס האחורי, בפינת הדלת האחורית מתחת לספוילר. נפתח יחד עם הדלת, ולכן גם כשהיא פתוחה רואים את הפנסים הנמוכים בפגוש.' });
+        ctx.gate.add(tu); tu.userData.sysOverride = 'lights'; tu.position.set(-ctx.gate.position.x, -ctx.gate.position.y, 0);
+        for (let k = 0; k < 3; k++) { const zz = s * (0.6 + k * 0.07); const x = rearX(zz); put(G.box(0.03, 0.045 - k * 0.008, 0.085, 0.01), L.tail, tu, [x + 0.006, 1.02 - k * 0.006, zz], [0, -s * (k * 0.35), 0]); }
+        put(G.box(0.02, 0.012, 0.22, 0.004), L.brake, tu, [rearX(s * 0.66) + 0.01, 0.99, s * 0.66], [0, -s * 0.3, 0]);
         put(G.box(0.02, 0.035, 0.1, 0.01), L.rev, tl, [XR + 0.004, 0.47, s * 0.58]);
-        put(G.box(0.012, 0.02, 0.1, 0.006), M.lens(0xb01010, 0.8), tl, [XR + 0.004, 0.36, s * 0.7]);
+        put(G.box(0.012, 0.02, 0.1, 0.006), M.lens(0xb01010, 0.8), tl, [rearX(s * 0.6) + 0.004, 0.36, s * 0.6]);
       }
       // rear light bar on the liftgate (rides with the gate)
       const rb = part(lights, { he: 'פס אור אחורי', en: 'Rear light bar', mat: 'אקריליק אדום + LED', desc: 'פס אדום דק לרוחב הדלת האחורית שמחבר בין שני הפנסים.' });
