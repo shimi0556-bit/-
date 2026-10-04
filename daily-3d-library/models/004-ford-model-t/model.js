@@ -451,7 +451,7 @@ window.L3D_MODEL = {
       // springs
       const leafSpring = (parent, cx, y0, n, span, thick, name) => {
         const g = new THREE.Group(); parent.add(g);
-        for (let i = 0; i < n; i++) { const L = span * (1 - i * 0.13), pts = []; for (let k = 0; k <= 16; k++) { const u = (k / 16) * 2 - 1; pts.push(V3(cx, y0 + 0.07 * (1 - u * u) - i * thick - 0.02 * Math.abs(u) * (i * 0.5), u * L)); } mesh(G.tube(pts, thick * 0.5, 30, 5), M.metal(0x2a2c30, 0.4), { parent: g, scale: [3.2, 1, 1] }); }
+        for (let i = 0; i < n; i++) { const L = span * (1 - i * 0.13), pts = []; for (let k = 0; k <= 16; k++) { const u = (k / 16) * 2 - 1; pts.push(V3(0, y0 + 0.07 * (1 - u * u) - i * thick - 0.02 * Math.abs(u) * (i * 0.5), u * L)); } mesh(G.tube(pts, thick * 0.5, 30, 5), M.metal(0x2a2c30, 0.4), { parent: g, pos: [cx, 0, 0], scale: [3.2, 1, 1] }); }
         return g;
       };
       const fs = P(ch, 'קפיץ עלים קדמי (רוחבי)', 'Front transverse leaf spring', 'פלדת קפיצים, 6 עלים', 'קפיץ אחד לרוחב המכונית: מרכזו קבוע לקורת הרוחב, וקצותיו תלויים בשקליים על הציר. פשוט וזול — ודי נוח בכבישי עפר.');
