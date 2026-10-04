@@ -5,6 +5,8 @@ import { CAR_TYPES, carSpec } from './config.js';
 import { createCarModel, drawCarProfile } from './CarModel.js';
 import conceptHi from './models/concept.glb?url';
 import conceptLo from './models/concept-lo.glb?url';
+import hyperHi from './models/hyper.glb?url';
+import hyperLo from './models/hyper-lo.glb?url';
 
 /**
  * Real 3D models (scanned-quality glTF, prepared by tools/models.mjs) for the
@@ -13,9 +15,11 @@ import conceptLo from './models/concept-lo.glb?url';
  * owns its paint and brake lights. If a model cannot load, the type falls
  * back to its procedural body (CarModel.js), so the game never depends on it.
  */
-const SOURCES = { concept: { hi: conceptHi, lo: conceptLo } };
-/** Attribution the licence asks for (shown in the menu). */
-export const MODEL_CREDIT = 'המכונית "קונספט" היא מודל אמיתי: "Car Concept" מאת Eric Chadwick (Khronos glTF Sample Assets), ברישיון CC BY 4.0. שינויים: הוסרו סמלים והמודל הוקטן.';
+const SOURCES = { concept: { hi: conceptHi, lo: conceptLo }, hyper: { hi: hyperHi, lo: hyperLo } };
+/** Attribution the licences ask for (shown in the menu). */
+export const MODEL_CREDIT =
+  'המכונית "קונספט" היא מודל אמיתי: "Car Concept" מאת Eric Chadwick (Khronos glTF Sample Assets), ברישיון CC BY 4.0. ' +
+  'ההיפרקאר היא מודל אמיתי: "Ferrari 458 Italia" מאת vicent091036 (מדוגמאות three.js), ברישיון CC BY 4.0. שינויים בשתיהן: הוסרו סמלים והמודל הוקטן.';
 const WHEELS = ['WheelFrontL', 'WheelFrontR', 'WheelRearL', 'WheelRearR']; // physics order: FL, FR, RL, RR (left = +x)
 const LOD_FAR = 24; // metres: beyond this the light version is drawn
 

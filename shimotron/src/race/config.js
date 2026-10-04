@@ -175,15 +175,18 @@ export const CAR_TYPES = [
     shape: { halfL: 2.2, w: 1.0, flare: 0.08, floor: -0.44, belt: 0.06, hoodDrop: 0.2, roof: 0.52, cabin: [0.9, 0.25, -0.5, -1.55], cabinW: 0.8, wing: 'none' },
   },
   {
+    // A real 3D model (tools/models.mjs): "Ferrari 458 Italia" by vicent091036, CC BY 4.0.
+    // The wheels, track and wheelbase match the model; `shape` is only the fallback body.
     id: 'hyper',
+    model: 'hyper',
     name: 'היפרקאר',
-    desc: 'הכי מהירה שיש, עם כנף ענקית ומיכל ניטרו גדול',
+    desc: 'מודל תלת־ממד אמיתי של מכונית־על איטלקית. הכי מהירה שיש, עם מיכל ניטרו גדול',
     price: 22000,
     spec: {
       mass: 1380,
-      body: { half: [1.0, 0.28, 2.22], offset: [0, -0.18, 0] },
-      cabin: { half: [0.7, 0.22, 0.9], offset: [0, 0.3, -0.1] },
-      wheel: { radius: 0.37, width: 0.31, front: 1.4, rear: -1.38, track: 0.86, grip: 1.72 },
+      body: { half: [0.98, 0.28, 2.24], offset: [0, -0.18, 0.17] },
+      cabin: { half: [0.72, 0.2, 0.95], offset: [0, 0.3, -0.05] },
+      wheel: { radius: 0.358, width: 0.25, front: 1.33, rear: -1.33, track: 0.84, grip: 1.72 },
       engine: { accel: 12.4, topSpeed: 75, frontShare: 0.3 },
       downforce: 0.85,
       drag: 0.0007,
