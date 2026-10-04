@@ -28,9 +28,11 @@ import { RaceUI } from './ui.js';
 import { ITEMS } from './Pickups.js';
 import { Podium } from './Podium.js';
 import { loadRealModels, warmRealModels } from './RealModels.js';
+import { bakedPreview } from './BakedGround.js';
 import { World, WORLD } from './World.js';
 import { SpaceScene } from './Space.js';
 import { Explore, ROAM } from './Explore.js';
+import { timing } from './Timing.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -87,6 +89,7 @@ class Game {
     document.documentElement.lang = 'he';
     this.ui = new RaceUI(document.getElementById('ui'), this);
     const progress = async (p, text) => {
+      timing.step(text);
       this.ui.showLoader(text, p);
       await nextFrame();
     };
@@ -102,8 +105,9 @@ class Game {
 
     await progress(0.08, 'מאתחל את מנוע שימוטרון…');
     const canvas = document.getElementById('viewport');
-    const forced = (location.hash.slice(1) || new URLSearchParams(location.search).get('quality') || '').toLowerCase();
-    const q = ['low', 'medium', 'high', 'ultra'].includes(forced) ? forced : this.settings.quality || undefined;
+    const levels = ['low', 'medium', 'high', 'ultra'];
+    const forced = location.hash.slice(1).toLowerCase().split(/[^a-z]+/).find((w) => levels.includes(w)) || (new URLSearchParams(location.search).get('quality') || '').toLowerCase();
+    const q = levels.includes(forced) ? forced : this.settings.quality || undefined;
     const engine = new Engine(canvas, { quality: q });
     this.engine = engine;
     this.settings.quality = engine.quality.presetName;
@@ -187,43 +191,74 @@ class Game {
     engine.cameraRig.update(10);
     await progress(0.9, 'מקמפל שיידרים…');
     const unwarm = warmRealModels(engine.scene, materials);
-    try {
-      await Promise.race([engine.renderer.compileAsync(engine.scene, engine.camera), wait(12000)]);
-    } catch {
-      /* first frames compile whatever is left */
-    }
+    await this._compile(12000);
     unwarm();
     engine.atmosphere.update(0);
     engine.start();
     await progress(1, 'מוכן');
+    timing.mark('התפריט עלה');
     this.ui.hideLoader();
     this.toMenu();
     this._planAll();
-    // The islands themselves are built behind the menu, one after another, while the player chooses;
-    // starting anything first waits for the rest (_finishWorld), so the whole world is there before play.
-    this._bgBuild = this._preloadIslands((p, t, k, n) => {
+    // The islands themselves are built behind the menu, one after another, while the player chooses.
+    // A race waits only for its own island (built next if it is not ready yet); free roam waits for them all.
+    this._startBgBuild();
+  }
+
+  /** Builds the islands not built yet, one after another, while the menu is up (see _preloadIslands). */
+  _startBgBuild() {
+    if (this._bgBuild) return;
+    this._bgBuild = this._preloadIslands((p, t, k, n, ip) => {
       this._bgP = p;
       this._bgText = t;
-      if (this._bgWait) this.ui.showLoader(`משלים את בניית העולם · ${t}`, p);
+      if (this._bgWait && this._bgWant != null) this.ui.showLoader(t, ip);
+      else if (this._bgWait) this.ui.showLoader(`משלים את בניית העולם · ${t}`, p);
       else this.ui.buildStatus(this.state === 'menu' ? `בונה את האיים ברקע · ${k + 1}/${n}` : null);
       return nextFrame(); // a frame for the menu between steps
     }, true).catch((e) => console.error(e)).finally(() => {
       this._bgBuild = null;
+      this._bgBusy = false;
       this.ui.buildStatus(null);
     });
   }
 
-  /** Waits for the islands still being built in the background, with the loading screen showing what is left. */
-  async _finishWorld() {
+  /**
+   * Waits for the background build, with the loading screen showing what is
+   * left: for island `index` only (built next, ahead of the others), or with
+   * no index for the whole world.
+   */
+  async _finishWorld(index = null) {
     if (!this._bgBuild) return;
+    const id = index == null ? null : STAGES[index].id;
+    if (id && this.islands.has(id) && !this._bgBusy) return;
     this._bgWait = true;
+    this._bgWant = index;
     this.ui.buildStatus(null);
-    this.ui.showLoader(`משלים את בניית העולם · ${this._bgText || ''}`, this._bgP || 0);
+    this.ui.showLoader(id ? `${STAGES[index].name}…` : `משלים את בניית העולם · ${this._bgText || ''}`, id ? 0 : this._bgP || 0);
     try {
-      await this._bgBuild;
+      if (id) while (this._bgBuild && (this._bgBusy || !this.islands.has(id))) await wait(50);
+      else await this._bgBuild;
     } finally {
       this._bgWait = false;
+      this._bgWant = null;
     }
+  }
+
+  /** Compiles the scene's shaders ahead of drawing it (the first frames compile whatever is left). */
+  async _compile(ms) {
+    const eng = this.engine;
+    try {
+      await Promise.race([eng.renderer.compileAsync(eng.scene, eng.camera), wait(ms)]);
+    } catch {
+      /* optional */
+    }
+  }
+
+  /** The background build may go on: in the menu, or while a loading screen waits for it. */
+  _bgMayBuild() {
+    if (this.state === 'menu') return true;
+    if (!this._bgWait) return false;
+    return this._bgWant == null || !this.islands.has(STAGES[this._bgWant].id);
   }
 
   // ------------------------------------------------------------- islands
@@ -250,7 +285,7 @@ class Game {
    * putting the other on, with the world shifted so it sits at the origin.
    */
   async loadIsland(index, progress) {
-    await this._finishWorld();
+    await this._finishWorld(index);
     const st = STAGES[index];
     if (this.islandDirty) this._clearIslands();
     if (this.island && this.island.stage === st) return this.island;
@@ -273,7 +308,11 @@ class Game {
       if (this.island) this.island.suspend();
       const pad = this.world.pad && this.world.pad.id === st.id ? this.world.pad : null;
       const island = new Island(eng, this.materials, this.water, st, { plan: this.plans[st.id], cache: this.bakeCache, keepOut: (x, z) => this.world.keepOut(st.id, x, z), pad, bridgeEnds: this.world.bridgeEnds(st.id), background });
-      await island.build(progress);
+      await island.build((p, t) => {
+        timing.step(`${st.name}: ${t}`);
+        return progress(p, t);
+      });
+      timing.mark(`${st.name} נבנה`);
       island.suspend();
       if (this.island) this.island.resume();
       this.islands.set(st.id, island);
@@ -327,13 +366,27 @@ class Game {
     this.world.setFull(full);
   }
 
-  /** Builds every island not built yet, so travelling between them never waits. */
+  /**
+   * Builds every island not built yet, so travelling between them never waits.
+   * In the background it builds only while the menu is up (building changes
+   * the sky, the sea and the physics world, so never during play), and an
+   * island a loading screen is waiting for (_bgWant) goes first.
+   */
   async _preloadIslands(progress, background = false) {
-    const todo = STAGES.map((st, i) => i).filter((i) => !this.islands.has(STAGES[i].id));
-    for (let k = 0; k < todo.length; k++) {
-      const i = todo[k];
-      if (this.islands.has(STAGES[i].id)) continue;
-      await this._buildIsland(i, (p, t) => progress((k + p) / todo.length, `${STAGES[i].name}: ${t}`, k, todo.length), background);
+    const n = STAGES.length;
+    for (;;) {
+      if (background) while (!this._bgMayBuild()) await wait(200);
+      const todo = STAGES.map((st, i) => i).filter((i) => !this.islands.has(STAGES[i].id));
+      if (!todo.length) return;
+      const i = background && todo.includes(this._bgWant) ? this._bgWant : todo[0];
+      const k = n - todo.length;
+      // Building slows the menu's frames on purpose: no reason to drop its resolution (and resize every render target).
+      if (background) this._bgBusy = this.engine.quality.hold = true;
+      try {
+        await this._buildIsland(i, (p, t) => progress((k + p) / n, `${STAGES[i].name}: ${t}`, k, n, p), background);
+      } finally {
+        if (background) this._bgBusy = this.engine.quality.hold = false;
+      }
     }
   }
 
@@ -351,6 +404,13 @@ class Game {
     for (const st of STAGES) {
       if (this.previews[st.id]) continue;
       await wait(30);
+      // Drawn at build time with the baked ground (same sources, so the same circuit).
+      const pre = this.plans[st.id] && (await bakedPreview(st.id));
+      if (pre) {
+        this.previews[st.id] = pre;
+        if (this.state === 'menu') this.ui.refreshPreviews();
+        continue;
+      }
       const terrain = new Terrain({}, { plaza: null, paths: [], island: st.island, size: st.size, seed: st.seed });
       let plan = this.plans[st.id];
       if (!plan) {
@@ -446,6 +506,7 @@ class Game {
     this.engine.cameraRig = this._worldView();
     this.ui.showMenu({ selected: this.selected, champ: this.champ });
     if (this.carAudio) this.carAudio.mute(false);
+    if (this.world) this._startBgBuild(); // islands still missing (or rebuilt after a graphics change) carry on behind the menu
   }
 
   selectStage(i) {
@@ -925,8 +986,8 @@ class Game {
     if (!this.island || this.island.stage !== st || this.islandDirty) {
       await this.loadIsland(index, (p, t) => this.ui.showLoader(t, p));
       this.ui.showLoader('מקמפל שיידרים…', 0.96);
-      await nextFrame();
     }
+    timing.step('יצירת המכוניות והמירוץ');
     this._endRace();
     this._endPodium();
     this._showMap(false);
@@ -964,10 +1025,17 @@ class Game {
       race = new CraftRace(this, this.island, { kind, laps: this.settings.laps, difficulty: this._difficulty(), roster: this._gridOrder(this.roster()), space: this.inSpace ? this.space : null });
     }
     this.race = race;
+    // One compile for the island and the race together, before the first frame draws them: the
+    // player's headlights change the number of lights, so compiling the island alone first would
+    // compile every shader twice. Ahead of drawing, browsers with KHR_parallel_shader_compile
+    // compile in parallel instead of one by one inside a frame that freezes the page.
+    timing.step('קימפול שיידרים למירוץ');
+    const drawing = eng._running;
+    if (drawing) eng.stop();
     try {
-      await Promise.race([eng.renderer.compileAsync(eng.scene, eng.camera), wait(6000)]);
-    } catch {
-      /* optional */
+      await this._compile(12000);
+    } finally {
+      if (drawing) eng.start();
     }
     this.ui.hideLoader();
     this.ui.fade(0);
@@ -977,6 +1045,7 @@ class Game {
     this.camera.setMode('orbit');
     this.camera.orbitAngle = Math.atan2(race.player.car.forward.z, race.player.car.forward.x) + Math.PI * 0.75;
     eng.cameraRig = this.camera;
+    timing.mark('המירוץ התחיל');
     this.ui.showHUD(race, st);
     this.engine.canvas.focus({ preventScroll: true });
   }
@@ -1023,7 +1092,6 @@ class Game {
         await this._preloadIslands((p, t) => this.ui.showLoader(`בונה את כל האיים · ${t}`, p));
       }
       await this.loadIsland(index, (p, t) => this.ui.showLoader(t, p));
-      await nextFrame();
     }
     this._endRace();
     this._showMap(false);
@@ -1035,16 +1103,20 @@ class Game {
       const [x, z] = this.world.toLocal(at.wx, at.wz);
       ex.spawn(at.kind, { x, y: at.y, z, yaw: at.yaw, speed: at.speed, onDeck: at.onDeck });
     } else ex.spawn(this.roamKind || 'car');
+    // As for a race: one compile with the vehicle (and its lights) in place, before the first frame.
+    const drawing = eng._running;
+    if (drawing) eng.stop();
     try {
-      await Promise.race([eng.renderer.compileAsync(eng.scene, eng.camera), wait(5000)]);
-    } catch {
-      /* optional */
+      await this._compile(12000);
+    } finally {
+      if (drawing) eng.start();
     }
     this.ui.hideLoader();
     this.ui.fade(0);
     this.state = 'explore';
     eng.paused = false;
     eng.cameraRig = this.camera;
+    timing.mark('הסיור החופשי התחיל');
     this.ui.showExplore(ex, st);
     this.engine.canvas.focus({ preventScroll: true });
   }

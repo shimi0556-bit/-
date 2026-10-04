@@ -6,11 +6,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && vite build --mode race",
+    "build": "vite build && vite build --mode race && node tools/bake-ground.mjs && vite build --mode race",
     "build:engine": "vite build",
     "build:race": "vite build --mode race",
     "models": "node tools/models.mjs",
-    "usb": "vite build && vite build --mode race && node tools/bake-ground.mjs && vite build --mode usb && node tools/usb.mjs",
+    "usb": "npm run build && vite build --mode usb && node tools/usb.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

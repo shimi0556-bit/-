@@ -152,6 +152,12 @@ export class Quality {
 
   /** Called once per frame with the raw frame time; adjusts renderScale in steps. */
   sample(dt) {
+    if (this.hold) {
+      // Frames are slow on purpose while the world is being built: judge nothing, resize nothing.
+      this._acc = 0;
+      this._frames = 0;
+      return;
+    }
     if (!this.dynamicResolution) {
       if (this.renderScale !== 1) {
         this.renderScale = 1;

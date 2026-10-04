@@ -35,6 +35,7 @@ A persistent, Claude-maintained knowledge base for this repo, following the patt
 | [`hamigrash-trailer.md`](hamigrash-trailer.md) | [`hamigrash-trailer/`](../hamigrash-trailer) |
 | [`playground.md`](playground.md) | [`index.html`](../index.html) + [`playground/`](../playground) (the launcher) |
 | [`roboshaul-hebrew-tts.md`](roboshaul-hebrew-tts.md) | [`roboshaul-hebrew-tts/`](../roboshaul-hebrew-tts) |
+| [`shimotron.md`](shimotron.md) | [`shimotron/`](../shimotron) |
 | [`skyhawk-flight-simulator.md`](skyhawk-flight-simulator.md) | [`skyhawk-flight-simulator/`](../skyhawk-flight-simulator) |
 | [`tokana.md`](tokana.md) | [`tokana/`](../tokana) |
 | [`tuning-numbers.md`](tuning-numbers.md) | [`tuning-numbers/`](../tuning-numbers) |
