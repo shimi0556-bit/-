@@ -28,6 +28,7 @@ export class Track {
     this._buildPath(controls);
     this._chooseStart();
     this._buildProfile();
+    if (stage.jumps) this._jumps(stage.jumps);
     this._buildField();
     this._racingLine();
     if (stage.gorge) this._gorges(stage.gorge);
@@ -179,6 +180,63 @@ export class Track {
     const bank = new Float32Array(n);
     for (let i = 0; i < n; i++) bank[i] = THREE.MathUtils.clamp(-this.kappa[i] * 9, -0.065, 0.065);
     this.bank = this._smoothLoop(bank, 6, 2);
+  }
+
+  /**
+   * Table-top jumps built into the road itself (so the asphalt, the ground
+   * under it, the wheel rays and the AI all see the same shape): a ramp up to
+   * a lip, a short flat table, and a long, gentle landing slope back down.
+   * Only on the straightest stretches, clear of the start and of each other.
+   */
+  _jumps({ count = 3, height = 1.7, up = 16, top = 9, down = 28 }) {
+    const n = this.n;
+    const ds = this.ds;
+    const len = up + top + down;
+    // The straight it needs: a run-up, the jump, and room to land and settle.
+    const before = Math.round(45 / ds);
+    const after = Math.round(70 / ds);
+    const body = Math.round(len / ds);
+    const from = Math.round(380 / ds);
+    const to = n - Math.round(260 / ds) - before - body - after;
+    const cands = [];
+    for (let i = from; i < to; i += 2) {
+      let k = 0;
+      let grade = 0;
+      for (let j = i; j < i + before + body + after; j++) {
+        k = Math.max(k, Math.abs(this.kappa[j % n]));
+        grade = Math.max(grade, Math.abs(this.h[(j + 1) % n] - this.h[j % n]) / ds);
+      }
+      // Gentle bends only, and no steep downhill (a jump into a drop flies too far).
+      if (k < 1 / 170 && grade < 0.075) cands.push({ i, k: k + grade * 0.02 });
+    }
+    cands.sort((a, b) => a.k - b.k);
+    const gap = Math.round(Math.max(420, (this.length / (count + 1)) * 0.6) / ds);
+    this.jumps = [];
+    for (const c of cands) {
+      if (this.jumps.length >= count) break;
+      if (this.jumps.some((J) => Math.min(Math.abs(J.i0 - c.i), n - Math.abs(J.i0 - c.i)) < gap)) continue;
+      this.jumps.push({ i0: c.i + before, height });
+    }
+    const m = 1 / 0.9; // linear ramp with a rounded toe over its first 20 %
+    const lift = (s) => {
+      if (s <= 0 || s >= len) return 0;
+      if (s < up) {
+        const f = s / up;
+        return height * (f < 0.2 ? (m * f * f) / 0.4 : m * (f - 0.1));
+      }
+      if (s < up + top) return height;
+      const t = (s - up - top) / down;
+      return height * (1 - t * t * (3 - 2 * t));
+    };
+    for (const J of this.jumps) {
+      J.lip = (J.i0 + Math.round(up / ds)) % n;
+      J.end = (J.i0 + body) % n;
+      J.up = up;
+      J.top = top;
+      J.down = down;
+      for (let k = 0; k <= body; k++) this.h[(J.i0 + k) % n] += lift(k * ds);
+    }
+    this.jumps.sort((a, b) => a.i0 - b.i0);
   }
 
   _buildField() {

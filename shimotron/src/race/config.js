@@ -1,6 +1,6 @@
 /**
  * Shimotron Rally — every tunable number lives here.
- * Sections: race rules, car physics, car types, AI, camera, and the seven island stages.
+ * Sections: race rules, car physics, car types, AI, camera, and the island stages.
  */
 
 export const RACE = {
@@ -429,5 +429,43 @@ export const STAGES = [
     roadGrip: 0.97,
     track: { radius: [0.38, 0.58], wiggle: 0.36, targetLength: [3100, 4400] },
     trail: true, // a motocross trail through the mesas (the motorbike race)
+  },
+  {
+    // The wild island: everything at once. A jungle round an active volcano, waterfalls off the
+    // cliffs, two gorges, table-top jumps in the road, rockfalls, lava flows across the road on
+    // causeways and eruptions throwing lava bombs (Wilds.js, Track._jumps).
+    id: 'falls',
+    name: 'אי המפלים',
+    tagline: 'ג׳ונגל סביב הר געש פעיל: מפלים מהצוקים, קפיצות, מפולות סלעים, נהרות לבה ופצצות לבה',
+    color: '#21c28a',
+    seed: 131,
+    size: 2400,
+    segments: 460,
+    island: {
+      radius: 850,
+      stretch: [1.04, 0.98],
+      base: 8,
+      hills: 9,
+      coastRough: 0.12,
+      ranges: [
+        { angle: 2.3, from: 0.45, to: 0.85, weight: 1 },
+        { angle: -0.7, from: 0.5, to: 0.88, weight: 0.85 },
+      ],
+      mountainHeight: 120,
+      volcano: { x: 20, z: -30, radius: 330, height: 200, craterRadius: 0.19, craterDepth: 50 },
+    },
+    biome: { grassTint: [0.72, 1.18, 0.7], sandTint: [1.15, 1.1, 0.98], dirtTint: [0.8, 0.68, 0.55], rockTint: [0.62, 0.66, 0.6] },
+    flora: { pine: 0.12, oak: 0.85, palm: 1, cactus: 0, deadTree: 0.05, trees: 1900, grass: 1.15, flowers: 1.3, foliageTint: '#e4ffd6' },
+    water: { shallow: [0.02, 0.6, 0.52], deep: [0.0, 0.07, 0.14], clarity: 0.1 },
+    life: { balloons: 5, boats: 6, reef: 1.3, fish: 1.6, dolphins: 2 },
+    sky: { time: 17.3, azimuth: 0.9, turbidity: 2.6, rayleigh: 1.35, clouds: 0.38, cloudDensity: 0.5, fog: 0.0011, wind: 1 },
+    weather: null,
+    lavaLake: true,
+    lavaGain: 0.4,
+    cut: 0.4,
+    gorge: { count: 2, length: 360, height: 34, ledge: 5, rock: 0x86917f }, // mossy basalt walls
+    jumps: { count: 3, height: 2.1 },
+    wilds: { waterfalls: 6, rockfalls: 3, lavaFlows: 3, bombs: true },
+    track: { radius: [0.5, 0.64], wiggle: 0.38, targetLength: [3500, 4500] },
   },
 ];

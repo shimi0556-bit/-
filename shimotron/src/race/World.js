@@ -22,9 +22,11 @@ export const WORLD = {
     lava: [2550, 1500],
     canyon: [0, 2800],
     ice: [-2550, 1500],
+    // Out past the gap between the pines and the dunes, on the longest bridge.
+    falls: [-2450, -4244],
   },
   hub: 'city',
-  span: 9400, // the world depth map covers ±span/2
+  span: 11600, // the world depth map covers ±span/2
   deck: 17, // bridge deck height over the sea (sailboats pass underneath)
 };
 

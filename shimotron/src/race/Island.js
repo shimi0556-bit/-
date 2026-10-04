@@ -14,6 +14,7 @@ import { GROUP, Vehicle } from './Vehicle.js';
 import { AccessRoads } from './AccessRoads.js';
 import { Colliders } from './Colliders.js';
 import { Bushes } from './Bushes.js';
+import { Wilds } from './Wilds.js';
 import { Trail, planTrail } from './Trail.js';
 import { bakedGround, bakedSegments } from './BakedGround.js';
 
@@ -141,6 +142,12 @@ export class Island {
       }
     }
 
+    if (st.wilds) {
+      // Rockfalls and lava crossings open the barriers where they cross: before the circuit is built.
+      this.wilds = new Wilds(eng, this);
+      this.wilds.plan();
+    }
+
     await progress(0.32, 'חוצב את הכביש בשטח…');
     // Heights and ground maps: from the cache when this island was built before, else baked in slices.
     const cache = this.opts.cache;
@@ -194,6 +201,12 @@ export class Island {
     if (st.gorge) {
       await progress(0.56, 'מפסל קשתות סלע ונקיקים…');
       this.group.add(new Canyon(eng, terrain, track, st, this.materials, this.colliders).build());
+      await nextFrame();
+    }
+
+    if (this.wilds) {
+      await progress(0.58, 'מזרים מפלים ולבה, מכין מפולות…');
+      this.group.add(this.wilds.build(this.materials, this.colliders));
       await nextFrame();
     }
 
@@ -437,6 +450,7 @@ export class Island {
     if (this.city) this.city.update(dt);
     if (this.life) this.life.update(dt);
     if (this.weather) this.weather.update(dt);
+    if (this.wilds) this.wilds.update(dt);
     if (this.lava) {
       this.lava.uniforms.uTime.value = eng.time.elapsed;
       this.lava.uniforms.uGain.value = (eng.materials.emissiveScale || 1) * 0.6 * (this.stage.lavaGain ?? 1);
@@ -508,6 +522,7 @@ export class Island {
     this.bodies = [];
     for (const e of this.emitters) eng.particles.remove(e);
     if (this.city) this.city.dispose();
+    if (this.wilds) this.wilds.dispose();
     this.group.removeFromParent();
     this.group.traverse((o) => {
       if (o.isMesh || o.isPoints || o.isInstancedMesh) {

@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+import { Emitter } from '../engine/fx/Particles.js';
 import { Car } from './Car.js';
 import { PlayerDriver, AIDriver, updateDrafts } from './Drivers.js';
 import { Pickups } from './Pickups.js';
@@ -213,7 +215,10 @@ export class Race {
       const drowned = b.position.y < -0.6;
       const lost = !e.q || e.q.dist > tr.W + 14;
       const aiAsk = !e.isPlayer && e.driver.needsRespawn;
-      if ((flipped || drowned || lost || aiAsk) && this.state !== 'intro' && this.state !== 'countdown') this.respawn(e);
+      // Off the causeway into the lava (the wild island): up in flames, back on the road.
+      const burnt = this.island.wilds?.burns(b.position);
+      if (burnt) this.game.engine.particles.systems.fire && new Emitter(this.game.engine.particles.systems.fire, { position: new THREE.Vector3(b.position.x, b.position.y, b.position.z), radius: 1.5, spread: 0.6, speed: [3, 8], life: [0.6, 1.4], size0: [2, 3.5], size1: [0.5, 1], color0: [1, 0.6, 0.2, 1], color1: [1, 0.2, 0.05, 0] }).burst(60);
+      if ((flipped || drowned || lost || aiAsk || burnt) && this.state !== 'intro' && this.state !== 'countdown') this.respawn(e);
       e.topSpeed = Math.max(e.topSpeed, e.car.kmh);
     }
 

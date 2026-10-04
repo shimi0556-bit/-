@@ -30,7 +30,7 @@ export class Canyon {
     this.group.name = 'קניון';
     const T = materials.textures;
     // Red sandstone: the engine's triplanar rock, tinted.
-    this.rock = new THREE.MeshStandardMaterial({ name: 'אבן חול', color: 0xd9906a, roughness: 0.93, metalness: 0 });
+    this.rock = new THREE.MeshStandardMaterial({ name: 'אבן חול', color: stage.gorge?.rock ?? 0xd9906a, roughness: 0.93, metalness: 0 });
     materials.triplanar(this.rock, T.rock, T.rockNormal, 0.16, 1.2);
   }
 
