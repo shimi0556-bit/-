@@ -10,7 +10,7 @@ import { Life } from './Life.js';
 import { Spaceport } from './Launch.js';
 import { Weather } from './Effects.js';
 import { RACE } from './config.js';
-import { GROUP } from './Vehicle.js';
+import { GROUP, Vehicle } from './Vehicle.js';
 import { AccessRoads } from './AccessRoads.js';
 import { Colliders } from './Colliders.js';
 import { Bushes } from './Bushes.js';
@@ -205,7 +205,7 @@ export class Island {
     this.group.add(flora.build());
     for (const c of flora.colliders) {
       if (c.type === 'tree') this.colliders.tree(c.x, c.y, c.z, c.r, c.h, c.crownR, c.top);
-      else if (c.type === 'sphere' && c.r > 0.7) this.colliders.sphere(c.x, c.y, c.z, c.r);
+      else if (c.type === 'sphere') this.colliders.sphere(c.x, c.y, c.z, c.r);
     }
     // Shrubs that give way: pushed aside, or flattened when driven over.
     this.bushes = new Bushes(eng, terrain, this.materials, st, track, flora, blocked);
@@ -432,7 +432,7 @@ export class Island {
   update(dt) {
     const eng = this.engine;
     this.track.update(dt, eng);
-    if (this.trail) this.trail.update(dt, eng);
+    if (this.trail) this.trail.update(dt, eng, Vehicle.live);
     if (this.city) this.city.update(dt);
     if (this.life) this.life.update(dt);
     if (this.weather) this.weather.update(dt);

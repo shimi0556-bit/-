@@ -860,6 +860,74 @@ export class Trail extends Track {
     return out;
   }
 
+  _poseStake(mesh, k, p, m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler()) {
+    e.set(p.tilt + p.kz, p.yaw, -p.tilt * 0.7 - p.kx, 'ZXY');
+    q.setFromEuler(e);
+    m.compose(new THREE.Vector3(p.x, p.y - 0.12, p.z), q, new THREE.Vector3(1, 1, 1));
+    mesh.setMatrixAt(k, m);
+  }
+
+  /** Bends the stakes vehicles run into (a spring: pushed over while touched, whipping back after). */
+  _bendStakes(dt, vehicles) {
+    const R = 0.55; // a bike's half width plus the pole
+    for (const v of vehicles) {
+      const b = v.body;
+      const x = b.position.x;
+      const z = b.position.z;
+      const sp = Math.hypot(b.velocity.x, b.velocity.z);
+      const reach = (v.spec.body.half[0] || 0.5) + 0.1;
+      // Forward axis of the chassis (+z in its frame).
+      const q = b.quaternion;
+      const fx = 2 * (q.x * q.z + q.w * q.y);
+      const fz = 1 - 2 * (q.x * q.x + q.y * q.y);
+      for (let i = Math.floor((x - 3) / 10); i <= Math.floor((x + 3) / 10); i++) {
+        for (let j = Math.floor((z - 3) / 10); j <= Math.floor((z + 3) / 10); j++) {
+          const list = this.stakeGrid.get(`${i},${j}`);
+          if (!list) continue;
+          for (const k of list) {
+            const p = this.stakes[k];
+            // The stake in the vehicle's frame: inside its footprint means it is being run over / pushed.
+            const dx = p.x - x;
+            const dz = p.z - z;
+            const fwd = Math.abs(dx * fx + dz * fz);
+            const d = Math.hypot(dx, dz);
+            if (d > Math.max(R, reach) + 1.2 || fwd > (v.spec.body.half[2] || 1) + 0.2) continue;
+            if (d > reach + 0.15 && d > R) continue;
+            // Lean away from the vehicle and along its travel, more the faster it goes (flat at ~8 m/s).
+            const ux = sp > 0.5 ? b.velocity.x / sp : dx / (d || 1);
+            const uz = sp > 0.5 ? b.velocity.z / sp : dz / (d || 1);
+            const lean = Math.min(1.35, 0.5 + sp * 0.11);
+            p.tx = ux * lean;
+            p.tz = uz * lean;
+            p.touch = 0.12;
+            this.bentStakes.add(k);
+          }
+        }
+      }
+    }
+    for (const k of this.bentStakes) {
+      const p = this.stakes[k];
+      p.touch = (p.touch || 0) - dt;
+      const held = p.touch > 0;
+      const tx = held ? p.tx : 0;
+      const tz = held ? p.tz : 0;
+      // Underdamped spring: pushed over fast, whips back with an overshoot or two.
+      const kS = held ? 260 : 140;
+      const c = held ? 26 : 5.5;
+      p.vx += ((tx - p.kx) * kS - p.vx * c) * dt;
+      p.vz += ((tz - p.kz) * kS - p.vz * c) * dt;
+      p.kx += p.vx * dt;
+      p.kz += p.vz * dt;
+      this._poseStake(this.stakeMesh, k, p);
+      if (!held && Math.abs(p.kx) + Math.abs(p.kz) < 0.002 && Math.abs(p.vx) + Math.abs(p.vz) < 0.01) {
+        p.kx = p.kz = p.vx = p.vz = 0;
+        this._poseStake(this.stakeMesh, k, p);
+        this.bentStakes.delete(k);
+      }
+    }
+    if (this.bentStakes.size) this.stakeMesh.instanceMatrix.needsUpdate = true;
+  }
+
   /** Wooden stakes with course tape strung between them round the turns. */
   _stakes() {
     const n = this.n;
@@ -901,15 +969,27 @@ export class Trail extends Track {
     const q = new THREE.Quaternion();
     const e = new THREE.Euler();
     stakes.forEach((p, k) => {
-      e.set(p.tilt, k * 1.7, -p.tilt * 0.7);
-      q.setFromEuler(e);
-      m.compose(new THREE.Vector3(p.x, p.y - 0.12, p.z), q, new THREE.Vector3(1, 1, 1));
-      mesh.setMatrixAt(k, m);
+      p.yaw = k * 1.7;
+      p.kx = 0; // lean (radians) toward +x / +z: a stake that is hit bends away and springs back
+      p.kz = 0;
+      p.vx = 0;
+      p.vz = 0;
+      this._poseStake(mesh, k, p, m, q, e);
     });
     mesh.count = stakes.length;
     mesh.castShadow = true;
     mesh.name = 'יתדות';
     this.group.add(mesh);
+    // Course stakes are flexible poles: whatever runs into one bends it flat, and it whips back up.
+    this.stakes = stakes;
+    this.stakeMesh = mesh;
+    this.stakeGrid = new Map();
+    stakes.forEach((p, k) => {
+      const key = `${Math.floor(p.x / 10)},${Math.floor(p.z / 10)}`;
+      if (!this.stakeGrid.has(key)) this.stakeGrid.set(key, []);
+      this.stakeGrid.get(key).push(k);
+    });
+    this.bentStakes = new Set();
     // Course tape: a sagging ribbon from stake top to stake top.
     const pos = [];
     const uv = [];
@@ -1092,6 +1172,9 @@ export class Trail extends Track {
       const box = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.34, 0.5), steel);
       box.position.set(sx * (W + 0.55), 0.95, -0.05);
       g.add(post, box);
+      // Solid: the post with its release box on top.
+      const c = pose.position.clone().addScaledVector(pose.right, sx * (W + 0.55));
+      this.solids.push({ x: c.x, y: c.y + 0.56, z: c.z, hx: 0.2, hy: 0.56, hz: 0.25, yaw });
     }
     // The gates: one per lane, hinged at the foot, standing until the lights go green.
     const lanes = 8;
@@ -1118,6 +1201,8 @@ export class Trail extends Track {
       const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, H + 0.6, 10), L.metal || steel);
       leg.position.set(sx * (W + 1.6), H / 2 - 0.2, 0);
       arch.add(leg);
+      const c = line.position.clone().addScaledVector(line.right, sx * (W + 1.6));
+      this.solids.push({ x: c.x, y: c.y + H / 2 - 0.2, z: c.z, hx: 0.11, hy: (H + 0.6) / 2, hz: 0.11, yaw: arch.rotation.y });
     }
     const bannerMat = this._canvasMaterial((c, w, h) => {
       c.fillStyle = '#141414';
@@ -1181,7 +1266,8 @@ export class Trail extends Track {
     }
   }
 
-  update(dt) {
+  update(dt, engine, vehicles) {
+    if (this.stakes && vehicles && vehicles.size && dt > 0) this._bendStakes(Math.min(dt, 1 / 30), vehicles);
     if (this.gateDown && this.gateDrop < 2) {
       this.gateDrop = Math.min(2, this.gateDrop + dt * 3.2);
       this._poseGates(this.gateDrop);

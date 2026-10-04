@@ -885,7 +885,10 @@ export class Track {
   /** Physics boxes along both guard rails (6 m chords), independent of the visuals. */
   _layoutRails() {
     const n = this.n;
-    const off = this.W + 6.5;
+    // A Jersey barrier's foot reaches 0.4 m in toward the road (armco: 0.07 m): the box covers the whole profile.
+    const concrete = this.stage.barrier === 'concrete';
+    const off = this.W + 6.5 - (concrete ? 0.08 : 0);
+    this.railHalf = concrete ? 0.34 : 0.2;
     const every = 3; // 6 m chords stay within ~0.1 m of the curved rail
     this.railBoxes = [];
     for (const side of [-1, 1]) {
@@ -1003,6 +1006,11 @@ export class Track {
     });
   }
 
+  /** A box that stops cars (scenery around the circuit), added to the physics with the rails. */
+  _solid(x, y, z, hx, hy, hz, yaw = 0, material = 'default') {
+    (this.solidBoxes || (this.solidBoxes = [])).push({ x, y, z, hx, hy, hz, yaw, material });
+  }
+
   _grandstand(materials) {
     const L = materials.lib;
     const g = new THREE.Group();
@@ -1025,6 +1033,7 @@ export class Track {
         box.rotateY(yaw);
         box.translate(q.x, base, q.z);
         blocks.push(box);
+        this._solid(q.x, base + (top - base) / 2 - 0.75, q.z, segLen / 2, (top - base + 1.5) / 2, 0.65, yaw);
         for (let c = 0; c < 9; c++) {
           if (Math.random() < 0.18) continue;
           const along = -segLen / 2 + (c + 0.5) * (segLen / 9) + (Math.random() - 0.5) * 0.4;
@@ -1043,6 +1052,7 @@ export class Track {
       const col = new THREE.BoxGeometry(0.3, tiers * 0.62 + 5.5, 0.3);
       col.translate(back.x, this.h[p.index] + (tiers * 0.62 + 5.5) / 2 - 0.3, back.z);
       blocks.push(col);
+      this._solid(back.x, this.h[p.index] + (tiers * 0.62 + 5.5) / 2 - 0.3, back.z, 0.15, (tiers * 0.62 + 5.5) / 2, 0.15, 0, 'metal');
     }
     const stand = new THREE.Mesh(mergeGeometries(blocks.map((b) => (b.index ? b.toNonIndexed() : b))), L.stone);
     stand.castShadow = true;
@@ -1109,6 +1119,7 @@ export class Track {
         const pole = new THREE.Mesh(poleGeo, L.iron);
         pole.position.set(p.position.x, gy, p.position.z);
         this.group.add(pole);
+        this._solid(p.position.x, gy + 1.2, p.position.z, 0.06, 1.2, 0.06, 0, 'metal');
         const b = new THREE.Mesh(boardGeo, labels[num]);
         b.position.set(p.position.x, gy + 1.9, p.position.z);
         b.lookAt(b.position.clone().sub(p.tangent));
@@ -1174,6 +1185,17 @@ export class Track {
         if (o.isMesh) o.castShadow = true;
       });
       this.group.add(board);
+      // Solid: the panel and its two legs.
+      const by = Math.atan2(-p.right.x * side * 10 + p.tangent.x * 6, -p.right.z * side * 10 + p.tangent.z * 6);
+      const bc = Math.cos(by);
+      const bs = Math.sin(by);
+      const at = (lx, lz) => [board.position.x + lx * bc + lz * bs, board.position.z - lx * bs + lz * bc];
+      const [px, pz] = at(0, -0.12);
+      this._solid(px, gy + 3.6, pz, 4.6, 1.8, 0.12, by, 'metal');
+      for (const x of [-3.5, 3.5]) {
+        const [lx, lz] = at(x, -0.12);
+        this._solid(lx, gy + 1.1, lz, 0.14, 1.1, 0.14, by, 'metal');
+      }
     });
   }
 
@@ -1189,6 +1211,7 @@ export class Track {
         const p = this.pose(s / this.n, side * (this.W + 5.3));
         const gy = this._groundY(p.position.x, p.position.z);
         for (let h = 0; h < 3; h++) mats.push(new THREE.Matrix4().setPosition(p.position.x, gy + 0.15 + h * 0.3, p.position.z));
+        this._solid(p.position.x, gy + 0.45, p.position.z, 0.47, 0.45, 0.47, 0, 'default');
       }
     }
     if (!mats.length) return;
@@ -1220,6 +1243,7 @@ export class Track {
       const p = this.pose(i / n, side * (this.W + 8.2));
       const gy = this._groundY(p.position.x, p.position.z);
       poles.push(new THREE.Matrix4().setPosition(p.position.x, gy, p.position.z));
+      this._solid(p.position.x, gy + 6, p.position.z, 0.17, 6, 0.17, 0, 'metal');
       const yaw = Math.atan2(-p.right.x * side, -p.right.z * side);
       heads.push(new THREE.Matrix4().makeRotationY(yaw).setPosition(p.position.x - p.right.x * side * 0.6, gy + 12, p.position.z - p.right.z * side * 0.6));
     }
@@ -1261,8 +1285,23 @@ export class Track {
       body.position.set(o.x, o.y, o.z);
       for (const b of group) {
         const q = new CANNON.Quaternion().setFromEuler(0, b.yaw, 0);
-        body.addShape(new CANNON.Box(new CANNON.Vec3(0.2, 0.75, b.len / 2)), new CANNON.Vec3(b.x - o.x, b.y - o.y, b.z - o.z), q);
+        body.addShape(new CANNON.Box(new CANNON.Vec3(this.railHalf || 0.2, 0.75, b.len / 2)), new CANNON.Vec3(b.x - o.x, b.y - o.y, b.z - o.z), q);
       }
+      physics.world.addBody(body);
+      this.bodies.push(body);
+    }
+    // Stands, boards, tyre walls and light masts: compound bodies by ~100 m patch and material.
+    const patches = new Map();
+    for (const b of this.solidBoxes || []) {
+      const key = `${Math.floor(b.x / 100)},${Math.floor(b.z / 100)},${b.material}`;
+      if (!patches.has(key)) patches.set(key, []);
+      patches.get(key).push(b);
+    }
+    for (const list of patches.values()) {
+      const o = list[0];
+      const body = new CANNON.Body({ mass: 0, material: physics.materials[o.material] || physics.materials.default });
+      body.position.set(o.x, o.y, o.z);
+      for (const b of list) body.addShape(new CANNON.Box(new CANNON.Vec3(b.hx, b.hy, b.hz)), new CANNON.Vec3(b.x - o.x, b.y - o.y, b.z - o.z), new CANNON.Quaternion().setFromEuler(0, b.yaw, 0));
       physics.world.addBody(body);
       this.bodies.push(body);
     }

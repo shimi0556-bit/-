@@ -242,12 +242,29 @@ export class Canyon {
       return g;
     });
     const lists = variants.map(() => []);
+    // Each variant's reach: widest across, and top (the roughened mesh, not the unit sphere it began as).
+    const reach = variants.map((g) => {
+      const pos = g.attributes.position;
+      let a = 0;
+      let b = 0;
+      for (let i = 0; i < pos.count; i++) {
+        a = Math.max(a, Math.hypot(pos.getX(i), pos.getZ(i)));
+        b = Math.max(b, pos.getY(i));
+      }
+      return { a, b };
+    });
     const put = (x, z, s, sink = 0.3) => {
       const y = t.heightAt(x, z); // the baked grid the ground mesh is drawn from
       _q.setFromEuler(_e.set(rng.range(-0.3, 0.3), rng.range(0, 6.28), rng.range(-0.3, 0.3)));
-      _m.compose(_p.set(x, y - s * sink, z), _q, _s.set(s * rng.range(0.8, 1.3), s, s * rng.range(0.8, 1.3)));
-      lists[Math.floor(rng.random() * lists.length)].push({ m: _m.clone(), c: new THREE.Color().setHSL(0.045 + rng.range(-0.015, 0.02), rng.range(0.35, 0.55), rng.range(0.42, 0.6)) });
-      if (this.colliders && s > 0.7) this.colliders.sphere(x, y - s * sink + s * 0.05, z, s * 0.82);
+      const sx = rng.range(0.8, 1.3);
+      const sz = rng.range(0.8, 1.3);
+      _m.compose(_p.set(x, y - s * sink, z), _q, _s.set(s * sx, s, s * sz));
+      const k = Math.floor(rng.random() * lists.length);
+      lists[k].push({ m: _m.clone(), c: new THREE.Color().setHSL(0.045 + rng.range(-0.015, 0.02), rng.range(0.35, 0.55), rng.range(0.42, 0.6)) });
+      // A sphere as wide as the boulder, sunk so its top meets the boulder's: every one is solid.
+      const a = reach[k].a * s * Math.max(sx, sz) * 0.95;
+      const b = reach[k].b * s;
+      if (this.colliders) this.colliders.sphere(x, y - s * sink - Math.max(0, a - b), z, a);
     };
     // Along the gorges, just past the barriers, both sides.
     if (tr.gorge) {
@@ -341,7 +358,8 @@ export class Canyon {
         const hh = H * (k ? rng.range(0.45, 0.8) : 1);
         _q.setFromEuler(_e.set(rng.range(-0.04, 0.04), rng.range(0, 6.28), rng.range(-0.04, 0.04)));
         _m.compose(_p.set(ox, t.heightAt(ox, oz) - 0.5, oz), _q, _s.set(hh * 0.55, hh, hh * 0.55));
-        if (this.colliders) this.colliders.post(ox, t.heightAt(ox, oz) - 0.5, oz, hh * 0.55 * 0.22, hh * 0.95);
+        // The column is 0.26 wide at the foot, ±19% where it bulges: the post covers the widest drum.
+        if (this.colliders) this.colliders.post(ox, t.heightAt(ox, oz) - 0.5, oz, hh * 0.55 * 0.34, hh * 0.95);
         lists[Math.floor(rng.random() * lists.length)].push({ m: _m.clone(), c: new THREE.Color().setHSL(0.04 + rng.range(-0.01, 0.02), 0.5, rng.range(0.45, 0.58)) });
       }
       placed++;

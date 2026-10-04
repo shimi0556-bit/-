@@ -1,5 +1,6 @@
 import * as CANNON from 'cannon-es';
 import { CAR } from './config.js';
+import { SolidGuard } from './Solid.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const _v = new CANNON.Vec3();
@@ -41,6 +42,9 @@ export function carMaterial(physics) {
  * handbrake and nitro booleans.
  */
 export class Vehicle {
+  /** Every vehicle in the world now (scenery that gives way — course stakes — looks for them here). */
+  static live = new Set();
+
   constructor(physics, { position, heading = 0, ground = null, spec = CAR } = {}) {
     this.physics = physics;
     this.spec = spec;
@@ -133,6 +137,11 @@ export class Vehicle {
       world.raycastClosest(from, to, rayOpts, result);
     };
     vehicle.world = rayWorld;
+    // Continuous collision for the chassis: no driving into trunks, posts or rocks at speed.
+    this.guard = new SolidGuard(world, body, [S.body, S.cabin]);
+    this._post = () => this.guard.resolve();
+    world.addEventListener('postStep', this._post);
+    Vehicle.live.add(this);
   }
 
   /** Teleports the car, resets motion. heading: yaw in radians (0 = +z). */
@@ -158,6 +167,8 @@ export class Vehicle {
   }
 
   remove() {
+    Vehicle.live.delete(this);
+    this.physics.world.removeEventListener('postStep', this._post);
     this.vehicle.world = this.physics.world;
     this.vehicle.removeFromWorld(this.physics.world);
   }
@@ -369,6 +380,7 @@ export class Vehicle {
         av.z -= (_f.z * wr + _r.z * wp) * k;
       }
     }
+    this.guard.sweep(dt);
   }
 
   /** Signed lateral speed (m/s, + = sliding toward the car's right). */
