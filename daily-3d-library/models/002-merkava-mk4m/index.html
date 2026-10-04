@@ -1838,6 +1838,10 @@ window.L3D_MODEL = {
     K.toggle('lights', { he: 'פנסים', key: 'l', seconds: 0.4, night: true }, (t) => { L.head.emissiveIntensity = 0.05 + t * 3; L.red.emissiveIntensity = 0.05 + t * 2; L.cabin.emissiveIntensity = 0.05 + t * 2.5; });
     K.onFrame((time, dt) => { if (speed > 0.001) { travel += speed * dt; K.__updateTracks(); } });
     K.__updateTracks();
+    // The track pads hang 52 mm below the link pivots and the bottom run sits at y = 0.03, so the pads
+    // went 22 mm into the ground (found by tools/sanity.cjs). Lift the whole model instead of the
+    // sprung system groups, which the firing rock (rockSet) positions absolutely.
+    sys('hull').parent.position.y = 0.022;
   },
 };
 

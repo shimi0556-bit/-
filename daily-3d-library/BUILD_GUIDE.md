@@ -80,12 +80,21 @@ What was modelled per system, the numbers used, sources, and open issues or know
 - **Nothing may float.** The wheel crest was a flat disc over a domed cap, so it looked like it hung in the air. Seat decals on flat faces or in a bezel, and close lathe profiles down to r = 0.
 - **`G.extrude` with a bevel grows the outline by the bevel size.** Pass `bevelOffset: -bevel` when other parts are positioned against that outline (the dash buried its own screens by 2 cm).
 
+- **Never scale a mesh whose geometry is not centred on its own origin.** The Model T leaf springs were built at x = 1.4 and scaled ×3.2 on x, so they landed 3 m from the car. Build at 0, place with `pos`, then scale.
+- **Derive the orientation of wheels, levers and knobs from their shaft vector**, never a hand-typed angle (the Model T steering wheel leaned +45° toward the windshield instead of −42°). Check it in a pure side view.
+- **Check hinge directions in numbers.** The Model T hood opened inwards twice because of a sign error; `tools/sanity.cjs` prints what every toggle moves and where.
+- **Check every piece of lettering from where a person reads it** (the driver's seat, in front of the plate). The floor-mat "Ford" was upside down and mirrored from the seat.
+- **Identify anything you can't name in a QA shot before moving on.** The floating springs were visible in the first shots and were dismissed as studio decoration.
+
 ## 6. Verify
 
 ```bash
 python3 build.py --check                   # must print "ok" for the new model (no console errors)
+node tools/sanity.cjs <NNN-slug>           # stray parts (touching nothing), parts below ground, what each toggle moves; also run by build.py --check
 node tools/check.cjs --qa <NNN-slug>       # writes models/<id>/shots/*.png: front, side, rear, top, under, explode, xray, cut, open, night + custom views
 ```
+
+Then shoot "human-eye" views with `tools/shot.cjs` before sending: the driver's seat, a pure side view of the steering wheel, a wheel close-up, every opening part opened, and every piece of lettering from where it is read.
 
 Look at every QA shot (Read the PNGs). Fix anything floating, intersecting, upside-down or mirrored, then re-run.
 
