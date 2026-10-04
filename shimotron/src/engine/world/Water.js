@@ -1,11 +1,20 @@
 import * as THREE from 'three';
 
-/** Four Gerstner waves: direction (deg), wavelength (m), steepness, amplitude scale. */
+/**
+ * Eight Gerstner waves: direction (deg), wavelength (m), steepness, amplitude
+ * scale. A long ground swell under the wind sea, and short cross-chop on top so
+ * no two crests repeat. The horizontal pull of all of them together (steepness ×
+ * scale × swell growth) stays well under 1, so crests sharpen but never loop.
+ */
 const WAVES = [
   [18, 38, 0.1, 1.0],
   [58, 21, 0.09, 0.8],
   [-24, 13, 0.08, 0.6],
   [95, 7.5, 0.07, 0.45],
+  [33, 64, 0.05, 0.9],
+  [-140, 9.5, 0.06, 0.4],
+  [140, 4.3, 0.06, 0.32],
+  [-62, 3.1, 0.05, 0.25],
 ];
 
 /**
@@ -66,7 +75,7 @@ export function surfAt(x, z, time, amp, depth, out = _surf) {
 }
 
 /** How much each wave grows over deep water (the long swell most, the chop hardly). */
-const SWELL = [1.7, 1.1, 0.45, 0.15];
+const SWELL = [1.7, 1.1, 0.45, 0.15, 1.9, 0.3, 0.08, 0.05];
 /** 0 in the shallows → 1 over open, deep water (sea floor more than ~40 m down). */
 function deepSwell(depth) {
   const t = Math.min(1, Math.max(0, (depth - 10) / 32));
@@ -94,13 +103,13 @@ float seaFloor(vec2 p) {
 
 const GERSTNER = /* glsl */ `
 uniform float uTime;
-uniform vec4 uWaves[4];
+uniform vec4 uWaves[8];
 uniform float uWaveAmp;
-uniform vec4 uSwell;
+uniform float uSwell[8];
 // Returns displacement; accumulates the analytic normal terms. deep: 0..1 open-water swell.
 vec3 gerstner(vec2 p, float damp, float deep, inout vec3 tang, inout vec3 bin) {
   vec3 d = vec3(0.0);
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < 8; i++) {
     vec4 w = uWaves[i];
     float k = 6.2831853 / w.y;
     float c = sqrt(9.81 / k);
@@ -145,7 +154,7 @@ export class Water {
       uTime: { value: 0 },
       uWaves: { value: WAVES.map(([deg, len, steep, amp]) => new THREE.Vector4(THREE.MathUtils.degToRad(deg), len, steep, amp)) },
       uWaveAmp: { value: 1 },
-      uSwell: { value: new THREE.Vector4(...SWELL) },
+      uSwell: { value: [...SWELL] },
       tHeight: { value: terrain.heightTexture },
       tNormal: { value: materials.textures.waterNormal },
       uTerrainSize: { value: terrain.size },
@@ -249,7 +258,7 @@ export class Water {
           vDepth = depth;
           // Crest height as a share of the tallest the waves can stack up here (-1..1).
           float maxA = 0.0;
-          for (int i = 0; i < 4; i++) {
+          for (int i = 0; i < 8; i++) {
             vec4 w = uWaves[i];
             float k = 6.2831853 / w.y;
             maxA += (w.z / k) * w.w * uWaveAmp * damp * fade * (1.0 + deepK * uSwell[i]);
@@ -301,6 +310,12 @@ export class Water {
             vec3 d2 = texture2D(tNormal, uv2).xyz * 2.0 - 1.0;
             float detail = mix(0.55, 0.12, smoothstep(40.0, 900.0, dist));
             vec2 dd = (d1.xy + d2.xy) * detail;
+            // Cat's-paw ripples from the wind gusts, only close up (they would shimmer far away).
+            if (dist < 120.0) {
+              vec3 d3 = texture2D(tNormal, vWPos.xz * 0.37 + vec2(uTime * 0.09, -uTime * 0.05)).xyz * 2.0 - 1.0;
+              float gust = smoothstep(-0.3, 0.9, foamNoise(vWPos.xz * 0.012 + vec2(uTime * 0.01, uTime * 0.006)));
+              dd += d3.xy * 0.22 * gust * (1.0 - smoothstep(30.0, 120.0, dist));
+            }
             wN = normalize(vec3(n.x + dd.x, n.y, n.z + dd.y));
             // Absorption: shallow turquoise over sand, deep navy offshore.
             float absorb = exp(-wDepth * min(0.22, 0.08 + uClarity * 0.8));
@@ -315,6 +330,11 @@ export class Water {
             float patchF = smoothstep(0.2, 1.1, foamNoise(vWPos.xz * 0.0045 + vec2(t * 0.002, t * 0.0013)));
             float streak = smoothstep(-0.2, 1.2, foamNoise(vWPos.xz * vec2(0.05, 0.16) + vec2(t * 0.02, 0.0)));
             float crest = smoothstep(0.78, 0.97, vCrest) * patchF * mix(0.5, 1.0, streak) * smoothstep(-0.8, 0.6, fn) * smoothstep(0.6, 1.1, uWaveAmp);
+            // Spent whitecaps drawn out downwind into long thin lines of foam (open water, strong wind).
+            vec2 wd = vec2(cos(uWaves[0].x), sin(uWaves[0].x));
+            vec2 wq = vec2(dot(vWPos.xz, wd), dot(vWPos.xz, vec2(-wd.y, wd.x)));
+            float lines = smoothstep(0.55, 1.4, foamNoise(wq * vec2(0.006, 0.12) + vec2(t * 0.012, 0.0))) * smoothstep(0.3, 1.2, foamNoise(wq * 0.02));
+            crest += lines * 0.35 * smoothstep(12.0, 40.0, dS) * smoothstep(0.8, 1.2, uWaveAmp) * (1.0 - smoothstep(60.0, 260.0, dist));
             // Breakers: the lip curling over at the crest where the swell trips (~2 m deep), then a bore of
             // white water rushing up the beach behind it, leaving lace that fades until the next one.
             float lip = smoothstep(1.3, 2.3, dS) * (1.0 - smoothstep(2.4, 3.8, dS)) * smoothstep(0.1, 0.19, su) * (1.0 - smoothstep(0.24, 0.42, su));
@@ -350,7 +370,21 @@ export class Water {
             vec3 V = normalize(cameraPosition - vWPos);
             float sss = pow(clamp(dot(V, -uSunDir) * 0.5 + 0.5, 0.0, 1.0), 4.0);
             float h = clamp(vCrest * 0.6 + 0.4, 0.0, 1.0);
-            totalEmissiveRadiance += uSunColor * uShallow * sss * h * 0.05 * (1.0 - wFoam);
+            // Thin crests seen against the light glow green-blue, more the lower the view (longer path).
+            float thin = smoothstep(0.35, 0.95, vCrest) * (0.4 + 0.6 * (1.0 - clamp(V.y, 0.0, 1.0)));
+            vec3 glow = mix(uShallow, vec3(0.1, 0.75, 0.6), 0.45);
+            totalEmissiveRadiance += uSunColor * glow * sss * (h * 0.05 + thin * 0.16) * (1.0 - wFoam) * smoothstep(0.5, 6.0, wDepth);
+            // Sun glitter: tiny facets that each catch the sun for an instant (a sharp lobe on a
+            // fast, fine-grained normal), scattered over the bright path towards the sun.
+            if (gl_FrontFacing && uSunDir.y > 0.02) {
+              vec3 gn = texture2D(tNormal, vWPos.xz * 0.9 + vec2(uTime * 0.23, uTime * 0.17)).xyz * 2.0 - 1.0;
+              vec3 gn2 = texture2D(tNormal, vWPos.xz * 1.7 + vec2(-uTime * 0.31, uTime * 0.2)).xyz * 2.0 - 1.0;
+              vec3 fN = normalize(wN + vec3(gn.x + gn2.x, 0.0, gn.y + gn2.y) * 0.32);
+              vec3 Hs = normalize(V + uSunDir);
+              float spark = pow(max(dot(fN, Hs), 0.0), 1400.0);
+              float near = 1.0 - smoothstep(25.0, 700.0, length(vWPos - cameraPosition));
+              totalEmissiveRadiance += uSunColor * spark * 3.5 * near * (1.0 - wFoam);
+            }
             // From below, sunlight comes through the surface (strongest looking straight up).
             if (!gl_FrontFacing) totalEmissiveRadiance += uSunColor * uShallow * 0.035 * pow(clamp(-V.y, 0.0, 1.0), 2.0);
           }`,

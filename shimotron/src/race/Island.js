@@ -189,6 +189,7 @@ export class Island {
       // The spaceport, with its rocket on the mount.
       this.spaceport = new Spaceport(eng, this.materials, this.opts.pad);
       this.group.add(this.spaceport.build());
+      this.spaceport.solids(this.colliders);
     }
     if (st.gorge) {
       await progress(0.56, 'מפסל קשתות סלע ונקיקים…');

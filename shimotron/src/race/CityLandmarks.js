@@ -33,6 +33,8 @@ export function buildLandmarks(city) {
   const lit = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7, metalness: 0.1, side: THREE.DoubleSide });
   const movers = [];
   const yawQ = new THREE.Quaternion().setFromAxisAngle(UP, city.angle);
+  // Everything a car can reach is solid (the colliders are built after this, in City.build).
+  const C = city.colliders;
   const place = (geo, x, y, z, yaw = city.angle) => geo.applyQuaternion(new THREE.Quaternion().setFromAxisAngle(UP, yaw)).translate(x, y, z);
 
   // ---------------------------------------------------------------- round towers
@@ -125,6 +127,7 @@ export function buildLandmarks(city) {
     const z = lot.p.z;
     const gold = rng.random() < 0.5;
     parts.push(place(paint(new THREE.BoxGeometry(19, 11, 19).translate(0, 5.5, 0), 0xe6dcc6), x, y, z));
+    C.box(x, y + 5.5, z, 9.5, 5.5, 9.5, city.angle);
     parts.push(place(paint(new THREE.BoxGeometry(21, 1, 21).translate(0, 11.3, 0), 0xcfc4ac), x, y, z));
     parts.push(paint(new THREE.CylinderGeometry(6.4, 6.4, 4.5, 24).translate(x, y + 14, z), 0xe9e0cc));
     parts.push(paint(new THREE.SphereGeometry(6.8, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2).translate(x, y + 16.2, z), gold ? 0xd8a93a : 0x4aa39a));
@@ -133,6 +136,7 @@ export function buildLandmarks(city) {
     for (const [dx, dz] of [[-8.5, -8.5], [8.5, -8.5], [-8.5, 8.5], [8.5, 8.5]]) {
       const p = new THREE.Vector3(dx, 0, dz).applyQuaternion(yawQ);
       parts.push(paint(new THREE.CylinderGeometry(1.3, 1.5, 17, 12).translate(x + p.x, y + 8.5, z + p.z), 0xe6dcc6));
+      C.post(x + p.x, y, z + p.z, 1.5, 17);
       parts.push(paint(new THREE.SphereGeometry(1.6, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2).translate(x + p.x, y + 17, z + p.z), gold ? 0xd8a93a : 0x4aa39a));
     }
     // Arched doorway and windows (dark insets on each face).
@@ -186,6 +190,18 @@ export function buildLandmarks(city) {
     ];
     for (const g of arena) g.applyQuaternion(yawQ).translate(x, y, z);
     parts.push(...arena);
+    // Solid: the outer wall, a ring of slabs following the ellipse just inside it.
+    const n = 32;
+    const at = (t) => new THREE.Vector3(Math.cos(t) * 22.5, 0, Math.sin(t) * 17.5).applyQuaternion(yawQ);
+    for (let k = 0; k < n; k++) {
+      const a = at((k / n) * Math.PI * 2);
+      const b = at(((k + 1) / n) * Math.PI * 2);
+      const d = b.clone().sub(a);
+      const m = a.clone().add(b).multiplyScalar(0.5);
+      const inward = m.clone().normalize().multiplyScalar(-0.6);
+      C.box(x + m.x + inward.x, y + 6.6, z + m.z + inward.z, d.length() / 2 + 0.3, 6.6, 0.6, Math.atan2(-d.z, d.x), 'default', { craft: false });
+    }
+    C.box(x, y + 8, z, 25, 8, 20, city.angle, 'default', { car: false }); // the craft meets the whole bowl and its roof
     // Pitch with lines.
     const pitch = paint(new THREE.CircleGeometry(1, 40).scale(15, 10.5, 1).rotateX(-Math.PI / 2), 0x3f8f3a);
     parts.push(pitch.applyQuaternion(yawQ).translate(x, y + 0.25, z));
@@ -209,12 +225,22 @@ export function buildLandmarks(city) {
     // Concrete frame going up: slabs and columns, no walls yet.
     for (let f = 0; f <= floors; f++) parts.push(place(paint(new THREE.BoxGeometry(17, 0.35, 17).translate(0, f * 3.4 + 0.2, 0), 0xa6a6a2), x, y, z));
     for (const cx of [-8, -2.7, 2.7, 8]) for (const cz of [-8, -2.7, 2.7, 8]) parts.push(place(paint(new THREE.BoxGeometry(0.45, floors * 3.4, 0.45).translate(cx, (floors * 3.4) / 2, cz), 0x9a9a96), x, y, z));
+    // Solid: the ground slab, and the columns up to the first floor (a car fits under nothing higher).
+    C.box(x, y + 0.2, z, 8.5, 0.18, 8.5, city.angle);
+    for (const cx of [-8, -2.7, 2.7, 8]) {
+      for (const cz of [-8, -2.7, 2.7, 8]) {
+        const p = new THREE.Vector3(cx, 0, cz).applyQuaternion(yawQ);
+        C.box(x + p.x, y + 1.7, z + p.z, 0.225, 1.7, 0.225, city.angle, 'default', { craft: false });
+      }
+    }
+    C.box(x, y + (floors * 3.4) / 2, z, 8.5, (floors * 3.4) / 2 + 0.2, 8.5, city.angle, 'default', { car: false });
     // Tower crane beside it.
     const H = floors * 3.4 + 22 + rng.random() * 10;
     const base = new THREE.Vector3(10.5, 0, -10.5).applyQuaternion(yawQ);
     const mastX = x + base.x;
     const mastZ = z + base.z;
     parts.push(paint(new THREE.BoxGeometry(1.8, H, 1.8).translate(mastX, y + H / 2, mastZ), 0xf2c230));
+    C.box(mastX, y + H / 2, mastZ, 0.95, H / 2, 0.95);
     for (let k = 2; k < H; k += 3) parts.push(paint(new THREE.BoxGeometry(1.9, 0.18, 1.9).translate(mastX, y + k, mastZ), 0xd9a820));
     const jib = new THREE.Group();
     jib.position.set(mastX, y + H, mastZ);
@@ -245,6 +271,8 @@ export function buildLandmarks(city) {
     const y = lot.y + 0.2;
     parts.push(paint(new THREE.CylinderGeometry(5, 5.3, 0.8, 28).translate(x, y + 0.4, z), 0xd8d2c4));
     parts.push(paint(new THREE.CylinderGeometry(1.1, 1.4, 2.4, 12).translate(x, y + 1.2, z), 0xd8d2c4));
+    C.post(x, y, z, 5.15, 0.8); // the basin wall stops a car before the water
+    C.post(x, y, z, 2.2, 2.6);
     parts.push(paint(new THREE.CylinderGeometry(2.2, 1.6, 0.4, 16).translate(x, y + 2.4, z), 0xd8d2c4));
     const pool = new THREE.Mesh(new THREE.CircleGeometry(4.6, 28).rotateX(-Math.PI / 2), water);
     pool.position.set(x, y + 0.7, z);
@@ -263,7 +291,8 @@ export function buildLandmarks(city) {
     const x = F.p.x;
     const z = F.p.z;
     const y = F.y + 0.2;
-    const hub = R + 5;
+    // High enough that the lowest cabin clears the boarding platform (3 m) instead of sinking into it.
+    const hub = R + 7.7;
     // A-frame legs either side of the wheel.
     for (const side of [-1, 1]) {
       for (const lean of [-1, 1]) {
@@ -274,6 +303,8 @@ export function buildLandmarks(city) {
     }
     parts.push(paint(new THREE.CylinderGeometry(0.7, 0.7, 7.4, 12).rotateZ(Math.PI / 2).applyQuaternion(yawQ).translate(x, y + hub, z), 0x9a9a9a));
     parts.push(place(paint(new THREE.BoxGeometry(14, 3, 8).translate(0, 1.5, 0), 0x2a6fb0), x, y, z)); // ticket booth / platform
+    C.box(x, y + 1.5, z, 7, 1.5, 4, city.angle); // the legs stand inside its footprint
+    C.box(x, y + hub, z, 3, R + 3.6, R + 3.6, city.angle, 'default', { car: false }); // the craft meets the wheel
     wheel = new THREE.Group();
     wheel.position.set(x, y + hub, z);
     wheel.quaternion.copy(yawQ);
@@ -346,6 +377,8 @@ export function buildLandmarks(city) {
     parts.push(paint(tower, 0xf4f4f4, { color: 0xd8332a, test: (px, py) => Math.floor(py / 5) % 2 === 1 }).translate(x, h, z));
     parts.push(paint(new THREE.CylinderGeometry(3.4, 3.4, 0.5, 20).translate(x, h + H + 0.25, z), 0x333333));
     parts.push(paint(new THREE.CylinderGeometry(4.5, 4.5, 3, 20).translate(x, h + 1.5, z), 0xe8e2d4)); // keeper's house ring
+    C.post(x, h, z, 4.5, 3);
+    C.post(x, h, z, 3.3, H + 7);
     parts.push(paint(new THREE.ConeGeometry(2.6, 2.6, 16).translate(x, h + H + 5.2, z), 0xd8332a));
     const lamp = new THREE.MeshStandardMaterial({ color: 0x221a00, emissive: 0xfff0b0, emissiveIntensity: 1 });
     M.trackEmissive(lamp, 5);

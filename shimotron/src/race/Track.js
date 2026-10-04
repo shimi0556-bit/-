@@ -889,7 +889,9 @@ export class Track {
     const concrete = this.stage.barrier === 'concrete';
     const off = this.W + 6.5 - (concrete ? 0.08 : 0);
     this.railHalf = concrete ? 0.34 : 0.2;
-    const every = 3; // 6 m chords stay within ~0.1 m of the curved rail
+    // One chord per drawn rail section (_rails: rows every 2 samples, a section skipped when
+    // either end is in a gap), so the solid rail starts and ends exactly where the drawn one does.
+    const every = 2;
     this.railBoxes = [];
     for (const side of [-1, 1]) {
       for (let i = 0; i < n; i += every) {

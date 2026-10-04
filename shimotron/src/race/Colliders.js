@@ -52,9 +52,13 @@ export class Colliders {
     if (craft) this._craft({ box: true, x, y, z, hx, hy, hz, yaw, c: Math.cos(yaw), s: Math.sin(yaw) }, Math.hypot(hx, hz) + REACH);
   }
 
-  /** An upright post (a square prism the width of the circle). */
+  /**
+   * An upright round post or tower of radius r from y up h: an octagon (two
+   * square prisms, one turned 45°) that hugs the circle within 4% both ways,
+   * so a car neither stops short of it nor sinks into it.
+   */
   post(x, y, z, r, h, material = 'default') {
-    this._shape(x, y + h / 2, z, { type: 'box', hx: r * 0.9, hy: h / 2, hz: r * 0.9, yaw: 0 }, material);
+    for (const yaw of [0, Math.PI / 4]) this._shape(x, y + h / 2, z, { type: 'box', hx: r * 0.97, hy: h / 2, hz: r * 0.97, yaw }, material);
     this._craft({ x, z, y0: y, y1: y + h, r }, r + REACH);
   }
 

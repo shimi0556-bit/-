@@ -1142,6 +1142,8 @@ export class Trail extends Track {
       q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), s.yaw);
       m.compose(new THREE.Vector3(s.x, s.y - 0.04, s.z), q, new THREE.Vector3(1, 1, 1)); // half in the ground
       mesh.setMatrixAt(k, m);
+      // Solid: the half standing out of the ground (the tyre's plane is its local x).
+      this.solids.push({ x: s.x, y: s.y + 0.16, z: s.z, hx: 0.42, hy: 0.21, hz: 0.11, yaw: s.yaw });
     });
     mesh.castShadow = true;
     mesh.receiveShadow = true;

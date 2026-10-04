@@ -52,8 +52,9 @@ const report = await tab.evaluate((only) => {
   // Car-body band above the ground, and how far a surface may sit from a shape and still count as guarded.
   const BAND = [0.3, 1.3];
   const TOL = 0.25;
-  // Soft or out of reach by design.
-  const SOFT = /\b(grass|flower|bush|leaf|leaves|crown|frond|water|ocean|wave|foam|terrain|road|asphalt|decal|shadow|sky|cloud|particle|spray|dust|smoke|crowd|human|people|spectator|fish|coral|kelp|seagrass|glow|flag|banner|cable|rope|wire|lava|snow|weather|bird|balloon|cow|sheep|camel|pickup)|דשא|פרחים|שיחים|גבעולי שיחים|עלווה|מחטים|כפות דקל|Ocean|Water|קצף|קרקע|כביש|אספלט|שפת מסלול|שפות|סימון|קהל|אנשים|צופים|דגים|להקות|שונית|אלמוג|אצות|דגל|כבלים|חבל|לבה|שלג|ציפורים|כדור פורח|כדורים פורחים|פרות|כבשים|גמלים|הפתעות/i;
+  // Soft or out of reach by design (the trail stakes bend away from a car, Trail._bendStakes;
+  // the start gates lie flat from the green light on).
+  const SOFT = /\b(grass|flower|bush|leaf|leaves|crown|frond|water|ocean|wave|foam|terrain|road|asphalt|decal|shadow|sky|cloud|particle|spray|dust|smoke|crowd|human|people|spectator|fish|coral|kelp|seagrass|glow|flag|banner|cable|rope|wire|lava|snow|weather|bird|balloon|cow|sheep|camel|pickup)|דשא|פרחים|שיחים|גבעולי שיחים|עלווה|מחטים|כפות דקל|Ocean|Water|קצף|קרקע|כביש|אספלט|שפת מסלול|שפות|סימון|קהל|אנשים|צופים|דגים|להקות|שונית|אלמוג|אצות|דגל|כבלים|חבל|לבה|שלג|ציפורים|כדור פורח|כדורים פורחים|פרות|כבשים|גמלים|הפתעות|יתדות|שערי זינוק|רחובות/i;
   const out = {};
   const tmp = new THREE.Vector3();
   const m4 = new THREE.Matrix4();
@@ -112,11 +113,28 @@ const report = await tab.evaluate((only) => {
     };
     const found = new Map();
     const p = new THREE.Vector3();
+    // Only vertices a drawn triangle uses (a strip may keep vertices across a gap it does not draw).
+    const drawn = new Map();
+    const used = (geo) => {
+      if (!geo.index) return null;
+      let list = drawn.get(geo);
+      if (!list) {
+        const set = new Set();
+        const ix = geo.index.array;
+        const end = Math.min(ix.length, (geo.drawRange.start || 0) + (geo.drawRange.count === Infinity ? ix.length : geo.drawRange.count));
+        for (let k = geo.drawRange.start || 0; k < end; k++) set.add(ix[k]);
+        drawn.set(geo, (list = Int32Array.from(set)));
+      }
+      return list;
+    };
     const visit = (mesh, world, name) => {
       const pos = mesh.geometry.attributes.position;
       if (!pos) return;
-      const step = Math.max(1, Math.floor(pos.count / 400));
-      for (let i = 0; i < pos.count; i += step) {
+      const list = used(mesh.geometry);
+      const count = list ? list.length : pos.count;
+      const step = Math.max(1, Math.floor(count / 400));
+      for (let k = 0; k < count; k += step) {
+        const i = list ? list[k] : k;
         p.fromBufferAttribute(pos, i).applyMatrix4(world);
         const g = t.height(p.x, p.z);
         if (g < -0.6) continue; // in the sea, past where a car can drive
