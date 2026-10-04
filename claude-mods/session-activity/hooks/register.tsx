@@ -1,11 +1,39 @@
-import type { Register } from 'claude-code'
+import type { EngineInterface, Register, RenderInput } from 'claude-code'
 
 import { LOGO_PNG_160 } from './logo'
 import { collect, type Call, type Row } from './stats'
 
 const PANE = 'session-activity'
+// שאלות שאתה הקלדת: בטרמינל (composer), מהאפליקציה מרחוק (bridge) או דרך ה-SDK
+const PERSON = new Set(['composer', 'bridge', 'sdk'])
 const TITLE = 'הפעילות שלי בסשן'
 const SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160"><image href="data:image/png;base64,${LOGO_PNG_160}" width="160" height="160"/></svg>`
+
+type LogoSite = RenderInput<'AbovePrompt' | 'UserMessage' | 'AssistantMessage'>
+
+function openPane($: EngineInterface): void {
+  void $.ui.open({ id: PANE, title: TITLE })
+  $.ui.invalidate('ui.render')
+}
+
+// הלוגו וכפתור הפתיחה, בכל משטח: תמונה בטרמינל, SVG בדסקטופ, בנייד וב-VS Code
+function logoRow($: EngineInterface, e: LogoSite, size: number, key: string) {
+  const { Box, Button } = $.ui.resolve(e)
+  let picture
+  if (e.surface === 'terminal') {
+    const { Image } = $.ui.resolve(e)
+    picture = <Image source={{ png: LOGO_PNG_160 }} columns={Math.round(size / 6)} rows={Math.round(size / 12)} alt="◉" />
+  } else {
+    const { Svg } = $.ui.resolve(e)
+    picture = <Svg source={SVG} alt="לוגו" width={size} height={size} />
+  }
+  return (
+    <Box flexDirection="row" alignItems="center" gap={1}>
+      {picture}
+      <Button key={key} label="📊 הפעילות שלי" onPress={() => openPane($)} />
+    </Box>
+  )
+}
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
@@ -25,36 +53,35 @@ export const register: Register = on => {
     return next(e)
   })
 
-  // הלוגו מעל שורת הכתיבה, וכפתור שפותח את הטבלה
+  // מעל שורת הכתיבה (טרמינל ודסקטופ בלבד — שם ה-engine מצייר את הפס הזה)
   on('ui.render', { component: 'AbovePrompt' }, ($, e, next) => {
     if (e.props.hasSurvey) return next(e)
+    return logoRow($, e, 48, 'open')
+  })
 
-    const open = () => {
-      void $.ui.open({ id: PANE, title: TITLE })
-      $.ui.invalidate('ui.render')
-    }
+  // בכל שאלה שלך ובתחילת כל תשובה שלי — מוצג בכל המשטחים
+  on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {
+    if (!PERSON.has(e.props.origin.kind)) return next(e)
+    const { Box } = $.ui.resolve(e)
+    const body = await next(e)
+    return (
+      <Box flexDirection="column">
+        {logoRow($, e, 32, `open-u-${e.requestId}`)}
+        {body}
+      </Box>
+    )
+  })
 
-    if (e.surface === 'desktop') {
-      const { Box, Button, Svg } = $.ui.resolve(e)
-      return (
-        <Box flexDirection="row" alignItems="center" gap={1}>
-          <Svg source={SVG} alt="לוגו" width={48} height={48} />
-          <Button key="open" label="📊 הפעילות שלי" hotkey="a" onPress={open} />
-        </Box>
-      )
-    }
-
-    if (e.surface === 'terminal') {
-      const { Box, Button, Image } = $.ui.resolve(e)
-      return (
-        <Box flexDirection="row" alignItems="center" gap={1}>
-          <Image source={{ png: LOGO_PNG_160 }} columns={8} rows={4} alt="◉" />
-          <Button key="open" label="📊 הפעילות שלי" hotkey="a" onPress={open} />
-        </Box>
-      )
-    }
-
-    return next(e)
+  on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
+    if (!e.props.isFirstOfReply) return next(e)
+    const { Box } = $.ui.resolve(e)
+    const body = await next(e)
+    return (
+      <Box flexDirection="column">
+        {logoRow($, e, 32, `open-a-${e.requestId}`)}
+        {body}
+      </Box>
+    )
   })
 
   // הטבלה עצמה

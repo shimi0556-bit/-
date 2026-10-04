@@ -32,3 +32,24 @@ test('הלוגו והכפתור מופיעים מעל שורת הכתיבה', as
     await ui.unmount()
   }
 })
+
+test('הלוגו מופיע בשאלה ובתשובה בכל המשטחים', async ($, on) => {
+  on('ui.render', ($, e) => {
+    const { Text } = $.ui.resolve(e)
+    return <Text>engine</Text>
+  })
+  for (const surface of ['terminal', 'desktop', 'mobile', 'vscode'] as const) {
+    const user = await $.ui.mount({
+      plugin: 'session-activity', surface, component: 'UserMessage',
+      props: { text: 'שלום', origin: { kind: 'bridge' } as never, isExpanded: true },
+    })
+    expect(await user.find({ type: 'Button' })).toBeDefined()
+    await user.unmount()
+    const reply = await $.ui.mount({
+      plugin: 'session-activity', surface, component: 'AssistantMessage',
+      props: { text: 'היי', isFirstOfReply: true },
+    })
+    expect(await reply.find({ type: 'Button' })).toBeDefined()
+    await reply.unmount()
+  }
+})
