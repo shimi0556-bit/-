@@ -24,6 +24,7 @@ A persistent, Claude-maintained knowledge base for this repo, following the patt
 | [`claude-demo-video.md`](claude-demo-video.md) | [`claude-demo-video/`](../claude-demo-video) |
 | [`daily-3d-library.md`](daily-3d-library.md) | [`daily-3d-library/`](../daily-3d-library) |
 | [`claude-grok-mcp-bridge.md`](claude-grok-mcp-bridge.md) | [`claude-grok-mcp-bridge/`](../claude-grok-mcp-bridge) |
+| [`claude-course.md`](claude-course.md) | [`claude-course/`](../claude-course) |
 | [`claude-hud.md`](claude-hud.md) | [`claude-hud/`](../claude-hud) |
 | [`claude-skills.md`](claude-skills.md) | [`claude-skills/`](../claude-skills) |
 | [`claude-spark-pack.md`](claude-spark-pack.md) | [`claude-spark-pack/`](../claude-spark-pack) |
