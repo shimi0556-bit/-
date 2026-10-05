@@ -1,0 +1,114 @@
+{
+  "id": "005-volkswagen-beetle",
+  "title": "פולקסווגן חיפושית",
+  "titleEn": "Volkswagen Beetle Type 1 · 1200 (1963)",
+  "units": "metres",
+  "up": "+Y",
+  "forward": "+Z",
+  "left": "+X",
+  "origin": "ground, middle of the vehicle",
+  "dimensions": {
+    "length": 4.133,
+    "width": 1.544,
+    "height": 1.485
+  },
+  "collider": {
+    "type": "box",
+    "center": [
+      0,
+      0.743,
+      -0.002
+    ],
+    "halfExtents": [
+      0.772,
+      0.743,
+      2.067
+    ]
+  },
+  "physics": {
+    "kind": "car",
+    "drive": "rwd",
+    "massKg": 780,
+    "topSpeedKmh": 115,
+    "accel0to100s": 29,
+    "steerMaxRad": 0.5,
+    "wheelbase": 2.4,
+    "track": 1.31,
+    "wheelRadius": 0.315,
+    "grip": 0.72,
+    "lodHide": [
+      "engine",
+      "drivetrain",
+      "electrics",
+      "brakes",
+      "suspension"
+    ],
+    "note": "מסה, תאוצה ומהירות מרבית לפי נתוני יצרן/ויקיפדיה (קירוב); האחיזה היא הערכה יחסית (מנוע מאחור, נטייה ל־oversteer)."
+  },
+  "wheels": [
+    {
+      "node": "Wheel_FR",
+      "steerNode": "Steer_FR",
+      "front": true,
+      "side": "right",
+      "radius": 0.315,
+      "position": [
+        -0.655,
+        0.315,
+        1.195
+      ],
+      "spinRadPerMetre": -3.1746
+    },
+    {
+      "node": "Wheel_FL",
+      "steerNode": "Steer_FL",
+      "front": true,
+      "side": "left",
+      "radius": 0.315,
+      "position": [
+        0.655,
+        0.315,
+        1.195
+      ],
+      "spinRadPerMetre": 3.1746
+    },
+    {
+      "node": "Wheel_RR",
+      "steerNode": null,
+      "front": false,
+      "side": "right",
+      "radius": 0.315,
+      "position": [
+        -0.675,
+        0.315,
+        -1.205
+      ],
+      "spinRadPerMetre": -3.1746
+    },
+    {
+      "node": "Wheel_RL",
+      "steerNode": null,
+      "front": false,
+      "side": "left",
+      "radius": 0.315,
+      "position": [
+        0.675,
+        0.315,
+        -1.205
+      ],
+      "spinRadPerMetre": 3.1746
+    }
+  ],
+  "tracked": false,
+  "nodes": {
+    "spin": "rotate each Wheel_* node about its own local Z by spinRadPerMetre × metres driven forward (three.js: wheel.rotateZ(...))",
+    "steer": "set Steer_* rotation about local Y (rest rotation is identity): a positive angle turns toward the vehicle's left (+X)"
+  },
+  "files": {
+    "full": "005-volkswagen-beetle.glb",
+    "race": "005-volkswagen-beetle.race.glb"
+  },
+  "triangles": {
+    "full": 229242
+  }
+}

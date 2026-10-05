@@ -14,6 +14,7 @@ One object a day, modelled procedurally in Three.js down to the fasteners, as a 
 | 002 | [Merkava Mk 4M (IDF main battle tank)](models/002-merkava-mk4m/) — טנק מרכבה סימן 4M | 2026-10-03 | 258 | ~400K |
 | 003 | [Tesla Model Y (Juniper, 2025)](models/003-tesla-model-y/) — טסלה מודל Y | 2026-10-03 | 155 | ~458K |
 | 004 | [Ford Model T Touring (1915)](models/004-ford-model-t/) — פורד מודל T | 2026-10-04 | 166 | ~112K |
+| 005 | [Volkswagen Beetle Type 1 “1200” (1963)](models/005-volkswagen-beetle/) — פולקסווגן חיפושית | 2026-10-05 | 233 | ~229K |
 
 **Game-ready:** every model also ships as GLB files for game engines (full + light racing version) with named wheel/steer nodes and physics data. See [`GAME_READY.md`](GAME_READY.md).
 
