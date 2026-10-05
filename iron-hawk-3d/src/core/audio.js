@@ -1,6 +1,9 @@
-// Sound: everything is synthesised with WebAudio at run time (no audio files): the jet
-// engine and wind, cannon, missiles, explosions, monster roars, alarms, interface blips
-// and an instrumental soundtrack per region that gets more intense in battle.
+// Sound. Explosions, monster roars, the missile, fireballs, impacts, the flyby and the
+// ambience use recorded effects (generated with ElevenLabs, embedded by the build as
+// window.__SOUNDS). Everything else is synthesised with WebAudio at run time: the jet
+// engine and wind (they follow the throttle), the cannon, alarms, interface blips and an
+// instrumental soundtrack per region that gets more intense in battle. If a recording is
+// missing or fails to decode, the synthesised version plays instead.
 import { clamp } from './util.js';
 
 const mtof = (n) => 440 * Math.pow(2, (n - 69) / 12);
@@ -25,6 +28,11 @@ export class AudioEngine {
     this.alarmOn = false;
     this.alarmTimer = 0;
     this.lastShot = 0;
+    this.samples = {};
+    this.lastPick = {};
+    this.voices = 0;
+    this.ambId = null;
+    this.ambTimer = 5;
   }
 
   get ready() { return !!this.ctx && this.ctx.state === 'running'; }
@@ -64,6 +72,76 @@ export class AudioEngine {
     this.brown = this.noiseBuffer(3, true);
     this.applyVolumes();
     this.buildEngine();
+    this.loadSamples();
+  }
+
+  // ---------------------------------------------------------------- recorded effects
+  loadSamples() {
+    const src = window.__SOUNDS;
+    if (!src) return;
+    const ctx = this.ctx;
+    const decode = (buf) => new Promise((res, rej) => {
+      const p = ctx.decodeAudioData(buf, res, rej); // callback form for older Safari
+      if (p && p.catch) p.catch(rej);
+    });
+    for (const [key, list] of Object.entries(src)) {
+      this.samples[key] = [];
+      for (const url of list) {
+        try {
+          const bin = atob(url.slice(url.indexOf(',') + 1));
+          const bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          decode(bytes.buffer).then((b) => this.samples[key].push(b), () => {});
+        } catch (e) { /* keep the synth fallback */ }
+      }
+    }
+  }
+
+  has(key) { const l = this.samples[key]; return !!(l && l.length); }
+
+  // play one take of a recorded effect; returns false when it isn't available
+  sample(key, { vol = 1, pan = 0, rate = 1, verb = 0.15, delay = 0, filter = 0 } = {}) {
+    if (!this.ready || !this.has(key)) return false;
+    if (this.voices > 28) return true; // too busy: drop it quietly rather than fall back
+    const list = this.samples[key];
+    let i = Math.floor(Math.random() * list.length);
+    if (list.length > 1 && i === this.lastPick[key]) i = (i + 1) % list.length;
+    this.lastPick[key] = i;
+    const ctx = this.ctx, t = ctx.currentTime + delay;
+    const s = ctx.createBufferSource();
+    s.buffer = list[i];
+    s.playbackRate.value = rate;
+    const o = this.out(vol, pan, verb);
+    if (filter > 0) { // muffle distant sounds
+      const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = filter;
+      s.connect(f).connect(o);
+    } else s.connect(o);
+    this.voices++;
+    s.onended = () => { this.voices--; };
+    s.start(t);
+    return true;
+  }
+
+  // distance muffling: far-away sounds lose their top end
+  muffle(sp) { return sp.vol < 0.5 ? 1200 + sp.vol * 9000 : 0; }
+
+  flyby(vol = 0.6, pan = 0) { this.sample('flyby', { vol, pan, verb: 0.2, rate: 0.95 + Math.random() * 0.1 }); }
+
+  // regional ambience one-shots (gusts, volcanic rumbles) played at random moments
+  ambience(levelId) { this.ambId = levelId; this.ambTimer = 3 + Math.random() * 4; }
+
+  updateAmbience(dt) {
+    if (!this.ambId) return;
+    this.ambTimer -= dt;
+    if (this.ambTimer > 0) return;
+    const pan = (Math.random() - 0.5) * 1.2;
+    if (this.ambId === 'volcano') {
+      this.sample('rumble', { vol: 0.5 + Math.random() * 0.3, pan, rate: 0.7 + Math.random() * 0.25, verb: 0.5 });
+      this.ambTimer = 5 + Math.random() * 7;
+    } else {
+      this.sample('wind', { vol: this.ambId === 'canyon' ? 0.45 : 0.3, pan, rate: 0.85 + Math.random() * 0.3, verb: 0.3 });
+      this.ambTimer = 7 + Math.random() * 9;
+    }
   }
 
   impulse(seconds, decay) {
@@ -234,8 +312,9 @@ export class AudioEngine {
 
   missile() {
     if (!this.ready) return;
+    const rec = this.sample('missile', { vol: 0.85, rate: 0.95 + Math.random() * 0.1, verb: 0.25 });
     const ctx = this.ctx, t = ctx.currentTime;
-    const o = this.out(0.5, 0, 0.25);
+    const o = this.out(rec ? 0.3 : 0.5, 0, 0.25);
     const n = this.noise(false, t, 1.6);
     const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 1.5;
     f.frequency.setValueAtTime(300, t); f.frequency.exponentialRampToValueAtTime(2600, t + 0.35); f.frequency.exponentialRampToValueAtTime(700, t + 1.5);
@@ -263,6 +342,21 @@ export class AudioEngine {
     const sp = this.spatial(pos, 260);
     if (!sp) return;
     const ctx = this.ctx, t = ctx.currentTime;
+    const big = size >= 1.2;
+    const rec = this.sample(big ? 'boom_big' : 'boom_small', {
+      vol: clamp(0.55 + size * 0.25, 0, 1.4) * sp.vol, pan: sp.pan, verb: 0.35, filter: this.muffle(sp),
+      rate: clamp((big ? 1.12 : 1.15) - size * 0.08, 0.72, 1.2) * (0.94 + Math.random() * 0.12),
+    });
+    if (rec) {
+      if (size >= 2) { // sub-bass punch under the biggest blasts
+        const o = this.out(0.6 * sp.vol, sp.pan, 0);
+        const s = ctx.createOscillator(); s.type = 'sine';
+        s.frequency.setValueAtTime(70, t); s.frequency.exponentialRampToValueAtTime(26, t + 0.7);
+        const sg = ctx.createGain(); this.env(sg.gain, t, 0.005, 1, 0.8);
+        s.connect(sg).connect(o); s.start(t); s.stop(t + 0.9);
+      }
+      return;
+    }
     const dur = 0.7 + size * 0.45;
     const o = this.out(clamp(0.35 + size * 0.22, 0, 1.2) * sp.vol, sp.pan, 0.35);
     const n = this.noise(false, t, dur);
@@ -283,6 +377,13 @@ export class AudioEngine {
     if (!this.ready) return;
     const sp = this.spatial(pos, 300);
     if (!sp) return;
+    // recorded roars: flyers shriek, small runners screech, the rest bellow. Playback rate
+    // follows the species pitch so a lava king sounds far deeper than a horned grazer.
+    const p = sound.pitch;
+    const key = p >= 2.2 ? 'shriek' : p >= 1.4 ? 'roar_small' : 'roar_big';
+    const pr = key === 'shriek' ? p / 2.4 : key === 'roar_small' ? p / 1.9 : 0.55 + p * 0.55;
+    const rate = clamp(pr * (death ? 0.82 : 1) * (0.94 + Math.random() * 0.12), 0.5, 1.4);
+    if (this.sample(key, { vol: 0.75 * vol * sp.vol, pan: sp.pan, rate, verb: 0.3, filter: this.muffle(sp) })) return;
     const ctx = this.ctx, t = ctx.currentTime;
     const dur = (death ? 1.9 : 1.3) / Math.sqrt(sound.pitch) * (0.9 + Math.random() * 0.2);
     const base = 95 * sound.pitch * (0.92 + Math.random() * 0.16);
@@ -325,6 +426,7 @@ export class AudioEngine {
     if (!this.ready) return;
     const sp = this.spatial(pos, 260);
     if (!sp) return;
+    if (this.sample('thud', { vol: clamp(0.6 + size * 0.2, 0, 1.2) * sp.vol, pan: sp.pan, rate: clamp(1.15 - size * 0.12, 0.65, 1.1), verb: 0.3 })) return;
     const ctx = this.ctx, t = ctx.currentTime;
     const o = this.out(clamp(0.4 + size * 0.15, 0, 1) * sp.vol, sp.pan, 0.25);
     const s = ctx.createOscillator(); s.type = 'sine';
@@ -340,6 +442,7 @@ export class AudioEngine {
     if (!this.ready) return;
     const sp = this.spatial(pos, 300);
     if (!sp) return;
+    if (this.sample('fire', { vol: 0.7 * sp.vol, pan: sp.pan, rate: 0.9 + Math.random() * 0.2, verb: 0.2, filter: this.muffle(sp) })) return;
     const ctx = this.ctx, t = ctx.currentTime;
     const o = this.out(0.45 * sp.vol, sp.pan, 0.2);
     const n = this.noise(false, t, 0.9);
@@ -351,6 +454,7 @@ export class AudioEngine {
 
   hit(kind) {
     if (!this.ready) return;
+    if (kind !== 'acid') this.sample('clang', { vol: 0.65, pan: (Math.random() - 0.5) * 0.4, rate: 0.85 + Math.random() * 0.3, verb: 0.15 });
     const ctx = this.ctx, t = ctx.currentTime;
     const o = this.out(0.5, (Math.random() - 0.5) * 0.4, 0.15);
     const n = this.noise(false, t, 0.4);
@@ -458,6 +562,7 @@ export class AudioEngine {
       this.alarmTimer -= dt;
       if (this.alarmTimer <= 0) { this.alarmTimer = 0.5; this.beep(740, 0.18, 0.06, 'square'); }
     }
+    this.updateAmbience(dt);
   }
 
   // ---------------------------------------------------------------- music
