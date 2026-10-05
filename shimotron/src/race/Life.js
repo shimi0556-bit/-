@@ -31,6 +31,16 @@ const _v = new THREE.Vector3();
  *   herds    cows and sheep grazing the meadows, camels in the desert.
  * What appears where comes from the stage's `life` settings.
  */
+/**
+ * Is this sea floor the right depth for a species? The shore fish want the
+ * clear shallows just off the beach, where they can be seen from the road;
+ * everything else wants water deep enough to hold its school.
+ */
+function fits(sp, floor) {
+  if (sp.shore) return floor <= sp.depth[1] - 0.25 && floor >= sp.depth[0] - 1.5;
+  return floor <= sp.depth[1] - 1 && floor >= sp.depth[0] - 12;
+}
+
 export class Life {
   constructor(engine, island, materials) {
     this.engine = engine;
@@ -520,7 +530,7 @@ export class Life {
         z = rng.range(-half, half);
       }
       const floor = t.heightAt(x, z);
-      if (floor > sp.depth[1] - 1 || floor < sp.depth[0] - 12) continue;
+      if (!fits(sp, floor)) continue;
       counts[sp.name] = (counts[sp.name] || 0) + 1;
       const n = Math.round(rng.range(sp.count[0], sp.count[1]));
       const fish = [];
@@ -579,7 +589,7 @@ export class Life {
         const z = cam.z + Math.sin(a) * r;
         if (Math.abs(x) > half || Math.abs(z) > half) continue;
         const floor = t.heightAt(x, z);
-        if (floor > s.sp.depth[1] - 1 || floor < s.sp.depth[0] - 12) continue;
+        if (!fits(s.sp, floor)) continue;
         if (s.sp.reef && t.reefAt && t.reefAt(x, z, floor) < 0.3) continue;
         s.ax = x;
         s.az = z;
@@ -616,7 +626,7 @@ export class Life {
       s.x = s.ax + Math.cos(s.ang) * s.roam;
       s.z = s.az + Math.sin(s.ang * 0.8) * s.roam * 0.7;
       const floor = this.terrain.heightAt(s.x, s.z);
-      const top = -0.9 - sp.size * 0.3;
+      const top = -(sp.shore ? 0.3 : 0.9) - sp.size * 0.3;
       const bottom = floor + 0.6 + sp.size * (sp.floor ? 0.3 : 1);
       const mid = sp.floor ? 0.05 : 0.35;
       // Never out of the water, even where the floor comes up close to the surface.
@@ -651,7 +661,17 @@ export class Life {
         py = Math.min(top, py + f.fy);
         pz += f.fz;
         const yaw = heading + Math.sin(a) * (solo ? 0.15 : 0.35);
-        _q.setFromEuler(_e.set(Math.sin(a * 1.3) * (solo ? 0.05 : 0.15), yaw, sp.shape === 'ray' ? Math.sin(t * 0.5 + f.ph) * 0.08 : 0));
+        // Mullet and needlefish break the surface: a low arc, nose up and then down.
+        let pitch = Math.sin(a * 1.3) * (solo ? 0.05 : 0.15);
+        if (sp.leap && f.orbit > 0.82) {
+          const u = (t * 0.17 + f.ph) % 1;
+          if (u < 0.13) {
+            const v = u / 0.13;
+            py += (0.5 + sp.size * 1.6) * Math.sin(v * Math.PI) + 0.5;
+            pitch = Math.cos(v * Math.PI) * 0.9;
+          }
+        }
+        _q.setFromEuler(_e.set(pitch, yaw, sp.shape === 'ray' ? Math.sin(t * 0.5 + f.ph) * 0.08 : 0));
         _m.compose(_p.set(px, py, pz), _q, _s.set(f.s, f.s, f.s));
         mesh.setMatrixAt(k++, _m);
       }

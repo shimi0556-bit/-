@@ -104,6 +104,8 @@ export class Wilds {
     const C = this.cfg;
     if (C.rockfalls) this._planRockfalls(C.rockfalls);
     if (C.lavaFlows) this._planFlows(C.lavaFlows);
+    // Last: the falls keep clear of the rockfall slopes and the lava crossings.
+    if (C.waterfalls) this._planFalls(C.waterfalls);
   }
 
   /** Stretches with a steep slope rising beside the road: rocks will come down there. */
@@ -221,7 +223,7 @@ export class Wilds {
     const T = materials.textures;
     this.rockMat = new THREE.MeshStandardMaterial({ name: 'סלע בזלת', color: 0x6d6a64, roughness: 0.92 });
     materials.triplanar(this.rockMat, T.rock, T.rockNormal, 0.35, 1.1);
-    if (this.cfg.waterfalls) this._waterfalls(this.cfg.waterfalls);
+    this._waterfalls();
     this._lava();
     if (this.zones.length) this._rockfalls();
     if (this.cfg.bombs) this._bombs();
@@ -235,51 +237,149 @@ export class Wilds {
 
   // ------------------------------------------------------------ waterfalls
 
-  _waterfalls(count) {
+  /**
+   * Where the waterfalls go, chosen before the ground is baked. These
+   * hillsides only slope, and a fall needs a cliff, so each site gets one
+   * shaped into the ground (carve): a bluff raised behind the lip and a plunge
+   * basin cut in front of it, with the lip across the slope above the road, so
+   * the fall faces the driver and its stream runs on down to the sea.
+   */
+  _planFalls(count) {
     const tr = this.track;
     const t = this.terrain;
     const W = tr.W;
     const cands = [];
-    for (let i = 0; i < tr.n; i += 8) {
+    const step = Math.max(1, Math.round(14 / tr.ds));
+    for (let i = 0; i < tr.n; i += step) {
+      if (Math.min(i, tr.n - i) * tr.ds < 220) continue; // not over the start
       for (const side of [-1, 1]) {
-        for (let l = W + 14; l < W + 260; l += 9) {
-          const rx = -tr.tz[i] * side;
-          const rz = tr.tx[i] * side;
-          const x = tr.x[i] + rx * l;
-          const z = tr.z[i] + rz * l;
-          const path = this._descend(x, z);
-          if (!path) continue;
-          const top = path[0];
-          const bot = path[path.length - 1];
-          const drop = top.h - bot.h;
-          let run = 0;
-          for (let k = 1; k < path.length; k++) run += Math.hypot(path[k].x - path[k - 1].x, path[k].z - path[k - 1].z);
-          if (drop < 13 || drop / Math.max(run, 1) < 0.75 || bot.h < 1.5) continue;
-          const d = this._trackDist(bot.x, bot.z);
-          if (d < W + 7) continue; // the pool stays off the road
-          cands.push({ path, drop, d, score: drop * (1.4 - Math.min(1, d / 300)) });
+        const ox = -tr.tz[i] * side;
+        const oz = tr.tx[i] * side;
+        let best = null;
+        for (let l = W + 48; l < W + 130; l += 4) {
+          const h = t.height(tr.x[i] + ox * l, tr.z[i] + oz * l);
+          const foot = t.height(tr.x[i] + ox * (l - 30), tr.z[i] + oz * (l - 30));
+          // Dry ground that falls away towards the road, with more land behind it.
+          if (h < 8 || foot < 1.5 || h - foot < 1.5) continue;
+          const back = t.height(tr.x[i] + ox * (l + 45), tr.z[i] + oz * (l + 45));
+          if (back < 3) continue;
+          // Near the road counts for as much as steep: a fall nobody drives past is wasted.
+          const sc = (h - foot + 4) * (1.8 - Math.min(1.2, (l - W) / 110));
+          if (!best || sc > best.sc) best = { l, h, foot, rise: h - foot, sc };
         }
+        if (!best) continue;
+        cands.push({ i, side, ox, oz, ...best, score: best.sc });
       }
     }
     cands.sort((a, b) => b.score - a.score);
     for (const c of cands) {
       if (this.falls.length >= count) break;
-      const b = c.path[c.path.length - 1];
-      if (this.falls.some((f) => Math.hypot(f.bot.x - b.x, f.bot.z - b.z) < 200)) continue;
-      this.falls.push({ path: c.path, drop: c.drop, bot: b });
+      const lx = tr.x[c.i] + c.ox * c.l;
+      const lz = tr.z[c.i] + c.oz * c.l;
+      if (this.falls.some((f) => Math.hypot(f.lip.x - lx, f.lip.z - lz) < 150)) continue;
+      // Not into a lava crossing or a rockfall slope: those hillsides are spoken for.
+      if (this.flows.some((f) => f.pts.some((p) => Math.hypot(p.x - lx, p.z - lz) < 50))) continue;
+      if (this.zones.some((z) => z.side === c.side && Math.abs(((z.i - c.i + tr.n * 1.5) % tr.n) - tr.n / 2) * tr.ds < 110)) continue;
+      const w = THREE.MathUtils.clamp(6 + c.rise * 0.5, 6, 14);
+      const bowl = Math.max(18, w * 2.4);
+      if (c.l - bowl - 16 < W + 24) continue; // the basin keeps well clear of the road
+      const baseH = Math.max(1.5, c.foot - 4);
+      const lipH = Math.max(c.h, baseH + THREE.MathUtils.clamp(c.rise * 2 + 11, 16, 28));
+      this.falls.push({
+        lip: { x: lx, z: lz, h: lipH },
+        base: { h: baseH },
+        drop: lipH - baseH,
+        dist: c.l,
+        w,
+        bowl,
+        ridge: 75, // how far back the bluff the water comes over reaches
+        d: { x: -c.ox, z: -c.oz }, // the fall pours towards the road
+        a: { x: c.oz, z: -c.ox }, // across the lip
+      });
     }
+    // The watercourse that feeds each lip runs back along the crest of its bluff.
+    for (const f of this.falls) {
+      f.head = [];
+      for (let b = 56; b >= 0; b -= 4) {
+        const x = f.lip.x - f.d.x * b;
+        const z = f.lip.z - f.d.z * b;
+        f.head.push({ x, z, h: 0 });
+      }
+    }
+  }
+
+  /**
+   * Shapes each planned fall into the ground: the bluff behind the lip is
+   * raised to it and the plunge basin in front is cut down to its foot, so the
+   * lip becomes a cliff edge. Chained into the terrain's height modifier
+   * (Island), and it never lifts ground out of the sea.
+   */
+  carve(x, z, h) {
+    for (const f of this.falls) {
+      const px = x - f.lip.x;
+      const pz = z - f.lip.z;
+      const fwd = px * f.d.x + pz * f.d.z;
+      const lat = Math.abs(px * f.a.x + pz * f.a.z);
+      const half = f.w * 0.95;
+      if (fwd > 0) {
+        if (h <= f.base.h) continue;
+        const k = (1 - smooth(half, half + 10, lat)) * (1 - smooth(f.bowl, f.bowl + 16, fwd));
+        if (k > 0) h += (f.base.h - h) * k;
+      } else {
+        if (h < 1.5 || h >= f.lip.h) continue;
+        const k = (1 - smooth(half + 7, half + 34, lat)) * (1 - smooth(12, f.ridge, -fwd));
+        if (k > 0) h += (f.lip.h - h) * k;
+      }
+    }
+    return h;
+  }
+
+  /** The cliff and its basin are bare wet stone, not grass. */
+  splat(x, z, w) {
+    for (const f of this.falls) {
+      const px = x - f.lip.x;
+      const pz = z - f.lip.z;
+      const fwd = px * f.d.x + pz * f.d.z;
+      if (fwd < -5) continue;
+      const lat = Math.abs(px * f.a.x + pz * f.a.z);
+      const g = (1 - smooth(f.w, f.w + 12, lat)) * (1 - smooth(f.bowl * 0.8, f.bowl + 12, fwd));
+      if (g <= 0) continue;
+      w = { sand: w.sand * (1 - g), dirt: w.dirt * (1 - g), rock: Math.max(w.rock, 0.95 * g) };
+    }
+    return w;
+  }
+
+  /** A signature of the planned falls: the baked ground is only reusable while they stay put. */
+  groundKey() {
+    return this.falls.map((f) => `${Math.round(f.lip.x)},${Math.round(f.lip.z)},${Math.round(f.drop)}`).join(';');
+  }
+
+  _waterfalls() {
     if (!this.falls.length) return;
+    const t = this.terrain;
+    const W = this.track.W;
     this.fallUniforms = { uTime: { value: 0 } };
     const fallMat = this._fallMaterial();
     const poolMat = this._poolMaterial();
-    const geos = [];
+    const sheets = [];
     const pools = [];
+    const streams = [];
     this.falls.forEach((f, k) => {
-      const w = THREE.MathUtils.clamp(f.drop * 0.22, 5, 13);
-      geos.push(this._ribbon(f.path, w, 0.45, true));
-      const b = f.bot;
-      pools.push(this._drape(b.x, b.z, w * 1.35, 0.14));
-      // Mist rising off the pool, and spray at the lip.
+      const w = f.w;
+      sheets.push(this._curtain(f));
+      // The stream that feeds it, coming down to the lip.
+      streams.push(...this._streamGeos(f.head, w * 0.5));
+      // The plunge pool, on the floor of the basin the carve left.
+      const bx = f.lip.x + f.d.x * (f.bowl * 0.42);
+      const bz = f.lip.z + f.d.z * (f.bowl * 0.42);
+      const b = { x: bx, z: bz, h: t.heightAt(bx, bz) };
+      f.bot = b;
+      pools.push(this._drape(b.x, b.z, w * 1.5, 0.14));
+      // And the stream that leaves it: over the lip of the basin, on down to the sea.
+      let out = null;
+      for (let o = f.bowl * 0.7; o < f.bowl + 40 && !out; o += 6) out = this._descend(f.lip.x + f.d.x * o, f.lip.z + f.d.z * o, 0.02, 300, 0);
+      if (out) streams.push(...this._streamGeos([{ x: b.x, z: b.z, h: b.h }, ...out], w * 0.55));
+      // Mist rising off the pool.
       const mist = new Emitter(this.engine.particles.systems.spray, {
         position: new THREE.Vector3(b.x, b.h + 0.6, b.z),
         rate: 9 + w,
@@ -315,10 +415,16 @@ export class Wilds {
       }
       if (k === 0) this._rainbow(f, w);
     });
-    const fm = new THREE.Mesh(mergeGeometries(geos), fallMat);
+    const fm = new THREE.Mesh(mergeGeometries(sheets), fallMat);
     fm.name = 'מפלים';
     fm.renderOrder = 4;
     this.group.add(fm);
+    if (streams.length) {
+      const sm = new THREE.Mesh(mergeGeometries(streams), fallMat);
+      sm.name = 'נחלים';
+      sm.renderOrder = 3;
+      this.group.add(sm);
+    }
     const pm = new THREE.Mesh(mergeGeometries(pools), poolMat);
     pm.name = 'בריכות מפל';
     pm.renderOrder = 3;
@@ -333,23 +439,102 @@ export class Wilds {
     }
   }
 
-  /** Steepest descent from (x, z) until the slope eases: a waterfall's course, or null. */
-  _descend(x, z) {
+  /**
+   * The falling sheet: water leaves the lip with the stream's speed, so it
+   * clears the cliff, spreads as it drops, and lands in the basin below.
+   */
+  _curtain(f) {
+    const drop = f.lip.h - f.base.h;
+    const rows = Math.max(8, Math.round(drop / 2));
+    const cols = 7;
+    const pos = [];
+    const uv = [];
+    const idx = [];
+    for (let r = 0; r <= rows; r++) {
+      const v = r / rows;
+      const fallen = drop * v;
+      // Thrown clear of the lip at a couple of m/s, then falling free.
+      const fwd = 1 + 2.4 * Math.sqrt((2 * fallen) / G);
+      const ww = f.w * (1 + 0.3 * v);
+      for (let c = 0; c < cols; c++) {
+        const u = c / (cols - 1);
+        const s = (u - 0.5) * ww;
+        // Fullest in the middle of the lip, thinning towards its shoulders.
+        const belly = (1 - Math.abs(u - 0.5) * 2) ** 2;
+        const g = fwd + belly * f.w * 0.14;
+        pos.push(f.lip.x + f.d.x * g + f.a.x * s, f.lip.h - fallen, f.lip.z + f.d.z * g + f.a.z * s);
+        uv.push(u, fallen);
+      }
+      if (r) {
+        const r0 = (r - 1) * cols;
+        const r1 = r * cols;
+        for (let c = 0; c < cols - 1; c++) idx.push(r0 + c, r0 + c + 1, r1 + c, r0 + c + 1, r1 + c + 1, r1 + c);
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    const a = new THREE.Float32BufferAttribute(uv, 2);
+    g.setAttribute('uv', a);
+    g.setAttribute('fuv', a.clone());
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    return g;
+  }
+
+  /** A stream down `path`, drawn only where there is no road: it runs under those. */
+  _streamGeos(path, w) {
+    if (!path || path.length < 3) return [];
+    const W = this.track.W;
+    const out = [];
+    let cur = [];
+    for (const p of path) {
+      if (this._trackDist(p.x, p.z) < W + 4.6) {
+        if (cur.length > 2) out.push(this._ribbon(cur, w, 0.1));
+        cur = [];
+      } else cur.push(p);
+    }
+    if (cur.length > 2) out.push(this._ribbon(cur, w, 0.1));
+    return out;
+  }
+
+  /** The watercourse that feeds a lip: steepest ascent from it, turned round. */
+  _ascend(x, z, steps = 26) {
     const t = this.terrain;
     const pts = [{ x, z, h: t.height(x, z) }];
-    let steep = 0;
-    for (let s = 0; s < 70; s++) {
+    for (let s = 0; s < steps; s++) {
       const e = 1.5;
       const gx = (t.height(x + e, z) - t.height(x - e, z)) / (2 * e);
       const gz = (t.height(x, z + e) - t.height(x, z - e)) / (2 * e);
       const gl = Math.hypot(gx, gz);
-      if (gl < 0.25) break;
+      // Up the gentlest way out of the gully, so the stream wanders instead of climbing the wall.
+      if (gl < 0.015 || gl > 1.8) break;
+      x += (gx / gl) * 2.5;
+      z += (gz / gl) * 2.5;
+      pts.push({ x, z, h: t.height(x, z) });
+    }
+    return pts.reverse();
+  }
+
+  /** Steepest descent from (x, z): a waterfall's course, or a stream's, or null. */
+  _descend(x, z, stop = 0.25, steps = 70, needSteep = 4) {
+    const t = this.terrain;
+    const pts = [{ x, z, h: t.height(x, z) }];
+    let steep = 0;
+    for (let s = 0; s < steps; s++) {
+      const e = 1.5;
+      const gx = (t.height(x + e, z) - t.height(x - e, z)) / (2 * e);
+      const gz = (t.height(x, z + e) - t.height(x, z - e)) / (2 * e);
+      const gl = Math.hypot(gx, gz);
+      if (gl < stop) break;
       if (gl > 0.9) steep++;
       x -= (gx / gl) * 1.5;
       z -= (gz / gl) * 1.5;
-      pts.push({ x, z, h: t.height(x, z) });
+      const h = t.height(x, z);
+      pts.push({ x, z, h });
+      // Stop at the sea, and in any hollow where the water would just stand.
+      if (h <= 0.25 || h > pts[pts.length - 2].h - 0.01) break;
     }
-    return steep >= 4 && pts.length > 6 ? pts : null;
+    return steep >= needSteep && pts.length > (needSteep ? 6 : 3) ? pts : null;
   }
 
   /** A strip of width w along a path, lifted `lift` off the ground; uv: x across, y metres along. */

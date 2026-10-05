@@ -142,17 +142,26 @@ export class Island {
       }
     }
 
+    let wildsKey = '';
     if (st.wilds) {
-      // Rockfalls and lava crossings open the barriers where they cross: before the circuit is built.
+      // Rockfalls and lava crossings open the barriers where they cross, and the
+      // waterfalls cut their cliffs into the hillsides: all before the ground is baked.
       this.wilds = new Wilds(eng, this);
       this.wilds.plan();
+      wildsKey = this.wilds.groundKey();
+      if (wildsKey) {
+        const h0 = terrain.heightModifier;
+        terrain.heightModifier = (x, z, h) => this.wilds.carve(x, z, h0(x, z, h));
+        const s0 = terrain.splatModifier;
+        terrain.splatModifier = (x, z, w, h) => this.wilds.splat(x, z, s0(x, z, w, h));
+      }
     }
 
     await progress(0.32, 'חוצב את הכביש בשטח…');
     // Heights and ground maps: from the cache when this island was built before, else baked in slices.
     const cache = this.opts.cache;
     const landings = ends.map((e) => [e.x, e.y, e.z].map((v) => Math.round(v * 10)).join(',')).join(';');
-    this.groundKey = `${st.id}|${plan.controls.length}|${Math.round(plan.length * 100)}|${this.trail ? Math.round(this.trail.length * 10) : 0}|${hash(landings)}`;
+    this.groundKey = `${st.id}|${plan.controls.length}|${Math.round(plan.length * 100)}|${this.trail ? Math.round(this.trail.length * 10) : 0}|${hash(landings)}${wildsKey ? `|${hash(wildsKey)}` : ''}`;
     const key = `${this.groundKey}|${terrain.segments}`;
     // Offline build: the ground ships pre-baked in the file.
     const hit = (cache && cache.get(key)) || (await bakedGround(st.id, this.groundKey, terrain));
