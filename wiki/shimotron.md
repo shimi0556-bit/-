@@ -67,3 +67,15 @@ Browser 3D engine (Three.js r186 + cannon-es, Vite single-file builds) with a He
 - Canva image generation was out of quota, so there are no Canva billboards yet.
 
 **Gotcha.** Three r186 declares the `uv` attribute only when a material has a texture map. Custom shaders on map-less materials need their own attribute (Wilds uses `fuv`).
+
+### 2026-10-05: waterfalls you can see, streams, shallow-water fish
+
+- **The user saw no waterfalls.** The old code looked for a natural cliff; the falls island has almost none (11,205 of 11,254 probe sites had no steep descent), so each "fall" was a wet stripe draped down a slope 70-90 m off the road.
+- **Fix:** `Wilds._planFalls` now picks sites on the slope above the road and `Wilds.carve` (chained into `terrain.heightModifier` in Island.js) shapes the ground. It raises a bluff behind the lip and cuts a plunge basin in front of it. The result is 6 falls, 17-25 m tall, 67-135 m from the road, facing the driver.
+  - `_curtain` builds a free-falling sheet.
+  - `_streamGeos` draws a feeder stream along the bluff and an outflow stream to the sea, skipped where it would cross the road.
+  - `Wilds.splat` paints the cliff and basin as rock.
+- **Ground cache:** `Island.groundKey` now includes `wilds.groundKey()`, so the baked or cached ground is invalidated when the falls move.
+- **Fish were invisible from the road.** Every species lived below 1.5 m and most were much deeper.
+  - Five shore species were added in `Sealife.SPECIES` (`shore: true`): mullet, needlefish, sergeant major, goatfish and convict tang, with patterns 11-13 in `FISH_PATTERN_GLSL`. Mullet and needlefish have `leap: true` and jump clear of the surface in `Life._updateFish`.
+  - `Life._fish` reserves 40% of schools for the shallows, because random points rarely land in that thin band. `_relocateFish` tries 40 times for shore schools.

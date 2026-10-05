@@ -455,7 +455,8 @@ export class Wilds {
       const fallen = drop * v;
       // Thrown clear of the lip at a couple of m/s, then falling free.
       const fwd = 1 + 2.4 * Math.sqrt((2 * fallen) / G);
-      const ww = f.w * (1 + 0.3 * v);
+      // Narrower than the lip: the white water gathers into the notch.
+      const ww = f.w * 0.6 * (1 + 0.3 * v);
       for (let c = 0; c < cols; c++) {
         const u = c / (cols - 1);
         const s = (u - 0.5) * ww;
@@ -671,17 +672,17 @@ export class Wilds {
   /** A faint rainbow in the mist of the biggest fall, standing over its pool. */
   _rainbow(f, w) {
     const R = w * 2.4;
-    const g = new THREE.TorusGeometry(R, w * 0.32, 4, 48, Math.PI);
+    const g = new THREE.TorusGeometry(R, w * 0.18, 4, 48, Math.PI);
     const p = g.attributes.position;
     const col = new Float32Array(p.count * 3);
     const c = new THREE.Color();
     for (let i = 0; i < p.count; i++) {
       const r = Math.hypot(p.getX(i), p.getY(i));
-      const k = THREE.MathUtils.clamp((r - (R - w * 0.32)) / (w * 0.64), 0, 1);
+      const k = THREE.MathUtils.clamp((r - (R - w * 0.18)) / (w * 0.36), 0, 1);
       c.setHSL(0.78 * k, 1, 0.55).toArray(col, i * 3);
     }
     g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    const m = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: true });
+    const m = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.08, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: true });
     const bow = new THREE.Mesh(g, m);
     const b = f.bot;
     const q = this.track.nearest(b.x, b.z, {});

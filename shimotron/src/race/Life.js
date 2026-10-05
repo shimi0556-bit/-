@@ -537,6 +537,23 @@ export class Life {
       for (let k = 0; k < n; k++) fish.push({ ph: rng.range(0, 6.28), orbit: rng.range(0.3, 1), tilt: rng.range(-0.5, 0.5), rr: rng.range(0.3, 1), off: rng.range(-1, 1), s: sp.size * rng.range(0.85, 1.15), fx: 0, fy: 0, fz: 0 });
       schools.push({ sp, ax: x, az: z, floor, n, fish, ang: rng.range(0, 6.28), roam: rng.range(8, 26) * (sp.radius > 8 ? 2 : 1), dir: rng.random() < 0.5 ? 1 : -1, bob: rng.range(0, 6.28), x, y: 0, z });
     }
+    // The shallows are a narrow band round the island and random points seldom
+    // land in it: the shore fish get schools of their own, so the clear water
+    // off every beach has fish in it.
+    const shore = SPECIES.filter((sp) => sp.shore);
+    const wantShore = Math.round(want * 0.4);
+    for (let guard = 0, got = 0; got < wantShore && guard < 40000; guard++) {
+      const sp = shore[got % shore.length];
+      const x = rng.range(-half, half);
+      const z = rng.range(-half, half);
+      const floor = t.heightAt(x, z);
+      if (!fits(sp, floor)) continue;
+      const n = Math.round(rng.range(sp.count[0], sp.count[1]));
+      const fish = [];
+      for (let k = 0; k < n; k++) fish.push({ ph: rng.range(0, 6.28), orbit: rng.range(0.3, 1), tilt: rng.range(-0.5, 0.5), rr: rng.range(0.3, 1), off: rng.range(-1, 1), s: sp.size * rng.range(0.85, 1.15), fx: 0, fy: 0, fz: 0 });
+      schools.push({ sp, ax: x, az: z, floor, n, fish, ang: rng.range(0, 6.28), roam: rng.range(5, 14), dir: rng.random() < 0.5 ? 1 : -1, bob: rng.range(0, 6.28), x, y: 0, z });
+      got++;
+    }
     this.schools = schools;
     // One instanced mesh per species: its own body, fins and markings.
     this.fishMeshes = [];
@@ -582,7 +599,8 @@ export class Life {
       this.fishCursor = ((this.fishCursor || 0) + 1) % this.schools.length;
       const s = this.schools[this.fishCursor];
       if (Math.hypot(s.ax - cam.x, s.az - cam.z) < 260) continue;
-      for (let tries = 0; tries < 6; tries++) {
+      // The shallows are a thin band: shore fish look harder for it.
+      for (let tries = 0, most = s.sp.shore ? 40 : 6; tries < most; tries++) {
         const a = Math.random() * Math.PI * 2;
         const r = 50 + Math.random() * 170;
         const x = cam.x + Math.cos(a) * r;
