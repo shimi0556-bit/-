@@ -86,6 +86,11 @@ What was modelled per system, the numbers used, sources, and open issues or know
 - **Check every piece of lettering from where a person reads it** (the driver's seat, in front of the plate). The floor-mat "Ford" was upside down and mirrored from the seat.
 - **Identify anything you can't name in a QA shot before moving on.** The floating springs were visible in the first shots and were dismissed as studio decoration.
 
+- **Photos with a wide lens lie about overhangs.** The #005 side photo put the front fender tip 0.42 m ahead of the axle (official: ~0.78 m). Take lengths from the official dimensions and use the photo only for the middle of the car, where the scale is constant. The roof, belt and door lines matched within centimetres there.
+- **Anything on a hinged panel (crest, script, louvres, handle) must be a child of the hinge group**, with positions relative to the hinge. Otherwise it stays floating when the hood or lid opens (the Beetle's script did).
+- **`OrbitControls.maxDistance` is 40 m.** A far, narrow-fov overlay camera at 60 m is silently pulled in to 40 m and renders 1.5× too large; use distance ≤ 40 and compute the fov from it. A custom view that looks from below the floor needs `"under": true` in `meta.views`.
+- **A grid shell with named section lines** (see wiki, #005) gives windows, doors, hood and lid with exact edges. Do not cut openings by skipping cells on a uniform grid.
+
 ## 6. Verify
 
 ```bash
