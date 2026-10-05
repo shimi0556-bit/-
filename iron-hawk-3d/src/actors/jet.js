@@ -198,13 +198,14 @@ export function buildJetModel() {
     root.add(pylon);
     const m = new THREE.Mesh(missileGeo, missileMat);
     m.position.set(x, -0.52, z - 0.2);
+    m.rotation.y = Math.PI; // missile noses point forward (-Z)
     root.add(m);
     missiles.push(m);
   }
 
   // navigation lights (bloom makes them glow)
   const nav = [];
-  for (const [x, y, z, c] of [[6.6, -0.02, 3.3, [4, 0.2, 0.1]], [-6.6, -0.02, 3.3, [0.1, 4, 0.3]], [0, 1.1, 8.5, [4, 4, 4]]]) {
+  for (const [x, y, z, c] of [[-6.6, -0.02, 3.3, [4, 0.2, 0.1]], [6.6, -0.02, 3.3, [0.1, 4, 0.3]], [0, 1.1, 8.5, [4, 4, 4]]]) {
     const l = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color(...c) }));
     l.position.set(x, y, z);
     root.add(l);
@@ -213,11 +214,10 @@ export function buildJetModel() {
   nav[2].position.set(1.95, 3.35, 8.3); // on the fin tip
 
   root.traverse((o) => { if (o.isMesh && !(o.material.isShaderMaterial) && !o.material.isMeshBasicMaterial) { o.castShadow = true; o.receiveShadow = true; } });
-  // the model faces +Z in local space; turn it so the nose points along -Z (the flight direction)
+  // the nose is at -Z, which is the flight direction
   const model = new THREE.Group();
-  root.rotation.y = Math.PI;
   model.add(root);
-  return { model, flames, stabs, fins, missiles, nav, glowMat, muzzle: new THREE.Vector3(-0.75, 0.2, 7.2), missileGeo, missileMat };
+  return { model, flames, stabs, fins, missiles, nav, glowMat, muzzle: new THREE.Vector3(0.75, 0.2, -7.2), missileGeo, missileMat };
 }
 
 export function missileGeometry() {
@@ -361,12 +361,11 @@ export class Jet {
   }
 
   muzzleWorld(out = new THREE.Vector3()) {
-    // muzzle is defined in the un-rotated model space (nose along +Z there)
-    return out.set(-this.muzzle.x, this.muzzle.y, -this.muzzle.z).applyQuaternion(this.quat).add(this.pos);
+    return out.copy(this.muzzle).applyQuaternion(this.quat).add(this.pos);
   }
 
   pylonWorld(i, out = new THREE.Vector3()) {
     const m = this.missiles[i % 4];
-    return out.set(-m.position.x, m.position.y, -m.position.z).applyQuaternion(this.quat).add(this.pos);
+    return out.copy(m.position).applyQuaternion(this.quat).add(this.pos);
   }
 }
