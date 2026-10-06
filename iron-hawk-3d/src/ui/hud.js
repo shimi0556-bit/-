@@ -42,7 +42,7 @@ export class HUD {
     this.canvas.height = Math.round(this.h * dpr);
     this.canvas.style.width = this.w + 'px';
     this.canvas.style.height = this.h + 'px';
-    this.compact = this.w < 700;
+    this.compact = this.w < 700 || this.h < 500;
   }
 
   show(on) { this.root.classList.toggle('hidden', !on); }
@@ -347,7 +347,7 @@ export class HUD {
   drawRadar(g, s) {
     const { jet, monsters, pickups } = s;
     const R = this.compact ? 54 : 74;
-    const x0 = R + 16, y0 = R + (this.compact ? 64 : 20);
+    const x0 = R + 16, y0 = R + (this.compact ? 62 : 72); // under the pause button and lives
     const range = 2600;
     g.save();
     g.translate(x0, y0);

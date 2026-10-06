@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { makeJetTexture, canvasTexture } from '../core/textures.js';
-import { clamp, damp, lerp } from '../core/util.js';
+import { clamp, damp, lerp, wrapAngle } from '../core/util.js';
 
 // fuselage stations: z, width, height, centre y, squareness
 const STATIONS = [
@@ -286,12 +286,15 @@ export class Jet {
     const assist = world.settings.assist ?? 1;
     const speedK = clamp(this.speed / this.stats.cruise, 0.6, 1.3);
     // control inputs -> target angular rates (local axes)
-    let pitchIn = input.pitch, rollIn = input.roll, yawIn = input.yaw;
+    const pitchIn = input.pitch, rollIn = input.roll, yawIn = input.yaw;
     const bank = this.bankAngle();
-    // auto-level when the stick is centred (only from moderate banks)
-    let autoRoll = 0;
-    if (Math.abs(rollIn) < 0.1 && Math.abs(bank) < 1.9) autoRoll = clamp(bank * 1.6, -1.2, 1.2) * assist;
-    const target = new THREE.Vector3(pitchIn * 1.35 * speedK, -yawIn * 0.5, -rollIn * 3.1 + autoRoll);
+    // With flight assist the stick sets a bank angle (hold right = steady right turn, let go =
+    // wings level). Without it the stick sets a roll rate, like a real jet.
+    // A positive rate about the local Z axis lifts the right wing (bank > 0 = banked left).
+    let rollRate;
+    if (assist > 0.5) rollRate = clamp(wrapAngle(-rollIn * 1.2 - bank) * 3.4, -3.2, 3.2);
+    else rollRate = -rollIn * 3.1;
+    const target = new THREE.Vector3(pitchIn * 1.35 * speedK, -yawIn * 0.5, rollRate);
     this.angVel.x = damp(this.angVel.x, target.x, 7, dt);
     this.angVel.y = damp(this.angVel.y, target.y, 5, dt);
     this.angVel.z = damp(this.angVel.z, target.z, 8, dt);

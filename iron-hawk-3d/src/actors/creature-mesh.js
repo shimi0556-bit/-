@@ -236,7 +236,10 @@ diffuseColor.rgb *= mix(0.55, 1.35, sk);`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
 float rim = pow(1.0 - clamp(dot(normalize(vViewPosition), normal), 0.0, 1.0), 3.0);
 totalEmissiveRadiance += uRim * rim * 0.6;
-totalEmissiveRadiance += uGlow * smoothstep(0.55, 0.9, 1.0 - sk) * 1.5;
+if (uGlow.r + uGlow.g + uGlow.b > 0.0) { // glowing veins (the boss): thin lines where a smooth noise crosses its middle
+  float vein = 1.0 - smoothstep(0.015, 0.05, abs(vnoise(vRest * 0.4) - 0.5));
+  totalEmissiveRadiance += uGlow * (vein * 2.4 + 0.03);
+}
 totalEmissiveRadiance += vec3(1.0, 0.35, 0.15) * uFlash * 1.6;
 if (uDissolve > 0.0) totalEmissiveRadiance += vec3(4.0, 1.4, 0.3) * (1.0 - smoothstep(0.0, 0.08, dn - uDissolve));`);
   };

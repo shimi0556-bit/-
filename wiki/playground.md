@@ -4,7 +4,7 @@ The repo's front door: `index.html` at the root is a Hebrew (RTL) launcher that 
 
 ## What's in it
 
-- **Games (9):** Shimotron Rally (featured), chess, reversi, go, generals, neon snake, Strike Lane bowling, ABYSS submarine, SkyHawk.
+- **Games (10):** Shimotron Rally (featured), Iron Hawk (נץ הברזל), chess, reversi, go, generals, neon snake, Strike Lane bowling, ABYSS submarine, SkyHawk.
 - **Courses (7):** VS Code, PowerPoint, Excel, Gmail, Windows, Canva, Obsidian.
 - **Tools (5):** Shimotron editor, guitar-fx-mixer, Claude Spark Engine, the `deck-edit-mode` demo deck, the daily 3D library (gallery; needs internet for three.js).
 - Left out because they need a build step, a server or API keys: `tuning-numbers`, `virtual-typewriter`, `blitzai`, `nano-banana-ui`, `gods-eye-view`, `claude-demo-video`. `effects-yuv-ai` is left out too: it's hoodini's brand catalog, with analytics and social links.
@@ -31,3 +31,4 @@ The repo's front door: `index.html` at the root is a Hebrew (RTL) launcher that 
 - ABYSS and SkyHawk load three r128 from cdnjs. That works in the Artifact (cdnjs is on its allowlist) and online, but not from a local file with no internet.
 - Open: Esc closes the player only while focus is on the hub page. Once focus is inside a game's iframe, the key goes to the game, so use the "חזרה למגרש" button.
 - **2026-10-01:** added the `library3d` card (the daily 3D library gallery). Its thumbnail is the Beast model rendered in `?shot=1` mode at 640×400.
+- **2026-10-06:** added the `ironhawk` card (Iron Hawk 3D, `iron-hawk-3d/index.html`), placed before chess. Its thumbnail is the title screen captured by `make-thumbs.cjs` after a 20s wait (the game builds its world on load). The game is fully offline, no CDN. Not yet added to the claude.ai Artifact copy.

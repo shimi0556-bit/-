@@ -91,7 +91,7 @@ export class Weapons {
   // Where to shoot so a round meets the monster (first-order lead).
   leadPoint(jet, m, out = new THREE.Vector3()) {
     const M = this.ctx.monsters;
-    const c = M.center(m, out);
+    const c = M.aimPoint(m, jet.pos, jet.forward, out);
     const vel = m.spec.flies ? m.vel : _c.set(Math.sin(m.heading) * m.speed, 0, Math.cos(m.heading) * m.speed);
     const dist = c.distanceTo(jet.pos);
     const t = dist / (CANNON.speed + jet.speed * 0.6);
@@ -265,7 +265,7 @@ export class Weapons {
       if (m.life > 0.22) {
         m.speed = Math.min(MISSILE.speedMax, m.speed + MISSILE.accel * dt);
         if (tgt) {
-          const c = M.center(tgt, _a);
+          const c = M.aimPoint(tgt, m.p, m.dir, _a);
           const dist = c.distanceTo(m.p);
           const tv = tgt.spec.flies ? tgt.vel : _c.set(Math.sin(tgt.heading) * tgt.speed, 0, Math.cos(tgt.heading) * tgt.speed);
           c.addScaledVector(tv, Math.min(2, dist / m.speed) * 0.8);
@@ -292,8 +292,8 @@ export class Weapons {
         const hit = M.segmentHit(p0, m.p, 2.5);
         if (hit) { boom = hit.point; direct = hit; }
         if (!boom && tgt) {
-          const c = M.center(tgt, _a);
-          if (c.distanceTo(m.p) < Math.max(tgt.radius * 1.5, 6)) boom = m.p.clone();
+          const c = M.aimPoint(tgt, m.p, m.dir, _a);
+          if (c.distanceTo(m.p) < (tgt.spec.boss ? 5 : Math.max(tgt.radius * 1.5, 6))) boom = m.p.clone();
         }
       }
       if (!boom && m.p.y < T.groundOrWater(m.p.x, m.p.z)) boom = m.p.clone();
@@ -372,7 +372,9 @@ export class Weapons {
     const done = new Set();
     if (direct) {
       M.damage(direct.m, MISSILE.damage, direct.point, { sphere: direct.sphere, dir: _a.subVectors(direct.point, point).normalize(), missile: true });
-      done.add(direct.m);
+      // on the boss's armoured body the blast can still reach a nearby crystal or the heart
+      const weak = direct.sphere && (direct.sphere.weak !== undefined || direct.sphere.heart);
+      if (!direct.m.spec.boss || weak) done.add(direct.m);
       events.onHit?.(direct.m, 'missile');
     }
     for (const m of M.list) {
@@ -380,6 +382,7 @@ export class Weapons {
       // nearest hit sphere for boss weak points, centre distance otherwise
       let best = null, bd = Infinity;
       for (const s of M.worldSpheres(m, [])) {
+        if (m.spec.boss && s.weak === undefined && !s.heart) continue; // the boss only takes blast damage on weak points
         const d = s.p.distanceTo(point) - s.r;
         if (d < bd) { bd = d; best = s; }
       }

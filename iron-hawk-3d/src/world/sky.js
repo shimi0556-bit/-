@@ -30,10 +30,28 @@ export class Atmosphere {
     // horizon blend towards the fog colour
     u.uFogColor = { value: new THREE.Color() };
     u.uFogMix = { value: 0 };
+    // the physical sky is far brighter than sunlit ground; scaling it down keeps the land from
+    // looking dull next to it (and the light and haze baked from the sky scale with it)
+    u.uSkyScale = { value: s.scale ?? 0.38 };
+    // soft ceiling on the sky's brightness (the sun disc is left alone), so only the sun, fire
+    // and explosions are bright enough to bloom; the sky tops out at twice this value
+    u.uSkyKnee = { value: s.knee ?? 0.85 };
     this.sky.material.fragmentShader = this.sky.material.fragmentShader
-      .replace('uniform float time;', 'uniform float time;\nuniform vec3 uFogColor;\nuniform float uFogMix;')
+      .replace('uniform float time;', `uniform float time;
+uniform vec3 uFogColor;
+uniform float uFogMix;
+uniform float uSkyScale;
+uniform float uSkyKnee;
+vec3 skyKnee( vec3 c ) {
+  float k = uSkyKnee / max( uSkyScale, 1e-4 );
+  float l = dot( c, vec3( 0.2126, 0.7152, 0.0722 ) );
+  if ( l <= k ) return c;
+  return c * ( ( k + ( l - k ) / ( 1.0 + ( l - k ) / k ) ) / l );
+}`)
+      // the sun disc stays bright enough to bloom, but not so bright that it floods the screen
+      .replace('vec3 texColor = ( Lin + L0 ) * 0.04 + sundiscColor', 'vec3 texColor = skyKnee( ( Lin + L0 ) * 0.04 ) + min( sundiscColor, vec3( 40.0 / max( uSkyScale, 1e-4 ) ) )')
       .replace('gl_FragColor = vec4( texColor, 1.0 );',
-        'texColor = mix(uFogColor, texColor, mix(1.0, smoothstep(-0.02, 0.16, direction.y), uFogMix));\n\t\t\tgl_FragColor = vec4( texColor, 1.0 );');
+        'texColor *= uSkyScale;\n\t\t\ttexColor = mix(uFogColor, texColor, mix(1.0, smoothstep(-0.02, 0.16, direction.y), uFogMix));\n\t\t\tgl_FragColor = vec4( texColor, 1.0 );');
     this.group.add(this.sky);
 
     // Sun
@@ -121,6 +139,7 @@ export class Atmosphere {
     }
     pmrem.dispose();
     this.fogColor = fog;
+    this.horizonLum = fog.r * 0.2126 + fog.g * 0.7152 + fog.b * 0.0722;
     scene.fog = new THREE.FogExp2(fog, this.level.fog.density);
     this.sky.material.uniforms.uFogColor.value.copy(fog);
     this.sky.material.uniforms.uFogMix.value = 1;

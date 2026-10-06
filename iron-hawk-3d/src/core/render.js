@@ -144,8 +144,12 @@ export class Renderer {
     g.uTint.value.set(...level.grade.tint);
     g.uVignette.value = level.grade.vignette;
     if (this.bloom) {
-      this.bloom.strength = level.id === 'volcano' ? 0.75 : 0.5;
-      this.bloom.threshold = level.id === 'volcano' ? 0.8 : 0.92;
+      const night = !!level.sky.night;
+      this.bloom.strength = night ? 0.5 : 0.42;
+      this.bloom.radius = night ? 0.55 : 0.45;
+      // the sky never gets brighter than twice its knee (see sky.js), so only the sun, fire,
+      // explosions and glowing crystals are bright enough to bloom
+      this.bloom.threshold = (level.sky.knee ?? 0.85) * 2.15;
     }
   }
 

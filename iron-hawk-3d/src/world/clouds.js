@@ -10,7 +10,7 @@ export class Clouds {
     this.size = terrainSize;
   }
 
-  build(sunDir, sunColor, fog) {
+  build(sunDir, sunColor, fog, horizonLum = 1) {
     const cfg = this.level.clouds;
     const rand = mulberry32(this.level.seed + 404);
     const puffs = [];
@@ -41,6 +41,7 @@ export class Clouds {
       uFogColor: { value: fog.color.clone() },
       uFogDensity: { value: fog.density * 0.6 },
       uOpacity: { value: cfg.opacity },
+      uLum: { value: horizonLum },
       uTime: { value: 0 },
     };
     const mat = new THREE.ShaderMaterial({
@@ -63,13 +64,14 @@ void main() {
   gl_Position = projectionMatrix * mv;
 }`,
       fragmentShader: `
-uniform sampler2D tPuff; uniform vec3 uSun, uTint, uFogColor; uniform float uFogDensity, uOpacity;
+uniform sampler2D tPuff; uniform vec3 uSun, uTint, uFogColor; uniform float uFogDensity, uOpacity, uLum;
 varying vec2 vUv; varying float vDist; varying float vShade;
 void main() {
   float a = texture2D(tPuff, vUv).a * uOpacity;
   a *= smoothstep(25.0, 260.0, vDist);
   if (a < 0.01) discard;
-  vec3 col = uTint * mix(vec3(0.42, 0.46, 0.55), uSun * 0.95, vShade) * 0.85;
+  // as bright as the sky around them: lit side a little above the horizon, shade a bit below
+  vec3 col = uTint * mix(uFogColor * 1.05, uSun * max(uLum * 2.2, 0.22), vShade);
   float f = 1.0 - exp(-pow(uFogDensity * vDist, 2.0));
   col = mix(col, uFogColor, f);
   gl_FragColor = vec4(col, a * (1.0 - f * 0.6));

@@ -86,10 +86,12 @@ vec3 l1 = texture2D(tLava, (vWP.xz + flow) / 70.0).rgb;
 vec3 l2 = texture2D(tLava, (vWP.zx * vec2(1.0, -1.0) - flow * 0.7) / 160.0).rgb;
 vec3 lava = max(l1, l2 * 0.9);
 float heat = smoothstep(0.0, 0.6, dep) * (0.6 + 0.4 * sin(uTime * 1.3 + vWP.x * 0.01));
-float crust = 1.0 - smoothstep(0.3, 0.75, max(lava.r, lava.g));
+// thin dark crust floats on the hot middle; the edges are mostly crust
+float crust = (1.0 - smoothstep(0.22, 0.6, max(lava.r, lava.g))) * (1.0 - 0.45 * smoothstep(0.1, 0.7, dep));
 diffuseColor.rgb = mix(vec3(0.05, 0.03, 0.03), vec3(0.2, 0.08, 0.03), 1.0 - crust);`)
           .replace('#include <emissivemap_fragment>', `
-totalEmissiveRadiance = pow(lava, vec3(1.6)) * vec3(4.2, 2.2, 0.9) * (0.55 + 0.6 * heat) * (1.0 - crust * 0.85);`);
+totalEmissiveRadiance = pow(lava, vec3(1.4)) * vec3(2.7, 1.25, 0.4) * (0.55 + 0.5 * heat) * (1.0 - crust * 0.9);
+totalEmissiveRadiance += vec3(0.5, 0.11, 0.02) * (0.2 + 0.6 * heat) * (1.0 - crust * 0.7);`);
       };
       mat.customProgramCacheKey = () => 'lava';
     } else {

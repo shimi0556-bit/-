@@ -97,7 +97,8 @@ export class MonsterSystem {
     };
     for (const a of spec.attachments) {
       const bone = spec.boneIndex[a.bone];
-      const local = new THREE.Vector3(...a.pos).sub(jpos(a.bone));
+      // plates and quills place themselves along the body; the rest sit at a joint offset
+      const local = a.pos && a.bone ? new THREE.Vector3(...a.pos).sub(jpos(a.bone)) : null;
       switch (a.type) {
         case 'eye': {
           const geo = new THREE.SphereGeometry(a.r, 12, 8);
@@ -331,6 +332,21 @@ export class MonsterSystem {
   center(m, out = new THREE.Vector3()) {
     if (m.spec.flies) return out.copy(m.pos);
     return out.copy(m.pos).addScaledVector(UP, m.height * 0.55);
+  }
+
+  // Where guided weapons should go: the centre, or for the boss the weak point (a crystal
+  // still standing, or the exposed heart) closest to the line the shooter is looking along.
+  aimPoint(m, from, dir, out = new THREE.Vector3()) {
+    if (!m.spec.boss) return this.center(m, out);
+    let best = Infinity;
+    for (const s of this.worldSpheres(m, this._aim || (this._aim = []))) {
+      if (s.weak === undefined && !s.heart) continue;
+      const to = _v1.subVectors(s.p, from);
+      const along = Math.max(0, to.dot(dir));
+      const off = to.addScaledVector(dir, -along).length() / Math.max(1, along);
+      if (off < best) { best = off; out.copy(s.p); }
+    }
+    return best < Infinity ? out : this.center(m, out);
   }
 
   // First monster hit by the segment p0->p1 (bullets).

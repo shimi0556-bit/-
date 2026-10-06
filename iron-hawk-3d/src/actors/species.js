@@ -218,7 +218,7 @@ export const SPECIES = {
       { type: 'crystal', bone: 'chest', pos: add(bossB.chest, [3.2, bossP.girth * 0.7, -1]), len: 7, r: 1.3, weak: 1, tilt: 0.35 },
       { type: 'crystal', bone: 'hips', pos: [-3.0, bossP.hip + bossP.girth * 0.75, 0], len: 7, r: 1.3, weak: 2, tilt: -0.35 },
       { type: 'plates', bones: ['neck2', 'neck1', 'chest', 'spine', 'hips', 'tail1', 'tail2'], bone: 'hips', n: 14, size: 2.2, color: 0x2a201c, glow: true }],
-    hp: 9000, speed: 1.5, walk: 1.2, stride: 12, score: 5000, radius: 16, height: 30, boss: true,
+    hp: 9000, speed: 1.5, walk: 1.2, stride: 12, score: 5000, radius: 16, height: 30, boss: true, girth: bossP.girth,
     desc: 'שליט האגם הבוער. שלושה גבישי אש על גבו מגינים עליו. השמידו אותם, ואז את הלב הזוהר בחזה.',
     sound: { pitch: 0.25, rough: 1.2 },
   }),

@@ -527,6 +527,7 @@ export class AudioEngine {
   }
 
   fanfare(win) {
+    if (!this.ready) return;
     const ctx = this.ctx, t = ctx.currentTime;
     const o = this.out(0.25, 0, 0.4);
     const notes = win ? [[62, 0], [66, 0.15], [69, 0.3], [74, 0.45], [74, 0.75]] : [[62, 0], [61, 0.3], [60, 0.6], [55, 0.9]];
