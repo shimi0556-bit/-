@@ -822,7 +822,7 @@ class Game {
 
   updateArena(dt) {
     const M = this.mission, a = M.arena, w = this.world, T = w.terrain, P = this.player;
-    a.angle += dt * 0.05 * a.dir;
+    a.angle += dt * 0.12 * a.dir;
     const x = a.x + Math.cos(a.angle) * a.radius, z = a.z + Math.sin(a.angle) * a.radius;
     const y = Math.max(T.waterLevel + a.height, T.groundOrWater(x, z) + 14);
     _u.copy(P.pos);
@@ -939,6 +939,7 @@ class Game {
   finish() {
     const M = this.mission, L = this.world.level, W = this.world;
     this.state = 'results';
+    this.hud.show(false);
     this.input.enabled = false;
     this.input.setTouchVisible(false);
     document.body.classList.remove('playing');

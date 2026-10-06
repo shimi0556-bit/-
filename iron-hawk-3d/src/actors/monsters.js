@@ -257,7 +257,7 @@ export class MonsterSystem {
       part.position.copy(a.local);
       part.castShadow = a.mat !== 'ivory';
       bones[a.bone].add(part);
-      if (a.weak !== undefined) crystals[a.weak] = { mesh: part, hp: 900, alive: true };
+      if (a.weak !== undefined) crystals[a.weak] = { mesh: part, hp: 1400, alive: true };
     }
     if (asset.membrane) {
       const mm = new THREE.SkinnedMesh(asset.membrane.geo, new THREE.MeshStandardMaterial({
@@ -420,7 +420,7 @@ export class MonsterSystem {
         return;
       }
       if (alive.length) { this.ctx.fx.sparks(point, 0.6, 0xffc080); this.ctx.events.onArmor?.(m); return; }
-      amount *= hit.sphere && hit.sphere.heart ? 2.5 : 0.6;
+      amount *= hit.sphere && hit.sphere.heart ? 1.6 : 0.6;
     } else if (spec.armored && hit.dir) {
       // armour on the front: hits from the side/back hurt more
       const fwd = _v2.set(Math.sin(m.heading), 0, Math.cos(m.heading));
@@ -901,7 +901,9 @@ export class MonsterSystem {
     const spec = m.spec;
     const toP = _v1.subVectors(player.pos, m.pos);
     const desired = Math.atan2(toP.x, toP.z);
-    const rate = m.state === 'enraged' ? 0.45 : 0.3;
+    // on the track the camera circles it: while the crystals stand it turns slower than
+    // that, so its flanks and back come round into view; once the heart shows it faces you
+    const rate = m.state === 'enraged' ? 0.45 : this.railMode ? 0.05 : 0.3;
     m.heading += clamp(wrapAngle(desired - m.heading), -rate * dt, rate * dt);
     // slow walk inside the lake
     const home = m.nest;
