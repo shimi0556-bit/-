@@ -359,12 +359,6 @@ void main(){
     }
   }
 
-  // jet wingtip vapour while pulling hard
-  vapour(pos, vel, strength) {
-    this.smoke.add(pos.x, pos.y, pos.z, vel.x * 0.85, vel.y * 0.85, vel.z * 0.85, 0.3 + rnd() * 0.2, 0.35, 0.9,
-      [1.2, 1.25, 1.3], [0.9, 0.95, 1.0], 0.35 * strength, 3);
-  }
-
   beacon(pos, radius, duration) {
     const m = new THREE.Mesh(this.beaconGeo, this.beaconMat);
     m.position.copy(pos);

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0a0e13">
-<meta name="description" content="נץ הברזל: ציד מפלצות. משחק טיסה תלת־ממדי בדפדפן: מטיסים מטוס קרב מעל עמקים, קניונים והר געש ומחסלים מפלצות ענק.">
+<meta name="description" content="נץ הברזל: ציד מפלצות. משחק יריות תלת־ממדי בדפדפן בגוף ראשון: רצים וטסים דרך עמקים, קניונים והר געש, ועוצרים גלים של מפלצות ענק שמסתערות על החלון.">
 <title>נץ הברזל: ציד מפלצות</title>
 <style>/*__CSS__*/</style>
 </head>
@@ -26,7 +26,7 @@
       <div class="obj-sub" id="h-obj-sub"></div>
     </div>
     <div class="hud-side">
-      <div class="hud-lives" id="h-lives" aria-label="מטוסים"></div>
+      <div class="hud-lives" id="h-lives" aria-label="חיים"></div>
       <button class="hud-pause" id="h-pause" aria-label="השהיה"><svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
     </div>
   </div>
@@ -36,9 +36,8 @@
     <div class="crystals" id="h-crystals"></div>
   </div>
   <div class="hud-weapons" id="h-weapons">
-    <div class="gauge hull"><span class="lbl">שריון</span><div class="bar"><i id="h-hull"></i></div><span class="num" id="h-hull-val">100</span></div>
-    <div class="gauge boost"><span class="lbl">טורבו</span><div class="bar"><i id="h-boost"></i></div></div>
-    <div class="gauge heat"><span class="lbl">תותח</span><div class="bar"><i id="h-heat"></i></div></div>
+    <div class="gauge hull"><span class="lbl">מגן</span><div class="bar"><i id="h-hull"></i></div><span class="num" id="h-hull-val">100</span></div>
+    <div class="gauge heat"><span class="lbl">תותחים</span><div class="bar"><i id="h-heat"></i></div></div>
     <div class="gauge missiles"><span class="lbl">טילים</span><div class="pips" id="h-missiles"></div><div class="reload"><i id="h-reload"></i></div></div>
   </div>
   <div class="hud-msg" id="h-msg"><div class="t" id="h-msg-title"></div><div class="s" id="h-msg-sub"></div></div>
@@ -64,7 +63,7 @@
   <section class="screen" id="screen-title">
     <div class="title-wrap">
       <div class="logo"><span class="logo-main">נץ הברזל</span><span class="logo-sub">ציד מפלצות</span></div>
-      <p class="tagline">מטוס קרב אחד. שלושה אזורים. מפלצות ענק בכל מקום.</p>
+      <p class="tagline">שני תותחים. שלושה אזורים. וגלים של מפלצות שרצות ישר אליכם.</p>
       <nav class="menu">
         <button class="btn primary" data-action="regions">שחקו</button>
         <button class="btn" data-action="bestiary">אטלס המפלצות</button>
@@ -93,7 +92,7 @@
         <div class="chips" id="brief-monsters"></div>
         <div class="brief-keys" id="brief-keys"></div>
         <div class="row">
-          <button class="btn primary big" data-action="launch">המריאו!</button>
+          <button class="btn primary big" data-action="launch">יוצאים לדרך!</button>
           <button class="btn" data-action="back">חזרה</button>
         </div>
       </div>
@@ -126,32 +125,30 @@
     <div class="help panel-lg">
       <div class="help-cols">
         <div>
+          <h3>איך זה עובד</h3>
+          <p>אתם יושבים צמוד לחלון, ושני תותחים מציצים מהפינות. הדרך נוסעת לבד: פעם רצים על הקרקע ופעם טסים נמוך. בכל עצירה צץ מארב, וגלים של מפלצות מסתערים על החלון. עצרו את כולם כדי להמשיך.</p>
           <h3>מקלדת ועכבר</h3>
           <table class="keys">
-            <tr><td><kbd>↑</kbd><kbd>↓</kbd> או <kbd>W</kbd><kbd>S</kbd></td><td>אף למעלה / למטה</td></tr>
-            <tr><td><kbd>←</kbd><kbd>→</kbd> או <kbd>A</kbd><kbd>D</kbd></td><td>הטיה ופנייה</td></tr>
-            <tr><td><kbd>Q</kbd><kbd>E</kbd></td><td>הגה כיוון (סיבוב עדין)</td></tr>
-            <tr><td><kbd>רווח</kbd> או לחיצה שמאלית</td><td>תותח</td></tr>
-            <tr><td><kbd>F</kbd> או לחיצה ימנית</td><td>טיל (ננעל לבד על מטרה לפניכם)</td></tr>
-            <tr><td><kbd>Shift</kbd></td><td>טורבו</td></tr>
-            <tr><td><kbd>Ctrl</kbd> או <kbd>X</kbd></td><td>האטה</td></tr>
-            <tr><td><kbd>C</kbd></td><td>החלפת מצלמה</td></tr>
+            <tr><td>תזוזת העכבר</td><td>כיוון הכוונת</td></tr>
+            <tr><td>לחיצה שמאלית או <kbd>רווח</kbd></td><td>ירי מהתותחים (להחזיק)</td></tr>
+            <tr><td>לחיצה ימנית או <kbd>F</kbd></td><td>טיל אל המפלצת הקרובה לכוונת</td></tr>
+            <tr><td><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> או <kbd>WASD</kbd></td><td>הזזת הכוונת בלי עכבר</td></tr>
             <tr><td><kbd>Esc</kbd> או <kbd>P</kbd></td><td>השהיה</td></tr>
             <tr><td><kbd>M</kbd></td><td>השתקה</td></tr>
           </table>
         </div>
         <div>
           <h3>מסך מגע</h3>
-          <p>אגודל שמאל: נוגעים בכל מקום בחצי השמאלי ומזיזים כמו ג'ויסטיק. למעלה מטפס, הצידה מטה ופונה.</p>
-          <p>אגודל ימין: <b>ירי</b> (להחזיק), <b>טיל</b>, <b>טורבו</b> ו<b>האטה</b>.</p>
+          <p>נוגעים בכל מקום במסך וגוררים: הכוונת מופיעה קצת מעל האצבע, והתותחים יורים כל עוד האצבע על המסך. הכפתור בפינה משגר טיל.</p>
           <h3>שלט משחק</h3>
-          <p>סטיק שמאלי לטיסה, RT לתותח, A או RB לטיל, LB לטורבו, LT להאטה, Y למצלמה.</p>
+          <p>סטיק לכוונת, RT לירי, A או RB לטיל, Start להשהיה.</p>
           <h3>טיפים</h3>
           <ul>
-            <li>החזיקו מטרה בתוך המסגרת עד שהיהלום נהיה אדום, ואז שגרו טיל.</li>
-            <li>העיגול הלבן הקטן מראה לאן לירות כדי לפגוע במטרה שזזה.</li>
-            <li>כדורי אש אפשר להפיל בתותח. מטאורים נופלים לתוך עמודי האור האדומים.</li>
-            <li>מפלצות גדולות משאירות מאחור תיבות: ירוק לתיקון, כתום לטילים, כחול לטורבו.</li>
+            <li>סימון אדום מהבהב סביב מפלצת אומר שהיא קרובה מספיק לתקוף. היא הראשונה.</li>
+            <li>כדורי אש ורוק חומצה מסומנים בעיגול. ירו בהם לפני שהם פוגעים בחלון.</li>
+            <li>כשהמגן מתרוקן הולכים חיים אחד, והדף חזק זורק אחורה את כל מה שקרוב.</li>
+            <li>ירו בתיבות המרחפות: ירוק מתקן את המגן, כתום ממלא טילים, כחול מקרר את התותחים.</li>
+            <li>יש משקפי תלת־ממד אדום־תכלת? בהגדרות אפשר להפעיל אותם, והמפלצות יקפצו מהמסך.</li>
           </ul>
         </div>
       </div>

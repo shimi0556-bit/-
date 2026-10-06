@@ -1,7 +1,7 @@
 // Sound. Explosions, monster roars, the missile, fireballs, impacts, the flyby and the
 // ambience use recorded effects (generated with ElevenLabs, embedded by the build as
-// window.__SOUNDS). Everything else is synthesised with WebAudio at run time: the jet
-// engine and wind (they follow the throttle), the cannon, alarms, interface blips and an
+// window.__SOUNDS). Everything else is synthesised with WebAudio at run time: the ride
+// engine and wind (they follow the speed), the cannon, alarms, interface blips and an
 // instrumental soundtrack per region that gets more intense in battle. If a recording is
 // missing or fails to decode, the synthesised version plays instead.
 import { clamp } from './util.js';
@@ -226,7 +226,7 @@ export class AudioEngine {
     param.exponentialRampToValueAtTime(Math.max(end, 0.0001), t + a + d);
   }
 
-  // ---------------------------------------------------------------- jet engine (continuous)
+  // ---------------------------------------------------------------- engine hum of the ride (continuous)
   buildEngine() {
     const ctx = this.ctx;
     this.eng = {};

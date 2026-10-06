@@ -70,8 +70,8 @@ button { font: inherit; color: inherit; }
 .hud-lives i {
   width: 22px; height: 22px; display: block; opacity: 0.22;
   background: currentColor; color: var(--mint);
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1l2 7 8 5v2l-8-2v6l3 2v2l-5-1-5 1v-2l3-2v-6l-8 2v-2l8-5z'/%3E%3C/svg%3E") center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1l2 7 8 5v2l-8-2v6l3 2v2l-5-1-5 1v-2l3-2v-6l-8 2v-2l8-5z'/%3E%3C/svg%3E") center / contain no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1l9 3.5v6.5c0 5.6-3.8 10.4-9 12-5.2-1.6-9-6.4-9-12V4.5z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1l9 3.5v6.5c0 5.6-3.8 10.4-9 12-5.2-1.6-9-6.4-9-12V4.5z'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 .hud-lives i.on { opacity: 1; filter: drop-shadow(0 0 6px rgba(157, 255, 207, 0.7)); }
 .hud-pause {
@@ -105,12 +105,13 @@ button { font: inherit; color: inherit; }
 .gauge .num { position: absolute; font-size: 11px; color: var(--ink); margin-top: -1px; }
 .gauge.hull { position: relative; min-width: 140px; }
 .gauge.hull .num { left: 0; top: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
-.gauge.boost .bar i { background: linear-gradient(270deg, #8adfff, var(--blue)); }
 .gauge.heat .bar i { background: linear-gradient(270deg, #ffd27a, var(--orange)); }
 .gauge.heat .bar i.hot { background: var(--red); animation: blink 0.25s steps(2) infinite; }
+.gauge.heat .bar i.cool { background: linear-gradient(270deg, #bff0ff, var(--blue)); }
+.gauge.hull .bar i { background: linear-gradient(270deg, #b6fff0, #36d6ff); }
 .hud-weapons.low .gauge.hull .bar i { background: linear-gradient(270deg, #ff8a6a, var(--red)); animation: blink 0.5s steps(2) infinite; }
 .pips { display: flex; gap: 5px; height: 14px; align-items: center; }
-.pips i { width: 18px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.12); }
+.pips i { width: 12px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.12); }
 .pips i.on { background: var(--gold); box-shadow: 0 0 8px rgba(255, 200, 80, 0.6); }
 .reload { height: 3px; background: rgba(255, 255, 255, 0.07); border-radius: 2px; overflow: hidden; }
 .reload i { display: block; height: 100%; width: 0; background: var(--gold); margin-inline-start: auto; }
@@ -133,24 +134,19 @@ button { font: inherit; color: inherit; }
 /* ------------------------------------------------------------------ touch controls */
 #touch { position: fixed; inset: 0; z-index: 6; pointer-events: none; display: none; }
 #touch.on { display: block; }
-.tc-zone { position: absolute; left: 0; top: 70px; bottom: 0; width: 50%; pointer-events: auto; touch-action: none; }
-.tc-stick { position: absolute; width: 140px; height: 140px; margin: -70px 0 0 -70px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.25); background: radial-gradient(rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02)); opacity: 0; transition: opacity 0.15s; pointer-events: none; }
-.tc-stick.on { opacity: 1; }
-.tc-knob { position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; margin: -29px 0 0 -29px; border-radius: 50%; background: rgba(157, 255, 207, 0.35); border: 2px solid rgba(157, 255, 207, 0.8); box-shadow: 0 0 18px rgba(157, 255, 207, 0.4); }
+.tc-zone { position: absolute; left: 0; right: 0; top: 70px; bottom: 0; pointer-events: auto; touch-action: none; }
+.tc-finger { position: absolute; left: 0; top: 0; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; border: 2px solid rgba(157, 255, 207, 0.35); opacity: 0; transition: opacity 0.12s; pointer-events: none; }
+.tc-finger.on { opacity: 1; }
 .tc-btn {
-  position: absolute; pointer-events: auto; touch-action: none; border-radius: 50%; display: grid; place-items: center;
+  position: absolute; pointer-events: auto; touch-action: none; border-radius: 50%; display: grid; place-items: center; align-content: center; gap: 1px;
   border: 2px solid rgba(255, 255, 255, 0.3); background: rgba(10, 18, 22, 0.45); color: #fff; font-weight: 700;
   backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); transition: transform 0.06s, background 0.06s;
 }
 .tc-btn.down { transform: scale(0.92); background: rgba(157, 255, 207, 0.35); }
-.tc-fire { width: 92px; height: 92px; right: calc(22px + var(--safe-r)); bottom: calc(28px + var(--safe-b)); border-color: rgba(255, 180, 90, 0.7); font-size: 17px; }
-.tc-missile { width: 70px; height: 70px; right: calc(128px + var(--safe-r)); bottom: calc(22px + var(--safe-b)); border-color: rgba(255, 210, 90, 0.7); }
-.tc-boost { width: 64px; height: 64px; right: calc(34px + var(--safe-r)); bottom: calc(136px + var(--safe-b)); border-color: rgba(90, 200, 255, 0.7); font-size: 13px; }
-.tc-brake { width: 56px; height: 56px; right: calc(118px + var(--safe-r)); bottom: calc(112px + var(--safe-b)); font-size: 12px; }
-.tc-cam { width: 46px; height: 46px; right: calc(178px + var(--safe-r)); bottom: calc(150px + var(--safe-b)); }
-.tc-cam svg { width: 22px; height: 22px; }
-body.touch .hud-weapons { bottom: auto; top: calc(82px + var(--safe-t)); transform: translateX(-50%) scale(0.86); transform-origin: top center; }
-body.touch .hud-boss { top: calc(128px + var(--safe-t)); }
+.tc-missile { width: 82px; height: 82px; right: calc(20px + var(--safe-r)); bottom: calc(24px + var(--safe-b)); border-color: rgba(255, 210, 90, 0.75); font-size: 14px; color: #ffe2a0; }
+.tc-missile svg { width: 26px; height: 26px; }
+body.touch .hud-weapons { transform: translateX(-50%) scale(0.86); transform-origin: bottom center; }
+body.playing #game { cursor: none; }
 body.touch .hud-toast { bottom: auto; top: 46%; }
 
 /* ------------------------------------------------------------------ menus */
@@ -350,7 +346,7 @@ kbd { display: inline-block; min-width: 26px; padding: 3px 7px; margin: 0 2px; b
   .region h3 { font-size: 30px; }
   .region p { display: none; }
   .tc-zone { top: 50px; }
-  body.touch .hud-weapons { top: calc(80px + var(--safe-t)); transform: translateX(-50%) scale(0.76); }
+  body.touch .hud-weapons { transform: translateX(-50%) scale(0.72); }
   /* landscape phone: picture beside the text so the launch button fits without scrolling */
   .briefing { grid-template-columns: 0.75fr 1.25fr; }
   .brief-art { min-height: 0; }

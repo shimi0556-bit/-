@@ -1,43 +1,55 @@
-// Controls: keyboard, mouse buttons, a floating touch joystick with action buttons, and
-// gamepads. Everything is merged into one state the game reads once per frame.
+// Controls for the gunner: a crosshair moved by the mouse (absolutely), the keys or a
+// gamepad stick; on touch screens a finger anywhere aims and fires, with the crosshair a
+// little above the finger so it stays visible. Everything is merged into one state the
+// game reads once per frame. The crosshair is kept in normalised screen units (-1..1).
 import { clamp } from './util.js';
 
 const KEYS = {
   up: ['ArrowUp', 'KeyW'], down: ['ArrowDown', 'KeyS'], left: ['ArrowLeft', 'KeyA'], right: ['ArrowRight', 'KeyD'],
-  yawL: ['KeyQ'], yawR: ['KeyE'], fire: ['Space', 'KeyJ'], missile: ['KeyF', 'KeyK', 'Enter', 'NumpadEnter'],
-  boost: ['ShiftLeft', 'ShiftRight', 'KeyL'], brake: ['ControlLeft', 'ControlRight', 'KeyX', 'KeyZ'],
-  camera: ['KeyC', 'KeyV'], pause: ['Escape', 'KeyP'], mute: ['KeyM'],
+  fire: ['Space', 'KeyJ'], missile: ['KeyF', 'KeyK', 'Enter', 'NumpadEnter'],
+  pause: ['Escape', 'KeyP'], mute: ['KeyM'],
 };
-const EDGE = ['missile', 'camera', 'pause', 'mute'];
+const EDGE = ['missile', 'pause', 'mute'];
+const FINGER_LIFT = 70; // css px between the finger and the crosshair
 
 export class Input {
   constructor({ canvas, touchRoot }) {
     this.down = new Set();
     this.edges = {};
-    this.invert = false;
-    this.axes = { pitch: 0, roll: 0, yaw: 0 };
-    this.touch = { pitch: 0, roll: 0, fire: false, boost: false, brake: false, active: false };
+    this.aim = { x: 0, y: 0 };
+    this.keyVel = { x: 0, y: 0 };
     this.mouse = { fire: false };
-    this.enabled = false; // only while flying
-    this.lastDevice = 'keyboard';
+    this.touch = { fire: false, id: null };
+    this.enabled = false; // only while playing
+    this.lastDevice = 'mouse';
     this.padPrev = [];
     this.listeners = [];
 
     window.addEventListener('keydown', (e) => {
       if (e.repeat) { if (this.enabled && this.isGameKey(e.code)) e.preventDefault(); return; }
       this.down.add(e.code);
-      this.lastDevice = 'keyboard';
+      if (this.isGameKey(e.code) && !['Escape', 'KeyP', 'KeyM'].includes(e.code)) this.lastDevice = 'keyboard';
       for (const [name, codes] of Object.entries(KEYS)) if (EDGE.includes(name) && codes.includes(e.code)) this.edges[name] = true;
       if (this.enabled && this.isGameKey(e.code)) e.preventDefault();
       for (const fn of this.listeners) fn(e);
     });
     window.addEventListener('keyup', (e) => { this.down.delete(e.code); });
-    window.addEventListener('blur', () => { this.down.clear(); this.mouse.fire = false; });
+    window.addEventListener('blur', () => { this.down.clear(); this.mouse.fire = false; this.touch.fire = false; this.touch.id = null; });
+    const fromMouse = (e) => {
+      this.aim.x = clamp((e.clientX / window.innerWidth) * 2 - 1, -1, 1);
+      this.aim.y = clamp(-((e.clientY / window.innerHeight) * 2 - 1), -1, 1);
+    };
+    window.addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'mouse' || !this.enabled) return;
+      fromMouse(e);
+      this.lastDevice = 'mouse';
+    });
     canvas.addEventListener('pointerdown', (e) => {
       if (e.pointerType !== 'mouse' || !this.enabled) return;
+      fromMouse(e);
       if (e.button === 0) this.mouse.fire = true;
       if (e.button === 2) this.edges.missile = true;
-      this.lastDevice = 'keyboard';
+      this.lastDevice = 'mouse';
     });
     window.addEventListener('pointerup', (e) => { if (e.pointerType === 'mouse' && e.button === 0) this.mouse.fire = false; });
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -54,75 +66,54 @@ export class Input {
 
   key(name) { return KEYS[name].some((c) => this.down.has(c)); }
 
-  setInvert(v) { this.invert = !!v; }
-
   // ---------------------------------------------------------------- touch
   buildTouch(root) {
     this.touchRoot = root;
     root.innerHTML = `
-      <div class="tc-zone" data-zone="stick"></div>
-      <div class="tc-stick"><div class="tc-knob"></div></div>
-      <button class="tc-btn tc-fire" data-btn="fire" aria-label="ירי"><span>ירי</span></button>
-      <button class="tc-btn tc-missile" data-btn="missile" aria-label="טיל"><span>טיל</span></button>
-      <button class="tc-btn tc-boost" data-btn="boost" aria-label="טורבו"><span>טורבו</span></button>
-      <button class="tc-btn tc-brake" data-btn="brake" aria-label="האטה"><span>האטה</span></button>
-      <button class="tc-btn tc-cam" data-btn="camera" aria-label="מצלמה"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-2h6l2 2h3v11H4z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>`;
+      <div class="tc-zone" data-zone="aim"></div>
+      <div class="tc-finger"></div>
+      <button class="tc-btn tc-missile" data-btn="missile" aria-label="טיל"><svg viewBox="0 0 24 24"><path d="M12 2l3 5v9l2 3v3l-5-2-5 2v-3l2-3V7z" fill="currentColor"/></svg><span>טיל</span></button>`;
     const zone = root.querySelector('.tc-zone');
-    const stick = root.querySelector('.tc-stick');
-    const knob = root.querySelector('.tc-knob');
-    this.stickEl = stick;
-    let id = null, cx = 0, cy = 0;
-    const R = () => Math.min(70, window.innerWidth * 0.12 + 20);
-    const move = (e) => {
-      const r = R();
-      let dx = e.clientX - cx, dy = e.clientY - cy;
-      const d = Math.hypot(dx, dy);
-      if (d > r) { dx *= r / d; dy *= r / d; }
-      knob.style.transform = `translate(${dx}px, ${dy}px)`;
-      const curve = (v) => Math.sign(v) * Math.pow(Math.abs(v), 1.35);
-      this.touch.roll = curve(dx / r);
-      this.touch.pitch = curve(-dy / r);
+    const finger = root.querySelector('.tc-finger');
+    const place = (e) => {
+      const y = e.clientY - FINGER_LIFT;
+      this.aim.x = clamp((e.clientX / window.innerWidth) * 2 - 1, -1, 1);
+      this.aim.y = clamp(-((y / window.innerHeight) * 2 - 1), -1, 1);
+      finger.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
     };
     zone.addEventListener('pointerdown', (e) => {
-      if (id !== null) return;
-      id = e.pointerId;
-      zone.setPointerCapture(id);
-      cx = e.clientX; cy = e.clientY;
-      stick.style.left = `${cx}px`; stick.style.top = `${cy}px`;
-      stick.classList.add('on');
-      knob.style.transform = 'translate(0px, 0px)';
-      this.touch.active = true;
+      if (this.touch.id !== null) return;
+      this.touch.id = e.pointerId;
+      zone.setPointerCapture(e.pointerId);
+      this.touch.fire = true;
       this.lastDevice = 'touch';
+      finger.classList.add('on');
+      place(e);
       e.preventDefault();
     });
-    zone.addEventListener('pointermove', (e) => { if (e.pointerId === id) move(e); });
+    zone.addEventListener('pointermove', (e) => { if (e.pointerId === this.touch.id) place(e); });
     const end = (e) => {
-      if (e.pointerId !== id) return;
-      id = null;
-      stick.classList.remove('on');
-      this.touch.roll = 0; this.touch.pitch = 0;
+      if (e.pointerId !== this.touch.id) return;
+      this.touch.id = null;
+      this.touch.fire = false;
+      finger.classList.remove('on');
     };
     zone.addEventListener('pointerup', end);
     zone.addEventListener('pointercancel', end);
+    zone.addEventListener('contextmenu', (e) => e.preventDefault());
 
     for (const btn of root.querySelectorAll('.tc-btn')) {
       const name = btn.dataset.btn;
-      const press = (e) => {
+      btn.addEventListener('pointerdown', (e) => {
         e.preventDefault();
-        btn.setPointerCapture?.(e.pointerId);
         btn.classList.add('down');
         this.lastDevice = 'touch';
-        if (name === 'missile' || name === 'camera') this.edges[name] = true;
-        else this.touch[name] = true;
-      };
-      const release = (e) => {
-        btn.classList.remove('down');
-        if (name !== 'missile' && name !== 'camera') this.touch[name] = false;
-      };
-      btn.addEventListener('pointerdown', press);
+        this.edges[name] = true;
+      });
+      const release = () => btn.classList.remove('down');
       btn.addEventListener('pointerup', release);
       btn.addEventListener('pointercancel', release);
-      btn.addEventListener('lostpointercapture', release);
+      btn.addEventListener('pointerleave', release);
       btn.addEventListener('contextmenu', (e) => e.preventDefault());
     }
   }
@@ -134,16 +125,16 @@ export class Input {
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
     for (const p of pads) {
       if (!p || !p.connected) continue;
-      const dz = (v) => (Math.abs(v) < 0.15 ? 0 : (v - Math.sign(v) * 0.15) / 0.85);
+      const dz = (v) => (Math.abs(v) < 0.14 ? 0 : (v - Math.sign(v) * 0.14) / 0.86);
       const b = (i) => !!(p.buttons[i] && (p.buttons[i].pressed || p.buttons[i].value > 0.4));
-      const out = {
-        roll: dz(p.axes[0] || 0), pitch: -dz(p.axes[1] || 0), yaw: dz(p.axes[2] || 0),
-        fire: b(7), boost: b(4) || b(1), brake: b(6),
-      };
+      // either stick moves the crosshair
+      const lx = dz(p.axes[0] || 0), ly = dz(p.axes[1] || 0), rx = dz(p.axes[2] || 0), ry = dz(p.axes[3] || 0);
+      const x = Math.abs(rx) > Math.abs(lx) ? rx : lx, y = Math.abs(ry) > Math.abs(ly) ? ry : ly;
+      const out = { x, y: -y, fire: b(7) || b(6) };
       const edge = (i, name) => { if (b(i) && !this.padPrev[i]) this.edges[name] = true; };
-      edge(0, 'missile'); edge(5, 'missile'); edge(3, 'camera'); edge(9, 'pause');
+      edge(0, 'missile'); edge(5, 'missile'); edge(4, 'missile'); edge(9, 'pause');
       for (let i = 0; i < p.buttons.length; i++) this.padPrev[i] = b(i);
-      if (out.fire || out.boost || Math.abs(out.roll) + Math.abs(out.pitch) > 0.2) this.lastDevice = 'gamepad';
+      if (out.fire || Math.abs(x) + Math.abs(y) > 0.2) this.lastDevice = 'gamepad';
       return out;
     }
     return null;
@@ -153,27 +144,30 @@ export class Input {
   poll(dt) {
     const pad = this.pollPad();
     const k = (name) => (this.key(name) ? 1 : 0);
-    const ramp = (cur, target, rate) => {
-      if (target === 0) return Math.abs(cur) < rate * dt * 1.5 ? 0 : cur - Math.sign(cur) * rate * 1.5 * dt;
-      return clamp(cur + clamp(target - cur, -rate * dt, rate * dt), -1, 1);
-    };
-    this.axes.pitch = ramp(this.axes.pitch, k('up') - k('down'), 4);
-    this.axes.roll = ramp(this.axes.roll, k('right') - k('left'), 5);
-    this.axes.yaw = ramp(this.axes.yaw, k('yawR') - k('yawL'), 4);
-    let pitch = this.axes.pitch + this.touch.pitch + (pad ? pad.pitch : 0);
-    const roll = clamp(this.axes.roll + this.touch.roll + (pad ? pad.roll : 0), -1, 1);
-    const yaw = clamp(this.axes.yaw + (pad ? pad.yaw : 0), -1, 1);
-    pitch = clamp(pitch, -1, 1) * (this.invert ? -1 : 1);
+    // keys and sticks steer the crosshair with a little acceleration
+    let sx = k('right') - k('left'), sy = k('up') - k('down');
+    if (pad) { sx += pad.x; sy += pad.y; }
+    sx = clamp(sx, -1, 1); sy = clamp(sy, -1, 1);
+    const accel = (cur, want) => (want === 0 ? 0 : clamp(cur + want * dt * 4, -1, 1));
+    this.keyVel.x = Math.sign(sx) === Math.sign(this.keyVel.x) || this.keyVel.x === 0 ? accel(this.keyVel.x, sx) : 0;
+    this.keyVel.y = Math.sign(sy) === Math.sign(this.keyVel.y) || this.keyVel.y === 0 ? accel(this.keyVel.y, sy) : 0;
+    const speed = 1.6;
+    if (sx) this.aim.x = clamp(this.aim.x + sx * speed * dt * (0.45 + 0.55 * Math.abs(this.keyVel.x)), -0.95, 0.95);
+    if (sy) this.aim.y = clamp(this.aim.y + sy * speed * dt * (0.45 + 0.55 * Math.abs(this.keyVel.y)), -0.9, 0.9);
+    // with keys or a pad and nothing pressed, drift slowly back to the middle
+    if (!sx && !sy && (this.lastDevice === 'keyboard' || this.lastDevice === 'gamepad')) {
+      this.aim.x *= Math.exp(-0.6 * dt);
+      this.aim.y *= Math.exp(-0.6 * dt);
+    }
     const state = {
-      pitch, roll, yaw,
+      aim: this.aim,
       fire: this.key('fire') || this.mouse.fire || this.touch.fire || !!(pad && pad.fire),
-      boost: this.key('boost') || this.touch.boost || !!(pad && pad.boost),
-      brake: this.key('brake') || this.touch.brake || !!(pad && pad.brake),
-      missile: !!this.edges.missile, camera: !!this.edges.camera, pause: !!this.edges.pause, mute: !!this.edges.mute,
+      missile: !!this.edges.missile, pause: !!this.edges.pause, mute: !!this.edges.mute,
+      device: this.lastDevice,
     };
     this.edges = {};
     return state;
   }
 
-  clearEdges() { this.edges = {}; }
+  clearEdges() { this.edges = {}; this.mouse.fire = false; }
 }

@@ -1,12 +1,14 @@
 // The three regions of the campaign. Every region shares the same systems; this table
-// sets the land shape, light, colours, plants and which monsters live there.
+// sets the land shape, light, colours, plants, the track the player rides (`rail`: run on
+// the ground or fly low, with a stop and an ambush at the end of every leg) and which
+// monsters charge at each stop.
 
 export const LEVELS = [
   {
     id: 'valley',
     name: 'העמק הירוק',
     tagline: 'עמק פורח, אגם כחול ויערות אורנים',
-    brief: 'להקות של רצים, שריונים וענקים פשטו על העמק. טוסו נמוך, נעלו טילים ופנו את האזור.',
+    brief: 'להקות של רצים, שריונים וענקים פשטו על העמק. רוצו בין העצים, המריאו מעל האגם, ובכל עצירה עצרו את הגלים שמסתערים עליכם.',
     image: 'region_valley',
     seed: 1337,
     terrain: { type: 'valley', size: 9000, water: 0 },
@@ -27,8 +29,16 @@ export const LEVELS = [
     plants: { pine: 5200, broad: 2600, bush: 2200, rock: 900, cactus: 0, deadTree: 0, crystal: 0 },
     clouds: { count: 70, height: [520, 900], color: 0xffffff, opacity: 0.85 },
     monsters: { raptor: 10, horned: 3, longneck: 2, flyer: 0, rex: 0 },
-    goal: 14,
-    waves: [{ at: 5, add: { raptor: 5, horned: 1 } }, { at: 10, add: { longneck: 1, raptor: 4 } }],
+    rail: {
+      points: [[-1500, 1300], [-1000, 700], [-400, -200], [100, -1400], [1200, -1500]],
+      legs: [
+        { mode: 'ground', at: 0.15, waves: [{ raptor: 6 }, { raptor: 8 }, { raptor: 6, horned: 1 }] },
+        { mode: 'air', at: 0.45, waves: [{ raptor: 8, horned: 1 }, { horned: 2, raptor: 6 }] },
+        { mode: 'ground', at: 0.63, waves: [{ raptor: 8 }, { longneck: 1, raptor: 6 }, { horned: 2, raptor: 6 }] },
+        { mode: 'air', at: 0.93, waves: [{ raptor: 10 }, { longneck: 1, horned: 2 }, { longneck: 1, raptor: 10, horned: 1 }] },
+      ],
+      travel: { ground: { raptor: 3 }, air: { raptor: 5 } },
+    },
     ambience: 'wind',
     music: 0,
   },
@@ -36,7 +46,7 @@ export const LEVELS = [
     id: 'canyon',
     name: 'הקניון האדום',
     tagline: 'מסות אדומות, קירות תלולים ושמש של סוף יום',
-    brief: 'טורפים יורקי אש מסתתרים בין הצוקים, וכנפיים רודפות אחרי כל מטוס. טוסו בתוך הקניון והיזהרו מהקירות.',
+    brief: 'טורפים יורקי אש מסתתרים בין הצוקים וכנפיים צוללות מהשמיים. רוצו בתחתית הקניון, טוסו בין הקירות, ואל תתנו להם להגיע אליכם.',
     image: 'region_canyon',
     seed: 4242,
     terrain: { type: 'canyon', size: 9000, water: -999 },
@@ -57,8 +67,17 @@ export const LEVELS = [
     plants: { pine: 0, broad: 0, bush: 2600, rock: 1600, cactus: 1500, deadTree: 400, crystal: 0 },
     clouds: { count: 30, height: [700, 1000], color: 0xffd9c0, opacity: 0.7 },
     monsters: { raptor: 6, horned: 2, longneck: 1, flyer: 5, rex: 2 },
-    goal: 18,
-    waves: [{ at: 6, add: { flyer: 4, rex: 1 } }, { at: 12, add: { rex: 2, raptor: 5, flyer: 3 } }],
+    rail: {
+      lowBias: 60,
+      points: [[580, 800], [650, 0], [1490, -760], [1100, -1200], [600, -1650], [-150, -2300]],
+      legs: [
+        { mode: 'ground', at: [1, -250], waves: [{ raptor: 8 }, { rex: 1, raptor: 6 }] },
+        { mode: 'air', at: [2, -40], waves: [{ flyer: 5 }, { flyer: 5, rex: 1 }, { flyer: 6 }] },
+        { mode: 'ground', at: [3, 0], waves: [{ horned: 2, raptor: 6 }, { rex: 2, raptor: 6 }] },
+        { mode: 'air', at: [5, -150], waves: [{ flyer: 6, raptor: 6 }, { rex: 2, flyer: 4 }, { rex: 2, horned: 2, raptor: 8 }] },
+      ],
+      travel: { ground: { raptor: 3 }, air: { flyer: 2 } },
+    },
     ambience: 'wind',
     music: 1,
   },
@@ -66,7 +85,7 @@ export const LEVELS = [
     id: 'volcano',
     name: 'הר הגעש',
     tagline: 'נהרות לבה, אפר וזוהר אדום בחשכה',
-    brief: 'מלך הלבה התעורר בלב האגם הבוער. השמידו את שלושת גבישי האש על גבו, ואז את הלב שלו.',
+    brief: 'פלסו דרך בין נהרות הלבה עד לאגם הבוער. שם יעלה מלך הלבה: השמידו את שלושת גבישי האש על גבו, ואז את הלב שלו.',
     image: 'region_volcano',
     seed: 9090,
     terrain: { type: 'volcano', size: 9000, water: 6 },
@@ -87,8 +106,17 @@ export const LEVELS = [
     plants: { pine: 0, broad: 0, bush: 0, rock: 1800, cactus: 0, deadTree: 1300, crystal: 260 },
     clouds: { count: 40, height: [600, 1000], color: 0x8c7c7a, opacity: 0.7 },
     monsters: { raptor: 6, horned: 2, longneck: 0, flyer: 5, rex: 3, boss: 1 },
-    goal: 0, // boss level: the goal is the boss
-    waves: [{ at: 4, add: { flyer: 4, rex: 1 } }, { at: 9, add: { flyer: 4, raptor: 4 } }],
+    rail: {
+      points: [[2300, -1700], [1800, -900], [2100, 100], [1500, 500], [970, 740]],
+      legs: [
+        { mode: 'ground', at: [1, -100], waves: [{ raptor: 8 }, { rex: 1, raptor: 6 }] },
+        { mode: 'air', at: [2, -60], waves: [{ flyer: 6 }, { flyer: 6, rex: 1 }] },
+        { mode: 'ground', at: [3, -50], waves: [{ horned: 2, raptor: 8 }, { rex: 2, raptor: 6 }] },
+        { mode: 'air', at: 1, boss: true },
+      ],
+      travel: { ground: { raptor: 3 }, air: { flyer: 2 } },
+      arena: { x: 650, z: 900, radius: 150, height: 30 },
+    },
     ambience: 'rumble',
     music: 2,
   },

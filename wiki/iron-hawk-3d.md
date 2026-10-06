@@ -1,17 +1,17 @@
 # iron-hawk-3d (נץ הברזל)
 
-Browser 3D fighter-jet game against giant monsters, written from scratch in this repo. Hebrew RTL menus and HUD; keyboard/mouse, touch and gamepad.
+Browser 3D on-rails shooter against giant monsters, written from scratch in this repo. First-person: the player is pressed to the front window with two cannons peeking in from the bottom corners (no cockpit, no visible plane). A track carries them through each region, alternating ground-run and low-flight legs, and stops at ambushes where waves of monsters burst out of the ground and charge the window. Hebrew RTL menus and HUD; mouse, touch and gamepad aim a free crosshair.
 
 - **Run:** open `iron-hawk-3d/index.html` directly (single self-contained file, about 1.3MB, works offline). Also a card in the root launcher (`index.html#ironhawk`).
 - **Build:** `cd iron-hawk-3d && npm install && npm run build` (`npm run dev` = unminified). `tools/build.mjs` bundles `src/main.js` with esbuild (IIFE) and inlines CSS, Rubik/Karantina fonts, `assets/img/*` and `assets/sfx/*.mp3` as data URLs into `src/index.html` → `index.html`.
-- **Stack:** Three.js r186 only. Post chain: Render → UnrealBloom → Output (ACES) → grade → FXAA.
+- **Stack:** Three.js r186 only. Post chain: Render → Overlay (the guns, separate scene/camera, depth cleared) or Anaglyph (both instead, when 3D glasses are on) → UnrealBloom → Output (ACES) → grade → FXAA.
 
 ## Layout
 
-- `src/world/` — `sky.js` (physical Sky + IBL bake + fog colour read back from the horizon), `terrain.js`, `water.js` (water and lava), `vegetation.js`, `clouds.js`, `levels.js` (the three regions: valley, canyon, volcano).
-- `src/actors/` — `jet.js` (quaternion flight model), `species.js` + `creature-mesh.js` (procedural skinned monsters), `monsters.js` (AI, hit spheres, boss), `weapons.js` (cannon with lead assist, lock-on missiles), `pickups.js`.
-- `src/core/` — render, camera rig, input (keys/touch/gamepad), audio, procedural textures.
-- `src/ui/` — `hud.js` (canvas HUD), `menus.js` (screens). `src/main.js` is the game loop, missions, scoring, pause/results.
+- `src/world/` — `sky.js` (physical Sky + IBL bake + fog colour read back from the horizon), `terrain.js`, `water.js` (water and lava), `vegetation.js` (skips the track and ambush clearings via `rail.blocks`), `clouds.js`, `rail.js` (the track: A* over the height field, Chaikin smoothing, 5 m samples, per-leg ground/air heights, stops, `spotAhead` for spawns), `levels.js` (the three regions; each has `rail: {points, legs[{mode, at, waves|boss}], travel, arena?}`).
+- `src/actors/` — `guns.js` (the two overlay cannons: spin, recoil, heat glow, muzzle flash; swing toward the aim but at most 0.22 rad from rest), `species.js` + `creature-mesh.js` (procedural skinned monsters), `monsters.js` (AI incl. `thinkCharge`/`thinkFlyerCharge` for rail mode, hit spheres, boss), `weapons.js` (free-aim cannon with aim assist and heat, homing missiles that regen, enemy shots, shootable meteors), `pickups.js` (crates you shoot open).
+- `src/core/` — render (overlay + anaglyph passes), camera rig (rides the track, aim-follow yaw/pitch, head bob with footstep callback, bank in flight, orbit for menus), input (crosshair in NDC from mouse/keys/pad/touch), audio, procedural textures.
+- `src/ui/` — `hud.js` (canvas HUD), `menus.js` (screens). `src/main.js` is the game loop: the ride (`updateRide`: intro → travel → ambush waves → … → boss arena orbit), spawns (`spawnCharger`, `spawnTravel`, `cullBehind`), shield/lives, scoring, pause/results, menu attract mode.
 - Content rules from the owner: monsters are just monsters (no prehistoric lore), no pop culture, no people/women in art, sound effects only (no voices or songs).
 
 ## Notes
@@ -26,4 +26,15 @@ Browser 3D fighter-jet game against giant monsters, written from scratch in this
 - **Mobile black screen:** CSS `.touch{display:none}` also matched `body.touch` (the class added on touch devices). Renamed to `#touch`. Don't reuse `.touch` as a component class.
 - **Phone layout (844×390):** screens centre with `margin:auto` on first/last child instead of `justify-content:center` (that clipped the settings back button); briefing and atlas go two-column in short landscape; HUD radar and touch weapon bar moved below the lives row and objective.
 - **QA caveat:** in the container's swiftshader Chromium the game runs at a few fps and `dt` is clamped, so real-time Playwright runs show false bugs (intro title never fading, 0 kills, screens stuck at opacity 0 at high quality). Use a fixed-step harness instead: replace `g.frame` with a no-op and loop `g.updatePlaying(1/30)` from `page.evaluate`, injecting keys via `g.input.down`; force `localStorage['ironhawk.v1.settings'] = {"quality":"low"}`.
-- **Open:** not yet tested on a real phone/GPU; Gemini art still pending.
+- **2026-10-06, rework to an on-rails gunner (owner's request).** The owner wanted no visible plane: travel through the world, slow down or stop now and then, and have crowds of monsters run at the camera while you shoot them with cannons, like a 3D-glasses ride; then also running on the ground, and no cockpit, just two cannons peeking in. `jet.js` was removed; the old free-flight missions (`goal`, `waves`, kill counts, par times) are gone.
+  - **Stars now:** win = 1, ≤1 life lost = 2, no life lost and damage < 150 = 3. Shield 100 + 3 lives; an emptied shield costs a life, blasts everything within 60 m back and refills.
+  - **Air stops hover low:** at stops only the ground within ±10 m sets the hover base (`EYE.hover` 7), otherwise ridges 70 m away lifted the camera 30 m above the ambush. Ambush spawns carry `ambush: true`, which lets runners reach (and leap at) the window from up to 45 m below; flying past on a travel leg still keeps them out of reach.
+  - **Spawn distance matters:** at 55–215 m the runners were dots. Ambush spawns are now 35–130 m (big ones 75–150) with side spread tied to distance so the crowd stays in view.
+  - **Guns swinging off-screen:** the pivots sit near the screen corners, so aiming hard right swung the right gun out of view. The swing is clamped to 0.22 rad from the rest pose; rounds still converge on the aim point.
+  - **Boss fight up close:** the boss stood on the lava-lake bottom (−12 m, lava at 6) with only its back above the lava, and the arena orbit was 330 m out, so it was a speck. Now it wades at `waterLevel − 5` (monsters.js `place`) and the camera circles at 150 m, 30 m above the lava (`levels.js` `arena`).
+  - **Crystals vs. hide:** the crystal hit spheres sit partly inside body spheres, so `segmentHit` prefers a weak sphere (crystal or heart) when the ray reaches it within 2.5 × its radius of the first body hit.
+  - **Probe gotcha:** bone `matrixWorld` only updates on render. A probe that steps `updatePlaying` without rendering reads stale hit spheres; call `scene.updateMatrixWorld(true)` first.
+  - **Stuck runners:** a monster wedged behind a rock (or one that ended up behind the window) held an ambush open with nothing to shoot. `dropStragglers` removes a non-flying ambush monster that made no progress toward the player for 6 s while out of reach, and any that is 30 m behind or 600 m away.
+  - **Arena blend:** `updateArena` blends from the last stop over 3 s with its own timer (`arena.t`); using `phaseT` snapped the camera back to the stop when the phase changed to `done`.
+  - **QA:** a bot harness (aim at the nearest monster in view, hold fire, random missiles, invulnerable) plays each region end to end in the fixed-step loop.
+- **Open:** not yet tested on a real phone/GPU; Gemini art still pending; the anaglyph uses the Dubois matrices on linear HDR, worth checking with real red-cyan glasses.

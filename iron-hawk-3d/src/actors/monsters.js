@@ -1,6 +1,7 @@
 // Monster system: builds each species once (skinned body + rigid details), spawns
 // instances, animates their gaits procedurally, runs their behaviour, takes hits and
-// plays their deaths.
+// plays their deaths. In a mission the monsters burst out of the ground and charge straight
+// at the player's window (charge mode); in the menu they roam the land as before.
 import * as THREE from 'three';
 import { buildCreatureGeometry, makeSkinMaterial } from './creature-mesh.js';
 import { SPECIES } from './species.js';
@@ -8,7 +9,7 @@ import { getSurfaceTexture } from '../core/textures.js';
 import { mulberry32, clamp, damp, wrapAngle, lerp, smoothstep } from '../core/util.js';
 
 const V = () => new THREE.Vector3();
-const _v1 = V(), _v2 = V(), _v3 = V(), _q = new THREE.Quaternion(), _m = new THREE.Matrix4();
+const _v1 = V(), _v2 = V(), _v3 = V(), _fwd = V(), _q = new THREE.Quaternion(), _m = new THREE.Matrix4();
 const UP = new THREE.Vector3(0, 1, 0);
 
 function detailMaterial(color, emissive = 0, intensity = 0, rough = 0.5) {
@@ -27,6 +28,8 @@ export class MonsterSystem {
     this.list = [];
     this.rand = mulberry32(ctx.level.seed + 909);
     this.time = 0;
+    this.railMode = false; // set during missions: summoned monsters charge the player too
+    this.player = null;
   }
 
   async prepare(ids) {
@@ -282,8 +285,19 @@ export class MonsterSystem {
       packLeader: opts.leader || null, packOffset: opts.offset || null, nest: opts.nest || at.clone(),
       radius: spec.radius * scale, height: spec.height * scale, alive: true, heartExposed: false,
       roarTimer: 4 + this.rand() * 8, summonTimer: 10, barrageTimer: 4, rainTimer: 9,
+      charge: !!opts.charge, ambush: !!opts.ambush, slot: opts.slot || 0, rise: 0, riseTime: 1, kv: new THREE.Vector3(), stun: 0, leap: null,
+      airborne: false, windup: 0, rear: 0, breakT: 0, side: 1, spit: 2 + this.rand() * 2,
     };
-    if (spec.flies) {
+    if (opts.emerge) {
+      m.rise = 1;
+      m.riseTime = spec.boss ? 3.6 : 0.75 + this.rand() * 0.45;
+      m.roar = m.riseTime;
+      m.alert = true;
+    }
+    if (m.charge) { m.alert = true; m.cooldown = 0.3 + this.rand() * 0.6; }
+    if (spec.flies && m.charge) {
+      m.vel.set(Math.sin(m.heading), -0.1, Math.cos(m.heading)).multiplyScalar(spec.charge * 0.8);
+    } else if (spec.flies) {
       m.pos.y = Math.max(m.pos.y, this.ctx.terrain.groundOrWater(m.pos.x, m.pos.z) + 120 + this.rand() * 150);
       m.vel.set(Math.sin(m.heading), 0, Math.cos(m.heading)).multiplyScalar(spec.walk * scale * 0.5);
     }
@@ -363,10 +377,17 @@ export class MonsterSystem {
       const R = Math.max(m.radius * 2.6, m.height * 0.9) + pad;
       if (segSphere(p0, dir, len, c, R) === null) continue;
       const spheres = this.worldSpheres(m, this._sph || (this._sph = []));
+      let first = null, weak = null;
       for (const s of spheres) {
         const t = segSphere(p0, dir, len, s.p, s.r + pad);
-        if (t !== null && (!best || t < best.t)) best = { t, m, sphere: s, point: p0.clone().addScaledVector(dir, t) };
+        if (t === null) continue;
+        if (!first || t < first.t) first = { t, s };
+        if ((s.weak !== undefined || s.heart) && (!weak || t < weak.t)) weak = { t, s };
       }
+      // the boss's crystals sit half sunk into its hide: a shot that grazes the hide right
+      // in front of one still counts on the crystal
+      const pick = weak && weak.t - first.t < weak.s.r * 2.5 ? weak : first;
+      if (pick && (!best || pick.t < best.t)) best = { t: pick.t, m, sphere: pick.s, point: p0.clone().addScaledVector(dir, pick.t) };
     }
     return best;
   }
@@ -404,7 +425,7 @@ export class MonsterSystem {
       // armour on the front: hits from the side/back hurt more
       const fwd = _v2.set(Math.sin(m.heading), 0, Math.cos(m.heading));
       const facing = -fwd.dot(_v3.copy(hit.dir).setY(0).normalize());
-      amount *= facing > 0.5 ? 0.5 : 1.2;
+      amount *= facing > 0.5 ? (m.charge ? 0.7 : 0.5) : 1.2;
     }
     m.hp -= amount;
     if (m.hp <= 0) this.kill(m, point);
@@ -416,7 +437,15 @@ export class MonsterSystem {
     m.state = 'dying';
     m.dying = 0;
     const c = this.center(m, new THREE.Vector3());
-    const big = m.spec.boss ? 6 : clamp(m.height / 12, 0.8, 3.5);
+    let big = m.spec.boss ? 6 : clamp(m.height / 12, 0.8, 3.5);
+    // up close the blast would fill the whole window, so keep it smaller
+    if (m.charge && this.player) big = Math.min(big, 0.35 + c.distanceTo(this.player.pos) / 35);
+    if (m.leap) {
+      m.leap = null;
+      m.kv.set(0, 3, 0);
+      m.airborne = true;
+    }
+    m.windup = 0;
     this.ctx.fx.explosion(c, big);
     this.ctx.audio.roar(m.spec.sound, c, 1.2, true);
     this.ctx.audio.explosion(big, c);
@@ -427,6 +456,7 @@ export class MonsterSystem {
   // ---------------------------------------------------------------- per frame
   update(dt, time, player) {
     this.time = time;
+    this.player = player;
     for (let i = this.list.length - 1; i >= 0; i--) {
       const m = this.list[i];
       if (m.alive) this.think(m, dt, player);
@@ -443,7 +473,7 @@ export class MonsterSystem {
     const L = this.list;
     for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {
       const a = L[i], b = L[j];
-      if (!a.alive || !b.alive || a.spec.flies || b.spec.flies) continue;
+      if (!a.alive || !b.alive || a.spec.flies || b.spec.flies || a.airborne || b.airborne || a.leap || b.leap) continue;
       const dx = b.pos.x - a.pos.x, dz = b.pos.z - a.pos.z;
       const d = Math.hypot(dx, dz), min = (a.radius + b.radius) * 1.2;
       if (d > 0.01 && d < min) {
@@ -464,6 +494,8 @@ export class MonsterSystem {
     const distP = toP.length();
     const horiz = Math.hypot(toP.x, toP.z);
     if (distP < 1500 && player.alive) m.alert = true;
+    if (m.rise > 0) return this.emerge(m, dt, player);
+    if (m.charge) return spec.flies ? this.thinkFlyerCharge(m, dt, player, distP) : this.thinkCharge(m, dt, player);
     if (spec.flies) return this.thinkFlyer(m, dt, player, distP);
     if (spec.boss) return this.thinkBoss(m, dt, player, distP);
 
@@ -547,6 +579,266 @@ export class MonsterSystem {
     this.place(m, dt);
   }
 
+  // ---------------------------------------------------------------- charge mode (missions)
+  // coming up out of the ground (or the lava) with a roar
+  emerge(m, dt, player) {
+    m.rise = Math.max(0, m.rise - dt / m.riseTime);
+    m.speed = 0;
+    m.roar = Math.max(m.roar - dt, m.rise > 0.15 ? 0.3 : 0);
+    if (player.alive) {
+      const want = Math.atan2(player.pos.x - m.pos.x, player.pos.z - m.pos.z);
+      m.heading += clamp(wrapAngle(want - m.heading), -3 * dt, 3 * dt);
+    }
+    if (!m.spec.flies && Math.random() < dt * (m.spec.boss ? 30 : 12)) {
+      const p = _v3.copy(m.pos).add(_v1.set((this.rand() - 0.5) * m.radius * 2, 0, (this.rand() - 0.5) * m.radius * 2));
+      if (m.spec.boss) this.ctx.fx.embers(p.setY(p.y + 4), 6); else this.ctx.fx.smokePuff(p, m.radius * 0.8);
+    }
+    this.place(m, dt);
+  }
+
+  // run at the player's window and attack up close
+  thinkCharge(m, dt, player) {
+    const spec = m.spec, fx = this.ctx.fx;
+    m.cooldown -= dt;
+    m.roarTimer -= dt;
+    if (m.roar > 0) m.roar -= dt;
+    const fwd = _fwd.copy(player.forward).setY(0);
+    if (fwd.lengthSq() < 1e-6) fwd.set(0, 0, -1);
+    fwd.normalize();
+    const rx = -fwd.z, rz = fwd.x;
+
+    // thrown back by a hit, a ram or a blast
+    if (m.stun > 0 || (m.airborne && !m.leap)) {
+      m.stun -= dt;
+      m.pos.addScaledVector(m.kv, dt);
+      m.kv.y -= 32 * dt;
+      const g = this.ctx.terrain.heightAt(m.pos.x, m.pos.z);
+      if (m.pos.y <= g) {
+        if (m.airborne && m.kv.y < -8) fx.dust(m.pos, m.height * 0.35);
+        m.pos.y = g;
+        m.kv.y = 0;
+        m.airborne = false;
+        m.kv.x *= 1 - Math.min(1, 6 * dt); m.kv.z *= 1 - Math.min(1, 6 * dt);
+      } else m.airborne = true;
+      m.speed = damp(m.speed, 0, 6, dt);
+      m.rear = Math.max(0, m.rear - dt * 3);
+      this.place(m, dt);
+      return;
+    }
+    if (m.leap) { this.leapStep(m, dt, player, fwd, rx, rz); return; }
+
+    const dx = player.pos.x - m.pos.x, dz = player.pos.z - m.pos.z;
+    const dist = Math.hypot(dx, dz);
+    const ahead = -(dx * fwd.x + dz * fwd.z); // > 0 while the monster is in front of the player
+    const reach = spec.reach;
+    // aim for a spot just in front of the window; the pack fans in as it closes
+    const fan = clamp(dist / 70, 0.12, 1);
+    const tx = player.pos.x + fwd.x * reach * 0.5 + rx * m.slot * fan;
+    const tz = player.pos.z + fwd.z * reach * 0.5 + rz * m.slot * fan;
+    let desired = Math.atan2(tx - m.pos.x, tz - m.pos.z);
+    if (spec.id === 'raptor') desired += Math.sin(this.time * 2.6 + m.phase) * 0.5 * clamp((dist - 25) / 40, 0, 1);
+    let want = spec.charge;
+    const plant = spec.attack === 'bite' || spec.attack === 'stomp';
+    if (plant && dist < reach * 0.8) want = 0;
+    if (m.windup > 0) want = 0;
+    if (!player.alive) want = 0;
+    const turn = spec.id === 'raptor' ? 4 : spec.id === 'horned' ? 2.2 : 1.4;
+    m.heading += clamp(wrapAngle(desired - m.heading), -turn * dt, turn * dt);
+    m.speed = damp(m.speed, want, 3, dt);
+    m.pos.x += Math.sin(m.heading) * m.speed * dt;
+    m.pos.z += Math.cos(m.heading) * m.speed * dt;
+    // never stand inside the player: step aside
+    const minD = m.radius * 0.75 + 2.5;
+    if (dist < minD && dist > 0.01) {
+      const k = (minD - dist) / dist;
+      m.pos.x -= dx * k; m.pos.z -= dz * k;
+    }
+
+    // fire from range (the spitters)
+    if (spec.fire && player.alive && dist > 70 && dist < 700 && m.cooldown <= 0 && ahead > 0) {
+      m.cooldown = 4 + this.rand() * 2.5;
+      m.roar = 0.9;
+      m.firePending = 0.6;
+      this.ctx.audio.roar(spec.sound, m.pos, 1);
+    }
+    if (m.firePending > 0) {
+      m.firePending -= dt;
+      if (m.firePending <= 0) this.ctx.weapons.enemyShot('fire', this.mouth(m), player, 120);
+    }
+
+    // the attack itself
+    if (m.windup > 0) {
+      m.windup -= dt;
+      if (spec.attack === 'stomp') m.rear = damp(m.rear, 1, 5, dt);
+      if (m.windup <= 0) this.strike(m, player, dist);
+    } else {
+      m.rear = Math.max(0, m.rear - dt * 3);
+      // flying past high overhead is out of reach; hovering over an ambush is not
+      const above = player.pos.y - m.pos.y;
+      if (player.alive && dist < reach && ahead > -2 && above < (m.ambush ? 45 : reach + 10) && m.cooldown <= 0) this.attack(m);
+    }
+    if (m.roarTimer <= 0) {
+      m.roarTimer = 6 + this.rand() * 8;
+      if (dist < 400) this.ctx.audio.roar(spec.sound, m.pos, 0.6);
+    }
+    this.place(m, dt);
+  }
+
+  attack(m) {
+    const spec = m.spec;
+    switch (spec.attack) {
+      case 'pounce':
+        m.leap = { t: 0, dur: 0.48 + this.rand() * 0.14 + (this.player ? Math.max(0, this.player.pos.y - m.pos.y) * 0.012 : 0), from: m.pos.clone(), side: this.rand() < 0.5 ? -1 : 1 };
+        m.airborne = true;
+        m.cooldown = 1.6 + this.rand() * 0.8;
+        m.roar = 0.6;
+        this.ctx.audio.roar(spec.sound, m.pos, 0.9);
+        break;
+      case 'ram': m.windup = 0.3; m.cooldown = 2.4; this.ctx.audio.roar(spec.sound, m.pos, 0.9); break;
+      case 'bite': m.windup = 0.45; m.roar = 0.8; m.cooldown = 2; this.ctx.audio.roar(spec.sound, m.pos, 1); break;
+      case 'stomp': m.windup = 0.95; m.roar = 1.3; m.cooldown = 3.6; this.ctx.audio.roar(spec.sound, m.pos, 1.1); break;
+      default: break;
+    }
+  }
+
+  strike(m, player, dist) {
+    const spec = m.spec, fx = this.ctx.fx, ev = this.ctx.events;
+    if (dist > spec.reach * 1.35 || !player.alive) return; // the player moved on: a miss
+    if (spec.attack === 'ram') {
+      ev.onPlayerHit?.(spec.damage, this.center(m, new THREE.Vector3()), 'ram');
+      const away = _v1.set(m.pos.x - player.pos.x, 0, m.pos.z - player.pos.z);
+      if (away.lengthSq() < 1e-4) away.copy(player.forward).setY(0);
+      away.normalize();
+      m.kv.set(away.x * 15, 5, away.z * 15);
+      m.stun = 1.1;
+      m.airborne = true;
+      fx.dust(m.pos, m.height * 0.4);
+    } else if (spec.attack === 'bite') {
+      ev.onPlayerHit?.(spec.damage, this.mouth(m), 'bite');
+    } else if (spec.attack === 'stomp') {
+      m.rear = 0;
+      const foot = _v1.copy(m.pos).add(_v2.set(Math.sin(m.heading), 0, Math.cos(m.heading)).multiplyScalar(m.radius * 1.4));
+      foot.y = this.ctx.terrain.heightAt(foot.x, foot.z);
+      fx.dust(foot, m.height * 0.5);
+      fx.spawnDebris(foot, 6, 1.2);
+      this.ctx.audio.thud(m.height / 8, foot);
+      fx.shake(foot, 3);
+      ev.onPlayerHit?.(spec.damage, foot, 'stomp');
+    }
+  }
+
+  // a raptor flying at the window, claws first
+  leapStep(m, dt, player, fwd, rx, rz) {
+    const L = m.leap;
+    L.t += dt;
+    const e = Math.min(1, L.t / L.dur);
+    const tgt = _v3.copy(player.pos).addScaledVector(fwd, 2.6);
+    tgt.y -= m.height * 0.62; // so the head and claws arrive at eye level
+    m.pos.lerpVectors(L.from, tgt, e * e * (3 - 2 * e));
+    m.pos.y += Math.sin(e * Math.PI) * (2.5 + m.height * 0.35);
+    m.heading = Math.atan2(player.pos.x - m.pos.x, player.pos.z - m.pos.z);
+    m.pitch = lerp(-0.45, 0.25, e);
+    m.speed = 0;
+    if (e >= 1) {
+      m.leap = null;
+      this.ctx.events.onPlayerHit?.(m.spec.damage, this.center(m, new THREE.Vector3()), 'claw');
+      // knocked off the glass, back and to one side
+      const away = _v1.set(m.pos.x - player.pos.x, 0, m.pos.z - player.pos.z);
+      if (away.lengthSq() < 1e-4) away.copy(fwd);
+      away.normalize();
+      m.kv.set(away.x * 9 + rx * L.side * 8, 7, away.z * 9 + rz * L.side * 8);
+      m.stun = 0.9;
+      m.airborne = true;
+      m.pitch = 0;
+    }
+    this.place(m, dt);
+  }
+
+  // flyers dive at the window, bite, peel away and come round again
+  thinkFlyerCharge(m, dt, player, distP) {
+    const spec = m.spec, T = this.ctx.terrain;
+    m.cooldown -= dt;
+    m.spit -= dt;
+    const fwd = _fwd.copy(player.forward).setY(0);
+    if (fwd.lengthSq() < 1e-6) fwd.set(0, 0, -1);
+    fwd.normalize();
+    const rx = -fwd.z, rz = fwd.x;
+    const desired = _v2;
+    m.state = 'chase';
+    if (m.breakT > 0) {
+      m.breakT -= dt;
+      desired.set(fwd.x + rx * m.side * 1.3, 0.6, fwd.z + rz * m.side * 1.3);
+    } else {
+      // come in along a lane out in front, so the dive is in view
+      const aim = _v3.copy(player.pos).addScaledVector(fwd, 3);
+      aim.y += 0.5;
+      if (distP > 50) {
+        const k = Math.min(distP * 0.45, 90);
+        aim.addScaledVector(fwd, k);
+        aim.x += rx * m.slot * 0.4; aim.z += rz * m.slot * 0.4;
+        aim.y += k * 0.25;
+      }
+      desired.subVectors(aim, m.pos);
+      if (player.alive && distP < spec.reach + 3 && m.cooldown <= 0) {
+        m.cooldown = 2.4;
+        m.breakT = 1.5 + this.rand() * 0.6;
+        m.side = this.rand() < 0.5 ? -1 : 1;
+        this.ctx.events.onPlayerHit?.(spec.damage, m.pos, 'bite');
+        this.ctx.audio.roar(spec.sound, m.pos, 0.8);
+      }
+      if (spec.spit && player.alive && distP > 70 && distP < 320 && m.spit <= 0) {
+        const f = _v1.copy(m.vel).normalize();
+        if (f.dot(_v3.subVectors(player.pos, m.pos).normalize()) > 0.75) {
+          this.ctx.weapons.enemyShot('acid', this.mouth(m), player, 150);
+          m.spit = 3.5 + this.rand() * 2;
+          this.ctx.audio.roar(spec.sound, m.pos, 0.6);
+        }
+      }
+    }
+    desired.normalize();
+    const ground = T.groundOrWater(m.pos.x, m.pos.z);
+    if (m.pos.y < ground + 8) desired.y = Math.max(desired.y, 0.5);
+    const speed = distP < 80 && m.breakT <= 0 ? spec.charge * 1.15 : spec.charge;
+    const cur = _v3.copy(m.vel);
+    if (cur.lengthSq() < 1e-4) cur.copy(desired);
+    cur.normalize();
+    const angle = cur.angleTo(desired);
+    if (angle > 1e-4) cur.applyAxisAngle(_v1.crossVectors(cur, desired).normalize(), Math.min(angle, 2.4 * dt));
+    const oldHeading = m.heading;
+    m.vel.copy(cur).multiplyScalar(damp(m.vel.length(), speed, 1.5, dt));
+    m.pos.addScaledVector(m.vel, dt);
+    m.pos.y = Math.max(m.pos.y, ground + 4);
+    m.heading = Math.atan2(cur.x, cur.z);
+    m.pitch = -Math.asin(clamp(cur.y, -1, 1));
+    m.bank = damp(m.bank, clamp(wrapAngle(m.heading - oldHeading) / Math.max(dt, 1e-3) * -0.5, -1, 1), 4, dt);
+    m.speed = m.vel.length();
+    this.place(m, dt);
+  }
+
+  // the shield's emergency blast: throws every nearby monster back
+  blast(center, radius, damage) {
+    for (const m of this.list) {
+      if (!m.alive || m.spec.boss) continue;
+      const d = m.pos.distanceTo(center);
+      if (d > radius) continue;
+      const k = 1 - d / radius;
+      const away = _v1.subVectors(m.pos, center).setY(0);
+      if (away.lengthSq() < 1e-4) away.set(this.rand() - 0.5, 0, this.rand() - 0.5);
+      away.normalize();
+      if (!m.spec.flies) {
+        m.leap = null;
+        m.windup = 0;
+        m.kv.set(away.x * 26 * k + away.x * 6, 8 + 6 * k, away.z * 26 * k + away.z * 6);
+        m.stun = 1.4;
+        m.airborne = true;
+      } else {
+        m.vel.copy(away).multiplyScalar(40).setY(20);
+        m.breakT = 2;
+      }
+      this.damage(m, damage * (0.4 + 0.6 * k), this.center(m, _v2), { blast: true });
+    }
+  }
+
   mouth(m) {
     const mo = m.spec.mouth || [0, 0, 1];
     return new THREE.Vector3(mo[0], mo[1], mo[2]).applyMatrix4(m.bones.head.matrixWorld);
@@ -557,7 +849,7 @@ export class MonsterSystem {
     let desired = _v2;
     const speedCruise = spec.speed;
     if (m.alert && player.alive && distP < 2600) {
-      // pursue a point slightly ahead of the jet, then break away after passing
+      // pursue a point slightly ahead of the player, then break away after passing
       const lead = _v3.copy(player.vel).multiplyScalar(clamp(distP / 250, 0, 1.2));
       desired.copy(player.pos).add(lead).sub(m.pos);
       if (m.breakTimer > 0) {
@@ -648,7 +940,7 @@ export class MonsterSystem {
       if (flyers < 6) {
         for (let i = 0; i < 2; i++) {
           const p = m.pos.clone().add(new THREE.Vector3((this.rand() - 0.5) * 80, m.height * 0.8, (this.rand() - 0.5) * 80));
-          const f = this.spawn('flyer', p, { nest: p.clone() });
+          const f = this.spawn('flyer', p, { nest: p.clone(), charge: this.railMode, slot: (this.rand() - 0.5) * 60 });
           f.alert = true;
           f.vel.set(0, 30, 0);
         }
@@ -661,9 +953,10 @@ export class MonsterSystem {
   // ---------------------------------------------------------------- animation and placement
   place(m, dt) {
     const spec = m.spec, T = this.ctx.terrain;
-    if (!spec.flies) {
+    if (!spec.flies && !m.airborne) {
       const ground = T.heightAt(m.pos.x, m.pos.z);
-      m.pos.y = spec.wades || spec.boss ? ground : Math.max(ground, T.waterLevel - 0.5);
+      // the boss wades chest-deep in its lake, so the crystals on its back stand clear
+      m.pos.y = spec.boss ? Math.max(ground, T.waterLevel - 5) : spec.wades ? ground : Math.max(ground, T.waterLevel - 0.5);
       // pitch to the slope
       const f = m.radius * 1.5;
       const hf = T.heightAt(m.pos.x + Math.sin(m.heading) * f, m.pos.z + Math.cos(m.heading) * f);
@@ -671,9 +964,11 @@ export class MonsterSystem {
       m.pitch = damp(m.pitch, clamp(-Math.atan2(hf - hb, 2 * f) * 0.7, -0.35, 0.35), 4, dt || 1);
     }
     m.root.position.copy(m.pos);
+    if (m.rise > 0) m.root.position.y -= m.rise * m.rise * m.height * 1.25; // still coming up out of the ground
+    if (m.rear > 0) m.root.position.y += m.rear * m.height * 0.12;
     m.root.rotation.set(0, 0, 0);
     m.root.rotateY(m.heading);
-    m.root.rotateX(m.pitch);
+    m.root.rotateX(m.pitch - m.rear * 0.42);
     if (spec.flies) m.root.rotateZ(m.bank);
     this.animate(m, dt);
   }
@@ -708,6 +1003,15 @@ export class MonsterSystem {
       b.head.rotation.x = (m.roar > 0 ? -0.2 : 0.03 * idle);
       b.head.rotation.y = damp(b.head.rotation.y, m.alert ? clamp(m.look, -0.6, 0.6) : 0.2 * Math.sin(this.time * 0.4 + m.phase), 3, dt || 1);
       if (b.armL) { b.armL.rotation.x = 0.3 + Math.sin(ph) * 0.15; b.armR.rotation.x = 0.3 - Math.sin(ph) * 0.15; }
+      if (m.leap || (m.airborne && m.alive)) { // mid-pounce: legs tucked, claws out
+        for (const side of ['L', 'R']) {
+          b['thigh' + side].rotation.x = -0.95;
+          b['shin' + side].rotation.x = 1.25;
+          b['foot' + side].rotation.x = -0.5;
+        }
+        if (b.armL) { b.armL.rotation.x = -0.7; b.armR.rotation.x = -0.7; }
+        b.neck.rotation.x = -0.15;
+      }
     } else if (spec.gait === 'quad') {
       const A = 0.42 * amt, K = 0.55 * amt;
       const legs = [['hleg', 'hknee', 'hfoot', 'L', 0], ['fleg', 'fknee', 'ffoot', 'L', 0.25], ['hleg', 'hknee', 'hfoot', 'R', 0.5], ['fleg', 'fknee', 'ffoot', 'R', 0.75]];
@@ -726,6 +1030,11 @@ export class MonsterSystem {
       b.neck2.rotation.x = -roar * 0.2;
       b.neck1.rotation.y = damp(b.neck1.rotation.y, 0.25 * Math.sin(this.time * 0.3 + m.phase), 2, dt || 1);
       b.head.rotation.x = 0.05 * idle - roar * 0.25;
+      if (spec.attack === 'ram' && m.charge && m.alive) { // head down for the charge
+        const k = m.windup > 0 ? 1 : clamp(m.speed / (spec.charge || 1), 0, 1) * 0.6;
+        b.neck1.rotation.x += 0.35 * k;
+        b.head.rotation.x += 0.3 * k;
+      }
     } else if (spec.gait === 'flyer') {
       const flap = m.state === 'chase' ? 1 : 0.7;
       const glide = Math.max(0, Math.sin(this.time * 0.3 + m.phase * 0.1)) > 0.8 && m.state !== 'chase';
@@ -762,8 +1071,17 @@ export class MonsterSystem {
       m.root.rotateY(m.heading); m.root.rotateX(Math.min(1.2, m.dying)); m.root.rotateZ(m.bank);
       if (m.landed) m.dissolve = Math.min(1, m.dissolve + dt * 0.5);
     } else {
+      if (m.airborne) { // killed mid-leap or while thrown: drop to the ground first
+        m.kv.y -= 32 * dt;
+        m.pos.addScaledVector(m.kv, dt);
+        const g = T.heightAt(m.pos.x, m.pos.z);
+        if (m.pos.y <= g) { m.pos.y = g; m.airborne = false; this.ctx.fx.dust(m.pos, m.height * 0.5); }
+      }
+      m.rise = Math.max(0, m.rise - dt * 2);
+      m.rear = Math.max(0, m.rear - dt * 3);
       const fall = smoothstep(0, 1.4, m.dying);
       m.root.position.copy(m.pos);
+      m.root.position.y -= m.rise * m.rise * m.height * 1.25;
       m.root.position.y -= fall * m.height * 0.12;
       m.root.rotation.set(0, 0, 0);
       m.root.rotateY(m.heading);

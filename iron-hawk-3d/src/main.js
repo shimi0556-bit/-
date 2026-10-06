@@ -1,21 +1,26 @@
 // נץ הברזל: ציד מפלצות. Game flow: loading, the menu with a live 3D world behind it, the
-// monster atlas, missions (spawning, waves, scoring, lives, the boss), pause and results.
+// monster atlas, and missions. In a mission the player sits pressed against the front window
+// with two cannons peeking in from the corners; the track carries them through the region,
+// running along the ground or flying low, and stops at every ambush, where waves of monsters
+// burst out of the ground and charge the window. The volcano ends with the boss. Also pause,
+// results and scoring.
 import * as THREE from 'three';
 import { Renderer, autoQuality, QUALITY } from './core/render.js';
 import { CameraRig } from './core/camera.js';
 import { Input } from './core/input.js';
 import { AudioEngine } from './core/audio.js';
-import { clamp, damp, mulberry32, isTouchDevice, wrapAngle, formatInt } from './core/util.js';
+import { clamp, damp, lerp, mulberry32, isTouchDevice, smoothstep, formatInt } from './core/util.js';
 import { LEVELS, levelById } from './world/levels.js';
 import { Terrain } from './world/terrain.js';
 import { Atmosphere } from './world/sky.js';
 import { Liquid } from './world/water.js';
 import { Vegetation } from './world/vegetation.js';
 import { Clouds } from './world/clouds.js';
+import { Rail } from './world/rail.js';
 import { MonsterSystem } from './actors/monsters.js';
 import { SPECIES, SPECIES_ORDER } from './actors/species.js';
-import { Jet } from './actors/jet.js';
-import { Weapons } from './actors/weapons.js';
+import { Guns } from './actors/guns.js';
+import { Weapons, MISSILE } from './actors/weapons.js';
 import { Pickups, PICKUPS } from './actors/pickups.js';
 import { FX } from './fx/fx.js';
 import { HUD } from './ui/hud.js';
@@ -27,11 +32,15 @@ const load = (key, def) => {
 };
 const save = (key, v) => { try { localStorage.setItem(STORE + key, JSON.stringify(v)); } catch (e) { /* private mode */ } };
 
-const PAR = { valley: 6 * 60, canyon: 8 * 60, volcano: 9 * 60 }; // seconds for the third star
 const LIVES = 3;
-const COMBO_WINDOW = 5;
+const COMBO_WINDOW = 4;
+const SPEED = { ground: 17, air: 40 }; // cruising speed on each kind of leg, m/s
+const ACCEL = 8, BRAKE = 12;           // m/s²
+const WAVE_LIMIT = 24;                 // seconds before the next wave comes anyway
+const TRAVEL_GAP = 260;                // metres between the groups met on the way
 const tick = () => new Promise((r) => setTimeout(r, 0));
-const _v = new THREE.Vector3(), _w = new THREE.Vector3();
+const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _u = new THREE.Vector3();
+const approach = (cur, target, step) => (cur < target ? Math.min(target, cur + step) : Math.max(target, cur - step));
 
 // ------------------------------------------------------------------ one region, built once
 class World {
@@ -49,12 +58,15 @@ class World {
     this.terrain = new Terrain(L, q);
     this.terrain.build();
     scene.add(this.terrain.group);
-    progress(0.18, 'צובע את השמיים…');
+    progress(0.14, 'סולל את הדרך…');
+    await tick();
+    this.rail = new Rail(this.terrain, L.rail).build();
+    progress(0.2, 'צובע את השמיים…');
     await tick();
     this.atmo = new Atmosphere(L, q);
     scene.add(this.atmo.group);
     this.fogColor = this.atmo.bake(r, scene);
-    progress(0.28, 'פורש סלעים, חול ועשב…');
+    progress(0.3, 'פורש סלעים, חול ועשב…');
     await tick();
     await this.terrain.createMaterial(r, this.atmo.sunDir);
     if (L.water !== 'none') {
@@ -63,7 +75,7 @@ class World {
     }
     progress(0.42, 'שותל עצים ומפזר סלעים…');
     await tick();
-    this.veg = new Vegetation(this.terrain, L, q);
+    this.veg = new Vegetation(this.terrain, L, q, this.rail);
     this.veg.build();
     scene.add(this.veg.group);
     this.clouds = new Clouds(L, this.terrain.size);
@@ -73,9 +85,8 @@ class World {
     this.fx = new FX(scene, q);
     this.fx.setTheme(L, this.fogColor, L.fog.density);
     this.fx.onShake((pos, amount) => game.shakeAt(pos, amount));
-    this.jet = new Jet(scene);
     this.pickups = new Pickups(scene, this.terrain);
-    const ctx = { scene, terrain: this.terrain, fx: this.fx, audio: game.audio, quality: q, events: game.events, renderer: r, level: L };
+    const ctx = { scene, terrain: this.terrain, fx: this.fx, audio: game.audio, quality: q, events: game.events, renderer: r, level: L, pickups: this.pickups };
     this.monsters = new MonsterSystem(ctx);
     this.monsters.assets = game.speciesAssets; // species meshes are shared between regions
     this.weapons = new Weapons(ctx);
@@ -88,70 +99,39 @@ class World {
       await tick();
       await this.monsters.prepare([ids[i]]);
     }
-    progress(0.93, 'מתדלק את המטוס…');
+    progress(0.93, 'טוען את התותחים…');
     await tick();
   }
 
   speciesIds() {
     const L = this.level, set = new Set();
     for (const [id, n] of Object.entries(L.monsters)) if (n) set.add(id);
-    for (const w of L.waves) for (const id of Object.keys(w.add)) set.add(id);
+    for (const leg of L.rail.legs) {
+      if (leg.boss) set.add('boss');
+      for (const w of leg.waves || []) for (const id of Object.keys(w)) set.add(id);
+    }
+    for (const g of Object.values(L.rail.travel || {})) for (const id of Object.keys(g)) set.add(id);
     if (set.has('boss')) set.add('flyer');
     return SPECIES_ORDER.filter((id) => set.has(id));
   }
 
-  // a land point away from `avoid` (the player's start)
-  landPoint(rand, opts, avoid, minDist = 700) {
-    let p = null;
-    for (let i = 0; i < 25; i++) {
-      p = this.terrain.findLandPoint(rand, opts);
-      if (!avoid || Math.hypot(p.x - avoid.x, p.z - avoid.z) > minDist) return p;
-    }
-    return p;
-  }
-
-  spawnGroup(id, n, rand, avoid, opts = {}) {
-    const T = this.terrain, M = this.monsters;
-    const range = { minR: opts.minR ?? 300, maxR: opts.maxR ?? 3100, maxSlope: 0.3 };
-    if (opts.near) Object.assign(range, { near: opts.near, nearR: opts.nearR || 900 });
-    const out = [];
-    if (id === 'boss') {
-      const p = new THREE.Vector3(650, 0, 900);
-      p.y = T.heightAt(p.x, p.z);
-      const b = M.spawn('boss', p, { heading: Math.atan2(-p.x, -p.z), nest: p.clone() });
-      out.push(b);
-      return out;
-    }
-    if (id === 'raptor') {
-      let left = n;
-      while (left > 0) {
-        const size = Math.min(left, 3 + Math.floor(rand() * 3));
-        const at = this.landPoint(rand, range, avoid);
-        const leader = M.spawn('raptor', at, { sizeJitter: true, nest: at });
-        out.push(leader);
-        for (let i = 1; i < size; i++) {
-          const off = new THREE.Vector3((rand() - 0.5) * 50, 0, (rand() - 0.5) * 50);
-          const p = at.clone().add(off);
-          p.y = T.heightAt(p.x, p.z);
-          out.push(M.spawn('raptor', p, { leader, offset: off, sizeJitter: true, nest: at }));
-        }
-        left -= size;
+  // monsters roaming near the track (the menu's backdrop)
+  populate(rand) {
+    const T = this.terrain, M = this.monsters, R = this.rail;
+    for (const [id, n] of Object.entries(this.level.monsters)) {
+      if (!n) continue;
+      if (id === 'boss') {
+        const p = new THREE.Vector3(650, 0, 900);
+        p.y = T.heightAt(p.x, p.z);
+        M.spawn('boss', p, { heading: Math.atan2(-p.x, -p.z), nest: p.clone() });
+        continue;
       }
-      return out;
+      for (let i = 0; i < n; i++) {
+        const near = R.pointAt(rand() * R.length, new THREE.Vector3()).setY(0);
+        const at = T.findLandPoint(rand, { near, nearR: 260, maxSlope: id === 'longneck' ? 0.22 : 0.3, minHeightAboveWater: id === 'longneck' ? -3 : 2 });
+        M.spawn(id, at, { sizeJitter: true, nest: at });
+      }
     }
-    for (let i = 0; i < n; i++) {
-      const o = { ...range };
-      if (id === 'longneck') { o.maxSlope = 0.22; o.minHeightAboveWater = -3; }
-      const at = this.landPoint(rand, o, avoid);
-      const m = M.spawn(id, at, { sizeJitter: true, nest: at });
-      if (opts.alert) m.alert = true;
-      out.push(m);
-    }
-    return out;
-  }
-
-  populate(rand, avoid) {
-    for (const [id, n] of Object.entries(this.level.monsters)) if (n) this.spawnGroup(id, n, rand, avoid);
   }
 
   clearActors() {
@@ -189,6 +169,7 @@ class Showcase {
     scene.background = new THREE.Color(0x0b1318);
     scene.fog = new THREE.Fog(0x0b1318, 120, 900);
     this.camera = new THREE.PerspectiveCamera(36, window.innerWidth / window.innerHeight, 0.5, 3000);
+    this.camera.focus = 60;
     const hemi = new THREE.HemisphereLight(0xcfe4ff, 0x2a2018, 1.1);
     const key = new THREE.DirectionalLight(0xfff0dd, 3.2);
     key.position.set(60, 90, 40);
@@ -235,6 +216,7 @@ class Showcase {
     this.current = m;
     const size = Math.max(m.height * 1.15, m.radius * 3.2, m.spec.flies ? m.radius * 5 : 0);
     this.dist = size * 2.7 + 6;
+    this.camera.focus = this.dist * 0.9;
     this.focusY = m.spec.flies ? m.pos.y : m.height * 0.55;
     this.stage.scale.setScalar(Math.max(m.radius * 4.5, size * 0.9));
   }
@@ -262,34 +244,43 @@ class Showcase {
 class Game {
   constructor() {
     this.settings = load('settings', {
-      quality: autoQuality(), master: 0.8, music: 0.55, sfx: 0.9, invert: false, assist: 1, shake: true, touch: 'auto', fps: false,
+      quality: autoQuality(), master: 0.8, music: 0.55, sfx: 0.9, assist: 1, anaglyph: false, shake: true, touch: 'auto', fps: false,
     });
     if (!QUALITY[this.settings.quality]) this.settings.quality = autoQuality();
+    if (![0, 1, 1.6].includes(this.settings.assist)) this.settings.assist = 1;
     this.progress = load('progress', { levels: {}, seen: {}, last: 'valley' });
     this.canvas = document.getElementById('game');
     this.renderer = new Renderer(this.canvas, this.settings.quality);
     this.renderer.autoScale = true;
-    this.camera = new THREE.PerspectiveCamera(68, window.innerWidth / window.innerHeight, 1, 16000);
+    this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.5, 16000);
+    this.camera.focus = 24; // with 3D glasses, things nearer than this come out of the screen
     this.renderer.camera = this.camera;
+    this.guns = new Guns();
+    this.guns.camera.focus = 1.15;
+    this.guns.show(false);
+    this.renderer.overlay = { scene: this.guns.scene, camera: this.guns.camera, enabled: true };
+    this.renderer.setAnaglyph(this.settings.anaglyph);
     this.rig = new CameraRig(this.camera);
     this.rig.shakeEnabled = this.settings.shake;
+    this.rig.onStep = (side, amp) => this.footstep(side, amp);
     this.audio = new AudioEngine();
     this.audio.setVolumes({ master: this.settings.master, music: this.settings.music, sfx: this.settings.sfx });
     this.input = new Input({ canvas: this.canvas, touchRoot: document.getElementById('touch') });
-    this.input.setInvert(this.settings.invert);
     this.hud = new HUD(document.getElementById('hud'));
     this.menus = new Menus(document.getElementById('ui'), { onAction: (a, el) => this.action(a, el), audio: this.audio });
     this.speciesAssets = {};
     this.events = this.makeEvents();
+    this.player = {
+      pos: new THREE.Vector3(), vel: new THREE.Vector3(), forward: new THREE.Vector3(0, 0, -1),
+      alive: true, invuln: 0, hp: 100, maxHp: 100, missilesLeft: MISSILE.max,
+    };
     this.state = 'loading';
     this.world = null;
     this.showcase = null;
     this.time = 0;
     this.last = performance.now();
     this.fpsAcc = 0; this.fpsFrames = 0; this.fps = 0;
-    this.warnings = {};
     this.hitFlash = 0;
-    this.boostFx = 0;
     this.muted = false;
     this.selected = levelById(this.progress.last);
 
@@ -299,6 +290,7 @@ class Game {
     window.addEventListener('resize', () => this.resize());
     document.addEventListener('visibilitychange', () => { if (document.hidden && this.state === 'playing') this.pause(); });
     window.addEventListener('blur', () => { if (this.state === 'playing') this.pause(); });
+    document.getElementById('h-pause').addEventListener('click', () => { this.audio.ui('click'); this.pause(); });
     this.input.onKey((e) => this.menuKey(e));
     this.updateTouch();
   }
@@ -322,43 +314,34 @@ class Game {
     const w = new World(level, this);
     await w.build((p, title) => this.menus.setLoading(p, title));
     this.world = w;
+    w.pickups.onTake = (kind, pos) => this.collect(kind, pos);
     if (!this.renderer.composer) this.renderer.buildComposer(w.scene, this.camera);
-    this.renderer.renderPass.scene = w.scene;
-    this.renderer.renderPass.camera = this.camera;
+    this.renderer.setView(w.scene, this.camera);
     this.renderer.setLevelLook(level);
+    this.guns.setLook(level, w.scene.environment, w.atmo.sunDir);
     // compile shaders now rather than in the first second of play
     try {
       this.attractSetup();
-      this.rig.snap(w.jet);
-      this.rig.update(0.016, { jet: w.jet, terrain: w.terrain, boosting: false, speed: w.jet.speed });
+      this.updateAttract(0.016);
+      this.guns.show(true);
+      this.guns.update(0.016, this.camera, { aimDir: _v.set(0, 0, -1).applyQuaternion(this.camera.quaternion), aimDist: 100 });
       await this.renderer.renderer.compileAsync?.(w.scene, this.camera);
+      await this.renderer.renderer.compileAsync?.(this.guns.scene, this.guns.camera);
+      this.guns.show(false);
     } catch (e) { /* not fatal */ }
     this.menus.setLoading(1, 'מוכן!');
   }
 
-  // menu background: the jet circles over the region while monsters roam
+  // menu background: a ride along the track, with close looks at the monsters on the way
   attractSetup() {
     const w = this.world;
     w.clearActors();
+    w.monsters.railMode = false;
+    w.weapons.rail = false;
     const rand = mulberry32(w.level.seed + 31);
-    w.populate(rand, null);
-    const T = w.terrain;
-    const c = w.level.id === 'volcano' ? new THREE.Vector3(500, 0, 700) : T.findLandPoint(rand, { maxR: 1200 });
-    this.ap = { center: c, R: 650 + rand() * 250, dir: 1, t: 0 };
-    const start = new THREE.Vector3(c.x + this.ap.R, 0, c.z);
-    start.y = this.safeAltitude(start, 0, 140);
-    w.jet.reset(start, Math.atan2(0, -1));
-    w.jet.invuln = 0;
-    this.shot = { t: 0, kind: 'chase' };
-    this.rig.modeIndex = 1; // far chase
-  }
-
-  safeAltitude(p, heading, clearance) {
-    const T = this.world.terrain;
-    let g = T.groundOrWater(p.x, p.z);
-    const fx = -Math.sin(heading), fz = -Math.cos(heading);
-    for (let d = 100; d <= 900; d += 100) g = Math.max(g, T.groundOrWater(p.x + fx * d, p.z + fz * d));
-    return g + clearance;
+    w.populate(rand);
+    this.ap = { s: rand() * w.rail.length * 0.5, t: 0, kind: 'ride' };
+    this.rig.snapTo(w.rail.pointAt(this.ap.s, _v), w.rail.lookAt(this.ap.s, _w));
   }
 
   // ---------------------------------------------------------------- menu flow
@@ -366,6 +349,8 @@ class Game {
     this.state = 'menu';
     this.input.enabled = false;
     this.hud.show(false);
+    this.guns.show(false);
+    document.body.classList.remove('playing');
     this.updateTouch();
     this.menus.reset('title');
     this.playMusic('menu');
@@ -429,10 +414,10 @@ class Game {
     this.settings[k] = v;
     save('settings', this.settings);
     if (k === 'master' || k === 'music' || k === 'sfx') this.audio.setVolumes({ [k]: v });
-    if (k === 'invert') this.input.setInvert(v);
     if (k === 'shake') this.rig.shakeEnabled = v;
     if (k === 'touch') this.updateTouch();
     if (k === 'quality') this.qualityChanged = true;
+    if (k === 'anaglyph') this.renderer.setAnaglyph(v);
   }
 
   async reloadForQuality() {
@@ -464,8 +449,7 @@ class Game {
     this.beast = this.beast || 'raptor';
     this.menus.renderBestiary(this.progress.seen, this.beast);
     this.menus.push('bestiary');
-    this.renderer.renderPass.scene = this.showcase.scene;
-    this.renderer.renderPass.camera = this.showcase.camera;
+    this.renderer.setView(this.showcase.scene, this.showcase.camera);
     this.renderer.setLevelLook(LEVELS[0]);
     this.showcase.scene.environment = this.world.scene.environment;
     await this.showcase.show(this.beast);
@@ -481,8 +465,7 @@ class Game {
 
   closeBestiary() {
     this.state = 'menu';
-    this.renderer.renderPass.scene = this.world.scene;
-    this.renderer.renderPass.camera = this.camera;
+    this.renderer.setView(this.world.scene, this.camera);
     this.renderer.setLevelLook(this.world.level);
   }
 
@@ -508,30 +491,30 @@ class Game {
   }
 
   startMission() {
-    const w = this.world, L = w.level;
+    const w = this.world, L = w.level, R = w.rail, P = this.player;
     w.clearActors();
-    const rand = mulberry32((Date.now() & 0xffff) + L.seed);
-    // start on the far side of the region, flying in towards the centre
-    let ang = rand() * Math.PI * 2;
-    if (L.id === 'volcano') ang = Math.atan2(900, 650) + (rand() - 0.5) * 0.5;
-    const start = new THREE.Vector3(Math.cos(ang) * 2300, 0, Math.sin(ang) * 2300);
-    const heading = Math.atan2(start.x, start.z);
-    start.y = this.safeAltitude(start, heading, 170);
-    w.populate(rand, start);
-    this.rand = rand;
-    w.jet.reset(start, heading);
-    w.jet.missilesLeft = 4;
+    w.monsters.railMode = true;
+    w.weapons.rail = true;
+    this.rand = mulberry32((Date.now() & 0xffff) + L.seed);
+    Object.assign(P, { alive: true, invuln: 0, hp: 100, maxHp: 100, missilesLeft: MISSILE.max });
+    R.pointAt(0, P.pos);
+    R.tangentAt(0, P.forward);
+    P.vel.set(0, 0, 0);
     this.mission = {
-      score: 0, kills: 0, combo: 1, comboTimer: 0, bestCombo: 1, lives: LIVES, deaths: 0, time: 0, missiles: 0,
-      waveIndex: 0, done: false, endTimer: 0, respawn: 0, armorToast: 0, boss: w.monsters.list.find((m) => m.spec.boss) || null,
-      objTitle: '', objSub: '', objProgress: 0, popups: 0,
+      s: 0, speed: 0, phase: 'intro', phaseT: 0, stop: 0, wave: -1, waveT: 0, queue: [], ambush: [], travelNext: 160,
+      score: 0, kills: 0, combo: 1, comboTimer: 0, bestCombo: 1, lives: LIVES, livesLost: 0, damage: 0, time: 0, missiles: 0,
+      cleared: 0, done: false, win: false, endTimer: 0, armorToast: 0, boss: null, arena: null,
+      objTitle: '', objSub: '', objProgress: 0,
     };
     this.hud.setLives(LIVES, LIVES);
-    this.hud.setBoss(this.mission.boss);
+    this.hud.setBoss(null);
     this.hitFlash = 0;
-    this.rig.modeIndex = 0;
-    this.rig.startIntro(w.jet);
+    this.rig.snapTo(P.pos, R.lookAt(0, _v));
+    this.rig.trauma = 0;
+    this.input.aim.x = 0; this.input.aim.y = 0;
+    this.guns.show(true);
     this.state = 'playing';
+    document.body.classList.add('playing');
     this.menus.hideAll();
     this.hud.show(true);
     this.input.enabled = true;
@@ -539,8 +522,9 @@ class Game {
     this.updateTouch();
     this.playMusic(L.music);
     this.audio.ambience(L.id);
-    this.audio.flyby(0.7);
-    this.hud.message(L.name, L.goal ? `חסלו ${L.goal} מפלצות` : 'השמידו את גבישי האש של מלך הלבה', 3.2);
+    const first = R.stops[0];
+    this.hud.message(L.name, first.mode === 'air' ? 'ממריאים. המפלצות כבר בדרך' : 'יוצאים לדרך. המפלצות כבר מחכות', 2.8);
+    if (first.mode === 'air') this.audio.flyby(0.7);
     this.updateObjective();
   }
 
@@ -549,16 +533,17 @@ class Game {
     this.state = 'paused';
     this.input.enabled = false;
     this.input.setTouchVisible(false);
+    document.body.classList.remove('playing');
     this.audio.engine({ active: false, alive: false, throttle: 0, speed: 0 });
     this.audio.cannon(false);
     this.audio.alarm(false);
-    this.audio.lockState(0);
     this.menus.reset('pause');
   }
 
   resume() {
     if (this.state !== 'paused') return;
     this.state = 'playing';
+    document.body.classList.add('playing');
     this.menus.hideAll();
     this.input.enabled = true;
     this.input.clearEdges();
@@ -568,11 +553,8 @@ class Game {
 
   quitToMenu() {
     this.audio.alarm(false);
-    this.audio.lockState(0);
     this.audio.cannon(false);
     this.attractSetup();
-    this.rig.crash = null;
-    this.rig.snap(this.world.jet);
     this.enterMenu();
   }
 
@@ -582,39 +564,43 @@ class Game {
     return {
       onKill: (m, point) => {
         if (!live()) return;
-        const M = this.mission, S = m.spec;
+        const M = this.mission, S = m.spec, P = this.player;
         M.kills++;
         M.combo = M.comboTimer > 0 ? Math.min(5, M.combo + 1) : 1;
         M.comboTimer = COMBO_WINDOW;
         M.bestCombo = Math.max(M.bestCombo, M.combo);
-        const pts = S.score * M.combo;
+        // close kills are worth more
+        const close = m.pos.distanceTo(P.pos) < 30 ? 2 : 1;
+        const pts = S.score * M.combo * close;
         M.score += pts;
         this.hud.hitMarker(true);
-        this.hud.popup(point, `+${formatInt(pts)}`, M.combo > 1 ? '#ffd36a' : '#ffffff', S.score >= 400);
+        this.hud.popup(point, close > 1 ? `+${formatInt(pts)} מקרוב!` : `+${formatInt(pts)}`, M.combo > 1 || close > 1 ? '#ffd36a' : '#ffffff', S.score >= 400);
         this.progress.seen[m.id] = (this.progress.seen[m.id] || 0) + 1;
         if (this.progress.seen[m.id] === 1) this.hud.toast(`חיסול ראשון: ${S.name}! נוסף לאטלס`, '#9dffcf');
         else if (M.combo >= 3) this.hud.toast(`רצף x${M.combo}!`, '#ffd36a');
-        // drops from the bigger monsters
-        const chance = S.boss ? 0 : S.id === 'raptor' ? 0.1 : S.flies ? 0.25 : 0.55;
+        // supply crates from the bigger monsters
+        const chance = S.boss ? 0 : S.id === 'raptor' ? 0.05 : S.flies ? 0.15 : 0.5;
         if (this.rand() < chance) {
-          const jet = this.world.jet;
-          const kind = jet.hp < 60 ? 'repair' : jet.missilesLeft < 2 ? 'ammo' : ['repair', 'ammo', 'boost'][Math.floor(this.rand() * 3)];
-          this.world.pickups.spawn(kind, m.pos);
+          const kind = P.hp < 50 ? 'repair' : P.missilesLeft < 2 ? 'ammo' : ['repair', 'ammo', 'cool'][Math.floor(this.rand() * 3)];
+          const at = this.world.monsters.center(m, new THREE.Vector3());
+          at.y = Math.max(at.y, P.pos.y - 3);
+          this.world.pickups.spawn(kind, at);
         }
         if (S.boss) this.win();
-        else this.checkWaves();
         this.updateObjective();
       },
-      onHit: (m) => { if (live()) this.hud.hitMarker(false); },
+      onHit: () => { if (live()) this.hud.hitMarker(false); },
       onMissileKill: (m) => {
         if (!live()) return;
         this.mission.score += 50;
-        this.hud.popup(this.world.monsters.center(m, new THREE.Vector3()).add(_v.set(0, 8, 0)), 'פגיעה ישירה +50', '#9dffcf');
+        this.hud.popup(this.world.monsters.center(m, new THREE.Vector3()).add(_v.set(0, 5, 0)), 'פגיעה ישירה +50', '#9dffcf');
       },
       onShotDown: (s) => {
         if (!live()) return;
-        this.mission.score += 25;
-        this.hud.popup(s.p, '+25', '#ffb070');
+        const pts = s.meteor ? 150 : 25;
+        this.mission.score += pts;
+        this.hud.popup(s.p, `+${pts}`, '#ffb070', !!s.meteor);
+        this.hud.hitMarker(false);
       },
       onPlayerHit: (dmg, from, kind) => this.playerHit(dmg, from, kind),
       onCrystal: (m, left) => {
@@ -632,96 +618,303 @@ class Game {
       },
       onBossMove: (kind) => {
         if (!live()) return;
-        if (kind === 'rain') this.hud.message('גשם מטאורים!', 'צאו מעמודי האור האדומים', 2.2, 'danger');
+        if (kind === 'rain') this.hud.message('גשם מטאורים!', 'ירו בסלעים הבוערים לפני שהם פוגעים', 2.2, 'danger');
         if (kind === 'summon') this.hud.toast('מלך הלבה קורא לכנפיים', '#ff9ad0');
       },
       onMissile: () => { if (this.mission) this.mission.missiles++; },
     };
   }
 
-  checkWaves() {
-    const M = this.mission, L = this.world.level;
-    const w = L.waves[M.waveIndex];
-    if (!w || M.kills < w.at) return;
-    M.waveIndex++;
-    const jet = this.world.jet;
-    for (const [id, n] of Object.entries(w.add)) {
-      // arrive from somewhere ahead-ish of the player, not on top of them
-      this.world.spawnGroup(id, n, this.rand, jet.pos, { near: jet.pos.clone().addScaledVector(jet.forward, 900).setY(0), nearR: 900, alert: true });
-    }
-    this.hud.message('גל חדש!', 'עוד מפלצות נכנסו לאזור', 2.4, 'danger');
-    this.audio.horn();
+  // ---------------------------------------------------------------- the ride
+  setPhase(phase) {
+    const M = this.mission;
+    M.phase = phase;
+    M.phaseT = 0;
   }
 
+  updateRide(dt) {
+    const M = this.mission, w = this.world, R = w.rail, P = this.player, L = w.level;
+    M.phaseT += dt;
+    let target = 0;
+    const st = R.stops[M.stop];
+    if (M.phase === 'intro' && M.phaseT > 1.6) this.setPhase('travel');
+    if (M.phase === 'travel' && st) {
+      const air = R.airAmount(M.s);
+      const cruise = lerp(SPEED.ground, SPEED.air, air);
+      const left = st.s - M.s;
+      target = Math.min(cruise, Math.sqrt(2 * BRAKE * Math.max(0, left)));
+      if (left < 1) { M.s = st.s; M.speed = 0; this.arrive(st); }
+      else if (M.s > M.travelNext && left > 320) {
+        this.spawnTravel();
+        M.travelNext = M.s + TRAVEL_GAP * (0.8 + this.rand() * 0.4);
+      }
+    }
+    if (M.phase === 'ambush') this.updateAmbush(dt, st);
+    if (M.phase === 'boss' || (M.phase === 'done' && M.arena)) {
+      this.updateArena(dt);
+      if (M.done) this.updateObjective();
+      return;
+    }
+    M.speed = approach(M.speed, target, (target > M.speed ? ACCEL : BRAKE * 1.3) * dt);
+    _u.copy(P.pos);
+    M.s = Math.min(M.s + M.speed * dt, R.length);
+    R.pointAt(M.s, P.pos);
+    R.tangentAt(M.s, P.forward);
+    P.vel.copy(P.pos).sub(_u).divideScalar(Math.max(dt, 1e-4));
+    // the land changes between legs
+    const air = R.airAmount(M.s);
+    if (M.lastAir !== undefined) {
+      if (M.lastAir < 0.15 && air >= 0.15) { this.audio.flyby(0.8); this.hud.toast('ממריאים!', '#9dd8ff'); }
+      if (M.lastAir > 0.85 && air <= 0.85) this.hud.toast('נוחתים לריצה', '#c8ffb0');
+    }
+    M.lastAir = air;
+    if (M.phase !== 'ambush') this.cullBehind();
+    this.updateObjective();
+  }
+
+  arrive(st) {
+    const M = this.mission;
+    if (st.boss) { this.startBoss(st); return; }
+    this.setPhase('ambush');
+    M.wave = -1;
+    M.ambush = [];
+    this.hud.message('מארב!', st.mode === 'air' ? 'הן באות מהאדמה ומהשמיים' : 'עצרו אותן לפני שהן מגיעות לחלון', 2.2, 'danger');
+    this.audio.horn();
+    this.nextWave(st);
+  }
+
+  nextWave(st) {
+    const M = this.mission;
+    M.wave++;
+    M.waveT = 0;
+    const wave = st.waves[M.wave];
+    if (!wave) return;
+    const crowd = this.renderer.q.crowd ?? 1;
+    let delay = M.wave === 0 ? 0.9 : 0.4;
+    for (const [id, n0] of Object.entries(wave)) {
+      const small = id === 'raptor' || id === 'flyer';
+      const n = small ? Math.max(2, Math.round(n0 * crowd)) : n0;
+      for (let i = 0; i < n; i++) {
+        M.queue.push({ id, t: delay, s: st.s });
+        delay += small ? 0.2 + this.rand() * 0.35 : 0.8 + this.rand() * 0.8;
+      }
+    }
+    if (M.wave > 0) this.hud.message(`גל ${M.wave + 1}`, M.wave === st.waves.length - 1 ? 'הגל האחרון במארב' : '', 1.6, 'danger');
+    this.updateObjective();
+  }
+
+  updateAmbush(dt, st) {
+    const M = this.mission;
+    M.waveT += dt;
+    for (let i = M.queue.length - 1; i >= 0; i--) {
+      const q = M.queue[i];
+      q.t -= dt;
+      if (q.t > 0) continue;
+      M.queue.splice(i, 1);
+      const m = this.spawnCharger(q.id, q.s, { ambush: true });
+      if (m) M.ambush.push(m);
+    }
+    this.dropStragglers(dt);
+    const alive = M.ambush.filter((m) => m.alive).length;
+    const last = M.wave >= st.waves.length - 1;
+    if (M.queue.length) return;
+    if (!last && (alive <= 2 || M.waveT > WAVE_LIMIT)) this.nextWave(st);
+    else if (last && (alive === 0 || M.waveT > WAVE_LIMIT + 12)) this.clearStop(st);
+  }
+
+  // a runner stuck behind a rock, or one that ended up behind the window, would hold the
+  // ambush up with nothing to shoot at: let it go
+  dropStragglers(dt) {
+    const M = this.mission, P = this.player, Ms = this.world.monsters;
+    for (const m of M.ambush) {
+      if (!m.alive || m.dying) continue;
+      const d = Math.hypot(m.pos.x - P.pos.x, m.pos.z - P.pos.z);
+      if (m.closest === undefined || d < m.closest - 2) { m.closest = d; m.idle = 0; } else m.idle += dt;
+      const along = (m.pos.x - P.pos.x) * P.forward.x + (m.pos.z - P.pos.z) * P.forward.z;
+      const stuck = !m.spec.flies && m.idle > 6 && d > m.spec.reach + 6;
+      if (stuck || along < -30 || d > 600) {
+        m.alive = false;
+        Ms.remove(m);
+      }
+    }
+  }
+
+  clearStop(st) {
+    const M = this.mission, R = this.world.rail;
+    const bonus = 500 * (M.stop + 1);
+    M.score += bonus;
+    M.cleared++;
+    M.stop++;
+    if (M.stop >= R.stops.length) { this.win(); return; }
+    const next = R.stops[M.stop];
+    this.hud.message('המארב נשבר!', `+${formatInt(bonus)} · ${next.boss ? 'עכשיו למלך הלבה' : next.mode === 'air' ? 'ממשיכים בטיסה' : 'ממשיכים בריצה'}`, 2.4, 'gold');
+    this.audio.pickup();
+    this.setPhase('travel');
+    M.travelNext = M.s + 180;
+    this.updateObjective();
+  }
+
+  // a monster that charges the window, out of the ground or running in from ahead
+  spawnCharger(id, nearS, opts = {}) {
+    const w = this.world, R = w.rail, T = w.terrain, P = this.player;
+    const big = id !== 'raptor' && id !== 'flyer';
+    const p = new THREE.Vector3();
+    for (let tries = 0; tries < 6; tries++) {
+      // close enough to read as a crowd, spread across the view
+      const ahead = opts.ahead ?? (big ? 75 + this.rand() * 75 : 35 + this.rand() * 95);
+      const side = (this.rand() < 0.5 ? -1 : 1) * (4 + this.rand() * Math.min(big ? 40 : 55, ahead * (big ? 0.45 : 0.65)));
+      R.spotAhead(nearS, ahead, side, p);
+      if (id === 'flyer' || T.heightAt(p.x, p.z) > T.waterLevel + 0.6) break;
+    }
+    const heading = Math.atan2(P.pos.x - p.x, P.pos.z - p.z);
+    const slot = (this.rand() - 0.5) * (big ? 22 : 15);
+    if (id === 'flyer') {
+      p.y = Math.max(p.y, P.pos.y) + 25 + this.rand() * 55;
+      return w.monsters.spawn('flyer', p, { charge: true, ambush: opts.ambush, slot: slot * 3, heading, nest: p.clone() });
+    }
+    const emerge = opts.emerge ?? this.rand() < 0.6;
+    const m = w.monsters.spawn(id, p, { charge: true, ambush: opts.ambush, slot, heading, emerge, sizeJitter: true, nest: p.clone() });
+    if (emerge) {
+      w.fx.dust(p, m.height * 0.9);
+      if (big || this.rand() < 0.3) this.audio.thud(m.height / 8, p);
+    }
+    return m;
+  }
+
+  // a few monsters met on the way between stops
+  spawnTravel() {
+    const M = this.mission, R = this.world.rail, L = this.world.level;
+    const mode = R.airAmount(M.s + 260) > 0.5 ? 'air' : 'ground';
+    const group = L.rail.travel?.[mode];
+    if (!group) return;
+    for (const [id, n] of Object.entries(group)) {
+      for (let i = 0; i < n; i++) this.spawnCharger(id, M.s, { ahead: 230 + this.rand() * 110, emerge: id !== 'flyer' && this.rand() < 0.4 });
+    }
+  }
+
+  // monsters the ride has left behind are gone for good
+  cullBehind() {
+    const P = this.player, Ms = this.world.monsters;
+    for (const m of [...Ms.list]) {
+      if (!m.alive || m.spec.boss) continue;
+      const along = _v.subVectors(m.pos, P.pos).dot(P.forward);
+      if (along < -80 || _v.length() > 1400) Ms.remove(m);
+    }
+  }
+
+  // ---------------------------------------------------------------- the boss
+  startBoss(st) {
+    const M = this.mission, w = this.world, L = w.level, T = w.terrain, P = this.player;
+    this.setPhase('boss');
+    const A = L.rail.arena;
+    M.arena = { x: A.x, z: A.z, radius: A.radius, height: A.height, angle: Math.atan2(P.pos.z - A.z, P.pos.x - A.x), from: P.pos.clone(), dir: 1, t: 0 };
+    const p = new THREE.Vector3(A.x, T.heightAt(A.x, A.z), A.z);
+    const b = w.monsters.spawn('boss', p, { heading: Math.atan2(P.pos.x - p.x, P.pos.z - p.z), nest: p.clone(), emerge: true });
+    b.rainTimer = 12; b.barrageTimer = 7; b.summonTimer = 16;
+    M.boss = b;
+    this.hud.setBoss(b);
+    this.hud.message('מלך הלבה עולה!', 'השמידו את שלושת גבישי האש על גבו', 3.2, 'danger');
+    this.audio.sample('rumble', { vol: 1, verb: 0.4 }) || this.audio.thud(4, p);
+    this.audio.horn();
+    this.rig.addTrauma(0.6);
+    this.updateObjective();
+  }
+
+  updateArena(dt) {
+    const M = this.mission, a = M.arena, w = this.world, T = w.terrain, P = this.player;
+    a.angle += dt * 0.05 * a.dir;
+    const x = a.x + Math.cos(a.angle) * a.radius, z = a.z + Math.sin(a.angle) * a.radius;
+    const y = Math.max(T.waterLevel + a.height, T.groundOrWater(x, z) + 14);
+    _u.copy(P.pos);
+    a.t += dt;
+    const k = smoothstep(0, 4, a.t);
+    P.pos.set(x, y, z).lerp(a.from, 1 - k);
+    P.vel.copy(P.pos).sub(_u).divideScalar(Math.max(dt, 1e-4));
+    M.speed = P.vel.length();
+    const b = M.boss;
+    if (b) w.monsters.center(b, _v).setY(b.pos.y + b.height * 0.5);
+    else _v.set(a.x, y, a.z);
+    P.forward.subVectors(_v, P.pos).normalize();
+    if (b && b.heartExposed) this.updateObjective();
+  }
+
+  // ---------------------------------------------------------------- objective line
   updateObjective() {
-    const M = this.mission, L = this.world.level, W = this.world;
-    const alive = W.monsters.list.filter((m) => m.alive).length;
-    if (L.goal) {
-      M.objTitle = `חסלו מפלצות: ${Math.min(M.kills, L.goal)}/${L.goal}`;
-      M.objProgress = clamp(M.kills / L.goal, 0, 1);
-      M.objSub = M.waveIndex < L.waves.length ? `באזור: ${alive}` : `באזור: ${alive} · הגל האחרון`;
-    } else if (M.boss) {
+    const M = this.mission, w = this.world, R = w.rail;
+    if (!M) return;
+    const stops = R.stops.filter((s) => !s.boss).length;
+    if (M.done) {
+      M.objTitle = M.win ? 'המשימה הושלמה!' : 'המגן קרס';
+      M.objSub = `מארבים שנשברו: ${M.cleared}/${stops}`;
+      M.objProgress = M.win ? 1 : M.objProgress;
+    } else if (M.phase === 'boss' && M.boss) {
       const left = M.boss.crystals.filter((c) => c && c.alive).length;
       if (left > 0) {
         M.objTitle = `נפצו את גבישי האש: ${3 - left}/3`;
         M.objProgress = (3 - left) / 3;
-        M.objSub = 'מלך הלבה שוכן באגם הבוער';
+        M.objSub = 'כוונו לגבישים הזוהרים על הגב';
       } else {
         M.objTitle = 'פגעו בלב הזוהר!';
         M.objProgress = clamp(1 - M.boss.hp / M.boss.maxHp, 0, 1);
         M.objSub = 'טילים עושים הכי הרבה נזק';
       }
+    } else if (M.phase === 'ambush') {
+      const st = R.stops[M.stop];
+      const alive = M.ambush.filter((m) => m.alive).length + M.queue.length;
+      M.objTitle = `מארב ${M.stop + 1}/${stops} · גל ${Math.max(1, M.wave + 1)}/${st.waves.length}`;
+      M.objSub = `מפלצות במארב: ${alive}`;
+      M.objProgress = clamp((M.wave + (alive ? 0.5 : 1)) / st.waves.length, 0, 1);
+    } else {
+      const st = R.stops[Math.min(M.stop, R.stops.length - 1)];
+      const left = Math.max(0, Math.round(st.s - M.s));
+      const air = R.airAmount(M.s) > 0.5;
+      M.objTitle = st.boss ? 'בדרך אל מלך הלבה' : `בדרך למארב ${M.stop + 1}/${stops}`;
+      M.objSub = `${air ? 'בטיסה' : 'בריצה'} · עוד ${formatInt(left)} מ'`;
+      M.objProgress = clamp(M.s / R.length, 0, 1);
     }
-    if (L.goal && M.kills >= L.goal) this.win();
   }
 
+  // ---------------------------------------------------------------- getting hurt
   playerHit(dmg, from, kind) {
     if (this.state !== 'playing' || !this.mission || this.mission.done) return;
-    const jet = this.world.jet;
-    if (!jet.alive || jet.invuln > 0) return;
-    jet.hp -= dmg;
-    jet.invuln = 0.35;
-    this.hitFlash = 1;
-    this.hud.damage(from);
-    this.rig.addTrauma(0.3 + dmg / 50);
-    this.audio.hit(kind);
-    if (jet.hp <= 0) this.die();
-  }
-
-  die() {
-    const w = this.world, jet = w.jet, M = this.mission;
-    if (!jet.alive) return;
-    jet.alive = false;
-    jet.hp = 0;
-    jet.object.visible = false;
-    w.fx.explosion(jet.pos.clone(), 2.6);
-    this.audio.explosion(2.6, jet.pos);
-    this.rig.startCrash(jet.pos);
-    this.rig.addTrauma(0.9);
-    M.lives--;
-    M.deaths++;
+    const P = this.player, M = this.mission;
+    if (!P.alive || P.invuln > 0) return;
+    P.hp -= dmg;
+    M.damage += dmg;
+    P.invuln = 0.25;
     M.combo = 1; M.comboTimer = 0;
-    M.respawn = 2.8;
-    this.hud.setLives(M.lives, LIVES);
-    this.hud.message('המטוס הופל!', M.lives > 0 ? (M.lives === 1 ? 'נותר מטוס אחרון' : `נותרו ${M.lives} מטוסים`) : '', 2.4, 'danger');
-    this.audio.alarm(false);
-    this.audio.lockState(0);
-    this.audio.cannon(false);
+    this.hitFlash = 1;
+    this.hud.damage(from, kind, this.camera);
+    this.rig.addTrauma(0.22 + dmg / 40);
+    this.audio.hit(kind);
+    if (P.hp <= 0) this.shieldDown();
   }
 
-  respawn() {
-    const w = this.world, jet = w.jet;
-    // come back in from the edge behind where we went down
-    const ang = Math.atan2(jet.pos.z, jet.pos.x) + (this.rand() - 0.5) * 0.8;
-    const p = new THREE.Vector3(Math.cos(ang) * 2300, 0, Math.sin(ang) * 2300);
-    const heading = Math.atan2(p.x, p.z);
-    p.y = this.safeAltitude(p, heading, 180);
-    jet.reset(p, heading);
-    jet.missilesLeft = 4;
-    w.weapons.lockTarget = null;
-    this.rig.crash = null;
-    this.rig.startIntro(jet);
-    this.audio.flyby(0.6);
+  shieldDown() {
+    const P = this.player, M = this.mission, w = this.world;
+    M.lives--;
+    M.livesLost++;
+    this.hud.setLives(M.lives, LIVES);
+    if (M.lives <= 0) {
+      P.hp = 0;
+      P.alive = false;
+      w.fx.explosion(_v.copy(P.pos).addScaledVector(P.forward, 8), 1.4);
+      this.audio.explosion(2.2, P.pos);
+      this.rig.addTrauma(1);
+      this.hud.message('המגן קרס', 'נסו שוב, ירו קודם בקרובים', 2.6, 'danger');
+      this.lose();
+      return;
+    }
+    // the shield's last breath: a blast that throws everything near back
+    w.monsters.blast(P.pos, 60, 200);
+    for (const s of w.weapons.shots) if (s.p.distanceTo(P.pos) < 120) s.dead = true;
+    w.fx.explosion(_v.copy(P.pos).addScaledVector(P.forward, 10).setY(P.pos.y - 1), 1.1);
+    w.fx.sparks(_v, 2.4, 0x80e0ff);
+    P.hp = P.maxHp;
+    P.invuln = 2;
+    this.hud.message('המגן התרוקן!', M.lives === 1 ? 'נשארו חיים אחרונים' : `נשארו ${M.lives} חיים`, 2.4, 'danger');
+    this.audio.explosion(1.6, P.pos);
+    this.rig.addTrauma(0.8);
   }
 
   win() {
@@ -729,16 +922,18 @@ class Game {
     if (M.done) return;
     M.done = true;
     M.win = true;
-    M.endTimer = 3.2;
-    this.world.jet.invuln = 99;
-    this.hud.message('המשימה הושלמה!', this.world.level.goal ? 'האזור נקי ממפלצות' : 'מלך הלבה הובס', 3, 'gold');
+    M.endTimer = 3.4;
+    this.player.invuln = 99;
+    this.setPhase('done');
+    this.hud.message('המשימה הושלמה!', M.boss ? 'מלך הלבה הובס' : 'כל המארבים נשברו', 3, 'gold');
   }
 
   lose() {
     const M = this.mission;
     M.done = true;
     M.win = false;
-    M.endTimer = 2.6;
+    M.endTimer = 2.8;
+    this.setPhase('done');
   }
 
   finish() {
@@ -746,14 +941,15 @@ class Game {
     this.state = 'results';
     this.input.enabled = false;
     this.input.setTouchVisible(false);
+    document.body.classList.remove('playing');
     this.audio.alarm(false);
-    this.audio.lockState(0);
     this.audio.cannon(false);
+    this.guns.show(false);
     let stars = 0;
     if (M.win) {
       stars = 1;
-      if (M.deaths <= 1) stars = 2;
-      if (M.deaths === 0 && M.time <= PAR[L.id]) stars = 3;
+      if (M.livesLost <= 1) stars = 2;
+      if (M.livesLost === 0 && M.damage < 150) stars = 3;
     }
     const rec = this.progress.levels[L.id] || { stars: 0, best: 0 };
     const newBest = M.score > (rec.best || 0) && M.score > 0;
@@ -761,16 +957,35 @@ class Game {
     save('progress', this.progress);
     this.menus.renderResults({
       level: L, win: !!M.win, stars, score: M.score, best: rec.best, newBest, time: M.time, kills: M.kills,
-      accuracy: W.weapons.accuracy, missiles: M.missiles, bestCombo: M.bestCombo, deaths: M.deaths,
+      accuracy: W.weapons.accuracy, missiles: M.missiles, bestCombo: M.bestCombo, deaths: M.livesLost,
+      cleared: M.cleared, stops: W.rail.stops.filter((s) => !s.boss).length,
       hasNext: LEVELS.indexOf(L) < LEVELS.length - 1,
     });
     this.menus.reset('results');
     this.audio.fanfare(!!M.win);
   }
 
+  collect(kind, pos) {
+    const P = this.player, M = this.mission, W = this.world.weapons;
+    if (!M || this.state !== 'playing') return;
+    if (kind === 'repair') P.hp = Math.min(P.maxHp, P.hp + 25);
+    if (kind === 'ammo') { P.missilesLeft = MISSILE.max; W.regen = 0; }
+    if (kind === 'cool') { W.coolTimer = 10; W.heat = 0; W.overheated = false; }
+    M.score += 50;
+    this.hud.toast(`${PICKUPS[kind].name}: ${PICKUPS[kind].text}`, '#' + new THREE.Color(PICKUPS[kind].color).getHexString());
+    this.audio.pickup();
+    this.world.fx.sparks(pos, 1.4, PICKUPS[kind].color);
+  }
+
   shakeAt(pos, amount) {
     const d = pos.distanceTo(this.camera.position);
-    this.rig.addTrauma(clamp(amount * 0.35 / (1 + d / 120), 0, 0.6));
+    this.rig.addTrauma(clamp(amount * 0.35 / (1 + d / 90), 0, 0.6));
+  }
+
+  // a heavy footfall while running on the ground
+  footstep(side, amp) {
+    if (this.state !== 'playing') return;
+    this.audio.sample('thud', { vol: 0.08 + amp * 0.06, pan: side * 0.25, rate: 1.7 + Math.random() * 0.2, verb: 0.05, filter: 900 });
   }
 
   // ---------------------------------------------------------------- per frame
@@ -793,48 +1008,50 @@ class Game {
     }
     if (this.state === 'playing') this.updatePlaying(dt);
     else if (this.state === 'menu' || this.state === 'results') this.updateAttract(dt);
-    else if (this.state === 'paused') { /* frozen */ }
     this.renderFrame(dt);
   }
 
   updateAttract(dt) {
-    const w = this.world, jet = w.jet, ap = this.ap;
-    if (this.state === 'menu' && jet.alive) {
-      // autopilot: fly a wide circle round the centre at a comfortable height
+    const w = this.world, R = w.rail, ap = this.ap;
+    if (this.state === 'menu') {
       ap.t += dt;
-      const ang = Math.atan2(jet.pos.z - ap.center.z, jet.pos.x - ap.center.x) + ap.dir * 0.45;
-      const target = _v.set(ap.center.x + Math.cos(ang) * ap.R, 0, ap.center.z + Math.sin(ang) * ap.R);
-      const f = jet.forward;
-      const tx = target.x - jet.pos.x, tz = target.z - jet.pos.z;
-      const err = Math.atan2(tx * f.z - tz * f.x, tx * f.x + tz * f.z); // > 0: target on the left
-      const alt = jet.pos.y - this.safeAltitude(jet.pos, Math.atan2(-f.x, -f.z), 0);
-      const pitch = clamp((130 - alt) * 0.012 - f.y * 2.5, -0.6, 0.6);
-      jet.update(dt, { pitch, roll: clamp(-err * 1.6, -0.9, 0.9), yaw: 0, boost: false, brake: false }, { settings: { assist: 1 }, warnings: {} });
-      jet.updateVisuals(this.time);
-    }
-    // alternate between chasing the jet and orbiting a monster
-    const s = this.shot;
-    s.t += dt;
-    if (this.state === 'menu' && s.t > (s.kind === 'chase' ? 13 : 10)) {
-      s.t = 0;
-      const mons = w.monsters.list.filter((m) => m.alive && !m.spec.flies);
-      if (s.kind === 'chase' && mons.length) {
-        const m = mons[Math.floor(Math.random() * mons.length)];
-        s.kind = 'orbit';
-        s.target = m;
-        this.rig.setOrbit(w.monsters.center(m, new THREE.Vector3()), Math.max(45, m.height * 5 + m.radius * 4), Math.max(14, m.height * 1.2));
-        this.rig.pos.copy(this.rig.orbit.center).add(_w.set(this.rig.orbit.radius, this.rig.orbit.height, 0));
+      if (ap.kind === 'ride') {
+        ap.s += dt * 30;
+        if (ap.s > R.length - 60) { ap.s = 0; this.rig.snapTo(R.pointAt(0, _v), R.lookAt(0, _w)); }
+        const p = R.pointAt(ap.s, _v);
+        p.y = Math.max(p.y, R.groundAt(ap.s) + 6) + 12;
+        this.rig.update(dt, { pos: p, dir: R.lookAt(ap.s, _w), air: 1, speed: 30 });
+        if (ap.t > 14) {
+          // a closer look at a monster near the camera
+          let best = null, bd = 700;
+          for (const m of w.monsters.list) {
+            if (!m.alive || m.spec.flies) continue;
+            const d = m.pos.distanceTo(p);
+            if (d < bd) { bd = d; best = m; }
+          }
+          ap.t = 0;
+          if (best) {
+            ap.kind = 'orbit';
+            ap.target = best;
+            this.rig.setOrbit(w.monsters.center(best, new THREE.Vector3()), Math.max(40, best.height * 5 + best.radius * 4), Math.max(10, best.height * 1.1));
+          }
+        }
       } else {
-        s.kind = 'chase';
-        this.rig.orbit = null;
-        this.rig.snap(jet);
+        if (ap.target && ap.target.alive) w.monsters.center(ap.target, this.rig.orbit.center);
+        this.rig.update(dt, { terrain: w.terrain });
+        if (ap.t > 9) {
+          ap.t = 0;
+          ap.kind = 'ride';
+          this.rig.snapTo(R.pointAt(ap.s, _v), R.lookAt(ap.s, _w));
+        }
       }
+    } else {
+      this.rig.update(dt, { pos: this.rig.pos, dir: this.rig.dir, air: 1, speed: 0 });
     }
-    if (s.kind === 'orbit' && s.target && s.target.alive) w.monsters.center(s.target, this.rig.orbit.center);
-    w.monsters.update(dt, this.time, { pos: _w.set(0, -1e5, 0), vel: new THREE.Vector3(), alive: false, invuln: 1 });
+    const far = { pos: _u.set(0, -1e5, 0), vel: new THREE.Vector3(), forward: new THREE.Vector3(0, 0, -1), alive: false, invuln: 1 };
+    w.monsters.update(dt, this.time, far);
     w.fx.update(dt, this.time, w.terrain);
-    w.pickups.update(dt, this.time, { alive: false, pos: jet.pos }, () => {});
-    this.rig.update(dt, { jet, terrain: w.terrain, boosting: false, speed: jet.speed });
+    w.pickups.update(dt, this.time);
     this.audio.engine({ active: false, alive: false, throttle: 0, speed: 0 });
     this.audio.setListener(this.camera.position, _v.set(1, 0, 0).applyQuaternion(this.camera.quaternion));
     this.audio.update(dt);
@@ -842,114 +1059,72 @@ class Game {
   }
 
   updatePlaying(dt) {
-    const w = this.world, jet = w.jet, M = this.mission, T = w.terrain;
+    const w = this.world, P = this.player, M = this.mission, T = w.terrain, R = w.rail;
     const input = this.input.poll(dt);
     if (input.pause) { this.pause(); return; }
     if (input.mute) { this.muted = !this.muted; this.audio.setVolumes({ master: this.muted ? 0 : this.settings.master }); this.hud.toast(this.muted ? 'הצליל כבוי' : 'הצליל פועל'); }
-    if (input.camera) this.rig.cycle();
     if (this.input.lastDevice === 'touch' && this.settings.touch === 'auto' && !document.body.classList.contains('touch')) this.updateTouch();
 
     M.time += M.done ? 0 : dt;
     M.comboTimer = Math.max(0, M.comboTimer - dt);
     if (M.comboTimer <= 0) M.combo = 1;
     M.armorToast = Math.max(0, M.armorToast - dt);
-    const warnings = this.warnings;
-    warnings.ground = false;
+    P.invuln = Math.max(0, P.invuln - dt);
 
-    // the jet
-    const prev = _w.copy(jet.pos);
-    if (jet.alive) {
-      // after a win the jet climbs away on its own (a victory lap, and no crash after the win)
-      const ctl = M.done && M.win ? { pitch: clamp((0.28 - jet.forward.y) * 2.5, -0.4, 0.7), roll: 0, yaw: 0, boost: false, brake: false } : input;
-      jet.update(dt, ctl, { settings: { assist: M.done && M.win ? 1 : this.settings.assist }, warnings });
-      jet.updateVisuals(this.time);
-      const ground = T.groundOrWater(jet.pos.x, jet.pos.z);
-      const alt = jet.pos.y - ground;
-      warnings.ground = !M.done && (alt < 30 || (alt < 70 && jet.vel.y < -25));
-      if (alt < 2.5) {
-        if (M.done && M.win) jet.pos.y = ground + 2.5;
-        else this.die();
-      }
-      else {
-        // flying into a monster
-        const hit = w.monsters.segmentHit(prev, jet.pos, 3);
-        if (hit && jet.invuln <= 0) {
-          this.playerHit(40, hit.point, 'body');
-          w.monsters.damage(hit.m, 150, hit.point, { sphere: hit.sphere, dir: jet.forward.clone() });
-          jet.pos.y += 6;
-          jet.vel.y = Math.max(jet.vel.y, 40);
-          w.fx.sparks(hit.point, 1.2);
-        }
-      }
-    } else if (!M.done) {
-      M.respawn -= dt;
-      if (M.respawn <= 0) {
-        if (M.lives > 0) this.respawn();
-        else { this.lose(); this.hud.message('המטוסים אזלו', 'נסו שוב, הפעם קצת יותר גבוה', 2.6, 'danger'); }
-      }
-    }
+    // ride the track (or circle the boss)
+    this.updateRide(dt);
+    const boss = M.phase === 'boss' || (M.phase === 'done' && M.arena);
+    const air = boss ? 1 : R.airAmount(M.s);
+    const dir = boss ? P.forward : R.lookAt(M.s, _w);
+    this.rig.update(dt, { pos: P.pos, dir, aim: input.aim, air, speed: M.speed, dirRate: boss ? 2.5 : 4.5 });
 
-    // weapons
+    // aim and shoot
     const W = w.weapons;
-    W.updateTargeting(dt, jet, jet.alive && !M.done);
-    W.updateCannon(dt, jet, input.fire && jet.alive && !M.done && this.rig.intro <= 0);
-    if (input.missile && jet.alive && !M.done) W.launchMissile(jet);
-    w.monsters.update(dt, this.time, jet);
-    W.update(dt, this.time, jet);
-    w.pickups.update(dt, this.time, jet, (kind, pos) => this.collect(kind, pos));
+    const canFire = P.alive && !M.done && M.phase !== 'intro';
+    const touch = input.device === 'touch';
+    const assistPx = Math.min(window.innerWidth, window.innerHeight) * (touch ? 0.1 : 0.06) * this.settings.assist;
+    W.updateAim(this.camera, input.aim, assistPx, canFire);
+    W.updateCannon(dt, input.fire && canFire, this.guns, this.camera);
+    if (input.missile && canFire) W.launchMissile(P, this.camera);
+    w.monsters.update(dt, this.time, P);
+    W.update(dt, this.time, P);
+    w.pickups.update(dt, this.time);
     w.fx.update(dt, this.time, T);
-    if (jet.boosting && Math.random() < dt * 20) w.fx.vapour?.(jet.pos, jet.vel, 0.6);
+    this.guns.update(dt, this.camera, {
+      aimDir: W.aimDir, aimDist: W.aimDist, firing: input.fire && canFire && !W.overheated, heat: W.heat, bob: this.rig.bob, time: this.time,
+    });
 
-    // end of mission
     if (M.done) {
       M.endTimer -= dt;
       if (M.endTimer <= 0) { this.finish(); return; }
-    } else if (M.boss || this.world.level.goal) {
-      if (M.boss && M.boss.heartExposed) this.updateObjective();
     }
 
-    // camera, sound, HUD
-    this.rig.update(dt, { jet, terrain: T, boosting: jet.boosting, speed: jet.speed });
+    // sound
     const A = this.audio;
-    A.engine({ active: true, alive: jet.alive, throttle: jet.throttle, speed: jet.speed, boosting: jet.boosting, cockpit: this.rig.mode === 'cockpit' });
+    A.engine({ active: true, alive: P.alive, throttle: 0.25 + air * 0.45 + M.speed / 120, speed: M.speed * 4, boosting: false, cockpit: true });
     A.setListener(this.camera.position, _v.set(1, 0, 0).applyQuaternion(this.camera.quaternion));
-    A.alarm(jet.alive && !M.done && (warnings.ground || jet.hp < jet.maxHp * 0.25));
+    A.alarm(P.alive && !M.done && P.hp < P.maxHp * 0.25);
     let busy = 0;
-    for (const m of w.monsters.list) if (m.alive && m.alert && m.pos.distanceTo(jet.pos) < 1300) busy += m.spec.boss ? 4 : 1;
-    const threats = jet.alive ? W.threats(jet) : 0;
-    A.setIntensity(clamp(0.25 + busy * 0.12 + threats * 0.15, 0.25, 1));
+    for (const m of w.monsters.list) if (m.alive && m.pos.distanceTo(P.pos) < 300) busy += m.spec.boss ? 4 : m.height > 5 ? 1 : 0.4;
+    A.setIntensity(clamp(0.3 + busy * 0.1 + (M.phase === 'ambush' || M.phase === 'boss' ? 0.3 : 0), 0.3, 1));
     A.update(dt);
 
     this.hitFlash = Math.max(0, this.hitFlash - dt * 2.5);
-    this.boostFx = damp(this.boostFx, jet.boosting ? 1 : 0, 6, dt);
     const g = this.renderer.grade.uniforms;
     g.uHit.value = this.hitFlash;
-    g.uLowHp.value = jet.alive && jet.hp < jet.maxHp * 0.3 ? 1 : 0;
-    g.uBoost.value = this.boostFx;
+    g.uLowHp.value = P.alive && P.hp < P.maxHp * 0.3 ? 1 : 0;
+    g.uBoost.value = 0;
 
     this.hud.update(dt, {
-      jet, weapons: W, monsters: w.monsters, camera: this.camera, pickups: w.pickups,
+      player: P, weapons: W, monsters: w.monsters, camera: this.camera, pickups: w.pickups, aim: input.aim,
       game: { score: M.score, combo: M.combo, objTitle: M.objTitle, objSub: M.objSub, objProgress: M.objProgress },
-      warnings, threats, fps: this.settings.fps ? this.fps : 0, ground: T.groundOrWater(jet.pos.x, jet.pos.z),
-      cameraMode: this.rig.intro > 0 ? 'intro' : this.rig.mode,
+      fps: this.settings.fps ? this.fps : 0, showCrosshair: !M.done,
     });
-  }
-
-  collect(kind, pos) {
-    const jet = this.world.jet, M = this.mission;
-    if (kind === 'repair') jet.hp = Math.min(jet.maxHp, jet.hp + 35);
-    if (kind === 'ammo') { jet.missilesLeft = 4; this.world.weapons.reloadTimer = 0; }
-    if (kind === 'boost') jet.boost = 1;
-    M.score += 50;
-    this.hud.toast(`${PICKUPS[kind].name}: ${PICKUPS[kind].text}`, '#' + new THREE.Color(PICKUPS[kind].color).getHexString());
-    this.audio.pickup();
-    this.world.fx.sparks(pos, 1.2, PICKUPS[kind].color);
   }
 
   renderFrame(dt) {
     const w = this.world;
-    const focus = w.jet.alive ? w.jet.pos : this.camera.position;
-    w.update(dt, this.time, this.camera, focus);
+    w.update(dt, this.time, this.camera, this.camera.position);
     if (this.state !== 'playing') {
       const g = this.renderer.grade.uniforms;
       g.uHit.value = 0; g.uLowHp.value = 0; g.uBoost.value = 0;

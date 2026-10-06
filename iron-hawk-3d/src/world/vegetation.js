@@ -111,8 +111,9 @@ const RULES = {
 };
 
 export class Vegetation {
-  constructor(terrain, level, quality) {
+  constructor(terrain, level, quality, rail = null) {
     this.terrain = terrain; this.level = level; this.quality = quality;
+    this.rail = rail; // keep the track and the ambush grounds clear
     this.group = new THREE.Group();
     this.chunks = [];
     this.uniforms = { uTime: { value: 0 } };
@@ -141,6 +142,7 @@ export class Vegetation {
         if (rule.nearWater && h > this.terrain.waterLevel + rule.nearWater) continue;
         const slope = 1 - this.terrain.normalAt(x, z, tmpN).y;
         if (slope > rule.maxSlope) continue;
+        if (this.rail && this.rail.blocks(x, z, kind === 'bush')) continue;
         if (rule.forest > 0) {
           const f = fbm(noise, x / 700, z / 700, 3) * 0.5 + 0.5;
           if (f < rule.forest + rand() * 0.15) continue;

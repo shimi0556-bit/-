@@ -1,74 +1,113 @@
-// Power-ups dropped by big monsters: repair, missiles and boost. Each floats above the
-// ground inside a tall beam of light so it can be found from far away.
+// Supply crates dropped by the bigger monsters. They float in the air for a while inside a
+// short column of light; shooting one open collects it: repair for the shield, a full rack
+// of missiles, or coolant that stops the cannons overheating for a while.
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { canvasTexture } from '../core/textures.js';
 
 export const PICKUPS = {
-  repair: { color: 0x40ff80, name: 'תיקון', text: '+35 שריון' },
-  ammo: { color: 0xffb020, name: 'טילים', text: 'טילים מלאים' },
-  boost: { color: 0x40c0ff, name: 'טורבו', text: 'טורבו מלא' },
+  repair: { color: 0x40ff80, name: 'תיקון', text: '+25 מגן' },
+  ammo: { color: 0xffb020, name: 'טילים', text: 'מדף טילים מלא' },
+  cool: { color: 0x40c0ff, name: 'קירור', text: 'בלי התחממות ל־10 שניות' },
 };
+
+function crateFace(kind, color) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = '#23272c';
+  g.fillRect(0, 0, 128, 128);
+  g.strokeStyle = '#3a4048';
+  g.lineWidth = 6;
+  g.strokeRect(10, 10, 108, 108);
+  g.beginPath(); g.moveTo(14, 14); g.lineTo(114, 114); g.moveTo(114, 14); g.lineTo(14, 114); g.stroke();
+  g.fillStyle = '#' + new THREE.Color(color).getHexString();
+  g.strokeStyle = g.fillStyle;
+  g.lineWidth = 12;
+  g.fillRect(0, 0, 128, 7); g.fillRect(0, 121, 128, 7); g.fillRect(0, 0, 7, 128); g.fillRect(121, 0, 7, 128);
+  g.fillStyle = '#1a1d21';
+  g.beginPath(); g.arc(64, 64, 34, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#' + new THREE.Color(color).getHexString();
+  if (kind === 'repair') { g.fillRect(56, 38, 16, 52); g.fillRect(38, 56, 52, 16); }
+  if (kind === 'ammo') {
+    g.beginPath(); g.moveTo(64, 34); g.lineTo(74, 50); g.lineTo(74, 80); g.lineTo(82, 92); g.lineTo(46, 92); g.lineTo(54, 80); g.lineTo(54, 50); g.closePath(); g.fill();
+  }
+  if (kind === 'cool') {
+    g.lineWidth = 7;
+    for (let i = 0; i < 3; i++) {
+      const a = (i * Math.PI) / 3;
+      g.beginPath(); g.moveTo(64 - Math.cos(a) * 26, 64 - Math.sin(a) * 26); g.lineTo(64 + Math.cos(a) * 26, 64 + Math.sin(a) * 26); g.stroke();
+    }
+  }
+  return canvasTexture(c, true);
+}
 
 export class Pickups {
   constructor(scene, terrain) {
     this.scene = scene;
     this.terrain = terrain;
     this.list = [];
-    this.coreGeo = new THREE.OctahedronGeometry(3.2, 0);
-    this.ringGeo = new THREE.TorusGeometry(5, 0.35, 8, 32);
-    this.beamGeo = new THREE.CylinderGeometry(3, 6, 1, 20, 1, true).translate(0, 0.5, 0);
-    this.beamMat = {};
+    this.onTake = null;
+    this.fx = null;
+    this.geo = new RoundedBoxGeometry(2.6, 2.6, 2.6, 2, 0.25);
+    this.beamGeo = new THREE.CylinderGeometry(1.6, 2.6, 1, 16, 1, true).translate(0, 0.5, 0);
     this.mats = {};
+    this.beamMat = {};
     for (const [k, p] of Object.entries(PICKUPS)) {
-      const c = new THREE.Color(p.color);
-      this.mats[k] = new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 2.4, roughness: 0.3, metalness: 0.2 });
+      const col = new THREE.Color(p.color);
+      const map = crateFace(k, p.color);
+      this.mats[k] = new THREE.MeshStandardMaterial({ map, emissiveMap: map, emissive: col, emissiveIntensity: 1.6, roughness: 0.5, metalness: 0.4 });
       this.beamMat[k] = new THREE.ShaderMaterial({
-        uniforms: { uColor: { value: c.clone().multiplyScalar(2.5) }, uTime: { value: 0 } },
+        uniforms: { uColor: { value: col.clone().multiplyScalar(2.5) }, uTime: { value: 0 } },
         transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
         vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
         fragmentShader: `uniform vec3 uColor; uniform float uTime; varying vec2 vUv;
-void main(){ float a = pow(1.0 - vUv.y, 1.5) * 0.35 * (0.8 + 0.2 * sin(uTime * 3.0 + vUv.y * 20.0)); gl_FragColor = vec4(uColor * a, a); }`,
+void main(){ float a = pow(1.0 - vUv.y, 1.5) * 0.3 * (0.8 + 0.2 * sin(uTime * 3.0 + vUv.y * 20.0)); gl_FragColor = vec4(uColor * a, a); }`,
       });
     }
   }
 
   spawn(kind, at) {
     const g = new THREE.Group();
-    const core = new THREE.Mesh(this.coreGeo, this.mats[kind]);
-    const ring = new THREE.Mesh(this.ringGeo, this.mats[kind]);
+    const box = new THREE.Mesh(this.geo, this.mats[kind]);
     const beam = new THREE.Mesh(this.beamGeo, this.beamMat[kind]);
-    beam.scale.set(1, 260, 1);
-    beam.position.y = -40;
+    beam.scale.set(1, 60, 1);
+    beam.position.y = -30;
     beam.renderOrder = 7;
-    g.add(core, ring, beam);
+    g.add(box, beam);
     const ground = this.terrain.groundOrWater(at.x, at.z);
-    const pos = new THREE.Vector3(at.x, ground + 34, at.z);
+    const pos = new THREE.Vector3(at.x, Math.max(at.y, ground + 2) + 3.5, at.z);
     g.position.copy(pos);
     this.scene.add(g);
-    const p = { kind, group: g, core, ring, pos, life: 45, t: Math.random() * 10 };
+    const p = { kind, group: g, box, pos, life: 22, t: Math.random() * 10, taken: false };
     this.list.push(p);
     return p;
   }
 
-  update(dt, time, jet, onCollect) {
+  // shot open
+  take(p) {
+    if (p.taken) return;
+    p.taken = true;
+    this.onTake?.(p.kind, p.pos.clone());
+    this.remove(this.list.indexOf(p));
+  }
+
+  update(dt, time) {
     for (const m of Object.values(this.beamMat)) m.uniforms.uTime.value = time;
     for (let i = this.list.length - 1; i >= 0; i--) {
       const p = this.list[i];
       p.t += dt;
       p.life -= dt;
-      p.core.rotation.y += dt * 2;
-      p.core.position.y = Math.sin(p.t * 2) * 1.5;
-      p.ring.rotation.x = Math.PI / 2 + Math.sin(p.t) * 0.3;
-      p.ring.rotation.z += dt;
-      const blink = p.life < 8 ? (Math.sin(p.t * 12) > 0 ? 1 : 0.2) : 1;
-      p.group.visible = blink > 0.5 || p.life > 8;
-      if (jet.alive && jet.pos.distanceTo(p.pos) < 26) {
-        onCollect(p.kind, p.pos);
-        this.remove(i);
-      } else if (p.life <= 0) this.remove(i);
+      p.box.rotation.y += dt * 1.2;
+      p.box.rotation.x = Math.sin(p.t * 0.8) * 0.25;
+      p.box.position.y = Math.sin(p.t * 2) * 0.6;
+      p.group.visible = p.life > 5 || Math.sin(p.t * 12) > 0;
+      if (p.life <= 0) this.remove(i);
     }
   }
 
   remove(i) {
+    if (i < 0) return;
     this.scene.remove(this.list[i].group);
     this.list.splice(i, 1);
   }

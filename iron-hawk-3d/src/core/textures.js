@@ -185,39 +185,6 @@ const RECIPES = {
   },
 };
 
-// Panel-line / camo texture for the jet hull (u around the fuselage, v along it).
-export function makeJetTexture(size = 1024) {
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = size;
-  const g = canvas.getContext('2d');
-  const n = tileFbm(301, 3, 5);
-  const img = g.createImageData(size, size);
-  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
-    const a = n(x / size, y / size);
-    const camo = a > 0.56 ? 0.84 : a > 0.46 ? 0.93 : 1.0;
-    const base = 150 * camo + (a - 0.5) * 14;
-    const i = (y * size + x) * 4;
-    img.data[i] = base * 0.93; img.data[i + 1] = base * 0.97; img.data[i + 2] = base * 1.03; img.data[i + 3] = 255;
-  }
-  g.putImageData(img, 0, 0);
-  const rand = mulberry32(7);
-  g.strokeStyle = 'rgba(30,34,40,0.55)';
-  g.lineWidth = Math.max(1, size / 700);
-  for (let i = 0; i < 26; i++) { // panel seams along the length
-    const y = Math.floor(rand() * size);
-    g.beginPath(); g.moveTo(0, y); g.lineTo(size, y); g.stroke();
-  }
-  for (let i = 0; i < 40; i++) { // rectangular access panels
-    const x = rand() * size, y = rand() * size, w = 20 + rand() * size * 0.12, h = 16 + rand() * size * 0.08;
-    g.strokeRect(x, y, w, h);
-  }
-  g.fillStyle = 'rgba(25,28,34,0.5)';
-  for (let i = 0; i < 900; i++) { // rivets
-    g.fillRect(rand() * size, rand() * size, size / 512, size / 512);
-  }
-  return canvas;
-}
-
 // Soft round sprite for particles (white, alpha falloff).
 export function makeSoftSprite(size = 128, hard = 0) {
   const c = document.createElement('canvas');

@@ -1,19 +1,22 @@
 // Renderer, quality presets and the post-processing chain:
-// scene -> bloom -> tone mapping (OutputPass) -> colour grade, vignette and hit flash -> FXAA.
+// world -> the guns on top -> bloom -> tone mapping (OutputPass) -> colour grade, vignette
+// and hit flash -> FXAA. With red-cyan glasses on, the world and the guns are drawn once
+// per eye and mixed into one anaglyph frame instead.
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
 import { isTouchDevice } from './util.js';
 
 export const QUALITY = {
-  low: { name: 'נמוכה', pixelRatio: 0.8, shadows: 0, terrainSegments: 256, plants: 0.35, plantDistance: 1500, creatureDetail: 0.7, bloom: false, msaa: 0, fxaa: false, lights: 1, particles: 0.5 },
-  medium: { name: 'בינונית', pixelRatio: 1, shadows: 1024, terrainSegments: 320, plants: 0.6, plantDistance: 2100, creatureDetail: 0.85, bloom: true, msaa: 0, fxaa: true, lights: 2, particles: 0.75 },
-  high: { name: 'גבוהה', pixelRatio: 1.5, shadows: 2048, terrainSegments: 400, plants: 0.85, plantDistance: 2900, creatureDetail: 1, bloom: true, msaa: 4, fxaa: false, lights: 3, particles: 1 },
-  ultra: { name: 'אולטרה', pixelRatio: 2, shadows: 4096, terrainSegments: 512, plants: 1, plantDistance: 3600, creatureDetail: 1.15, bloom: true, msaa: 4, fxaa: false, lights: 3, particles: 1 },
+  low: { name: 'נמוכה', pixelRatio: 0.8, shadows: 0, terrainSegments: 256, plants: 0.35, plantDistance: 1500, creatureDetail: 0.7, bloom: false, msaa: 0, fxaa: false, lights: 1, particles: 0.5, crowd: 0.7 },
+  medium: { name: 'בינונית', pixelRatio: 1, shadows: 1024, terrainSegments: 320, plants: 0.6, plantDistance: 2100, creatureDetail: 0.85, bloom: true, msaa: 0, fxaa: true, lights: 2, particles: 0.75, crowd: 0.85 },
+  high: { name: 'גבוהה', pixelRatio: 1.5, shadows: 2048, terrainSegments: 400, plants: 0.85, plantDistance: 2900, creatureDetail: 1, bloom: true, msaa: 4, fxaa: false, lights: 3, particles: 1, crowd: 1 },
+  ultra: { name: 'אולטרה', pixelRatio: 2, shadows: 4096, terrainSegments: 512, plants: 1, plantDistance: 3600, creatureDetail: 1.15, bloom: true, msaa: 4, fxaa: false, lights: 3, particles: 1, crowd: 1 },
 };
 
 export function autoQuality() {
@@ -60,6 +63,83 @@ void main(){
 }`,
 };
 
+// draws a second scene (the guns) over the frame with its own depth, so it never clips
+class OverlayPass extends Pass {
+  constructor(scene, camera) {
+    super();
+    this.scene = scene;
+    this.camera = camera;
+    this.needsSwap = false;
+  }
+
+  render(renderer, writeBuffer, readBuffer) {
+    const auto = renderer.autoClear;
+    renderer.autoClear = false;
+    renderer.setRenderTarget(this.renderToScreen ? null : readBuffer);
+    renderer.clearDepth();
+    renderer.render(this.scene, this.camera);
+    renderer.autoClear = auto;
+  }
+}
+
+// Dubois least-squares matrices for red-cyan glasses (as in three's AnaglyphEffect)
+const DUBOIS_L = new THREE.Matrix3().fromArray([0.4561, -0.0400822, -0.0152161, 0.500484, -0.0378246, -0.0205971, 0.176381, -0.0157589, -0.00546856]);
+const DUBOIS_R = new THREE.Matrix3().fromArray([-0.0434706, 0.378476, -0.0721527, -0.0879388, 0.73364, -0.112961, -0.00155529, -0.0184503, 1.2264]);
+
+// one view per eye; the world's screen plane sits a little in front of the player, so
+// monsters that come close leap out of the screen
+class AnaglyphPass extends Pass {
+  constructor(scene, camera, overlay, samples) {
+    super();
+    this.scene = scene;
+    this.camera = camera;
+    this.overlay = overlay;
+    this.stereo = new THREE.StereoCamera();
+    this.stereo.eyeSep = 0.12;
+    this.stereoOverlay = new THREE.StereoCamera();
+    this.stereoOverlay.eyeSep = 0.01;
+    const opts = { type: THREE.HalfFloatType, samples };
+    this.rtL = new THREE.WebGLRenderTarget(1, 1, opts);
+    this.rtR = new THREE.WebGLRenderTarget(1, 1, opts);
+    this.quad = new FullScreenQuad(new THREE.ShaderMaterial({
+      uniforms: { tL: { value: this.rtL.texture }, tR: { value: this.rtR.texture }, mL: { value: DUBOIS_L }, mR: { value: DUBOIS_R } },
+      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: `uniform sampler2D tL, tR; uniform mat3 mL, mR; varying vec2 vUv;
+void main(){
+  vec3 l = texture2D(tL, vUv).rgb, r = texture2D(tR, vUv).rgb;
+  gl_FragColor = vec4(max(mL * l + mR * r, 0.0), 1.0);
+}`,
+    }));
+    this.needsSwap = false;
+  }
+
+  setSize(w, h) { this.rtL.setSize(w, h); this.rtR.setSize(w, h); }
+
+  render(renderer, writeBuffer, readBuffer) {
+    const cam = this.camera;
+    cam.updateMatrixWorld();
+    this.stereo.update(cam);
+    const ov = this.overlay;
+    if (ov) { ov.camera.updateMatrixWorld(); this.stereoOverlay.update(ov.camera); }
+    const auto = renderer.autoClear;
+    renderer.autoClear = false;
+    for (const [rt, eye, eyeOv] of [[this.rtL, this.stereo.cameraL, this.stereoOverlay.cameraL], [this.rtR, this.stereo.cameraR, this.stereoOverlay.cameraR]]) {
+      renderer.setRenderTarget(rt);
+      renderer.clear();
+      renderer.render(this.scene, eye);
+      if (ov && ov.enabled) {
+        renderer.clearDepth();
+        renderer.render(ov.scene, eyeOv);
+      }
+    }
+    renderer.setRenderTarget(this.renderToScreen ? null : readBuffer);
+    this.quad.render(renderer);
+    renderer.autoClear = auto;
+  }
+
+  dispose() { this.rtL.dispose(); this.rtR.dispose(); this.quad.dispose(); }
+}
+
 export class Renderer {
   constructor(canvas, qualityKey) {
     this.canvas = canvas;
@@ -93,6 +173,11 @@ export class Renderer {
     composer.setSize(window.innerWidth, window.innerHeight);
     this.renderPass = new RenderPass(scene, camera);
     composer.addPass(this.renderPass);
+    const ov = this.overlay;
+    this.overlayPass = ov ? new OverlayPass(ov.scene, ov.camera) : null;
+    if (this.overlayPass) composer.addPass(this.overlayPass);
+    this.anaglyph = new AnaglyphPass(scene, camera, ov, q.msaa);
+    composer.addPass(this.anaglyph);
     if (q.bloom) {
       this.bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth / 2, window.innerHeight / 2), 0.55, 0.55, 0.9);
       composer.addPass(this.bloom);
@@ -107,7 +192,24 @@ export class Renderer {
     this.composer = composer;
     this.scene = scene;
     this.camera = camera;
+    this.setAnaglyph(this.anaglyphOn);
     this.updateSizes();
+  }
+
+  // what the main pass draws (the world, or the atlas turntable)
+  setView(scene, camera) {
+    this.renderPass.scene = scene;
+    this.renderPass.camera = camera;
+    this.anaglyph.scene = scene;
+    this.anaglyph.camera = camera;
+  }
+
+  setAnaglyph(on) {
+    this.anaglyphOn = !!on;
+    if (!this.composer) return;
+    this.renderPass.enabled = !on;
+    if (this.overlayPass) this.overlayPass.enabled = !on;
+    this.anaglyph.enabled = !!on;
   }
 
   pixelRatio() {

@@ -8,14 +8,15 @@ import { assetURL } from '../core/textures.js';
 import { formatInt } from '../core/util.js';
 
 const TIPS = [
-  'החזיקו מטרה בתוך המסגרת עד שהיהלום נהיה אדום, ואז שגרו טיל.',
-  'כדורי אש אפשר להפיל בתותח לפני שהם מגיעים אליכם.',
-  'מטאורים נופלים בתוך עמודי האור האדומים. צאו מהם מהר.',
-  'שריונים חזקים מלפנים. תקפו אותם מהצד או מאחור.',
-  'רצים בורחים מצל המטוס. כוונו קצת לפניהם.',
-  'טורבו מתמלא לבד כשלא משתמשים בו.',
-  'תיבה ירוקה מתקנת את המטוס, כתומה ממלאת טילים, כחולה ממלאת טורבו.',
+  'טיל עף לבד אל המפלצת הכי קרובה לכוונת. שמרו אותם לשריונים ולענקים.',
+  'כדורי אש ורוק חומצה אפשר להפיל בתותח לפני שהם מגיעים לחלון.',
+  'רצים קופצים על החלון מקרוב. ירו בהם לפני שהם מזנקים.',
+  'סימון אדום סביב מפלצת אומר שהיא קרובה מספיק לתקוף.',
+  'התותחים מתחממים. שחררו לרגע את הירי כדי לקרר אותם.',
+  'ירו בתיבות המרחפות: ירוקה מתקנת את המגן, כתומה ממלאת טילים, כחולה מקררת את התותחים.',
+  'כשהמגן מתרוקן הוא משחרר הדף שהודף את כל המפלצות סביבכם.',
   'רצף פגיעות מהיר מכפיל את הניקוד עד פי 5.',
+  'יש לכם משקפי תלת־ממד אדום־תכלת? הפעילו אותם בהגדרות.',
 ];
 
 const STAT_LABELS = { hp: 'עמידות', speed: 'מהירות', size: 'גודל', danger: 'סכנה' };
@@ -102,14 +103,16 @@ export class Menus {
     art.setAttribute('style', this.artStyle(level));
     this.$('brief-name').textContent = level.name;
     this.$('brief-text').textContent = level.brief;
-    this.$('brief-goal').textContent = level.goal
-      ? `המשימה: לחסל ${level.goal} מפלצות`
-      : 'המשימה: להביס את מלך הלבה';
-    const ids = SPECIES_ORDER.filter((id) => level.monsters[id] || level.waves.some((w) => w.add[id]));
+    const legs = level.rail.legs;
+    const stops = legs.filter((l) => !l.boss).length;
+    this.$('brief-goal').textContent = legs.some((l) => l.boss)
+      ? `המשימה: לשבור ${stops} מארבים בדרך ולהביס את מלך הלבה`
+      : `המשימה: לשבור ${stops} מארבים בריצה ובטיסה`;
+    const ids = SPECIES_ORDER.filter((id) => legs.some((l) => l.boss ? id === 'boss' : (l.waves || []).some((w) => w[id])));
     this.$('brief-monsters').innerHTML = ids.map((id) => `<span class="chip">${SPECIES[id].plural}</span>`).join('');
     this.$('brief-keys').innerHTML = touch
-      ? 'אגודל שמאל מטיס, כפתורים מימין: ירי, טיל, טורבו והאטה.'
-      : 'חצים או WASD לטיסה · רווח לתותח · F לטיל · Shift לטורבו · C למצלמה · Esc להשהיה';
+      ? 'גררו אצבע על המסך כדי לכוון ולירות. הכפתור מימין משגר טיל.'
+      : 'עכבר לכיוון · לחיצה או רווח לירי · לחיצה ימנית או F לטיל · Esc להשהיה';
   }
 
   // ---------------------------------------------------------------- bestiary
@@ -149,8 +152,8 @@ export class Menus {
       ['עוצמה כללית', '', range('master')],
       ['מוזיקה', '', range('music')],
       ['אפקטים', '', range('sfx')],
-      ['היפוך למעלה ולמטה', 'כמו בסימולטור: למטה מרים את האף', seg('invert', [[false, 'רגיל'], [true, 'הפוך']])],
-      ['עזרה בטיסה', 'מיישר את המטוס כשעוזבים את ההגה', seg('assist', [[1, 'פועלת'], [0, 'כבויה']])],
+      ['עזרה בכיוון', 'מטה את הירי אל מפלצת שקרובה לכוונת', seg('assist', [[0, 'כבויה'], [1, 'רגילה'], [1.6, 'חזקה']])],
+      ['משקפי תלת־ממד', 'לשחק עם משקפיים אדום־תכלת (אדום על העין השמאלית)', seg('anaglyph', [[false, 'כבוי'], [true, 'אדום־תכלת']])],
       ['רעידות מסך', '', seg('shake', [[true, 'כן'], [false, 'לא']])],
       ['כפתורי מגע', '', seg('touch', [['auto', 'אוטומטי'], ['on', 'תמיד'], ['off', 'לעולם לא']])],
       ['מונה פריימים', '', seg('fps', [[false, 'מוסתר'], [true, 'מוצג']])],
@@ -175,7 +178,7 @@ export class Menus {
   // ---------------------------------------------------------------- results
   renderResults(r) {
     this.$('res-kicker').textContent = r.level.name;
-    this.$('res-title').textContent = r.win ? 'המשימה הושלמה!' : 'המטוסים אזלו';
+    this.$('res-title').textContent = r.win ? 'המשימה הושלמה!' : 'החיים אזלו';
     const stars = this.$('res-stars');
     stars.innerHTML = [0, 1, 2].map(() => '<i></i>').join('');
     stars.style.display = r.win ? '' : 'none';
@@ -191,7 +194,8 @@ export class Menus {
       ['דיוק בתותח', `${Math.round(r.accuracy * 100)}%`],
       ['טילים ששוגרו', formatInt(r.missiles)],
       ['רצף הכי ארוך', `x${r.bestCombo}`],
-      ['מטוסים שאבדו', formatInt(r.deaths)],
+      ['מארבים שנשברו', `${r.cleared}/${r.stops}`],
+      ['חיים שאבדו', formatInt(r.deaths)],
     ];
     this.$('res-grid').innerHTML = rows.map(([a, b]) => `<div><span>${a}</span><b>${b}</b></div>`).join('');
     const next = this.$('res-next');

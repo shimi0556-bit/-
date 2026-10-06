@@ -6,6 +6,7 @@ A personal playground repo: vendored tools/apps and Claude Code skills. See `REA
 
 - Talk to the user in Hebrew, and always ask questions in Hebrew (including the options in `AskUserQuestion`).
 - Whenever you build or update a game in this repo (any self-contained game, e.g. an HTML/JS game like `reversi-game/`), always send the playable file(s) to the user for download via the `SendUserFile` tool — in addition to committing and pushing it to the repo. Do this every time, not just on first creation; re-send after meaningful updates to a game the user is actively iterating on.
+- Whenever you build or update a game in this repo, give it real sound effects made with the ElevenLabs connector, as many as the game can use (the owner asked for this in every game). Effects and instrumental only: no speech, no songs. Never repeat a generation call to retry, since each call costs credits. The pipeline to copy is in `iron-hawk-3d/`: raw takes in `assets/raw/sfx/`, `tools/process_sfx.py`, `assets/sfx/<name>_<n>.mp3` inlined by `tools/build.mjs` as `window.__SOUNDS`, played by `AudioEngine.sample()` in `src/core/audio.js` with a synth fallback.
 - After creating any HTML presentation, inject Edit Mode:
   `python3 .claude/skills/deck-edit-mode/scripts/inject_editor.py <deck.html>`
 

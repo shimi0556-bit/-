@@ -170,7 +170,8 @@ export const SPECIES = {
       { type: 'claw', bone: 'footL', pos: add(raptorB.joints.footL.pos, [0.03, -0.05, 0.12]), len: 0.22, r: 0.035, curve: true },
       { type: 'quills', bone: 'neck', from: raptorB.joints.chest.pos, to: raptorB.head, n: 6, len: 0.16, r: 0.03, color: 0x8a2a1a }],
     hp: 60, speed: 15, walk: 3, stride: 2.3, score: 100, radius: 1.6, height: 1.6,
-    desc: 'קטן, מהיר ותמיד בלהקה. בורח מצל המטוס, אז צריך לכוון קדימה.',
+    charge: 21, reach: 11, attack: 'pounce', damage: 7,
+    desc: 'קטן, מהיר ותמיד בלהקה. רץ בזיגזג וקופץ ישר על החלון, אז כדאי לירות בו עוד באוויר.',
     sound: { pitch: 1.9, rough: 0.4 },
   }),
   rex: finish({
@@ -182,7 +183,8 @@ export const SPECIES = {
       { type: 'claw', bone: 'footL', pos: add(rexB.joints.toeL.pos, [0, 0.1, 0.1]), len: 0.5, r: 0.12 },
       { type: 'plates', bones: ['neck', 'chest', 'spine', 'hips', 'tail1', 'tail2'], bone: 'hips', n: 12, size: 0.38, color: 0x2a1410 }],
     hp: 750, speed: 7, walk: 3, stride: 5.5, score: 500, radius: 3.5, height: 7, fire: true,
-    desc: 'ענק על שתי רגליים שיורק כדורי אש לעבר המטוס. תמרנו כשהוא שואג.',
+    charge: 9.5, reach: 18, attack: 'bite', damage: 14,
+    desc: 'ענק על שתי רגליים. מרחוק הוא יורק כדורי אש, ומקרוב הוא נוגס. את כדורי האש אפשר להפיל בתותח.',
     sound: { pitch: 0.55, rough: 1 },
   }),
   horned: finish({
@@ -195,7 +197,8 @@ export const SPECIES = {
       { type: 'horn', bone: 'head', pos: add(hornB.head, [0, hornP.headH * 0.05, hornP.head * 0.88]), dir: [0, 0.75, 1], len: 0.7, r: 0.15, color: 0xe8dcc0, center: true },
       { type: 'frill', bone: 'head', pos: add(hornB.head, [0, hornP.headH * 0.55, -hornP.head * 0.12]), r: 1.75, color: 0xd0601e, spikes: 9 }],
     hp: 520, speed: 5, walk: 2.4, stride: 3.2, score: 250, radius: 3, height: 3.4, armored: true,
-    desc: 'שריון עבה בחזית. פגיעה מהצד או מאחור עושה נזק כפול.',
+    charge: 13, reach: 13, attack: 'ram', damage: 12,
+    desc: 'שריון עבה בחזית. מסתער בראש מורכן ונוגח, ואז נסוג ומסתער שוב. טיל עוצר אותו מהר.',
     sound: { pitch: 0.8, rough: 0.7 },
   }),
   longneck: finish({
@@ -205,7 +208,8 @@ export const SPECIES = {
     skin: 'tex_hide', texScale: 2.2, rim: 0x1c2630, glow: 0x000000,
     attachments: [...eyes(longB.head, longP, 0xeaff70, 1.4)],
     hp: 1400, speed: 2.6, walk: 1.6, stride: 5.5, score: 400, radius: 6, height: 14, wades: true,
-    desc: 'הגדול ביותר בעמק. איטי אבל צריך הרבה פגיעות. אוהב לעמוד במים.',
+    charge: 6, reach: 26, attack: 'stomp', damage: 16,
+    desc: 'הגדול ביותר בעמק. איטי אבל צריך הרבה פגיעות, וכשהוא מגיע הוא רוקע ומרעיד את כל הקרקע.',
     sound: { pitch: 0.4, rough: 0.3 },
   }),
   boss: finish({
@@ -219,7 +223,7 @@ export const SPECIES = {
       { type: 'crystal', bone: 'hips', pos: [-3.0, bossP.hip + bossP.girth * 0.75, 0], len: 7, r: 1.3, weak: 2, tilt: -0.35 },
       { type: 'plates', bones: ['neck2', 'neck1', 'chest', 'spine', 'hips', 'tail1', 'tail2'], bone: 'hips', n: 14, size: 2.2, color: 0x2a201c, glow: true }],
     hp: 9000, speed: 1.5, walk: 1.2, stride: 12, score: 5000, radius: 16, height: 30, boss: true, girth: bossP.girth,
-    desc: 'שליט האגם הבוער. שלושה גבישי אש על גבו מגינים עליו. השמידו אותם, ואז את הלב הזוהר בחזה.',
+    desc: 'שליט האגם הבוער. שלושה גבישי אש על גופו מגינים עליו. נפצו אותם, ואז ירו בלב הזוהר בחזה. מטאורים וכדורי אש אפשר להפיל בתותח.',
     sound: { pitch: 0.25, rough: 1.2 },
   }),
   flyer: makeFlyer(),
@@ -264,7 +268,8 @@ function makeFlyer() {
     membrane: { color: 0x5a3550, chain: ['shoulderL', 'elbowL', 'wristL', 'fingerL'], trailing: ['body', 'body', 'tail1'] },
     attachments: [{ type: 'eye', bone: 'head', pos: [0.17, 0.66, 2.55], r: 0.06, color: 0x80ff60, sym: true }],
     hp: 110, speed: 75, walk: 40, stride: 1, score: 300, radius: 3.5, height: 1, flies: true, spit: true,
-    desc: 'מעופף ורודף אחרי המטוס. יורק חומצה ירוקה. כדאי לנעול עליו טיל.',
+    charge: 34, reach: 8, attack: 'dive', damage: 8,
+    desc: 'מעופף שצולל ישר אל החלון, נוגס ומסתובב לסיבוב נוסף. מרחוק הוא יורק חומצה ירוקה.',
     sound: { pitch: 2.4, rough: 0.6 },
   });
 }
