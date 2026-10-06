@@ -1,0 +1,116 @@
+{
+  "id": "006-ferrari-f40",
+  "title": "פרארי F40",
+  "titleEn": "Ferrari F40 (1987)",
+  "units": "metres",
+  "up": "+Y",
+  "forward": "+Z",
+  "left": "+X",
+  "origin": "ground, middle of the vehicle",
+  "dimensions": {
+    "length": 4.47,
+    "width": 2.1,
+    "height": 1.138
+  },
+  "collider": {
+    "type": "box",
+    "center": [
+      0,
+      0.565,
+      -0.066
+    ],
+    "halfExtents": [
+      1.05,
+      0.569,
+      2.235
+    ]
+  },
+  "physics": {
+    "kind": "car",
+    "drive": "rwd",
+    "massKg": 1254,
+    "topSpeedKmh": 321,
+    "accel0to100s": 4.7,
+    "steerMaxRad": 0.4,
+    "wheelbase": 2.45,
+    "track": 1.6,
+    "wheelRadius": 0.333,
+    "grip": 0.92,
+    "lodHide": [
+      "engine",
+      "drivetrain",
+      "electrics",
+      "brakes",
+      "suspension",
+      "chassis",
+      "fuel"
+    ],
+    "note": "מסה ומהירות מרבית לפי מדידות עצמאיות (ויקיפדיה); תאוצה 0–100 קמ״ש בכ־4.7 שנ׳ (מבחן ראשון); האחיזה היא הערכה יחסית (צמיגים רחבים, מנוע אחורי, טורבו)."
+  },
+  "wheels": [
+    {
+      "node": "Wheel_FR",
+      "steerNode": "Steer_FR",
+      "front": true,
+      "side": "right",
+      "radius": 0.314,
+      "position": [
+        -0.797,
+        0.314,
+        1.225
+      ],
+      "spinRadPerMetre": -3.1847
+    },
+    {
+      "node": "Wheel_FL",
+      "steerNode": "Steer_FL",
+      "front": true,
+      "side": "left",
+      "radius": 0.314,
+      "position": [
+        0.797,
+        0.314,
+        1.225
+      ],
+      "spinRadPerMetre": 3.1847
+    },
+    {
+      "node": "Wheel_RR",
+      "steerNode": null,
+      "front": false,
+      "side": "right",
+      "radius": 0.333,
+      "position": [
+        -0.803,
+        0.333,
+        -1.225
+      ],
+      "spinRadPerMetre": -3.003
+    },
+    {
+      "node": "Wheel_RL",
+      "steerNode": null,
+      "front": false,
+      "side": "left",
+      "radius": 0.333,
+      "position": [
+        0.803,
+        0.333,
+        -1.225
+      ],
+      "spinRadPerMetre": 3.003
+    }
+  ],
+  "tracked": false,
+  "nodes": {
+    "spin": "rotate each Wheel_* node about its own local Z by spinRadPerMetre × metres driven forward (three.js: wheel.rotateZ(...))",
+    "steer": "set Steer_* rotation about local Y (rest rotation is identity): a positive angle turns toward the vehicle's left (+X)"
+  },
+  "files": {
+    "full": "006-ferrari-f40.glb",
+    "race": "006-ferrari-f40.race.glb"
+  },
+  "triangles": {
+    "full": 291636
+  }
+}

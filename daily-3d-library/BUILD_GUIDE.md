@@ -91,6 +91,8 @@ What was modelled per system, the numbers used, sources, and open issues or know
 - **`OrbitControls.maxDistance` is 40 m.** A far, narrow-fov overlay camera at 60 m is silently pulled in to 40 m and renders 1.5× too large; use distance ≤ 40 and compute the fov from it. A custom view that looks from below the floor needs `"under": true` in `meta.views`.
 - **A grid shell with named section lines** (see wiki, #005) gives windows, doors, hood and lid with exact edges. Do not cut openings by skipping cells on a uniform grid.
 
+- **Placing details by ray (`rayHit`) needs every panel in the test.** The shell mesh has holes where the hood, lid and doors are. Raycast against all of them, call `parent.updateMatrixWorld(true)` first (the viewer hasn't updated hinged groups yet at build time), and keep the ray height inside the body's vertical range (a ray below the lower edge passes under the car and lands on the other end). Anything placed on a hinged panel is a child of the hinge group with positions minus the hinge (#006).
+
 ## 6. Verify
 
 ```bash

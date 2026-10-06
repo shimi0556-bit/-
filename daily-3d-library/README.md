@@ -15,6 +15,7 @@ One object a day, modelled procedurally in Three.js down to the fasteners, as a 
 | 003 | [Tesla Model Y (Juniper, 2025)](models/003-tesla-model-y/) — טסלה מודל Y | 2026-10-03 | 155 | ~458K |
 | 004 | [Ford Model T Touring (1915)](models/004-ford-model-t/) — פורד מודל T | 2026-10-04 | 166 | ~112K |
 | 005 | [Volkswagen Beetle Type 1 “1200” (1963)](models/005-volkswagen-beetle/) — פולקסווגן חיפושית | 2026-10-05 | 233 | ~229K |
+| 006 | [Ferrari F40 (1987)](models/006-ferrari-f40/) — פרארי F40 | 2026-10-06 | 269 | ~292K |
 
 **Game-ready:** every model also ships as GLB files for game engines (full + light racing version) with named wheel/steer nodes and physics data. See [`GAME_READY.md`](GAME_READY.md).
 
@@ -38,6 +39,7 @@ daily-3d-library/
     thumb.jpg      GENERATED: gallery thumbnail
     stats.json     GENERATED: parts / meshes / triangles
   tools/check.cjs  headless render: fails on errors, writes thumb + stats, --qa writes shots/*.png
+  tools/eval.cjs   evaluate a JS snippet inside a model page (dump part cards, probe geometry)
   build.py         bundles every model + regenerates index.html and catalog.json
   queue.json       what to build next
   BUILD_GUIDE.md   the daily procedure + quality bar (read this before building a model)

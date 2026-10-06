@@ -19,6 +19,8 @@ Every model in the library ships ready to drop into a game, mainly a racing game
 | 002 | Merkava Mk 4M | tracked | 2.1 MB | 1.7 MB | 400K → 290K |
 | 003 | Tesla Model Y | car, AWD | 4.3 MB | 2.8 MB | 456K → 216K |
 | 004 | Ford Model T | car, RWD | 1.1 MB | 1.0 MB | 112K → 81K |
+| 005 | Volkswagen Beetle Type 1 | car, RWD | 2.5 MB | 1.7 MB | 229K → 122K |
+| 006 | Ferrari F40 | car, RWD | 2.9 MB | 1.7 MB | 292K → 138K |
 
 ## Conventions (glTF)
 
