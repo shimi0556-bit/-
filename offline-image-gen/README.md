@@ -13,6 +13,7 @@ Copy these to `D:\AI\` (any folder works; everything stays inside it, so drive C
 |---|---|
 | `install-fastsd.ps1` | Installs uv, Python 3.11, FastSD CPU and its packages. Rerun to resume. Log: `install.log`. |
 | `get-model.ps1` | Downloads the model from the GitHub release into `cache\hf\hub`, checks sha256. Rerun to resume. Log: `get-model.log`. |
-| `start-fastsd.bat` | Starts the web UI at http://127.0.0.1:7860, offline. |
+| `resume.ps1` | Runs `install-fastsd.ps1` and then `get-model.ps1`, one after the other. |
+| `start-fastsd.bat` | Starts the web UI at http://127.0.0.1:7860, offline (not in the repo yet). |
 
 Run a `.ps1` with `powershell -ExecutionPolicy Bypass -File <script>`.
