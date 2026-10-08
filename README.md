@@ -44,7 +44,7 @@ A personal playground repo: vendored tools/apps and Claude Code skills, collecte
 
 Most of these were vendored (copied in, not submoduled) from [hoodini](https://github.com/hoodini) (Yuval Avidani)'s public GitHub repos; `claude-hud` and `gods-eye-view` are from different, independent authors (jarrodwatts, 27.9k★; bilawalsidhu, 25.6k★). `claude-spark-pack/`, `claude-grok-mcp-bridge/`, and `claude-skills/` are local packs added to this playground (not from those GitHub sources). The Hebrew courses, the games (`chess-game/`, `reversi-game/`, `snake-3d-game/`, `bowling-3d/`, `generals-game/`, `go-game/`, `submarine-simulator/`), `guitar-fx-mixer/`, `shimotron/`, `hamigrash-trailer/` and `daily-3d-library/` were written from scratch in this repo.
 
-Also here: [`decks/`](decks) (a demo deck for the `deck-edit-mode` skill) and [`wiki/`](wiki) (a Claude-maintained knowledge base for the projects — see `CLAUDE.md`).
+Also here: [`decks/`](decks) (single-file Hebrew HTML decks with Edit Mode: a demo deck for the `deck-edit-mode` skill, and `how-ai-thinks.html` — a 12-slide deck on how AI "thinks") and [`wiki/`](wiki) (a Claude-maintained knowledge base for the projects — see `CLAUDE.md`).
 
 **Not vendored:** [poloclub/transformer-explainer](https://github.com/poloclub/transformer-explainer) — a well-known interactive visualization of how a GPT-2 transformer works, live at [poloclub.github.io/transformer-explainer](https://poloclub.github.io/transformer-explainer). Skipped because it bundles ~627MB of real GPT-2 ONNX model weights (~1.2GB total repo) — too heavy to vendor into git. Just visit the live demo.
 
