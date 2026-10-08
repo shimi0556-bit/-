@@ -1,0 +1,90 @@
+# Mirrors the image-model files for offline-image-gen/ into a GitHub Release.
+# Why: the user's PC is behind NetFree, which blocks Hugging Face file downloads
+# (HTTP 418) but lets GitHub release downloads through.
+# Runs when this file is pushed (any branch) or by hand.
+name: mirror-sdxs-models
+
+on:
+  push:
+    paths:
+      - .github/workflows/mirror-sdxs-models.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    env:
+      TAG: sdxs-models-v1
+      TITLE: SDXS-512 0.9 + TAESD model files (mirror for offline-image-gen)
+      GH_TOKEN: ${{ github.token }}
+      SDXS: https://huggingface.co/rupeshs/sdxs-512-0.9-orig-vae/resolve/625db0de826eff106d5fd17eadc8bbf24744f261
+      TAESD: https://huggingface.co/madebyollin/taesd/resolve/614f76814bbe30edbe2e627ace1c2234c81a2c0e
+      SDXS_DIR: models--rupeshs--sdxs-512-0.9-orig-vae/snapshots/625db0de826eff106d5fd17eadc8bbf24744f261
+      TAESD_DIR: models--madebyollin--taesd/snapshots/614f76814bbe30edbe2e627ace1c2234c81a2c0e
+    steps:
+      - name: Download from Hugging Face (pinned commits)
+        run: |
+          mkdir dl
+          # <asset name> <path under the Hugging Face hub cache, or - for none> <url>
+          while read -r name dest url; do
+            [ -z "$name" ] && continue
+            curl -fsSL --retry 5 -o "dl/$name" "$url"
+            echo "$name $dest" >> dests.txt
+          done <<EOF
+          sdxs.model_index.json $SDXS_DIR/model_index.json $SDXS/model_index.json
+          sdxs.feature_extractor.preprocessor_config.json $SDXS_DIR/feature_extractor/preprocessor_config.json $SDXS/feature_extractor/preprocessor_config.json
+          sdxs.scheduler.scheduler_config.json $SDXS_DIR/scheduler/scheduler_config.json $SDXS/scheduler/scheduler_config.json
+          sdxs.tokenizer.merges.txt $SDXS_DIR/tokenizer/merges.txt $SDXS/tokenizer/merges.txt
+          sdxs.tokenizer.special_tokens_map.json $SDXS_DIR/tokenizer/special_tokens_map.json $SDXS/tokenizer/special_tokens_map.json
+          sdxs.tokenizer.tokenizer_config.json $SDXS_DIR/tokenizer/tokenizer_config.json $SDXS/tokenizer/tokenizer_config.json
+          sdxs.tokenizer.vocab.json $SDXS_DIR/tokenizer/vocab.json $SDXS/tokenizer/vocab.json
+          sdxs.text_encoder.config.json $SDXS_DIR/text_encoder/config.json $SDXS/text_encoder/config.json
+          sdxs.text_encoder.model.safetensors $SDXS_DIR/text_encoder/model.safetensors $SDXS/text_encoder/model.safetensors
+          sdxs.unet.config.json $SDXS_DIR/unet/config.json $SDXS/unet/config.json
+          sdxs.unet.diffusion_pytorch_model.safetensors $SDXS_DIR/unet/diffusion_pytorch_model.safetensors $SDXS/unet/diffusion_pytorch_model.safetensors
+          sdxs.vae.config.json $SDXS_DIR/vae/config.json $SDXS/vae/config.json
+          sdxs.vae.diffusion_pytorch_model.safetensors $SDXS_DIR/vae/diffusion_pytorch_model.safetensors $SDXS/vae/diffusion_pytorch_model.safetensors
+          taesd.config.json $TAESD_DIR/config.json $TAESD/config.json
+          taesd.diffusion_pytorch_model.safetensors $TAESD_DIR/diffusion_pytorch_model.safetensors $TAESD/diffusion_pytorch_model.safetensors
+          LICENSE-openrail-plus-plus.md - https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/462165984030d82259a11f4367a4eed129e94a7b/LICENSE.md
+          EOF
+          ls -l dl
+
+      - name: Split big files and write manifest
+        run: |
+          # Release assets must be < 2 GiB; 500 MB parts also make resuming on a slow line cheaper.
+          # manifest.txt: <name> <size> <sha256> <part,part,...> <dest>
+          cd dl
+          while read -r name dest; do
+            size=$(stat -c %s "$name")
+            sha=$(sha256sum "$name" | cut -d' ' -f1)
+            if [ "$size" -gt 524288000 ]; then
+              split -b 500M -d -a 2 "$name" "$name.part"
+              rm "$name"
+              parts=$(ls "$name".part* | paste -sd, -)
+            else
+              parts="$name"
+            fi
+            echo "$name $size $sha $parts $dest" >> manifest.txt
+          done < ../dests.txt
+          cat manifest.txt
+
+      - name: Publish release
+        run: |
+          cat > notes.md <<'EOF'
+          Mirror of the model files used by `offline-image-gen/` (FastSD CPU on a PC behind NetFree, which blocks Hugging Face downloads).
+          Download with `offline-image-gen/get-model.ps1`; it checks every file against the sha256 in `manifest.txt`.
+
+          - SDXS-512-0.9 with the original SD VAE: https://huggingface.co/rupeshs/sdxs-512-0.9-orig-vae (commit 625db0de), based on https://huggingface.co/IDKiro/sdxs-512-0.9 by IDKiro. License: CreativeML Open RAIL++-M, text in `LICENSE-openrail-plus-plus.md`; its use restrictions apply to anyone using these files.
+          - TAESD by madebyollin: https://huggingface.co/madebyollin/taesd (commit 614f7681). License: MIT.
+
+          Files over 500 MB are split into `.partNN` pieces; join them in order.
+          EOF
+          if ! gh release view "$TAG" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release create "$TAG" -R "$GITHUB_REPOSITORY" --title "$TITLE" --notes-file notes.md --target "$GITHUB_SHA"
+          fi
+          gh release upload "$TAG" -R "$GITHUB_REPOSITORY" --clobber dl/*
+          gh release view "$TAG" -R "$GITHUB_REPOSITORY"
