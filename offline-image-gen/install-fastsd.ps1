@@ -58,6 +58,35 @@ if (-not (Test-Path $py)) {
 $env:UV_HTTP_TIMEOUT = '300'
 $env:UV_HTTP_RETRIES = '10'
 
+# Packages are installed with pip, not uv: uv unpacks every file into its cache and then copies it
+# into the environment, which doubles the small-file writes that USB sticks handle badly.
+$sp = "$app\env\Lib\site-packages"
+if (-not (Test-Path "$app\env\Scripts\pip.exe")) {
+  Step 'Adding pip to the environment (offline, from Python itself)'
+  & $py -m ensurepip --default-pip 2>&1 | Out-Host
+  Check 'ensurepip'
+}
+$env:PIP_CACHE_DIR = "$AI\cache\pip"
+$env:PIP_DISABLE_PIP_VERSION_CHECK = '1'
+$env:PIP_DEFAULT_TIMEOUT = '120'
+$env:PIP_RETRIES = '10'
+$pipArgs = @('-m', 'pip', 'install', '--no-compile', '--no-warn-script-location')
+
+# Filtered internet (NetFree) re-signs HTTPS with its own root certificate, which lives in the
+# Windows store. Python tools need it as a file.
+$bundle = "$AI\cache\ca-bundle.pem"
+if (-not (Test-Path $bundle)) {
+  Step 'Building certificate bundle from the Windows certificate store'
+  $lines = @()
+  foreach ($c in @(Get-ChildItem Cert:\LocalMachine\Root) + @(Get-ChildItem Cert:\CurrentUser\Root) + @(Get-ChildItem Cert:\LocalMachine\CA)) {
+    $lines += '-----BEGIN CERTIFICATE-----'
+    $lines += [Convert]::ToBase64String($c.RawData, 'InsertLineBreaks')
+    $lines += '-----END CERTIFICATE-----'
+  }
+  $lines | Set-Content -Encoding ascii $bundle
+}
+$env:PIP_CERT = $bundle
+
 # PyTorch is one 590MB file. Download it with curl so a dropped connection resumes
 # from where it stopped instead of starting over.
 $wheelDir = "$AI\cache\wheels"
@@ -66,7 +95,7 @@ $torchName = 'torch-2.8.0+cpu-cp311-cp311-win_amd64.whl'
 $torchWhl = "$wheelDir\$torchName"
 $torchUrl = 'https://download-r2.pytorch.org/whl/cpu/torch-2.8.0%2Bcpu-cp311-cp311-win_amd64.whl'
 $torchSize = 619392861
-if (-not (Test-Path "$app\env\Lib\site-packages\torch")) {
+if (-not (Test-Path "$sp\torch-2.8.0+cpu.dist-info\RECORD")) {
   Step 'Downloading PyTorch (590MB, resumes after connection drops)'
   for ($i = 1; $i -le 200; $i++) {
     $have = 0; if (Test-Path $torchWhl) { $have = (Get-Item $torchWhl).Length }
@@ -79,7 +108,7 @@ if (-not (Test-Path "$app\env\Lib\site-packages\torch")) {
 
   Step 'Installing PyTorch (CPU only)'
   for ($i = 1; $i -le 20; $i++) {
-    & $uv pip install --python $py $torchWhl 2>&1 | Out-Host
+    & $py @pipArgs $torchWhl 2>&1 | Out-Host
     if ($LASTEXITCODE -eq 0) { break }
     Write-Host "Retrying in 30s (attempt $i)"; Start-Sleep 30
   }
@@ -87,32 +116,26 @@ if (-not (Test-Path "$app\env\Lib\site-packages\torch")) {
 }
 
 Step 'Installing FastSD CPU requirements (retries after connection drops)'
-# NetFree breaks the PyPI index page of "mcp" (bad chunked response). mcp and fastapi-mcp are only
-# used by FastSD's --mcp mode, so they are left out.
-$req = "$AI\cache\requirements-netfree.txt"
-Get-Content "$app\requirements.txt" | Where-Object { $_ -notmatch '^\s*(mcp|fastapi-mcp)\s*([=<>~!]|$)' } | Set-Content -Encoding ASCII $req
+# Only what the web UI and plain LCM text-to-image need (checked by running it). Left out:
+# mcp/fastapi-mcp (--mcp mode; NetFree also breaks PyPI's page for mcp), PyQt5 (desktop GUI),
+# onnx, omegaconf, mediapipe, tomesd, hf_xet (unused or optional).
+# torchvision is needed at startup (upscaler, controlnet-aux) and must match torch 2.8.0.
+$req = "$AI\cache\requirements-min.txt"
+$drop = '^\s*(mcp|fastapi-mcp|PyQt5|onnx|omegaconf|mediapipe|tomesd|hf_xet)\s*([=<>~!]|$)'
+@(Get-Content "$app\requirements.txt" | Where-Object { $_ -notmatch $drop }) + @('torch==2.8.0', 'torchvision==0.23.0') | Set-Content -Encoding ASCII $req
 for ($i = 1; $i -le 30; $i++) {
-  & $uv pip install --python $py -r $req 2>&1 | Out-Host
+  & $py @pipArgs -r $req 2>&1 | Out-Host
   if ($LASTEXITCODE -eq 0) { break }
   Write-Host "Retrying in 30s (attempt $i)"; Start-Sleep 30
 }
 Check 'requirements install'
 
-Step 'Cleaning download cache to free space'
-& $uv cache clean 2>&1 | Out-Host
+Step 'Checking that everything imports'
+& $py -c "import torch, torchvision, diffusers, transformers, gradio, openvino, cv2, controlnet_aux, peft; print('imports OK, torch', torch.__version__)" 2>&1 | Out-Host
+Check 'import check'
 
-Step 'Building certificate bundle for model downloads (Windows roots + certifi)'
-$bundle = "$AI\cache\ca-bundle.pem"
-$certifi = "$app\env\Lib\site-packages\certifi\cacert.pem"
-$lines = @()
-if (Test-Path $certifi) { $lines += Get-Content $certifi }
-foreach ($c in @(Get-ChildItem Cert:\LocalMachine\Root) + @(Get-ChildItem Cert:\CurrentUser\Root) + @(Get-ChildItem Cert:\LocalMachine\CA)) {
-  $lines += '-----BEGIN CERTIFICATE-----'
-  $lines += [Convert]::ToBase64String($c.RawData, 'InsertLineBreaks')
-  $lines += '-----END CERTIFICATE-----'
-}
-$lines | Set-Content -Encoding ascii $bundle
-Write-Host "Wrote $bundle"
+Step 'Cleaning uv download cache'
+& $uv cache clean 2>&1 | Out-Host
 
 Step 'DONE'
 Stop-Transcript | Out-Null

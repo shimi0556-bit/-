@@ -112,3 +112,4 @@ foreach ($line in Get-Content $manifest) {
 if ($entries -eq 0) { $allOk = $false }
 if ($allOk) { Write-Host "`n== MODEL DONE" } else { Write-Host "`n== MODEL INCOMPLETE, run this script again" }
 Stop-Transcript | Out-Null
+if (-not $allOk) { exit 1 }
