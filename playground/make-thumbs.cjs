@@ -7,7 +7,7 @@ const root = require('path').resolve(__dirname, '..') + '/';
 const three = process.argv[2] && process.argv[2] !== '-' ? fs.readFileSync(process.argv[2]) : null;
 const items = [
   ['shimotron-race','shimotron/dist/race.html',9000],['shimotron-editor','shimotron/dist/index.html',8000],
-  ['chess','chess-game/index.html',2500],['reversi','reversi-game/index.html',2500],['go','go-game/index.html',2500],
+  ['ironhawk','iron-hawk-3d/index.html',20000],['chess','chess-game/index.html',2500],['reversi','reversi-game/index.html',2500],['go','go-game/index.html',2500],
   ['generals','generals-game/index.html',3000],['snake','snake-3d-game/index.html',4000],['bowling','bowling-3d/index.html',5000],
   ['abyss','submarine-simulator/index.html',5000],['skyhawk','skyhawk-flight-simulator/index.html',5000],
   ['guitar','guitar-fx-mixer/index.html',2500],['spark','claude-spark-pack/spark.html',3500],['deck','decks/demo-presentation.html',2500],

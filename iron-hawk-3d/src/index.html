@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0e13">
+<meta name="description" content="נץ הברזל: ציד מפלצות. משחק יריות תלת־ממדי בדפדפן בגוף ראשון: רצים וטסים דרך עמקים, קניונים והר געש, ועוצרים גלים של מפלצות ענק שמסתערות על החלון.">
+<title>נץ הברזל: ציד מפלצות</title>
+<style>/*__CSS__*/</style>
+</head>
+<body>
+<canvas id="game" aria-label="עולם המשחק"></canvas>
+
+<!-- in-flight display -->
+<div id="hud" class="hidden">
+  <canvas id="hud-canvas"></canvas>
+  <div class="hud-top">
+    <div class="hud-score panel">
+      <div class="lbl">ניקוד</div>
+      <div class="val" id="h-score">0</div>
+      <div class="combo" id="h-combo"></div>
+    </div>
+    <div class="hud-obj panel">
+      <div class="obj-title" id="h-obj-title"></div>
+      <div class="bar"><i id="h-obj-bar"></i></div>
+      <div class="obj-sub" id="h-obj-sub"></div>
+    </div>
+    <div class="hud-side">
+      <div class="hud-lives" id="h-lives" aria-label="חיים"></div>
+      <button class="hud-pause" id="h-pause" aria-label="השהיה"><svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
+    </div>
+  </div>
+  <div class="hud-boss hidden" id="h-boss">
+    <div class="boss-name" id="h-boss-name"></div>
+    <div class="bar"><i id="h-boss-bar"></i></div>
+    <div class="crystals" id="h-crystals"></div>
+  </div>
+  <div class="hud-weapons" id="h-weapons">
+    <div class="gauge hull"><span class="lbl">מגן</span><div class="bar"><i id="h-hull"></i></div><span class="num" id="h-hull-val">100</span></div>
+    <div class="gauge heat"><span class="lbl">תותחים</span><div class="bar"><i id="h-heat"></i></div></div>
+    <div class="gauge missiles"><span class="lbl">טילים</span><div class="pips" id="h-missiles"></div><div class="reload"><i id="h-reload"></i></div></div>
+  </div>
+  <div class="hud-msg" id="h-msg"><div class="t" id="h-msg-title"></div><div class="s" id="h-msg-sub"></div></div>
+  <div class="hud-toast" id="h-toast"></div>
+  <div class="hud-warn" id="h-warn"></div>
+  <div class="hud-fps" id="h-fps"></div>
+</div>
+
+<div id="touch" class="touch"></div>
+
+<div id="ui">
+  <!-- loading -->
+  <section class="screen active" id="screen-loading">
+    <div class="loading-box">
+      <div class="logo small"><span class="logo-main">נץ הברזל</span><span class="logo-sub">ציד מפלצות</span></div>
+      <div class="load-title" id="load-title">טוען את העולם…</div>
+      <div class="bar big"><i id="load-bar"></i></div>
+      <div class="load-tip" id="load-tip"></div>
+    </div>
+  </section>
+
+  <!-- title -->
+  <section class="screen" id="screen-title">
+    <div class="title-wrap">
+      <div class="logo"><span class="logo-main">נץ הברזל</span><span class="logo-sub">ציד מפלצות</span></div>
+      <p class="tagline">שני תותחים. שלושה אזורים. וגלים של מפלצות שרצות ישר אליכם.</p>
+      <nav class="menu">
+        <button class="btn primary" data-action="regions">שחקו</button>
+        <button class="btn" data-action="bestiary">אטלס המפלצות</button>
+        <button class="btn" data-action="help">איך משחקים</button>
+        <button class="btn" data-action="settings">הגדרות</button>
+      </nav>
+    </div>
+    <div class="title-foot" id="title-foot">מקלדת, עכבר, מסך מגע או שלט משחק</div>
+  </section>
+
+  <!-- region select -->
+  <section class="screen" id="screen-regions">
+    <header class="screen-head"><button class="btn back" data-action="back" aria-label="חזרה">חזרה</button><h2>בחרו אזור</h2></header>
+    <div class="regions" id="regions"></div>
+  </section>
+
+  <!-- briefing -->
+  <section class="screen" id="screen-briefing">
+    <div class="briefing panel-lg">
+      <div class="brief-art" id="brief-art"></div>
+      <div class="brief-body">
+        <div class="kicker">תדריך משימה</div>
+        <h2 id="brief-name"></h2>
+        <p id="brief-text"></p>
+        <div class="brief-goal" id="brief-goal"></div>
+        <div class="chips" id="brief-monsters"></div>
+        <div class="brief-keys" id="brief-keys"></div>
+        <div class="row">
+          <button class="btn primary big" data-action="launch">יוצאים לדרך!</button>
+          <button class="btn" data-action="back">חזרה</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- bestiary -->
+  <section class="screen see-through" id="screen-bestiary">
+    <header class="screen-head"><button class="btn back" data-action="back" aria-label="חזרה">חזרה</button><h2>אטלס המפלצות</h2></header>
+    <div class="bestiary">
+      <div class="best-list" id="best-list"></div>
+      <div class="best-info panel">
+        <div class="best-portrait" id="best-portrait"></div>
+        <h3 id="best-name"></h3>
+        <p id="best-desc"></p>
+        <div class="stats" id="best-stats"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- settings -->
+  <section class="screen" id="screen-settings">
+    <header class="screen-head"><button class="btn back" data-action="back" aria-label="חזרה">חזרה</button><h2>הגדרות</h2></header>
+    <div class="settings panel-lg" id="settings"></div>
+  </section>
+
+  <!-- help -->
+  <section class="screen" id="screen-help">
+    <header class="screen-head"><button class="btn back" data-action="back" aria-label="חזרה">חזרה</button><h2>איך משחקים</h2></header>
+    <div class="help panel-lg">
+      <div class="help-cols">
+        <div>
+          <h3>איך זה עובד</h3>
+          <p>אתם יושבים צמוד לחלון, ושני תותחים מציצים מהפינות. הדרך נוסעת לבד: פעם רצים על הקרקע ופעם טסים נמוך. בכל עצירה צץ מארב, וגלים של מפלצות מסתערים על החלון. עצרו את כולם כדי להמשיך.</p>
+          <h3>מקלדת ועכבר</h3>
+          <table class="keys">
+            <tr><td>תזוזת העכבר</td><td>כיוון הכוונת</td></tr>
+            <tr><td>לחיצה שמאלית או <kbd>רווח</kbd></td><td>ירי מהתותחים (להחזיק)</td></tr>
+            <tr><td>לחיצה ימנית או <kbd>F</kbd></td><td>טיל אל המפלצת הקרובה לכוונת</td></tr>
+            <tr><td><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> או <kbd>WASD</kbd></td><td>הזזת הכוונת בלי עכבר</td></tr>
+            <tr><td><kbd>Esc</kbd> או <kbd>P</kbd></td><td>השהיה</td></tr>
+            <tr><td><kbd>M</kbd></td><td>השתקה</td></tr>
+          </table>
+        </div>
+        <div>
+          <h3>מסך מגע</h3>
+          <p>נוגעים בכל מקום במסך וגוררים: הכוונת מופיעה קצת מעל האצבע, והתותחים יורים כל עוד האצבע על המסך. הכפתור בפינה משגר טיל.</p>
+          <h3>שלט משחק</h3>
+          <p>סטיק לכוונת, RT לירי, A או RB לטיל, Start להשהיה.</p>
+          <h3>טיפים</h3>
+          <ul>
+            <li>סימון אדום מהבהב סביב מפלצת אומר שהיא קרובה מספיק לתקוף. היא הראשונה.</li>
+            <li>כדורי אש ורוק חומצה מסומנים בעיגול. ירו בהם לפני שהם פוגעים בחלון.</li>
+            <li>כשהמגן מתרוקן הולכים חיים אחד, והדף חזק זורק אחורה את כל מה שקרוב.</li>
+            <li>ירו בתיבות המרחפות: ירוק מתקן את המגן, כתום ממלא טילים, כחול מקרר את התותחים.</li>
+            <li>יש משקפי תלת־ממד אדום־תכלת? בהגדרות אפשר להפעיל אותם, והמפלצות יקפצו מהמסך.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- pause -->
+  <section class="screen dim" id="screen-pause">
+    <div class="pause panel-lg">
+      <h2>הפסקה</h2>
+      <nav class="menu">
+        <button class="btn primary" data-action="resume">המשך</button>
+        <button class="btn" data-action="restart">התחל מחדש</button>
+        <button class="btn" data-action="settings">הגדרות</button>
+        <button class="btn" data-action="help">איך משחקים</button>
+        <button class="btn" data-action="quit">יציאה לתפריט</button>
+      </nav>
+    </div>
+  </section>
+
+  <!-- results -->
+  <section class="screen dim" id="screen-results">
+    <div class="results panel-lg">
+      <div class="kicker" id="res-kicker"></div>
+      <h2 id="res-title"></h2>
+      <div class="stars" id="res-stars"></div>
+      <div class="res-score"><span id="res-score">0</span><small id="res-best"></small></div>
+      <div class="res-grid" id="res-grid"></div>
+      <div class="row">
+        <button class="btn primary" data-action="next" id="res-next">לאזור הבא</button>
+        <button class="btn" data-action="restart">שוב</button>
+        <button class="btn" data-action="quit">תפריט</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="toast-global" id="toast-global"></div>
+</div>
+
+<noscript><div class="noscript">כדי לשחק צריך להפעיל JavaScript בדפדפן.</div></noscript>
+<script>/*__ASSETS__*/</script>
+<script>/*__JS__*/</script>
+</body>
+</html>
