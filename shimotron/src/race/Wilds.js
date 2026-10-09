@@ -651,7 +651,9 @@ export class Wilds {
     for (let i = 0; i < p.count; i++) {
       const x = x0 + p.getX(i);
       const z = z0 + p.getZ(i);
-      p.setXYZ(i, x, Math.max(lvl + lift, t.heightAt(x, z) + 0.06), z);
+      // Level everywhere: where the ground rises above it (the cliff behind a fall) the ground hides it,
+      // instead of the water being draped up the rock face.
+      p.setXYZ(i, x, lvl + lift, z);
       uv.setXY(i, Math.hypot(p.getX(i) - x0, p.getZ(i) - z0) / r, 0);
     }
     g.setAttribute('fuv', uv.clone());
