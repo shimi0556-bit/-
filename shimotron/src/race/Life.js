@@ -4,6 +4,7 @@ import { Random } from '../engine/core/Random.js';
 import { waveAt } from '../engine/world/Water.js';
 import { coralShader } from './Corals.js';
 import { Megafauna } from './Megafauna.js';
+import { TunnelLife } from './TunnelLife.js';
 import { Wrecks } from './Wrecks.js';
 import { paint, coralGeometries, CORAL_HEIGHT, CORAL_MAT, CORAL_COLORS, CORAL_SCALE, ZONES, pickWeighted, SPECIES, fishGeometry, FISH_PATTERN_GLSL } from './Sealife.js';
 
@@ -78,6 +79,11 @@ export class Life {
       this.giants = new Megafauna(this.engine, this);
       this.group.add(this.giants.build());
       this.solids.push(...this.giants.solids);
+    }
+    // Whales, sharks and real fish round the glass sea tunnels.
+    if (c.tunnels && this.track && this.track.tunnels && this.track.tunnels.length) {
+      this.tunnelLife = new TunnelLife(this.engine, this);
+      this.group.add(this.tunnelLife.build());
     }
     return this.group;
   }
@@ -333,12 +339,14 @@ export class Life {
       // A colony: a few of the same kind side by side, as corals settle and spread.
       // Wrecks keep their own ground: nothing grows through them.
       const W = this.wrecks ? this.wrecks.spots : [];
+      const tr = this.track;
       const onWreck = (px, pz) => W.some((w) => Math.abs(px - w.x) < (w.kind === 'freighter' ? 30 : 20) && Math.abs(pz - w.z) < (w.kind === 'freighter' ? 30 : 20));
       const colony = (kind, x, y, z, scale, n, spread, onTop = null) => {
         for (let j = 0; j < n && cell.length < cap; j++) {
           const px = x + (j ? rng.range(-spread, spread) : 0);
           const pz = z + (j ? rng.range(-spread, spread) : 0);
           if (W.length && onWreck(px, pz)) continue;
+          if (tr && tr.nearTunnel && tr.nearTunnel(px, pz)) continue;
           const py = onTop ? onTop(px, pz) : t.heightAt(px, pz);
           if (py === null || py > -0.8) continue;
           const it = this.coralItem(kind, px, py, pz, rng, scale * (j ? rng.range(0.6, 1) : 1));
@@ -354,6 +362,7 @@ export class Life {
         const h = t.heightAt(x, z);
         if (h > -2 || h < -40) continue;
         if (W.length && onWreck(x, z)) continue;
+        if (tr && tr.nearTunnel && tr.nearTunnel(x, z, 9)) continue;
         const cover = t.reefAt ? t.reefAt(x, z, h) : 0;
         if (cover < 0.12 && rng.random() > 0.15) continue;
         const rs = Math.min(rng.range(1.4, 3.6), (-h - 1.2) / H.rock);
@@ -1419,6 +1428,7 @@ export class Life {
     this._updateHerds(dt);
     this._updateSets();
     if (this.giants) this.giants.update(dt);
+    if (this.tunnelLife) this.tunnelLife.update(dt);
   }
 }
 

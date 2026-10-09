@@ -24,9 +24,11 @@ export const WORLD = {
     ice: [-2550, 1500],
     // Out past the gap between the pines and the dunes, on the longest bridge.
     falls: [-2450, -4244],
+    // Out to the north-east past the lagoon: three islands joined by tunnels under the sea.
+    cross: [3100, -4500],
   },
   hub: 'city',
-  span: 11600, // the world depth map covers ±span/2
+  span: 12800, // the world depth map covers ±span/2
   deck: 17, // bridge deck height over the sea (sailboats pass underneath)
 };
 

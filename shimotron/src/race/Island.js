@@ -15,6 +15,7 @@ import { AccessRoads } from './AccessRoads.js';
 import { Colliders } from './Colliders.js';
 import { Bushes } from './Bushes.js';
 import { Wilds } from './Wilds.js';
+import { SeaTunnels } from './SeaTunnels.js';
 import { Trail, planTrail } from './Trail.js';
 import { bakedGround, bakedSegments } from './BakedGround.js';
 
@@ -195,6 +196,11 @@ export class Island {
     // Everything solid on the island (buildings, trunks, rocks) in one set: bodies for cars, shapes for craft.
     this.colliders = new Colliders(eng.physics);
     for (const b of this.trail?.solids || []) this.colliders.box(b.x, b.y, b.z, b.hx, b.hy, b.hz, b.yaw, 'wood');
+    if (track.tunnels?.length) {
+      await progress(0.52, 'מניח מנהרות זכוכית בקרקעית הים…');
+      this.tunnels = new SeaTunnels(eng, terrain, track, this.materials);
+      this.group.add(this.tunnels.build(this.colliders));
+    }
     if (this.city) {
       await progress(0.56, 'בונה את העיר…');
       this.city.colliders = this.colliders;
@@ -269,6 +275,7 @@ export class Island {
     w.uniforms.uShallow.value.setRGB(...st.water.shallow);
     w.uniforms.uDeep.value.setRGB(...st.water.deep);
     w.uniforms.uClarity.value = st.water.clarity ?? 0.9;
+    w.setDry(this.tunnels ? this.tunnels.dry : [], this.track.W + 22);
   }
 
   _sky() {
@@ -437,7 +444,7 @@ export class Island {
     const q = tr.nearest(x, z, this._sq || (this._sq = {}));
     if (q) {
       const a = Math.abs(q.lat);
-      if (a < tr.W - 0.05) return 'asphalt';
+      if (a < tr.W - 0.05) return tr.dirt && tr.dirt[q.i] > 0.5 ? 'dirt' : 'asphalt';
       if (a < tr.W + 1.25 && tr.curbMark && tr.curbMark[q.i]) return 'curb';
       if (this.city && a < tr.W + 6.6) return 'asphalt'; // street circuit: tarmac run-off, no gravel
       if (a < tr.W + 4.6) return 'gravel';

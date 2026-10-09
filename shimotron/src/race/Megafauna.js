@@ -324,7 +324,7 @@ export function jellyGeometry() {
  * shark's checkerboard of pale spots and stripes, a manta's white
  * shoulder patches — and a gentle bend along the body as it swims.
  */
-function giantMaterial(uniforms, kind) {
+export function giantMaterial(uniforms, kind) {
   const m = new THREE.MeshStandardMaterial({ name: 'יונקי ים', vertexColors: true, roughness: 0.55, metalness: 0.05, side: THREE.DoubleSide });
   const motion = {
     whale: 'transformed.y += sin(uTime * 0.9 + ph - transformed.z * 5.0) * 0.035 * aMask;',
@@ -403,7 +403,7 @@ function jellyMaterial(uniforms) {
 }
 
 /** A tiny helper: instanced mesh of `count` with a per-instance phase attribute. */
-function instanced(geo, mat, count, name) {
+export function instanced(geo, mat, count, name) {
   const g = geo.clone();
   const ph = new Float32Array(count);
   for (let i = 0; i < count; i++) ph[i] = Math.random() * 6.28;

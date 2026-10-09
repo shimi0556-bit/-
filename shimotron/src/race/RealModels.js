@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CAR_TYPES, carSpec } from './config.js';
 import { createCarModel, drawCarProfile } from './CarModel.js';
+import { loadMonster, hasMonster, createMonsterCar } from './MonsterTruck.js';
+import { loadFish } from './TunnelLife.js';
 import conceptHi from './models/concept.glb.gz?url';
 import conceptLo from './models/concept-lo.glb.gz?url';
 import hyperHi from './models/hyper.glb.gz?url';
@@ -18,7 +20,8 @@ const SOURCES = { concept: { hi: conceptHi, lo: conceptLo }, hyper: { hi: hyperH
 /** Attribution the licences ask for (shown in the menu). */
 export const MODEL_CREDIT =
   'המכונית "קונספט" היא מודל אמיתי: "Car Concept" מאת Eric Chadwick (Khronos glTF Sample Assets), ברישיון CC BY 4.0. ' +
-  'ההיפרקאר היא מודל אמיתי: "Ferrari 458 Italia" מאת vicent091036 (מדוגמאות three.js), ברישיון CC BY 4.0. שינויים בשתיהן: הוסרו סמלים והמודל הוקטן.';
+  'ההיפרקאר היא מודל אמיתי: "Ferrari 458 Italia" מאת vicent091036 (מדוגמאות three.js), ברישיון CC BY 4.0. שינויים בשתיהן: הוסרו סמלים והמודל הוקטן. ' +
+  'גוף משאית המפלצת: "vehicle-truck" מאת Kenney, ברישיון CC0. הדגים ליד מנהרות הים: "Barramundi Fish" מאת Microsoft (Khronos glTF Sample Assets), ברישיון CC0.';
 const WHEELS = ['WheelFrontL', 'WheelFrontR', 'WheelRearL', 'WheelRearR']; // physics order: FL, FR, RL, RR (left = +x)
 const LOD_FAR = 24; // metres: beyond this the light version is drawn
 
@@ -28,7 +31,7 @@ const AXLE = new THREE.Vector3(1, 0, 0);
 const _qs = new THREE.Quaternion();
 const _qw = new THREE.Quaternion();
 
-export const hasRealModel = (type) => !!loaded[type];
+export const hasRealModel = (type) => !!loaded[type] || (type === 'monster' && hasMonster());
 
 /** Loads every model named by a car type; resolves even if some fail (they fall back). */
 export async function loadRealModels() {
@@ -42,6 +45,7 @@ export async function loadRealModels() {
       console.warn(`real model for ${t.id} did not load; using the procedural body`, e);
     }
   });
+  jobs.push(loadMonster((src) => parseGz(loader, src)), loadFish((src) => parseGz(loader, src)));
   await Promise.all(jobs);
 }
 
@@ -237,6 +241,7 @@ export function createRealCar(materials, { color = '#d42a2a', type }) {
 /** A car of each real model in the scene while the start-up shaders compile; returns the clean-up. */
 export function warmRealModels(scene, materials) {
   const cars = Object.keys(loaded).map((type) => createRealCar(materials, { type }));
+  if (hasMonster()) cars.push(createMonsterCar(materials, { spec: carSpec('monster') }));
   for (const c of cars) scene.add(c.group);
   return () => {
     for (const c of cars) {
@@ -249,7 +254,8 @@ export function warmRealModels(scene, materials) {
 
 /** The real model when its type has one (and it loaded), else the procedural body. */
 export function createVehicleModel(materials, opts) {
-  return hasRealModel(opts.type) ? createRealCar(materials, opts) : createCarModel(materials, opts);
+  if (opts.type === 'monster' && hasMonster()) return createMonsterCar(materials, { ...opts, spec: carSpec('monster') });
+  return loaded[opts.type] ? createRealCar(materials, opts) : createCarModel(materials, opts);
 }
 
 const _v = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
@@ -349,6 +355,6 @@ function drawRealProfile(canvas, type, color) {
 
 /** Garage card profile for any type. */
 export function drawProfile(canvas, type, color) {
-  if (hasRealModel(type)) drawRealProfile(canvas, type, color);
+  if (loaded[type]) drawRealProfile(canvas, type, color);
   else drawCarProfile(canvas, type, color);
 }

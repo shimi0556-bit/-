@@ -87,6 +87,8 @@ function shallowDamp(depth) {
   return t * t * (3 - 2 * t) * 0.85 + 0.15;
 }
 
+const DRY_MAX = 48;
+
 const DEEP = new THREE.DataTexture(new Float32Array([-40]), 1, 1, THREE.RedFormat, THREE.FloatType);
 DEEP.needsUpdate = true;
 
@@ -168,6 +170,11 @@ export class Water {
       uWorldOffset: { value: new THREE.Vector2() },
       uWorldSize: { value: 1 },
       uLocal: { value: 1 },
+      // Dry zones: capsules (segment a→b in x/z, radius uDryR) where no sea is drawn — walled cuts below sea level.
+      uDry: { value: Array.from({ length: DRY_MAX }, () => new THREE.Vector4()) },
+      uDryN: { value: 0 },
+      uDryR: { value: 0 },
+      uDryBox: { value: new THREE.Vector4(1, 1, -1, -1) },
     };
     this.mesh = new THREE.Mesh(this._geometry(engine.quality.settings.waterDetail), this._material());
     this.mesh.name = 'Ocean';
@@ -181,6 +188,21 @@ export class Water {
       this.mesh.geometry = this._geometry(s.waterDetail);
     });
     this.floaters = new Set();
+  }
+
+  /** Where the sea must not be drawn (see uDry): a list of Vector4 (ax, az, bx, bz), all of radius r. */
+  setDry(list, r) {
+    const U = this.uniforms;
+    const n = Math.min(DRY_MAX, list.length);
+    const box = U.uDryBox.value.set(Infinity, Infinity, -Infinity, -Infinity);
+    for (let i = 0; i < n; i++) {
+      const v = list[i];
+      U.uDry.value[i].copy(v);
+      box.set(Math.min(box.x, v.x, v.z) - r, Math.min(box.y, v.y, v.w) - r, Math.max(box.z, v.x, v.z) + r, Math.max(box.w, v.y, v.w) + r);
+    }
+    if (!n) box.set(1, 1, -1, -1);
+    U.uDryN.value = n;
+    U.uDryR.value = r;
   }
 
   _geometry(detail) {
@@ -279,11 +301,23 @@ export class Water {
           float foamNoise(vec2 uv) { vec2 c = texture2D(tNormal, uv).rg; return (c.x + c.y - 1.0) * 15.0; }
           uniform vec3 uSunDir; uniform vec3 uSunColor; uniform vec3 uShallow; uniform vec3 uDeep; uniform float uClarity;
           varying vec3 vWPos; varying float vDepth; varying float vCrest;
-          float wFoam; float wDepth; vec3 wN;`,
+          float wFoam; float wDepth; vec3 wN;
+          uniform vec4 uDry[${DRY_MAX}]; uniform float uDryN; uniform float uDryR; uniform vec4 uDryBox;
+          bool dryAt(vec2 p) {
+            if (p.x < uDryBox.x || p.y < uDryBox.y || p.x > uDryBox.z || p.y > uDryBox.w) return false;
+            for (int i = 0; i < ${DRY_MAX}; i++) {
+              if (float(i) >= uDryN) break;
+              vec2 a = uDry[i].xy; vec2 ba = uDry[i].zw - a; vec2 pa = p - a;
+              float h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-3), 0.0, 1.0);
+              if (length(pa - ba * h) < uDryR) return true;
+            }
+            return false;
+          }`,
         )
         .replace(
           '#include <map_fragment>',
-          `{
+          `if (dryAt(vWPos.xz)) discard;
+          {
             float th = seaFloor(vWPos.xz);
             wDepth = max(0.0, vWPos.y - th);
             float dist = length(vWPos - cameraPosition);

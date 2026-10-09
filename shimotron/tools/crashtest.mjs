@@ -26,7 +26,7 @@ function depthIn(o, p) {
 /** Points filling the car's chassis boxes, in the body frame. */
 function chassisPoints(spec) {
   const pts = [];
-  for (const { half, offset } of [spec.body, spec.cabin]) {
+  for (const { half, offset } of [spec.body, spec.cabin, ...(spec.extra || []).map(([half, offset]) => ({ half, offset }))]) {
     for (let i = 0; i <= 6; i++) for (let j = 0; j <= 3; j++) for (let k = 0; k <= 10; k++) {
       pts.push(new CANNON.Vec3(offset[0] + half[0] * (i / 3 - 1), offset[1] + half[1] * (j / 1.5 - 1), offset[2] + half[2] * (k / 5 - 1)));
     }
@@ -79,7 +79,7 @@ function run(name, speed, offset, angle, type) {
       const d = depthIn(O, w);
       if (d > deepest) deepest = d;
     }
-    if (process.env.TRACE && i % 6 === 0) console.log(i, car.vehicle.wheelInfos.map((w) => (w.isInContact ? (w.raycastResult.body === body ? 'R' : 'g') : '-')).join(''), car.body.quaternion.toEuler ? '' : '', car.body.position.x.toFixed(2), car.body.position.y.toFixed(2), car.body.position.z.toFixed(2), car.body.velocity.length().toFixed(1));
+    if (process.env.TRACE && i % (+process.env.TRACE) === 0) console.log(i, car.vehicle.wheelInfos.map((w) => (w.isInContact ? (w.raycastResult.body === body ? 'R' : 'g') : '-')).join(''), car.body.quaternion.toEuler ? '' : '', car.body.position.x.toFixed(2), car.body.position.y.toFixed(2), car.body.position.z.toFixed(2), car.body.velocity.length().toFixed(1));
   }
   // Passed through: ended beyond it while still in line with it (a narrow bike may legitimately miss a post).
   const reach = spec.body.half[0] + (O.type === 'sphere' ? O.r : O.hx);
@@ -94,7 +94,7 @@ if (process.env.ONLY) {
 }
 let bad = 0;
 const rows = [];
-for (const type of ['gt', 'formula', 'moto']) {
+for (const type of ['gt', 'formula', 'moto', 'monster']) {
   let spec;
   try { spec = carSpec(type); } catch { continue; }
   if (!spec) continue;

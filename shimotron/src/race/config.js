@@ -195,6 +195,36 @@ export const CAR_TYPES = [
     shape: { halfL: 2.3, w: 0.97, flare: 0.09, floor: -0.45, belt: 0.04, hoodDrop: 0.22, roof: 0.5, cabin: [0.95, 0.2, -0.35, -1.5], cabinW: 0.7, wing: 'big', extras: ['fins'] },
   },
   {
+    // The monster 4×4 (MonsterTruck.js): a downloaded truck body ("vehicle-truck" by Kenney, CC0)
+    // on giant lugged tyres, visible coil-over springs and solid axles. Long, soft suspension that
+    // soaks up the dirt tracks; heavy and tall, so it rolls in fast bends. `shape` is only the fallback body.
+    id: 'monster',
+    model: 'monster',
+    name: 'מפלצת 4×4',
+    desc: 'משאית שטח אימתנית על צמיגים ענקיים וקפיצים ארוכים: בולעת עפר, אבנים וקפיצות',
+    price: 12000,
+    spec: {
+      mass: 2300,
+      body: { half: [1.15, 0.45, 2.2], offset: [0, 0.05, 0] },
+      cabin: { half: [1.0, 0.8, 1.1], offset: [0, 1.3, 0.25] },
+      wheel: { radius: 0.85, width: 0.7, front: 1.62, rear: -1.62, track: 1.3, height: 0.2, restLength: 0.8, travel: 0.6, stiffness: 16, dampCompression: 2.4, dampRelaxation: 2.0, rollInfluence: 0.015, grip: 1.38 },
+      engine: { accel: 10.5, topSpeed: 53, frontShare: 0.5, redline: 6200 },
+      steer: { max: 0.5 },
+      downforce: 0.05,
+      drag: 0.0011,
+      offroad: 1.95,
+      assist: { yaw: 0.6, antiRoll: 18 },
+      skidY: -0.3,
+      // The tyres as boxes round each axle (hub at rest ~0.45 m under the centre), clear of the ground.
+      extra: [
+        [[1.68, 0.62, 0.86], [0, -0.4, 1.62]],
+        [[1.68, 0.62, 0.86], [0, -0.4, -1.62]],
+      ],
+      monster: { scale: 1.65, bodyY: -0.21, bodyZ: 0, lampX: 0.78, lampY: 0.75, front: 2.31, back: -2.31, roofY: 2.35, roofZ: 0.4 },
+    },
+    shape: { halfL: 2.3, w: 1.1, flare: 0.12, floor: -0.1, belt: 0.3, hoodDrop: 0.05, roof: 1.1, cabin: [1.0, 0.6, -0.4, -0.9], tailLen: 0.1, duck: 0, wing: 'none', lights: 'round', extras: ['lightbar'] },
+  },
+  {
     // The motocross bike (the dirt-trail race only: not in the garage).
     id: 'moto',
     name: 'אופנוע מוטוקרוס',
@@ -467,5 +497,59 @@ export const STAGES = [
     jumps: { count: 3, height: 2.1 },
     wilds: { waterfalls: 6, rockfalls: 3, lavaFlows: 3, bombs: true },
     track: { radius: [0.5, 0.64], wiggle: 0.38, targetLength: [3500, 4500] },
+  },
+  {
+    // Across the islands: a big island of mountains, forest and waterfalls with two islets out to
+    // sea, joined by three glass tunnels under the sea (sharks, whales and shoals all round). The
+    // road leaves the asphalt for dirt tracks between the mountains and trees by the falls. The
+    // course is drawn by hand (`track.controls`) instead of searched for.
+    id: 'cross',
+    name: 'חוצה האיים',
+    vehicle: 'monster', // everyone races the monster 4×4s here
+    tagline: 'שלושה איים ושלוש מנהרות זכוכית מתחת לים, ודרכי עפר בין ההרים, העצים והמפלים',
+    color: '#2aa7e0',
+    seed: 157,
+    size: 3600,
+    segments: 600,
+    island: {
+      radius: 840,
+      stretch: [1.0, 1.0],
+      base: 8,
+      hills: 11,
+      coastRough: 0.1,
+      ranges: [
+        { angle: -2.4, from: 0.05, to: 0.6, weight: 1 },
+        { angle: 2.9, from: 0.25, to: 0.7, weight: 0.7 },
+      ],
+      mountainHeight: 210,
+      islets: [
+        { x: 1180, z: -260, radius: 380, height: 60 },
+        { x: 330, z: -1150, radius: 350, height: 50 },
+      ],
+    },
+    biome: { grassTint: [0.78, 1.12, 0.74], sandTint: [1.12, 1.08, 0.98], dirtTint: [0.86, 0.72, 0.58], rockTint: [0.7, 0.72, 0.68] },
+    flora: { pine: 0.35, oak: 0.9, palm: 0.8, cactus: 0, deadTree: 0.03, trees: 2600, grass: 1.2, flowers: 1.2, foliageTint: '#e8ffdc' },
+    water: { shallow: [0.02, 0.62, 0.6], deep: [0.0, 0.1, 0.2], clarity: 0.07 },
+    life: { balloons: 4, boats: 6, reef: 1.4, fish: 1.8, dolphins: 2, tunnels: true },
+    sky: { time: 15.8, azimuth: 0.7, turbidity: 2.3, rayleigh: 1.3, clouds: 0.32, cloudDensity: 0.45, fog: 0.0009, wind: 0.9 },
+    weather: null,
+    cut: 0.6,
+    jumps: { count: 2, height: 1.9 },
+    wilds: { waterfalls: 4 },
+    tunnels: { depth: 13 },
+    track: {
+      // Dirt: round the far side of the northern islet, and down through the mountains and the
+      // forest by the waterfalls on the big island.
+      offroad: [
+        [3560, 3980],
+        [4920, 5640],
+      ],
+      controls: [
+        [-220, 430], [-10, 470], [190, 440], [370, 320], [470, 130], [560, -60],
+        [760, -150], [950, -170], [1090, -90], [1270, -70], [1400, -220], [1380, -420], [1230, -520], [1060, -540],
+        [880, -660], [700, -840], [560, -960], [520, -1120], [450, -1310], [290, -1380], [150, -1290], [130, -1120],
+        [110, -930], [60, -740], [-80, -600], [-210, -450], [-310, -290], [-420, -130], [-470, 60], [-440, 230], [-370, 370],
+      ],
+    },
   },
 ];

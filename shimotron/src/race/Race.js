@@ -212,7 +212,8 @@ export class Race {
         }
       }
       const flipped = e.car.vehicle.upsideDown > CAR.flipResetTime;
-      const drowned = b.position.y < -0.6;
+      // Below the sea, unless on the road down in an under-sea tunnel.
+      const drowned = b.position.y < -0.6 && !(tr.sunk && e.q && tr.sunk[e.q.i] && e.q.dist < tr.W + 3 && b.position.y > e.q.h - 3);
       const lost = !e.q || e.q.dist > tr.W + 14;
       const aiAsk = !e.isPlayer && e.driver.needsRespawn;
       // Off the causeway into the lava (the wild island): up in flames, back on the road.

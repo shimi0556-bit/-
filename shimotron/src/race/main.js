@@ -678,6 +678,9 @@ class Game {
       if (color.toLowerCase() === this.settings.color.toLowerCase()) color = colors[(i + RACE.opponents) % colors.length];
       list.push({ id: `ai${i}`, name: names[i], color, stripe: i % 2 ? '#111111' : '#f2f2f2', number: [3, 11, 21, 44, 55, 88][i], isPlayer: false, type: mix[(i + this.selected * 2) % mix.length] });
     }
+    // Some islands have a vehicle of their own (the monster 4×4s across the islands): everyone drives it.
+    const only = STAGES[this.selected]?.vehicle;
+    if (only) for (const r of list) r.type = only;
     return list;
   }
 
@@ -1404,7 +1407,8 @@ class Game {
     const cam = this.engine.camera.position;
     const w = this.water;
     const surf = w && this.state !== 'menu' ? waveAt(cam.x, cam.z, this.engine.time.elapsed, w.uniforms.uWaveAmp.value, undefined, -this.floorAt(cam.x, cam.z)).y : -1e9;
-    this.engine.atmosphere.underwater = cam.y < surf - 0.05;
+    // (Not in a tunnel's walled cut, open to the sky below sea level.)
+    this.engine.atmosphere.underwater = cam.y < surf - 0.05 && !this.island?.track?.inCut(cam.x, cam.z);
     // Sun shafts and marine snow while under the surface.
     if (!this.underwaterFx) this.underwaterFx = new Underwater(this.engine);
     this.underwaterFx.update(dt, this.engine.atmosphere.underwater && this.state !== 'menu');

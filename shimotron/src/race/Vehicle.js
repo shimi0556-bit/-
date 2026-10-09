@@ -55,7 +55,9 @@ export class Vehicle {
     const c = S.cabin;
     // Boxes hit rails and other cars but skip the terrain heightfield (box-vs-heightfield
     // is by far the most expensive test in cannon); the four skid spheres touch the ground.
-    for (const [half, off] of [[b.half, b.offset], [c.half, c.offset]]) {
+    // `extra`: more boxes (a monster truck's giant tyres stand far outside its body: the
+    // raycast wheels alone would roll straight through rails and other cars).
+    for (const [half, off] of [[b.half, b.offset], [c.half, c.offset], ...(S.extra || [])]) {
       const box = new CANNON.Box(new CANNON.Vec3(...half));
       box.collisionFilterMask = ~GROUP.terrain;
       body.addShape(box, new CANNON.Vec3(...off));
@@ -65,7 +67,8 @@ export class Vehicle {
     // on the ground; they only touch the (cheap) terrain heightfield.
     // Floor spheres sit 10 cm above the tyres' contact patch at rest.
     const Wh = S.wheel;
-    const floorY = Wh.height - (Wh.restLength - 9.82 / (4 * Wh.stiffness)) - Wh.radius + 0.1 + 0.2;
+    // (A monster truck's long, soft springs squat and pitch far more: its spheres sit under the body instead, `skidY`.)
+    const floorY = S.skidY ?? Wh.height - (Wh.restLength - 9.82 / (4 * Wh.stiffness)) - Wh.radius + 0.1 + 0.2;
     const sx = Math.min(0.62, b.half[0] - 0.25);
     const sz = b.half[2] - 0.57;
     const top = c.offset[1] + c.half[1] - 0.12;
@@ -138,7 +141,7 @@ export class Vehicle {
     };
     vehicle.world = rayWorld;
     // Continuous collision for the chassis: no driving into trunks, posts or rocks at speed.
-    this.guard = new SolidGuard(world, body, [S.body, S.cabin]);
+    this.guard = new SolidGuard(world, body, [S.body, S.cabin, ...(S.extra || []).map(([half, offset]) => ({ half, offset }))]);
     this._post = () => this.guard.resolve();
     world.addEventListener('postStep', this._post);
     Vehicle.live.add(this);
@@ -147,7 +150,10 @@ export class Vehicle {
   /** Teleports the car, resets motion. heading: yaw in radians (0 = +z). */
   place(position, heading = 0) {
     const b = this.body;
-    b.position.set(position.x, position.y, position.z);
+    // Callers place a car's centre ~0.6 m over the road (where an ordinary car rides); a car that rides higher goes up by the difference.
+    const W = this.spec.wheel;
+    const lift = Math.max(0, W.radius + W.restLength - W.height - 9.82 / (4 * W.stiffness) - 0.62);
+    b.position.set(position.x, position.y + lift, position.z);
     b.quaternion.setFromEuler(0, heading, 0);
     b.velocity.setZero();
     b.angularVelocity.setZero();

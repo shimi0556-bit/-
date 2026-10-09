@@ -19,6 +19,8 @@ import draco3d from 'draco3dgltf';
 import * as THREE from 'three';
 import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 
+const FISH = { url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/BarramundiFish/glTF-Binary/BarramundiFish.glb', credit: '"Barramundi Fish" by Microsoft (Khronos glTF Sample Assets), CC0 — modified: textures reduced' };
+const MONSTER = { url: 'https://raw.githubusercontent.com/KenneyNL/Starter-Kit-Racing/main/models/vehicle-truck-yellow.glb', credit: '"vehicle-truck" by Kenney (Starter Kit Racing, kenney.nl), CC0 — modified: wheels and underside removed' };
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CACHE = path.join(root, '.models');
 const OUT = path.join(root, 'src/race/models');
@@ -212,5 +214,5 @@ for (const [id, M] of Object.entries(MODELS)) {
 }
 fs.writeFileSync(
   path.join(OUT, 'CREDITS.md'),
-  `# Models\n\n${Object.entries(MODELS).map(([id, M]) => `- **${id}**: ${M.credit}. Source: ${M.url}`).join('\n')}\n\nLicence texts: https://creativecommons.org/licenses/by/4.0/\n`,
+  `# Models\n\n${Object.entries(MODELS).map(([id, M]) => `- **${id}**: ${M.credit}. Source: ${M.url}`).join('\n')}\n- **monster** (tools/monster.mjs): ${MONSTER.credit}. Source: ${MONSTER.url}\n- **fish** (tools/fish.mjs): ${FISH.credit}. Source: ${FISH.url}\n\nLicence texts: https://creativecommons.org/licenses/by/4.0/ and https://creativecommons.org/publicdomain/zero/1.0/\n`,
 );

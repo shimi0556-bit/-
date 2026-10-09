@@ -359,7 +359,8 @@ export class Wilds {
     const t = this.terrain;
     const W = this.track.W;
     this.fallUniforms = { uTime: { value: 0 } };
-    const fallMat = this._fallMaterial();
+    const fallMat = this._fallMaterial(true);
+    const streamMat = this._fallMaterial(false);
     const poolMat = this._poolMaterial();
     const sheets = [];
     const pools = [];
@@ -397,6 +398,42 @@ export class Wilds {
       });
       this.engine.particles.add(mist);
       this.island.emitters.push(mist);
+      // Spray thrown up where the sheet hits the pool, and a fine plume drifting up the cliff.
+      const foot = f.foot || b;
+      const fy = Math.max(b.h, t.heightAt(foot.x, foot.z)) + 0.3;
+      const splash = new Emitter(this.engine.particles.systems.spray, {
+        position: new THREE.Vector3(foot.x, fy, foot.z),
+        rate: 26 + w * 3,
+        radius: w * 0.35,
+        spread: 0.85,
+        speed: [3, 7.5],
+        life: [0.7, 1.4],
+        size0: [0.4, 0.9],
+        size1: [1.6, 3],
+        color0: [1, 1, 1, 0.6],
+        color1: [0.95, 0.97, 1, 0],
+        drag: 0.9,
+        gravity: 7,
+      });
+      this.engine.particles.add(splash);
+      this.island.emitters.push(splash);
+      const plume = new Emitter(this.engine.particles.systems.spray, {
+        position: new THREE.Vector3(foot.x - f.d.x * 1.5, fy + 1.5, foot.z - f.d.z * 1.5),
+        rate: 5 + w * 0.6,
+        radius: w * 0.45,
+        spread: 0.35,
+        speed: [1.5, 3],
+        life: [4, 7],
+        size0: [3, 5],
+        size1: [10, 16],
+        color0: [1, 1, 1, 0.22],
+        color1: [1, 1, 1, 0],
+        drag: 0.4,
+        turbulence: 1.6,
+        gravity: -0.45,
+      });
+      this.engine.particles.add(plume);
+      this.island.emitters.push(plume);
       // Wet, mossy boulders round the pool (solid).
       for (let r = 0; r < 4; r++) {
         const a = this.rng.range(0, 6.28);
@@ -420,7 +457,7 @@ export class Wilds {
     fm.renderOrder = 4;
     this.group.add(fm);
     if (streams.length) {
-      const sm = new THREE.Mesh(mergeGeometries(streams), fallMat);
+      const sm = new THREE.Mesh(mergeGeometries(streams), streamMat);
       sm.name = 'נחלים';
       sm.renderOrder = 3;
       this.group.add(sm);
@@ -445,31 +482,42 @@ export class Wilds {
    */
   _curtain(f) {
     const drop = f.lip.h - f.base.h;
-    const rows = Math.max(8, Math.round(drop / 2));
-    const cols = 7;
+    const rows = Math.max(10, Math.round(drop / 1.5));
     const pos = [];
     const uv = [];
     const idx = [];
-    for (let r = 0; r <= rows; r++) {
-      const v = r / rows;
-      const fallen = drop * v;
-      // Thrown clear of the lip at a couple of m/s, then falling free.
-      const fwd = 1 + 2.4 * Math.sqrt((2 * fallen) / G);
-      // Narrower than the lip: the white water gathers into the notch.
-      const ww = f.w * 0.6 * (1 + 0.3 * v);
-      for (let c = 0; c < cols; c++) {
-        const u = c / (cols - 1);
-        const s = (u - 0.5) * ww;
-        // Fullest in the middle of the lip, thinning towards its shoulders.
-        const belly = (1 - Math.abs(u - 0.5) * 2) ** 2;
-        const g = fwd + belly * f.w * 0.14;
-        pos.push(f.lip.x + f.d.x * g + f.a.x * s, f.lip.h - fallen, f.lip.z + f.d.z * g + f.a.z * s);
-        uv.push(u, fallen);
-      }
-      if (r) {
-        const r0 = (r - 1) * cols;
-        const r1 = r * cols;
-        for (let c = 0; c < cols - 1; c++) idx.push(r0 + c, r0 + c + 1, r1 + c, r0 + c + 1, r1 + c + 1, r1 + c);
+    // Three layers (uv.x + 2 × layer): the main sheet; ropes of white water
+    // breaking off in front of it; and a thin film still running down the rock
+    // behind, darkening it wet.
+    const layers = [
+      { k: 0, cols: 13, off: 0, wide: 1 },
+      { k: 1, cols: 11, off: 0.55, wide: 0.92 },
+      { k: 2, cols: 9, off: -0.75, wide: 1.15 },
+    ];
+    for (const L of layers) {
+      const base = pos.length / 3;
+      for (let r = 0; r <= rows; r++) {
+        const v = r / rows;
+        const fallen = drop * v;
+        // Thrown clear of the lip at a couple of m/s, then falling free (the film hugs the rock).
+        const fwd = L.k === 2 ? 0.25 + 0.4 * v : 1 + 2.4 * Math.sqrt((2 * fallen) / G) + L.off * (0.4 + v);
+        // Narrower than the lip: the white water gathers into the notch, then spreads as it falls.
+        const ww = f.w * 0.6 * (1 + 0.38 * v) * L.wide;
+        for (let c = 0; c < L.cols; c++) {
+          const u = c / (L.cols - 1);
+          const sx = (u - 0.5) * ww;
+          // Fullest in the middle of the lip, thinning towards its shoulders; a slight ripple across.
+          const belly = (1 - Math.abs(u - 0.5) * 2) ** 2;
+          const ripple = L.k === 2 ? 0 : Math.sin(u * 17 + L.k * 2.1) * 0.12 * v;
+          const g = fwd + belly * f.w * (L.k === 2 ? 0.03 : 0.14) + ripple;
+          pos.push(f.lip.x + f.d.x * g + f.a.x * sx, f.lip.h - fallen + (L.k === 2 ? 0.1 : 0), f.lip.z + f.d.z * g + f.a.z * sx);
+          uv.push(u + L.k * 2, fallen);
+        }
+        if (r) {
+          const r0 = base + (r - 1) * L.cols;
+          const r1 = base + r * L.cols;
+          for (let c = 0; c < L.cols - 1; c++) idx.push(r0 + c, r0 + c + 1, r1 + c, r0 + c + 1, r1 + c + 1, r1 + c);
+        }
       }
     }
     const g = new THREE.BufferGeometry();
@@ -479,6 +527,8 @@ export class Wilds {
     g.setAttribute('fuv', a.clone());
     g.setIndex(idx);
     g.computeVertexNormals();
+    // Where the sheet lands: the foot of the main layer's middle.
+    f.foot = { x: f.lip.x + f.d.x * (1 + 2.4 * Math.sqrt((2 * drop) / G) + f.w * 0.14), z: f.lip.z + f.d.z * (1 + 2.4 * Math.sqrt((2 * drop) / G) + f.w * 0.14) };
     return g;
   }
 
@@ -609,25 +659,52 @@ export class Wilds {
     return g;
   }
 
-  _fallMaterial() {
+  /** curtain: the falling sheets (three layers, see _curtain); otherwise the streams. */
+  _fallMaterial(curtain) {
     const U = this.fallUniforms;
-    const m = new THREE.MeshStandardMaterial({ name: 'מי מפל', color: 0xe8f6ff, roughness: 0.25, metalness: 0, transparent: true, depthWrite: false, side: THREE.DoubleSide });
-    m.onBeforeCompile = (sh) => {
-      sh.uniforms.uTime = U.uTime;
-      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 fuv; varying vec2 vFall;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvFall = fuv;');
-      sh.fragmentShader = sh.fragmentShader
-        .replace(
-          '#include <common>',
-          `#include <common>
-          uniform float uTime; varying vec2 vFall;
+    const m = new THREE.MeshStandardMaterial({ name: curtain ? 'מי מפל' : 'מי נחל', color: 0xe8f6ff, roughness: 0.25, metalness: 0, transparent: true, depthWrite: false, side: THREE.DoubleSide });
+    const NOISE = `uniform float uTime; varying vec2 vFall;
           float fh(vec2 p) { return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453); }
           float fn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
-            return mix(mix(fh(i), fh(i + vec2(1, 0)), f.x), mix(fh(i + vec2(0, 1)), fh(i + vec2(1, 1)), f.x), f.y); }`,
-        )
-        .replace(
-          '#include <color_fragment>',
-          `#include <color_fragment>
-          {
+            return mix(mix(fh(i), fh(i + vec2(1, 0)), f.x), mix(fh(i + vec2(0, 1)), fh(i + vec2(1, 1)), f.x), f.y); }
+          float fWhite;`;
+    const look = curtain
+      ? `{
+            float layer = floor(vFall.x * 0.5);
+            float across = vFall.x - layer * 2.0;
+            float v = vFall.y;
+            // Falling water speeds up: the streaks stretch and race faster the further down they are.
+            float spd = 2.6 + sqrt(max(v, 0.0)) * 1.9;
+            float s1 = fn(vec2(across * 16.0, v * 0.22 - uTime * spd * 0.32));
+            float s2 = fn(vec2(across * 43.0 + 7.0, v * 0.55 - uTime * spd * 0.8));
+            float s3 = fn(vec2(across * 97.0 + 3.0, v * 1.6 - uTime * spd * 1.5));
+            float streak = s1 * 0.5 + s2 * 0.33 + s3 * 0.22;
+            // Glassy green at the lip, aerated to white as it falls and breaks up.
+            float aer = smoothstep(0.5, 9.0, v);
+            float white = smoothstep(0.42 - aer * 0.25, 0.8 - aer * 0.2, streak);
+            // Ragged edges, strands coming loose at the shoulders.
+            float rag = (s2 - 0.5) * 0.22 + (s3 - 0.5) * 0.1;
+            float edge = smoothstep(0.0, 0.2, across + rag) * smoothstep(1.0, 0.8, across - rag);
+            vec3 glassy = mix(vec3(0.5, 0.66, 0.64), vec3(0.78, 0.88, 0.9), s1);
+            vec3 c = mix(glassy, vec3(0.97, 0.98, 1.0), white);
+            float a = edge * mix(0.1 + aer * 0.12, 0.96, white);
+            if (layer > 1.5) {
+              // The film on the rock: dark, glossy, barely moving.
+              c = vec3(0.1, 0.12, 0.11) + white * 0.2;
+              a = edge * (0.2 + 0.14 * s1);
+              white *= 0.3;
+            } else if (layer > 0.5) {
+              // Ropes of white water in front: only the strongest streaks.
+              float rope = smoothstep(0.58, 0.72, s1 * 0.55 + s2 * 0.45);
+              c = vec3(0.98);
+              a = edge * rope * (0.55 + 0.4 * aer);
+              white = rope;
+            }
+            fWhite = white;
+            diffuseColor.rgb = c;
+            diffuseColor.a = a;
+          }`
+      : `{
             // Streaks rushing down, broken into white water; thin and glassy at the edges.
             float across = vFall.x;
             float v = vFall.y;
@@ -635,12 +712,22 @@ export class Wilds {
             float s2 = fn(vec2(across * 33.0 + 7.0, v * 1.1 - uTime * 4.6));
             float white = smoothstep(0.35, 0.85, s1 * 0.6 + s2 * 0.5);
             float edge = smoothstep(0.0, 0.18, across) * smoothstep(1.0, 0.82, across);
+            fWhite = white;
             diffuseColor.rgb = mix(vec3(0.42, 0.72, 0.78), vec3(0.97), white);
             diffuseColor.a = edge * mix(0.45, 0.95, white);
-          }`,
-        );
+          }`;
+    m.onBeforeCompile = (sh) => {
+      sh.uniforms.uTime = U.uTime;
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 fuv; varying vec2 vFall;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvFall = fuv;');
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', `#include <common>\n${NOISE}`)
+        .replace('#include <color_fragment>', `#include <color_fragment>\n${look}`)
+        // White water scatters light: it stays bright even in the cliff's shade.
+        .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3(0.1, 0.11, 0.12) * fWhite;')
+        // And it is rough where it is white, glassy where it is clear.
+        .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(0.06, 0.6, fWhite);');
     };
-    m.customProgramCacheKey = () => 'wild-falls';
+    m.customProgramCacheKey = () => (curtain ? 'wild-falls-3' : 'wild-streams');
     return m;
   }
 
@@ -651,21 +738,27 @@ export class Wilds {
       sh.uniforms.uTime = U.uTime;
       sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 fuv; varying vec2 vPool; varying vec3 vPW;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvPool = fuv; vPW = (modelMatrix * vec4(position, 1.0)).xyz;');
       sh.fragmentShader = sh.fragmentShader
-        .replace('#include <common>', '#include <common>\nuniform float uTime; varying vec2 vPool; varying vec3 vPW;')
+        .replace('#include <common>', '#include <common>\nuniform float uTime; varying vec2 vPool; varying vec3 vPW;\nfloat ph1(vec2 p) { return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453); }\nfloat ph(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(ph1(i), ph1(i + vec2(1, 0)), f.x), mix(ph1(i + vec2(0, 1)), ph1(i + vec2(1, 1)), f.x), f.y); }')
         .replace(
           '#include <color_fragment>',
           `#include <color_fragment>
           {
-            // Foam rings spreading from where the falls hit, clear water out at the rim.
+            // Churned white where the falls hit, breaking into drifting foam lines, clear and deep green at the rim.
             float r = vPool.x;
-            float rings = 0.5 + 0.5 * sin(r * 26.0 - uTime * 3.0 + sin(vPW.x * 0.7) * 1.5);
-            float foam = (1.0 - smoothstep(0.15, 0.75, r)) * smoothstep(0.45, 0.95, rings) + (1.0 - smoothstep(0.0, 0.25, r)) * 0.8;
+            vec2 q = vPW.xz * 0.9;
+            float n1 = ph(q * 1.3 + vec2(uTime * 0.35, -uTime * 0.2));
+            float n2 = ph(q * 3.1 - vec2(uTime * 0.6, uTime * 0.45));
+            float rings = 0.5 + 0.5 * sin(r * 22.0 - uTime * 2.4 + (n1 - 0.5) * 5.0);
+            float churn = (1.0 - smoothstep(0.05, 0.4, r)) * (0.75 + 0.25 * n2);
+            float lines = (1.0 - smoothstep(0.2, 0.85, r)) * smoothstep(0.6, 0.95, rings * 0.6 + n2 * 0.5);
+            float foam = churn + lines * 0.8;
+            diffuseColor.rgb = mix(vec3(0.08, 0.32, 0.3), diffuseColor.rgb, smoothstep(0.95, 0.5, r));
             diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.95), clamp(foam, 0.0, 1.0));
             diffuseColor.a *= mix(0.75, 1.0, foam) * (1.0 - smoothstep(0.9, 1.0, r) * 0.6);
           }`,
         );
     };
-    m.customProgramCacheKey = () => 'wild-pool';
+    m.customProgramCacheKey = () => 'wild-pool-2';
     return m;
   }
 
