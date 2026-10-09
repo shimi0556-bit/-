@@ -297,15 +297,71 @@ export class Wilds {
         a: { x: c.oz, z: -c.ox }, // across the lip
       });
     }
-    // The watercourse that feeds each lip runs back along the crest of its bluff.
-    for (const f of this.falls) {
-      f.head = [];
-      for (let b = 56; b >= 0; b -= 4) {
-        const x = f.lip.x - f.d.x * b;
-        const z = f.lip.z - f.d.z * b;
-        f.head.push({ x, z, h: 0 });
+    // The watercourse that feeds each lip comes from somewhere: a spring under a crag up the hill behind it.
+    this.falls.forEach((f, k) => this._planSource(f, k));
+  }
+
+  /**
+   * The stream above a fall, from its source. Behind the lip the ground climbs
+   * on (a valley rising to a rock headwall), and the stream winds down it in
+   * its own channel from a spring pool at the foot of that crag, so it starts
+   * somewhere a stream would. As long as the hillside behind allows: it must
+   * stay on dry land, off every road, and clear of the other falls and the
+   * lava, or the valley is shortened.
+   */
+  _planSource(f, k) {
+    const tr = this.track;
+    const t = this.terrain;
+    const W = tr.W;
+    const roads = this.island.roads;
+    const trail = this.island.trail;
+    const amp = 6 + (k % 3) * 3;
+    const phase = k * 2.1 + 0.7;
+    // cw: half-width of the channel; wide enough for the ground's grid (a cell is ~4.6 m) to draw its flat bed and banks.
+    const S = { len: 0, amp, phase, slope: 0.11, crag: 15, cw: Math.max(6.5, f.w * 0.45 + 2.5) };
+    f.src = S;
+    const clear = (len) => {
+      S.len = len;
+      for (let b = 0; b <= len + 50; b += 6) {
+        const c = this._srcLat(f, b);
+        const hw = this._srcHalf(f, b) + 18;
+        for (const o of [-hw, -hw * 0.5, 0, hw * 0.5, hw]) {
+          const x = f.lip.x - f.d.x * b + f.a.x * (c + o);
+          const z = f.lip.z - f.d.z * b + f.a.z * (c + o);
+          if (b > 14 && t.height(x, z) < 2.5) return false;
+          if (this._trackDist(x, z) < W + 26) return false;
+          if (roads && roads.dist(x, z) < 26) return false;
+          if (trail && trail.nearest && (trail.nearest(x, z)?.dist ?? 1e9) < 20) return false;
+          if (this.flows.some((fl) => fl.pts.some((p) => Math.abs(p.x - x) < 40 && Math.abs(p.z - z) < 40))) return false;
+          if (this.falls.some((g) => g !== f && Math.hypot(g.lip.x - x, g.lip.z - z) < g.bowl + 30)) return false;
+        }
       }
+      return true;
+    };
+    S.len = 0;
+    for (const len of [150, 125, 100, 80, 60, 45]) if (clear(len)) break;
+    if (!clear(S.len)) S.len = 0;
+    // The course itself: spring to lip, every 3 m.
+    f.head = [];
+    // No room for the valley: the water wells up out of a heap of rock on the bluff behind the lip instead.
+    const L = Math.max(S.len, 40);
+    for (let b = L; b >= 0; b -= 3) {
+      const c = this._srcLat(f, b);
+      f.head.push({ x: f.lip.x - f.d.x * b + f.a.x * c, z: f.lip.z - f.d.z * b + f.a.z * c, h: 0 });
     }
+    f.spring = { ...f.head[0] };
+  }
+
+  /** How far the stream above a fall has wandered across its valley, b metres back from the lip. */
+  _srcLat(f, b) {
+    const S = f.src;
+    // Straight for the last stretch: it comes over the lip square.
+    return S.amp * Math.sin(b / 34 + S.phase) * smooth(10, 45, b) - S.amp * Math.sin(S.phase) * smooth(10, 45, b) * (1 - smooth(45, 90, b));
+  }
+
+  /** Half-width of the raised valley floor b metres back from the lip. */
+  _srcHalf(f, b) {
+    return f.w * 0.95 + 9 + b * 0.22;
   }
 
   /**
@@ -325,6 +381,33 @@ export class Wilds {
         if (h <= f.base.h) continue;
         const k = (1 - smooth(half, half + 10, lat)) * (1 - smooth(f.bowl, f.bowl + 16, fwd));
         if (k > 0) h += (f.base.h - h) * k;
+      } else if (f.src && f.src.len) {
+        // The valley behind the lip, climbing to the crag at the spring, the stream's channel cut down its floor.
+        if (h < 1.5) continue;
+        const S = f.src;
+        const b = -fwd;
+        if (b > S.len + 70) continue;
+        const lc = px * f.a.x + pz * f.a.z - this._srcLat(f, b);
+        const al = Math.abs(lc);
+        const hw = this._srcHalf(f, b);
+        if (al > hw + 34) continue;
+        const bb = Math.min(b, S.len);
+        let target = f.lip.h + S.slope * Math.max(0, bb - 12) + S.crag * smooth(S.len - 2, S.len + 20, b);
+        // Banks rising away from the water, and the channel it has worn into the floor.
+        target += Math.min(5, 0.09 * Math.max(0, al - S.cw - 2));
+        const chan = (1 - smooth(S.cw * 0.6, S.cw * 1.05, al)) * smooth(3, 16, b);
+        target -= 1.3 * chan * (1 - smooth(S.len - 4, S.len + 4, b));
+        // The hollow the spring wells up in, at the foot of the crag.
+        target -= 1.4 * (1 - smooth(S.cw * 0.9, S.cw * 2.2, Math.hypot(b - S.len, lc)));
+        const kAlong = 1 - smooth(S.len + 30, S.len + 70, b);
+        if (h < target) {
+          const k = (1 - smooth(hw, hw + 34, al)) * kAlong;
+          if (k > 0) h += (target - h) * k;
+        } else {
+          // Higher ground in the way: the water has cut its gorge through it.
+          const k = (1 - smooth(S.cw + 3, S.cw + 16, al)) * (1 - smooth(S.len - 6, S.len + 2, b));
+          if (k > 0) h += (target - h) * k;
+        }
       } else {
         if (h < 1.5 || h >= f.lip.h) continue;
         const k = (1 - smooth(half + 7, half + 34, lat)) * (1 - smooth(12, f.ridge, -fwd));
@@ -351,7 +434,7 @@ export class Wilds {
 
   /** A signature of the planned falls: the baked ground is only reusable while they stay put. */
   groundKey() {
-    return this.falls.map((f) => `${Math.round(f.lip.x)},${Math.round(f.lip.z)},${Math.round(f.drop)}`).join(';');
+    return this.falls.map((f) => `${Math.round(f.lip.x)},${Math.round(f.lip.z)},${Math.round(f.drop)},${f.src ? f.src.len : 0}`).join(';');
   }
 
   _waterfalls() {
@@ -361,6 +444,8 @@ export class Wilds {
     this.fallUniforms = { uTime: { value: 0 } };
     const fallMat = this._fallMaterial(true);
     const streamMat = this._fallMaterial(false);
+    const calmMat = this._fallMaterial(false, true);
+    const calm = [];
     const poolMat = this._poolMaterial();
     const sheets = [];
     const pools = [];
@@ -369,7 +454,8 @@ export class Wilds {
       const w = f.w;
       sheets.push(this._curtain(f));
       // The stream that feeds it, coming down to the lip.
-      streams.push(...this._streamGeos(f.head, w * 0.5));
+      calm.push(...this._streamGeos(f.head, f.src.cw * 1.7, true));
+      if (f.spring) this._spring(f, pools);
       // The plunge pool, on the floor of the basin the carve left.
       const bx = f.lip.x + f.d.x * (f.bowl * 0.42);
       const bz = f.lip.z + f.d.z * (f.bowl * 0.42);
@@ -379,7 +465,7 @@ export class Wilds {
       // And the stream that leaves it: over the lip of the basin, on down to the sea.
       let out = null;
       for (let o = f.bowl * 0.7; o < f.bowl + 40 && !out; o += 6) out = this._descend(f.lip.x + f.d.x * o, f.lip.z + f.d.z * o, 0.02, 300, 0);
-      if (out) streams.push(...this._streamGeos([{ x: b.x, z: b.z, h: b.h }, ...out], w * 0.55));
+      if (out) streams.push(...this._streamGeos([{ x: b.x, z: b.z, h: b.h }, ...out], w * 0.55, false));
       // Mist rising off the pool.
       const mist = new Emitter(this.engine.particles.systems.spray, {
         position: new THREE.Vector3(b.x, b.h + 0.6, b.z),
@@ -462,6 +548,12 @@ export class Wilds {
       sm.renderOrder = 3;
       this.group.add(sm);
     }
+    if (calm.length) {
+      const cm = new THREE.Mesh(mergeGeometries(calm), calmMat);
+      cm.name = 'נחלי מעיין';
+      cm.renderOrder = 3;
+      this.group.add(cm);
+    }
     const pm = new THREE.Mesh(mergeGeometries(pools), poolMat);
     pm.name = 'בריכות מפל';
     pm.renderOrder = 3;
@@ -532,19 +624,76 @@ export class Wilds {
     return g;
   }
 
+  /** Where a fall's stream rises: a pool welling up at the foot of the crag, ringed with mossy rock. */
+  _spring(f, pools) {
+    const t = this.terrain;
+    const sp = f.spring;
+    const r = f.src.cw * 1.25;
+    pools.push(this._drape(sp.x, sp.z, r, 0.1));
+    this._poolRocks = this._poolRocks || [];
+    // Rock heaped round the back of the pool (uphill, the crag the water comes out of), a few at the sides.
+    for (let q = 0; q < 9; q++) {
+      const ang = (q / 8 - 0.5) * 3.4 + this.rng.range(-0.15, 0.15);
+      const ca = Math.cos(ang);
+      const sa = Math.sin(ang);
+      const dx = -f.d.x * ca + f.a.x * sa;
+      const dz = -f.d.z * ca + f.a.z * sa;
+      const rr = r + this.rng.range(0.8, 3.5) + (q % 2) * 3;
+      const x = sp.x + dx * rr;
+      const z = sp.z + dz * rr;
+      const s = this.rng.range(1.1, 2.8) * (Math.abs(ang) < 1 ? 1.3 : 0.8);
+      const g = this._boulderGeo(1, 40 + q).scale(s * 1.3, s * 0.9, s);
+      // Sunk well into the slope so nothing hangs in the air on the steep ground: its underside
+      // below the lowest ground anywhere under it (the uphill side is then buried in the crag).
+      let low = t.heightAt(x, z);
+      for (let q2 = 0; q2 < 8; q2++) low = Math.min(low, t.heightAt(x + Math.cos(q2 * 0.785) * s * 1.3, z + Math.sin(q2 * 0.785) * s * 1.3));
+      const y = low + s * 0.2;
+      g.translate(x, y, z);
+      this._poolRocks.push(g);
+      this.colliders.sphere(x, y - s * 0.2, z, s * 1.15);
+    }
+    // The water welling up: a gentle bubbling at the back of the pool.
+    const y = t.heightAt(sp.x, sp.z);
+    const well = new Emitter(this.engine.particles.systems.spray, {
+      position: new THREE.Vector3(sp.x - f.d.x * r * 0.4, y + 0.4, sp.z - f.d.z * r * 0.4),
+      rate: 7,
+      radius: r * 0.35,
+      spread: 0.5,
+      speed: [0.6, 1.4],
+      life: [0.5, 1],
+      size0: [0.25, 0.5],
+      size1: [0.7, 1.2],
+      color0: [1, 1, 1, 0.45],
+      color1: [1, 1, 1, 0],
+      drag: 0.8,
+      gravity: 3,
+    });
+    this.engine.particles.add(well);
+    this.island.emitters.push(well);
+  }
+
   /** A stream down `path`, drawn only where there is no road: it runs under those. */
-  _streamGeos(path, w) {
+  _streamGeos(path, w, level) {
     if (!path || path.length < 3) return [];
     const W = this.track.W;
+    // Draped over open ground: a point every ~2 m so the water follows the ground's own facets.
+    const pts = [];
+    for (let k = 0; k < path.length; k++) {
+      pts.push(path[k]);
+      const q = path[k + 1];
+      if (level || !q) continue;
+      const n = Math.floor(Math.hypot(q.x - path[k].x, q.z - path[k].z) / 2);
+      for (let j = 1; j < n; j++) pts.push({ x: path[k].x + ((q.x - path[k].x) * j) / n, z: path[k].z + ((q.z - path[k].z) * j) / n });
+    }
     const out = [];
     let cur = [];
-    for (const p of path) {
+    for (const p of pts) {
       if (this._trackDist(p.x, p.z) < W + 4.6) {
-        if (cur.length > 2) out.push(this._ribbon(cur, w, 0.1));
+        if (cur.length > 2) out.push(this._ribbon(cur, w, level ? 0.1 : 0.22, false, level));
         cur = [];
       } else cur.push(p);
     }
-    if (cur.length > 2) out.push(this._ribbon(cur, w, 0.1));
+    if (cur.length > 2) out.push(this._ribbon(cur, w, level ? 0.1 : 0.22, false, level));
     return out;
   }
 
@@ -589,13 +738,41 @@ export class Wilds {
   }
 
   /** A strip of width w along a path, lifted `lift` off the ground; uv: x across, y metres along. */
-  _ribbon(path, w, lift, taper = false) {
+  _ribbon(path, w, lift, taper = false, level = false) {
     const t = this.terrain;
     const pos = [];
     const uv = [];
     const idx = [];
-    const cols = 5;
+    const cols = level ? 9 : 7;
+    // Level water: how deep it is over the ground at each vertex (its edges fade out up the banks).
+    const depth = [];
     let along = 0;
+    // Level water: the surface along the stream, from the lowest point of its bed across (as the ground's
+    // mesh draws it), smoothed so it runs on evenly instead of stepping with the mesh's facets.
+    let surf = null;
+    if (level) {
+      // Per point: the lowest bed across, and the lower of the two banks at the water's edges.
+      const bed = [];
+      const bank = [];
+      path.forEach((p, k) => {
+        const a = path[Math.max(0, k - 1)];
+        const b = path[Math.min(path.length - 1, k + 1)];
+        const l = Math.hypot(b.x - a.x, b.z - a.z) || 1;
+        const at = (o) => t.heightAt(p.x - ((b.z - a.z) / l) * o * w, p.z + ((b.x - a.x) / l) * o * w);
+        let m = Infinity;
+        for (const o of [-0.3, -0.15, 0, 0.15, 0.3]) m = Math.min(m, at(o));
+        bed.push(m);
+        bank.push(Math.min(at(-0.5), at(0.5)));
+      });
+      // As deep as the channel lets it be while the banks still hide its edges; where there are no banks
+      // (out on flat ground) only a film, whose edges fade out with its depth.
+      const fit = (y, k) => Math.max(bed[k] + 0.12, Math.min(y, bank[k] - 0.1));
+      surf = bed.map((m, k) => fit(m + 0.75, k));
+      for (let pass = 0; pass < 4; pass++) {
+        const y = surf.slice();
+        for (let k = 1; k < y.length - 1; k++) surf[k] = fit(0.25 * y[k - 1] + 0.5 * y[k] + 0.25 * y[k + 1], k);
+      }
+    }
     for (let k = 0; k < path.length; k++) {
       const a = path[Math.max(0, k - 1)];
       const b = path[Math.min(path.length - 1, k + 1)];
@@ -607,14 +784,17 @@ export class Wilds {
       if (k) along += Math.hypot(path[k].x - path[k - 1].x, path[k].z - path[k - 1].z, (path[k].h ?? 0) - (path[k - 1].h ?? 0));
       // A waterfall spreads as it falls; a lava flow widens downhill.
       const f = k / (path.length - 1);
-      const ww = taper ? w * (0.55 + 0.45 * f) : w * (0.7 + 0.5 * f);
+      const ww = level ? w : taper ? w * (0.55 + 0.45 * f) : w * (0.7 + 0.5 * f);
       for (let c = 0; c < cols; c++) {
         const u = c / (cols - 1);
         const o = (u - 0.5) * ww;
         const x = path[k].x - dz * o;
         const z = path[k].z + dx * o;
         const bulge = 1 - Math.abs(u - 0.5) * 2;
-        pos.push(x, t.heightAt(x, z) + lift * (0.6 + 0.4 * bulge), z);
+        // level: water lies flat across its bed and the banks hide its edges, instead of a strip laid over
+        // every bump of the ground.
+        pos.push(x, level ? surf[k] : t.heightAt(x, z) + lift * (0.6 + 0.4 * bulge), z);
+        depth.push(level ? surf[k] - t.heightAt(x, z) : 1);
         uv.push(u, along);
       }
       if (k) {
@@ -628,6 +808,7 @@ export class Wilds {
     g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     // Our own copy for the shaders (three declares \`uv\` only for materials with a texture map).
     g.setAttribute('fuv', new THREE.Float32BufferAttribute(uv, 2));
+    g.setAttribute('fdepth', new THREE.Float32BufferAttribute(depth, 1));
     g.setIndex(idx);
     g.computeVertexNormals();
     // Face up whichever way the path turned.
@@ -662,10 +843,10 @@ export class Wilds {
   }
 
   /** curtain: the falling sheets (three layers, see _curtain); otherwise the streams. */
-  _fallMaterial(curtain) {
+  _fallMaterial(curtain, calm = false) {
     const U = this.fallUniforms;
     const m = new THREE.MeshStandardMaterial({ name: curtain ? 'מי מפל' : 'מי נחל', color: 0xe8f6ff, roughness: 0.25, metalness: 0, transparent: true, depthWrite: false, side: THREE.DoubleSide });
-    const NOISE = `uniform float uTime; varying vec2 vFall;
+    const NOISE = `uniform float uTime; varying vec2 vFall;${calm ? ' varying float vDepth;' : ''}
           float fh(vec2 p) { return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453); }
           float fn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
             return mix(mix(fh(i), fh(i + vec2(1, 0)), f.x), mix(fh(i + vec2(0, 1)), fh(i + vec2(1, 1)), f.x), f.y); }
@@ -714,13 +895,28 @@ export class Wilds {
             float s2 = fn(vec2(across * 33.0 + 7.0, v * 1.1 - uTime * 4.6));
             float white = smoothstep(0.35, 0.85, s1 * 0.6 + s2 * 0.5);
             float edge = smoothstep(0.0, 0.18, across) * smoothstep(1.0, 0.82, across);
+            vec3 body = vec3(0.42, 0.72, 0.78);
+            float clear = 0.45;
+            ${calm ? `// A stream running down its own valley: clear, darker where deeper mid-channel, white only over riffles.
+            float riffle = smoothstep(0.62, 0.9, fn(vec2(across * 3.0, v * 0.08 - uTime * 0.25)));
+            white *= 0.25 + 0.75 * riffle;
+            white *= smoothstep(0.0, 0.3, across) * smoothstep(1.0, 0.7, across);
+            // Deeper water is darker and less see-through; at the banks it thins out to nothing, so the
+            // water's edge is where it gets shallow, not the line where it meets the ground's facets.
+            float deep = smoothstep(0.1, 1.1, vDepth);
+            body = mix(vec3(0.3, 0.42, 0.34), vec3(0.06, 0.17, 0.19), deep);
+            clear = mix(0.3, 0.86, deep);
+            edge = smoothstep(0.06, 0.32, vDepth) * smoothstep(0.0, 0.06, across) * smoothstep(1.0, 0.94, across);
+            white *= smoothstep(0.15, 0.5, vDepth);` : ''}
             fWhite = white;
-            diffuseColor.rgb = mix(vec3(0.42, 0.72, 0.78), vec3(0.97), white);
-            diffuseColor.a = edge * mix(0.45, 0.95, white);
+            diffuseColor.rgb = mix(body, vec3(0.97), white);
+            diffuseColor.a = edge * mix(clear, 0.95, white);
           }`;
     m.onBeforeCompile = (sh) => {
       sh.uniforms.uTime = U.uTime;
-      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 fuv; varying vec2 vFall;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvFall = fuv;');
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', `#include <common>\nattribute vec2 fuv; varying vec2 vFall;${calm ? '\nattribute float fdepth; varying float vDepth;' : ''}`)
+        .replace('#include <begin_vertex>', `#include <begin_vertex>\nvFall = fuv;${calm ? '\nvDepth = fdepth;' : ''}`);
       sh.fragmentShader = sh.fragmentShader
         .replace('#include <common>', `#include <common>\n${NOISE}`)
         .replace('#include <color_fragment>', `#include <color_fragment>\n${look}`)
@@ -729,7 +925,7 @@ export class Wilds {
         // And it is rough where it is white, glassy where it is clear.
         .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(0.06, 0.6, fWhite);');
     };
-    m.customProgramCacheKey = () => (curtain ? 'wild-falls-3' : 'wild-streams');
+    m.customProgramCacheKey = () => (curtain ? 'wild-falls-3' : calm ? 'wild-streams-calm' : 'wild-streams');
     return m;
   }
 

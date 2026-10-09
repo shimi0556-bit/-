@@ -31,6 +31,8 @@ import { loadRealModels, warmRealModels } from './RealModels.js';
 import { World, WORLD } from './World.js';
 import { SpaceScene } from './Space.js';
 import { Explore, ROAM } from './Explore.js';
+import { Rally } from './Rally.js';
+import { applyPhotoTextures } from './PhotoTextures.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -132,7 +134,7 @@ class Game {
     engine.particles = new Particles(engine, materials);
     engine.audio = new AudioEngine(engine);
     await progress(0.17, 'טוען מודלים תלת־ממדיים אמיתיים…');
-    await loadRealModels();
+    await Promise.all([loadRealModels(), applyPhotoTextures(materials)]);
     this.wheels = new WheelBatch(materials, 32);
     engine.scene.add(this.wheels.group);
     this.skid = new SkidMarks(engine.quality.presetName === 'low' ? 2500 : 5000);
@@ -434,6 +436,7 @@ class Game {
   // ------------------------------------------------------------- menu
 
   toMenu() {
+    this._endRally();
     this._endRace();
     this._endPodium();
     this._exitSpace();
@@ -994,7 +997,30 @@ class Game {
 
   startExplore() {
     this.mode = 'explore';
+    this._endRally();
     this._roam(this.selected);
+  }
+
+  /** "ראלי כל האיים": a timed run right round the archipelago, starting and finishing in the city. */
+  startRally() {
+    this.mode = 'explore';
+    this._endRally();
+    this.rally = new Rally(this);
+    this.roamKind = 'car';
+    this._roam(STAGES.findIndex((s) => s.id === WORLD.hub));
+  }
+
+  _endRally() {
+    if (this.rally) this.rally.dispose();
+    this.rally = null;
+  }
+
+  get rallyBest() {
+    return store.get('rallyBest', null);
+  }
+
+  saveRallyBest(t) {
+    store.set('rallyBest', t);
   }
 
   /** Free roam on an island (from the map, or arriving from another island at `at`). */
@@ -1031,6 +1057,11 @@ class Game {
     this._endRace();
     this._showMap(false);
     this.skid.clear();
+    // A rally just started: its gates go up now that every island on the way is built, and it starts on its line.
+    if (this.rally && !this.rally.gates.length && !at) {
+      if (this.rally.plan()) at = this.rally.start;
+      else this._endRally();
+    }
     const ex = new Explore(this, this.island);
     this.explore = ex;
     this.kind = null;
@@ -1402,6 +1433,7 @@ class Game {
     this._musicFrame();
     this._neighbours(dt);
     this._mapLabels();
+    if (this.state === 'explore' && this.explore && this.rally && !this.paused) this.rally.update(dt, this.explore);
     if (this.state === 'explore' && this.explore) this.ui.updateExplore(this.explore, dt);
     // Under the waves: water fog instead of air.
     const cam = this.engine.camera.position;

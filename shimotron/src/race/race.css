@@ -399,3 +399,16 @@ body.is-touch .minimap { width: 130px; height: 130px; }
   .roambar button { padding: 6px 8px; font-size: 12px; }
   .roambar .key { display: none; }
 }
+
+/* All-islands rally: clock, gate and an arrow to the next gate, under the top buttons. */
+.hud .tc { position: absolute; top: calc(66px + var(--safe-t)); left: 50%; transform: translateX(-50%); }
+.rallybox { display: flex; align-items: center; gap: 10px; padding: 6px 14px 6px 8px; }
+.rallybox canvas { width: 64px; height: 64px; }
+.rallybox > div { display: flex; flex-direction: column; gap: 1px; }
+.rallybox b { font: 700 30px/1 'Karantina', 'IBM Plex Sans Hebrew', sans-serif; font-variant-numeric: tabular-nums; direction: ltr; text-align: right; }
+.rally-btn { border-color: #39e07a; }
+@media (max-width: 720px) {
+  .hud .tc { top: calc(58px + var(--safe-t)); }
+  .rallybox canvas { width: 48px; height: 48px; }
+  .rallybox b { font-size: 24px; }
+}

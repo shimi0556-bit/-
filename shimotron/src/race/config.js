@@ -207,13 +207,16 @@ export const CAR_TYPES = [
       mass: 2300,
       body: { half: [1.15, 0.45, 2.2], offset: [0, 0.05, 0] },
       cabin: { half: [1.0, 0.8, 1.1], offset: [0, 1.3, 0.25] },
-      wheel: { radius: 0.85, width: 0.7, front: 1.62, rear: -1.62, track: 1.3, height: 0.2, restLength: 0.8, travel: 0.6, stiffness: 16, dampCompression: 2.4, dampRelaxation: 2.0, rollInfluence: 0.015, grip: 1.38 },
-      engine: { accel: 10.5, topSpeed: 53, frontShare: 0.5, redline: 6200 },
-      steer: { max: 0.5 },
+      // Long, soft and well damped: it swallows the bumps and lands jumps on its springs instead of bouncing off.
+      wheel: { radius: 0.85, width: 0.7, front: 1.62, rear: -1.62, track: 1.3, height: 0.2, restLength: 0.8, travel: 0.66, stiffness: 15, dampCompression: 2.6, dampRelaxation: 2.3, rollInfluence: 0.012, grip: 1.38 },
+      engine: { accel: 12, topSpeed: 56, frontShare: 0.5, redline: 6200 },
+      steer: { max: 0.56 },
       downforce: 0.05,
       drag: 0.0011,
-      offroad: 1.95,
-      assist: { yaw: 0.6, antiRoll: 18 },
+      offroad: 2.05,
+      // Looser in the yaw (it slides and can be driven sideways), stiffer in the roll (it does not tip over).
+      assist: { yaw: 0.55, antiRoll: 22 },
+      airControl: 1,
       skidY: -0.3,
       // The tyres as boxes round each axle (hub at rest ~0.45 m under the centre), clear of the ground.
       extra: [

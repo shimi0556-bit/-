@@ -165,6 +165,7 @@ export class Car {
     this.forward.set(0, 0, 1).applyQuaternion(this.object.quaternion);
     this.right.set(-1, 0, 0).applyQuaternion(this.object.quaternion);
     const veh = this.vehicle;
+    veh.showSpin(dt);
     if (this.model.pose) {
       this.model.pose(this, dt);
       return;
@@ -177,7 +178,7 @@ export class Car {
       _p.set(this.wheelX[i], this.spec.wheel.height - len, this.wheelZ[i]);
       const left = i % 2 === 0;
       const steer = i < 2 ? -veh.steerAngle : 0;
-      const spin = veh.wheelSpin[i];
+      const spin = veh.wheelShown[i];
       _q.setFromAxisAngle(UP, steer + (left ? Math.PI : 0));
       _qs.setFromAxisAngle(_a.set(1, 0, 0), left ? -spin : spin);
       _q.multiply(_qs);

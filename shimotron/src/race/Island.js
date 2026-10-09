@@ -387,11 +387,39 @@ export class Island {
     return out;
   }
 
-  /** Height of paving the wheels roll on (access roads, city streets) at (x, z), or null. */
+  /** Height of paving the wheels roll on (access roads, city streets, bridge decks) at (x, z), or null. */
   pavedY(x, z) {
     const r = this.roads ? this.roads.pavedY(x, z) : null;
     if (r !== null) return r;
-    return this.city ? this.city.pavedY(x, z) : null;
+    const c = this.city ? this.city.pavedY(x, z) : null;
+    if (c !== null) return c;
+    return this.deckLines ? this.deckY(x, z) : null;
+  }
+
+  /** Height of a bridge deck's asphalt at (x, z) (explore mode sets the decks), or null off them. */
+  deckY(x, z) {
+    let best = null;
+    let bd = 6.5;
+    for (const D of this.deckLines) {
+      const [x0, x1, z0, z1] = D.box;
+      if (x < x0 || x > x1 || z < z0 || z > z1) continue;
+      const P = D.pts;
+      for (let k = 0; k < P.length - 1; k++) {
+        const a = P[k];
+        const b = P[k + 1];
+        const vx = b.x - a.x;
+        const vz = b.z - a.z;
+        let u = ((x - a.x) * vx + (z - a.z) * vz) / (vx * vx + vz * vz);
+        if (u < -0.5 || u > 1.5) continue;
+        u = u < 0 ? 0 : u > 1 ? 1 : u;
+        const d = Math.hypot(x - a.x - vx * u, z - a.z - vz * u);
+        if (d < bd) {
+          bd = d;
+          best = a.y + (b.y - a.y) * u;
+        }
+      }
+    }
+    return best;
   }
 
   /**
@@ -403,7 +431,7 @@ export class Island {
     const tr = this.track;
     if (tr.raycastRoad(from, to, result, tr.roadBody)) return true;
     if (this.trail && this.trail.raycastRoad(from, to, result, tr.roadBody)) return true;
-    if (!this.roads && !this.city) return false;
+    if (!this.roads && !this.city && !this.deckLines) return false;
     const y = this.pavedY(from.x, from.z);
     if (y === null || from.y - y > 3 || from.y < y - 0.3) return false;
     const e = 0.7;
@@ -440,7 +468,7 @@ export class Island {
   surface(x, z) {
     const tr = this.track;
     if (this.trail && this.trail.onDirt(x, z)) return 'dirt';
-    if (this.roads && this.roads.dist(x, z) < 6.8) return 'asphalt';
+    if (this.roads && this.roads.edgeDist(x, z) < 0.2) return 'asphalt';
     const q = tr.nearest(x, z, this._sq || (this._sq = {}));
     if (q) {
       const a = Math.abs(q.lat);

@@ -263,7 +263,7 @@ export function createMonsterCar(materials, { color = '#d42a2a', spec }) {
         hubs[i] = y;
         wheels[i].position.y = y;
         _qs.setFromAxisAngle(UP, i < 2 ? -veh.steerAngle : 0);
-        _qw.setFromAxisAngle(AXLE, veh.wheelSpin[i]);
+        _qw.setFromAxisAngle(AXLE, veh.wheelShown[i]);
         _qs.multiply(_qw);
         wheels[i].quaternion.copy(_qs);
         place(i, y);

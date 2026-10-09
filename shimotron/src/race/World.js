@@ -30,6 +30,9 @@ export const WORLD = {
   hub: 'city',
   span: 12800, // the world depth map covers ±span/2
   deck: 17, // bridge deck height over the sea (sailboats pass underneath)
+  // The outer ring: each of these islands is bridged to the next (and the last to the first), on top of
+  // every island's bridge to the city, so a road runs right round the archipelago.
+  ring: ['pines', 'falls', 'dunes', 'cross', 'lagoon', 'lava', 'canyon', 'ice'],
 };
 
 const lin = (hex) => new THREE.Color(hex);
@@ -47,6 +50,7 @@ export class World {
     this.lods = {};
     this.trackPts = {};
     this.landings = {};
+    this.landPts = {};
     this.bridges = [];
     this.origin = [0, 0];
     this.mat = new THREE.MeshStandardMaterial({ name: 'איים רחוקים', vertexColors: true, roughness: 0.95, metalness: 0 });
@@ -494,54 +498,132 @@ export class World {
     (this.landings[st.id] = this.landings[st.id] || []).push({ ax: best.x, az: best.z, bx: best.x + 0.1, bz: best.z, w: 100 });
   }
 
-  /** Where a bridge coming from direction `dir` touches down on an island: clear of its circuit. */
-  _landing(st, ang) {
+  /**
+   * Where a bridge coming from direction `ang` touches down on an island:
+   * on dry, fairly level ground, apart from the island's other bridges, and
+   * with its deck clear of the circuit all the way out over the coast (a
+   * deck may not pass low over the road). The nearest such spot round the
+   * coast from the ideal direction, landing a little further inland or out
+   * if that is what it takes.
+   */
+  _landing(st, ang, all = false) {
+    const list = [];
     const t = this.terrains[st.id];
+    const taken = this.landPts[st.id] || [];
+    const apart = (L) => taken.every((p) => Math.hypot(p.x - L.x, p.z - L.z) > 260);
     const half = st.size / 2 - 30;
     let fallback = null;
-    for (const off of [0, 0.12, -0.12, 0.24, -0.24, 0.36, -0.36, 0.5, -0.5, 0.65, -0.65]) {
+    let best = null;
+    // All the way round the coast when listing (a ring bridge may have to land well off its ideal line).
+    for (let step = 0; step <= (all ? 126 : 40); step++) {
+      const off = Math.ceil(step / 2) * 0.05 * (step % 2 ? 1 : -1);
+      if (!all && best && Math.abs(off) > best.dev + 0.25) break;
       const a = ang + off;
       const dx = Math.cos(a);
       const dz = Math.sin(a);
       let r = half;
       while (r > 150 && t.height(dx * r, dz * r) < 1.4) r -= 5;
       if (r <= 150) continue;
-      const land = r - 70;
-      const L = { x: dx * land, z: dz * land };
-      const hL = t.height(L.x, L.z);
-      const cand = { a, dx, dz, r, L, hL, C: { x: dx * r, z: dz * r } };
-      if (!fallback) fallback = cand;
-      if (hL < 1.4 || hL > 16) continue;
-      let ok = true;
-      for (let s = -40; s <= 110 && ok; s += 10) {
-        const x = dx * (land + s);
-        const z = dz * (land + s);
-        if (this.trackDistance(st.id, x, z) < 50) ok = false;
-        if (s < 70 && Math.abs(t.height(x, z) - hL) > 6) ok = false;
+      for (const back of [70, 55, 90, 115]) {
+        const land = r - back;
+        const L = { x: dx * land, z: dz * land };
+        const hL = t.height(L.x, L.z);
+        const cand = { a, dx, dz, r, L, hL, C: { x: dx * r, z: dz * r }, dev: Math.abs(off) + (back - 70) / 400 };
+        if (!apart(L)) continue;
+        if (!fallback) fallback = cand;
+        if (hL < 1.4 || hL > 16) continue;
+        let ok = true;
+        for (let s = -40; s <= back + 70 && ok; s += 8) {
+          const x = dx * (land + s);
+          const z = dz * (land + s);
+          if (this.trackDistance(st.id, x, z) < 46) ok = false;
+          if (s < Math.min(70, back) && Math.abs(t.height(x, z) - hL) > 6) ok = false;
+        }
+        if (ok) {
+          list.push(cand);
+          if (!best || cand.dev < best.dev) best = cand;
+          break;
+        }
       }
-      if (ok) return cand;
     }
-    return fallback;
+    list.sort((p, q) => p.dev - q.dev);
+    if (!list.length && fallback) list.push(fallback);
+    return all ? list : best || fallback;
   }
 
   _bridges() {
     const hub = this.stages.find((s) => s.id === WORLD.hub);
     if (!hub) return;
-    const [hx, hz] = this.pos(hub.id);
-    for (const st of this.stages) {
-      if (st === hub) continue;
-      const [sx, sz] = this.pos(st.id);
-      const out = Math.atan2(sz - hz, sx - hx);
-      const a = this._landing(hub, out);
-      const b = this._landing(st, out + Math.PI);
-      if (!a || !b) continue;
-      this.landings[hub.id] = this.landings[hub.id] || [];
-      this.landings[st.id] = this.landings[st.id] || [];
-      const seg = (L) => ({ ax: L.dx * (L.r - 110), az: L.dz * (L.r - 110), bx: L.dx * (L.r + 20), bz: L.dz * (L.r + 20), w: 20 });
-      this.landings[hub.id].push(seg(a));
-      this.landings[st.id].push(seg(b));
-      this._bridge(hub, a, st, b);
+    this.landPts = {};
+    const link = (sa, sb) => {
+      const [ax, az] = this.pos(sa.id);
+      const [bx, bz] = this.pos(sb.id);
+      const out = Math.atan2(bz - az, bx - ax);
+      // The best pair of landings whose deck, as it will be laid, keeps clear of both circuits.
+      const As = this._landing(sa, out, true).slice(0, 16);
+      const Bs = this._landing(sb, out + Math.PI, true).slice(0, 16);
+      const pairs = [];
+      for (const A of As) for (const B of Bs) pairs.push([A, B, A.dev + B.dev]);
+      pairs.sort((p, q) => p[2] - q[2]);
+      let a = null;
+      let b = null;
+      let most = -1;
+      for (const [A, B] of pairs) {
+        const c = this._deckClear(sa, A, sb, B);
+        if (c > most) [a, b, most] = [A, B, c];
+        if (c >= 40) break;
+      }
+      (this.bridgeLog = this.bridgeLog || []).push(`${sa.id}->${sb.id} clear ${Math.round(most)} of ${pairs.length}`);
+      if (!a || !b) return;
+      for (const [st, L] of [
+        [sa, a],
+        [sb, b],
+      ]) {
+        (this.landings[st.id] = this.landings[st.id] || []).push({ ax: L.dx * (L.r - 110), az: L.dz * (L.r - 110), bx: L.dx * (L.r + 20), bz: L.dz * (L.r + 20), w: 20 });
+        (this.landPts[st.id] = this.landPts[st.id] || []).push(L.L);
+      }
+      this._bridge(sa, a, sb, b);
+    };
+    for (const st of this.stages) if (st !== hub) link(hub, st);
+    const ring = (WORLD.ring || []).map((id) => this.stages.find((s) => s.id === id)).filter(Boolean);
+    if (ring.length > 2) for (let k = 0; k < ring.length; k++) link(ring[k], ring[(k + 1) % ring.length]);
+  }
+
+  /** The bridge between islands a and b (either way round), or null. */
+  bridgeBetween(a, b) {
+    return this.bridges.find((B) => (B.from === a && B.to === b) || (B.from === b && B.to === a)) || null;
+  }
+
+  /** The centre line a bridge between these landings would take. */
+  _bridgeCurve(sa, a, sb, b) {
+    const [ax, az] = this.pos(sa.id);
+    const [bx, bz] = this.pos(sb.id);
+    return new THREE.CatmullRomCurve3(
+      [
+        new THREE.Vector3(ax + a.L.x, 0, az + a.L.z),
+        new THREE.Vector3(ax + a.C.x + a.dx * 60, 0, az + a.C.z + a.dz * 60),
+        new THREE.Vector3(bx + b.C.x + b.dx * 60, 0, bz + b.C.z + b.dz * 60),
+        new THREE.Vector3(bx + b.L.x, 0, bz + b.L.z),
+      ],
+      false,
+      'centripetal',
+    );
+  }
+
+  /** How close that deck comes to any circuit it passes (its own islands' or any other's). */
+  _deckClear(sa, a, sb, b) {
+    const curve = this._bridgeCurve(sa, a, sb, b);
+    const n = Math.ceil(curve.getLength() / 8);
+    let most = Infinity;
+    for (let i = 0; i <= n; i++) {
+      const p = curve.getPointAt(i / n);
+      const st = this.islandAt(p.x, p.z);
+      if (!st) continue;
+      const [cx, cz] = this.pos(st.id);
+      most = Math.min(most, this.trackDistance(st.id, p.x - cx, p.z - cz));
+      if (most < 1) break;
     }
+    return most;
   }
 
   _bridge(sa, a, sb, b) {
@@ -574,6 +656,15 @@ export class World {
     const half = Math.floor(samples.length / 2);
     for (let i = 1; i <= half; i++) samples[i].p.y = Math.max(samples[i].p.y, samples[i - 1].p.y);
     for (let i = samples.length - 2; i >= half; i--) samples[i].p.y = Math.max(samples[i].p.y, samples[i + 1].p.y);
+    // Vertical curves instead of kinks where the ramps level out (about 60 m each), ends kept where they land;
+    // never down into the ground or the sea.
+    for (let pass = 0; pass < 10; pass++) {
+      const y = samples.map((S) => S.p.y);
+      for (let i = 1; i < samples.length - 1; i++) {
+        const S = samples[i];
+        S.p.y = Math.max(0.25 * y[i - 1] + 0.5 * y[i] + 0.25 * y[i + 1], S.ground > 0 ? S.ground + 0.35 : -Infinity, Math.min(y[i], 2.5));
+      }
+    }
     const group = new THREE.Group();
     group.name = `גשר ל${sb.name}`;
     group.add(this._deck(samples));

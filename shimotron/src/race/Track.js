@@ -453,7 +453,8 @@ export class Track {
     const a = Math.abs(q.lat);
     if (a > W + 4.5) return false;
     // Where a side road or street leaves through the barriers the wheels follow the ground past the edge line.
-    if (a > W + 0.4 && this.gaps && this.inGap(q.i, Math.sign(q.lat))) return false;
+    // In a side road's mouth that starts right at the edge: the road answers from there, flush.
+    if (a > W && this.gaps && (this.inMouth(q.i, Math.sign(q.lat)) || (a > W + 0.4 && this.inGap(q.i, Math.sign(q.lat))))) return false;
     const n = this.n;
     const i = q.i;
     const j = (i + 1) % n;
@@ -704,6 +705,8 @@ export class Track {
     const uv = new Float32Array(rows * cols * 2);
     const road = new Float32Array(rows * cols * 3);
     const dirt = new Float32Array(rows * cols);
+    // Mouths where a side road joins: no edge line on that side there.
+    const gap = new Float32Array(rows * cols * 3);
     const vRep = this.length / Math.round(this.length / 2.5);
     for (let r = 0; r < rows; r++) {
       const i = r % n;
@@ -719,12 +722,16 @@ export class Track {
         pos[k + 1] = this.surfaceY(i, lc) - (skirt ? 0.4 : 0);
         pos[k + 2] = this.z[i] + rz * l;
         // Square 2.5 m texture tiles; markings come from aRoad, not the UVs.
-        uv[(r * cols + c) * 2] = lc / 2.5;
+        // The skirt carries on the texture down its face (not one texel smeared across it).
+        uv[(r * cols + c) * 2] = (skirt ? l + Math.sign(l) * 0.4 : l) / 2.5;
         uv[(r * cols + c) * 2 + 1] = d / vRep;
         road[k] = lc;
         road[k + 1] = d;
         road[k + 2] = this.line[i];
         dirt[r * cols + c] = this.dirt ? this.dirt[i] : 0;
+        gap[k] = this.inMouth(i, -1) ? 1 : 0;
+        gap[k + 1] = this.inMouth(i, 1) ? 1 : 0;
+        gap[k + 2] = 1e4;
       }
     }
     const idx = [];
@@ -742,6 +749,7 @@ export class Track {
     geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
     geo.setAttribute('aRoad', new THREE.BufferAttribute(road, 3));
     geo.setAttribute('aDirt', new THREE.BufferAttribute(dirt, 1));
+    geo.setAttribute('aGap', new THREE.BufferAttribute(gap, 3));
     geo.setIndex(idx);
     geo.computeVertexNormals();
     geo.computeBoundingSphere();
@@ -751,10 +759,10 @@ export class Track {
       shader.uniforms.uW = { value: W };
       shader.uniforms.uLen = { value: this.length };
       shader.vertexShader = shader.vertexShader
-        .replace('#include <common>', '#include <common>\nattribute vec3 aRoad; varying vec3 vRoad; attribute float aDirt; varying float vDirt;')
-        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRoad = aRoad; vDirt = aDirt;');
+        .replace('#include <common>', '#include <common>\nattribute vec3 aRoad; varying vec3 vRoad; attribute float aDirt; varying float vDirt; attribute vec3 aGap; varying vec3 vGap;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRoad = aRoad; vDirt = aDirt; vGap = aGap;');
       shader.fragmentShader = shader.fragmentShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vRoad; varying float vDirt; uniform float uW; uniform float uLen; float rPaint; float rRubber;\nfloat rHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\nfloat rNoise(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(rHash(i), rHash(i + vec2(1.0, 0.0)), f.x), mix(rHash(i + vec2(0.0, 1.0)), rHash(i + vec2(1.0, 1.0)), f.x), f.y); }')
+        .replace('#include <common>', '#include <common>\nvarying vec3 vRoad; varying float vDirt; varying vec3 vGap; uniform float uW; uniform float uLen; float rPaint; float rRubber;\nfloat rHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\nfloat rNoise(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(rHash(i), rHash(i + vec2(1.0, 0.0)), f.x), mix(rHash(i + vec2(0.0, 1.0)), rHash(i + vec2(1.0, 1.0)), f.x), f.y); }')
         .replace(
           '#include <map_fragment>',
           `#include <map_fragment>
@@ -767,6 +775,14 @@ export class Track {
             // Edge lines, dashed centre line.
             float edge = smoothstep(uW - 0.5 - aw, uW - 0.5, abs(l)) * (1.0 - smoothstep(uW - 0.25, uW - 0.25 + aw, abs(l)));
             float dash = step(fract(d / 12.0), 0.45) * (1.0 - smoothstep(0.1, 0.1 + aw, abs(l)));
+            // A side road's mouth: the circuit's edge line breaks for it; on the side road, the centre
+            // line stops short and a dashed give-way line crosses the lane coming in (vGap.z: metres to the circuit).
+            edge *= 1.0 - (l < 0.0 ? vGap.x : vGap.y);
+            float jd = vGap.z;
+            dash *= step(3.5, jd);
+            float aj = fwidth(jd) * 1.2 + 0.01;
+            float giveWay = smoothstep(0.7 - aj, 0.7, jd) * (1.0 - smoothstep(1.2, 1.2 + aj, jd)) * step(0.35, l) * step(l, uW - 0.6) * step(0.45, fract(l / 1.1));
+            edge = max(edge, giveWay);
             // Start / finish chequers across the full width.
             float sd = mod(d + ${startLen / 2}, uLen);
             float inStart = step(sd, ${startLen});
@@ -868,8 +884,16 @@ export class Track {
       }
       let len = 0;
       while (len < n && mark[(i + len) % n]) len++;
-      addRun(i, len, 1);
-      addRun(i, len, -1);
+      // Split round the mouths of side roads: no kerb across a junction.
+      for (const side of [1, -1]) {
+        let r0 = 0;
+        for (let r = 0; r <= len; r++) {
+          if (r === len || this.inMouth((i + r) % n, side)) {
+            if (r - r0 > 1) addRun((i + r0) % n, r - r0 - 1, side);
+            r0 = r + 1;
+          }
+        }
+      }
       k += len;
     }
     if (!pos.length) return;
@@ -886,6 +910,17 @@ export class Track {
 
   _groundY(x, z) {
     return this.terrain.height(x, z);
+  }
+
+  /** Is sample i on `side` in the mouth of a side road (flush with it: no edge line, kerb or shoulder)? */
+  inMouth(i, side) {
+    for (const g of this.gaps || []) {
+      if (!g.road || g.side !== side) continue;
+      let d = Math.abs(i - g.i);
+      d = Math.min(d, this.n - d);
+      if (d <= g.open) return true;
+    }
+    return false;
   }
 
   /** Is sample i on `side` inside an opening in the barriers (where a side road joins)? */

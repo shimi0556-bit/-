@@ -119,6 +119,8 @@ export class Vehicle {
     this.airborne = 0;
     this.upsideDown = 0;
     this.wheelSpin = [0, 0, 0, 0]; // accumulated rotation (rad)
+    this.wheelShown = [0, 0, 0, 0]; // what the models draw (see showSpin)
+    this._spinSeen = [0, 0, 0, 0];
     this.compression = [0, 0, 0, 0];
     this.onShift = null; // (gear, up) => void
     this.assist = 1; // stability-assist scale (AI and player settings)
@@ -148,6 +150,22 @@ export class Vehicle {
   }
 
   /** Teleports the car, resets motion. heading: yaw in radians (0 = +z). */
+  /**
+   * Per drawn frame: the wheel rotation the models show. At speed a wheel
+   * turns further between frames than its spokes are apart, and the eye
+   * sees them stand still or run backwards (the wagon-wheel effect). So the
+   * turn shown per frame grows with the real one but eases off below half a
+   * spoke gap: the wheels always read as rolling forwards, faster and faster.
+   */
+  showSpin(dt) {
+    const cap = 0.42 * Math.min(2, Math.max(0.5, dt * 60));
+    for (let i = 0; i < 4; i++) {
+      const d = this.wheelSpin[i] - this._spinSeen[i];
+      this._spinSeen[i] = this.wheelSpin[i];
+      this.wheelShown[i] += dt > 0 ? cap * Math.tanh(d / cap) : 0;
+    }
+  }
+
   place(position, heading = 0) {
     const b = this.body;
     // Callers place a car's centre ~0.6 m over the road (where an ordinary car rides); a car that rides higher goes up by the difference.
@@ -384,6 +402,14 @@ export class Vehicle {
         av.x -= (_f.x * wr + _r.x * wp) * k;
         av.y -= (_f.y * wr + _r.y * wp) * k;
         av.z -= (_f.z * wr + _r.z * wp) * k;
+      }
+      // Off a jump, a big-wheeled truck can be turned in the air with the steering, to land pointing the right way.
+      if (grounded === 0 && S.airControl && this.airborne > 0.12 && !C.hold) {
+        const yr = av.dot(_u);
+        const ty = (-clamp(C.steer, -1, 1) * 1.4 * S.airControl - yr) * (b.inertia.y || m) * 3;
+        b.torque.x += _u.x * ty;
+        b.torque.y += _u.y * ty;
+        b.torque.z += _u.z * ty;
       }
     }
     this.guard.sweep(dt);
