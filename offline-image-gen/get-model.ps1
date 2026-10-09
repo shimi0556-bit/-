@@ -55,6 +55,26 @@ function Test-Manifest($path) {
   return ($lines[-1] -like 'LICENSE-* * -')
 }
 
+# The file list of the last complete download. When every file in it is still in place, nothing is
+# fetched, so a rerun (for example from resume.ps1) also works with no internet.
+$okManifest = "$AI\cache\model-manifest.ok"
+function Test-ModelDone($path) {
+  $n = 0
+  foreach ($line in Get-Content $path) {
+    $f = $line -split ' '
+    if ($f.Count -ne 5 -or $f[4] -eq '-') { continue }
+    $final = Join-Path $hub ($f[4] -replace '/', '\')
+    if (-not (Test-Path $final) -or (Get-Item $final).Length -ne [int64]$f[1]) { return $false }
+    $n++
+  }
+  return ($n -gt 0)
+}
+if ((Test-Path $okManifest) -and (Test-ModelDone $okManifest)) {
+  Write-Host "`n== MODEL DONE (already downloaded)"
+  Stop-Transcript | Out-Null
+  exit 0
+}
+
 Write-Host "`n== Reading the file list from GitHub"
 $manifest = "$tmp\manifest.txt"
 $gotManifest = $false
@@ -121,6 +141,6 @@ foreach ($line in Get-Content $manifest) {
 }
 
 if ($entries -eq 0) { $allOk = $false }
-if ($allOk) { Write-Host "`n== MODEL DONE" } else { Write-Host "`n== MODEL INCOMPLETE, run this script again" }
+if ($allOk) { Copy-Item -Force $manifest $okManifest; Write-Host "`n== MODEL DONE" } else { Write-Host "`n== MODEL INCOMPLETE, run this script again" }
 Stop-Transcript | Out-Null
 if (-not $allOk) { exit 1 }

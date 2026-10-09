@@ -36,8 +36,13 @@ if (-not $uv) {
 $app = "$AI\fastsdcpu"
 if (-not (Test-Path "$app\src\app.py")) {
   Step 'Downloading FastSD CPU v1.0.0-beta.510'
-  git clone --depth 1 --branch v1.0.0-beta.510 https://github.com/rupeshs/fastsdcpu.git $app 2>&1 | Out-Host
+  # Cloned under another name and renamed only once complete, so an interrupted clone is simply redone
+  $cloneTmp = "$AI\fastsdcpu-download"
+  if (Test-Path $cloneTmp) { Remove-Item -Recurse -Force $cloneTmp }
+  git clone --depth 1 --branch v1.0.0-beta.510 https://github.com/rupeshs/fastsdcpu.git $cloneTmp 2>&1 | Out-Host
   Check 'git clone'
+  if (Test-Path $app) { Remove-Item -Recurse -Force $app }
+  Rename-Item $cloneTmp 'fastsdcpu'
 }
 
 $py = "$app\env\Scripts\python.exe"
