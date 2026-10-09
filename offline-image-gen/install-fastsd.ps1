@@ -73,38 +73,92 @@ $env:PIP_RETRIES = '10'
 $pipArgs = @('-m', 'pip', 'install', '--no-compile', '--no-warn-script-location')
 
 # Filtered internet (NetFree) re-signs HTTPS with its own root certificate, which lives in the
-# Windows store. Python tools need it as a file.
+# Windows store. pip needs it in a file. pip's own list goes in too, for sites NetFree does not re-sign.
+# Rebuilt on every run, so a certificate added to Windows later is picked up.
+Step 'Building certificate bundle (pip''s own list + the Windows certificate store)'
 $bundle = "$AI\cache\ca-bundle.pem"
-if (-not (Test-Path $bundle)) {
-  Step 'Building certificate bundle from the Windows certificate store'
-  $lines = @()
-  foreach ($c in @(Get-ChildItem Cert:\LocalMachine\Root) + @(Get-ChildItem Cert:\CurrentUser\Root) + @(Get-ChildItem Cert:\LocalMachine\CA)) {
-    $lines += '-----BEGIN CERTIFICATE-----'
-    $lines += [Convert]::ToBase64String($c.RawData, 'InsertLineBreaks')
-    $lines += '-----END CERTIFICATE-----'
-  }
-  $lines | Set-Content -Encoding ascii $bundle
+$lines = @(Get-Content "$sp\pip\_vendor\certifi\cacert.pem" -ErrorAction SilentlyContinue)
+foreach ($c in @(Get-ChildItem Cert:\LocalMachine\Root) + @(Get-ChildItem Cert:\CurrentUser\Root) + @(Get-ChildItem Cert:\LocalMachine\CA)) {
+  $lines += '-----BEGIN CERTIFICATE-----'
+  $lines += [Convert]::ToBase64String($c.RawData, 'InsertLineBreaks')
+  $lines += '-----END CERTIFICATE-----'
 }
+$lines | Set-Content -Encoding ascii $bundle
 $env:PIP_CERT = $bundle
+
+$wheelDir = "$AI\cache\wheels"
+New-Item -ItemType Directory -Force -Path $wheelDir | Out-Null
+# Git for Windows can add a second curl.exe; take the first one
+$curl = (Get-Command curl.exe | Select-Object -First 1).Source
+
+# torch, OpenCV and OpenVINO need the Microsoft Visual C++ runtime (msvcp140.dll); Python itself ships
+# only part of it. When Windows lacks it, the DLLs go next to python.exe (from the msvc-runtime package
+# on PyPI) instead of installing anything to drive C.
+$pyHome = (& $py -c "import sys; print(sys.base_prefix)" | Out-String).Trim()
+if (-not (Test-Path "$env:windir\System32\msvcp140.dll") -and -not (Test-Path "$pyHome\msvcp140.dll")) {
+  Step 'Adding the Visual C++ runtime next to Python (Windows does not have it)'
+  for ($i = 1; $i -le 10; $i++) {
+    & $py -m pip download --no-deps --only-binary :all: -d $wheelDir msvc-runtime==14.44.35112 2>&1 | Out-Host
+    if ($LASTEXITCODE -eq 0) { break }
+    Write-Host "Retrying in 30s (attempt $i)"; Start-Sleep 30
+  }
+  Check 'Visual C++ runtime download'
+  @'
+import glob, os, sys, zipfile
+wheel = glob.glob(os.path.join(sys.argv[1], 'msvc_runtime-*.whl'))[0]
+with zipfile.ZipFile(wheel) as z:
+    for name in z.namelist():
+        out = os.path.join(sys.argv[2], os.path.basename(name))
+        if '/Scripts/' in name and name.endswith('.dll') and not os.path.exists(out):
+            with open(out, 'wb') as f:
+                f.write(z.read(name))
+'@ | Set-Content -Encoding ascii "$env:TMP\copy-vc-runtime.py"
+  & $py "$env:TMP\copy-vc-runtime.py" $wheelDir $pyHome 2>&1 | Out-Host
+  Check 'Visual C++ runtime copy'
+}
 
 # PyTorch is one 590MB file. Download it with curl so a dropped connection resumes
 # from where it stopped instead of starting over.
-$wheelDir = "$AI\cache\wheels"
-New-Item -ItemType Directory -Force -Path $wheelDir | Out-Null
 $torchName = 'torch-2.8.0+cpu-cp311-cp311-win_amd64.whl'
 $torchWhl = "$wheelDir\$torchName"
 $torchUrl = 'https://download-r2.pytorch.org/whl/cpu/torch-2.8.0%2Bcpu-cp311-cp311-win_amd64.whl'
 $torchSize = 619392861
+# Reads every file inside the wheel, so a damaged download is caught before pip spends an hour on it
+@'
+import sys, zipfile
+try:
+    bad = zipfile.ZipFile(sys.argv[1]).testzip()
+except Exception as e:
+    bad = repr(e)
+print('file check: OK' if bad is None else 'file check: DAMAGED (%s)' % bad)
+sys.exit(0 if bad is None else 1)
+'@ | Set-Content -Encoding ascii "$env:TMP\check-wheel.py"
 if (-not (Test-Path "$sp\torch-2.8.0+cpu.dist-info\RECORD")) {
-  Step 'Downloading PyTorch (590MB, resumes after connection drops)'
-  for ($i = 1; $i -le 200; $i++) {
-    $have = 0; if (Test-Path $torchWhl) { $have = (Get-Item $torchWhl).Length }
-    if ($have -ge $torchSize) { break }
-    Write-Host ("Attempt {0}: {1:N0} of {2:N0} MB downloaded" -f $i, ($have/1MB), ($torchSize/1MB))
-    curl.exe -L -C - --retry 5 --retry-delay 10 --connect-timeout 30 --speed-limit 1 --speed-time 120 -o $torchWhl $torchUrl
-    Start-Sleep 5
+  # An install cut off near its end leaves the dist-info without RECORD. pip would then call torch
+  # already installed and skip it, so the half-installed files are removed first.
+  if (Test-Path "$sp\torch-2.8.0+cpu.dist-info") {
+    Step 'Removing an interrupted PyTorch install'
+    Remove-Item -Recurse -Force "$sp\torch-2.8.0+cpu.dist-info", "$sp\torch", "$sp\torchgen", "$sp\functorch" -ErrorAction SilentlyContinue
   }
-  if (-not (Test-Path $torchWhl) -or (Get-Item $torchWhl).Length -lt $torchSize) { Write-Host 'FAILED: PyTorch download incomplete, run this script again to resume'; Stop-Transcript | Out-Null; exit 1 }
+  Step 'Downloading PyTorch (590MB, resumes after connection drops)'
+  $torchOk = $false
+  for ($round = 1; $round -le 3 -and -not $torchOk; $round++) {
+    for ($i = 1; $i -le 200; $i++) {
+      $have = 0; if (Test-Path $torchWhl) { $have = (Get-Item $torchWhl).Length }
+      if ($have -eq $torchSize) { break }
+      if ($have -gt $torchSize) { Remove-Item $torchWhl; $have = 0 }
+      Write-Host ("{0}  attempt {1}: {2:N0} of {3:N0} MB downloaded" -f (Get-Date -Format HH:mm:ss), $i, ($have / 1MB), ($torchSize / 1MB))
+      # -f: never append an error page to the file. No curl --retry: it throws away the bytes of a
+      # failed attempt; this loop resumes from them instead.
+      & $curl -f -sS -L -C - --connect-timeout 30 --speed-limit 1 --speed-time 120 -o $torchWhl $torchUrl
+      if ($LASTEXITCODE -ne 0) { Start-Sleep 60 }
+    }
+    if (-not (Test-Path $torchWhl) -or (Get-Item $torchWhl).Length -ne $torchSize) { break }
+    Write-Host 'Checking the downloaded file (takes a minute or two)'
+    & $py "$env:TMP\check-wheel.py" $torchWhl 2>&1 | Out-Host
+    if ($LASTEXITCODE -eq 0) { $torchOk = $true } else { Write-Host 'Downloading it again'; Remove-Item $torchWhl }
+  }
+  if (-not $torchOk) { Write-Host 'FAILED: PyTorch download incomplete, run this script again to resume'; Stop-Transcript | Out-Null; exit 1 }
 
   Step 'Installing PyTorch (CPU only)'
   for ($i = 1; $i -le 20; $i++) {

@@ -13,7 +13,7 @@ set "PATH=%AI%fastsdcpu\env\Lib\site-packages\openvino\libs;%PATH%"
 title FastSD CPU - keep this window open while making images
 echo Starting FastSD CPU. The browser opens by itself when it is ready.
 echo To stop it, close this window.
-start "" /b powershell -NoProfile -WindowStyle Hidden -Command "for ($i = 0; $i -lt 600; $i++) { try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 http://127.0.0.1:7860 | Out-Null; Start-Process http://127.0.0.1:7860; break } catch { Start-Sleep 2 } }"
+start "" /b powershell -NoProfile -Command "$ProgressPreference = 'SilentlyContinue'; for ($i = 0; $i -lt 600; $i++) { try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 http://127.0.0.1:7860 | Out-Null; Start-Process http://127.0.0.1:7860; break } catch { Start-Sleep 2 } }"
 cd /d "%AI%fastsdcpu"
 "%AI%fastsdcpu\env\Scripts\python.exe" src\app.py -w
 pause

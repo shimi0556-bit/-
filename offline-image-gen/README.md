@@ -11,9 +11,10 @@ Copy these to `D:\AI\` (any folder works; everything stays inside it, so drive C
 
 | File | What it does |
 |---|---|
-| `install-fastsd.ps1` | Installs uv, Python 3.11, FastSD CPU and its packages. Rerun to resume. Log: `install.log`. |
-| `get-model.ps1` | Downloads the model from the GitHub release into `cache\hf\hub`, checks sha256. Rerun to resume. Log: `get-model.log`. |
-| `resume.ps1` | Runs `install-fastsd.ps1` and then `get-model.ps1`, one after the other. |
-| `start-fastsd.bat` | Starts the web UI at http://127.0.0.1:7860, offline (not in the repo yet). |
+| `resume.ps1` | **Start here.** Runs `install-fastsd.ps1` while `get-model.ps1` downloads in the background, then makes a test image with `test-image.py`. Rerun to continue after a failure. Log: `resume.log`. |
+| `install-fastsd.ps1` | Installs uv, Python 3.11, FastSD CPU and a reduced set of its packages (with pip, which writes less to a USB stick). Adds the Visual C++ runtime next to Python if Windows lacks it. Rerun to resume. Log: `install.log`. |
+| `get-model.ps1` | Downloads the model from the GitHub release into `cache\hf\hub` and checks sha256. Only one copy runs at a time. Rerun to resume. Log: `get-model.log`. |
+| `test-image.py` | Makes one image offline (`test-image.png`), prints the timing, and saves the settings the web UI starts with. |
+| `start-fastsd.bat` | Double-click to start the web UI offline; the browser opens at http://127.0.0.1:7860 when it is ready. Close its window to stop it. |
 
 Run a `.ps1` with `powershell -ExecutionPolicy Bypass -File <script>`.

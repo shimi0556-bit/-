@@ -4,6 +4,17 @@
 # Rerun any time: finished files are skipped and partial downloads resume.
 $ErrorActionPreference = 'Continue'
 $AI = Split-Path -Parent $MyInvocation.MyCommand.Path
+# Only one copy may download at a time: two would append to the same files and spoil them.
+# A second copy waits here, then only re-checks what the first one finished.
+New-Item -ItemType Directory -Force -Path "$AI\cache" | Out-Null
+$lock = $null
+for ($i = 0; -not $lock; $i++) {
+  try { $lock = [IO.File]::Open("$AI\cache\get-model.lock", 'OpenOrCreate', 'ReadWrite', 'None') }
+  catch {
+    if ($i -eq 0) { Write-Host 'Another get-model.ps1 is still downloading; waiting for it to finish' }
+    Start-Sleep 30
+  }
+}
 Start-Transcript -Path "$AI\get-model.log" -Append | Out-Null
 # Keep the computer awake while downloading
 Add-Type -Namespace Win32 -Name Power -MemberDefinition '[DllImport("kernel32.dll")] public static extern uint SetThreadExecutionState(uint flags);'
