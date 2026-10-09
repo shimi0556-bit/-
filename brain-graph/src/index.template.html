@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>אטלס המוח</title>
+<style>
+/*CSS*/
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="logo" aria-hidden="true">◐</span> אטלס המוח <small id="stats"></small></div>
+  <input id="search" type="search" placeholder="חיפוש בגרף…" autocomplete="off">
+  <nav class="actions">
+    <button id="btnAdd" class="primary" title="הוספת מסמך, קישור או טקסט">＋ מקור</button>
+    <button id="btnOrganize" title="ה-AI עובר על כל הצמתים ומציע סידור וקשרים">✨ סדר הכל</button>
+    <button id="btnExport" title="ייצוא ל-Photoshop, Canva ועוד">⇩ ייצוא</button>
+    <button id="btnUndo" title="ביטול הפעולה האחרונה" disabled>↶</button>
+    <button id="btnFit" title="מרכז את התצוגה">⌖</button>
+    <button id="btnSettings" title="הגדרות AI">⚙</button>
+  </nav>
+</header>
+<main>
+  <aside class="side" id="side">
+    <div class="tabs" role="tablist">
+      <button class="tab on" data-tab="add">הוספה</button>
+      <button class="tab" data-tab="node">צומת</button>
+      <button class="tab" data-tab="regions">אזורים</button>
+    </div>
+    <section class="panel on" id="tab-add"></section>
+    <section class="panel" id="tab-node"></section>
+    <section class="panel" id="tab-regions"></section>
+  </aside>
+  <section class="stage" id="stageWrap">
+    <svg id="stage" role="img" aria-label="גרף ידע בצורת מוח"></svg>
+    <div class="hint" id="hint"></div>
+    <div class="answer" id="answer" hidden></div>
+    <form class="cmd" id="cmd" autocomplete="off">
+      <input id="cmdInput" placeholder="בקש מה-AI: 'מה הקשר בין ההרגלים שלי לערכים?'  ·  'הוסף רגש חדש'  ·  'ייצא ל-Photoshop'" aria-label="פקודה ל-AI">
+      <button class="primary" id="cmdGo" type="submit">שלח</button>
+      <button type="button" id="cmdStop" hidden>עצור</button>
+    </form>
+    <div class="drop" id="drop" hidden>שחרר כאן מסמכים להוספה למוח</div>
+  </section>
+</main>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<dialog id="dlg"></dialog>
+<script>
+/*JS*/
+</script>
+</body>
+</html>
