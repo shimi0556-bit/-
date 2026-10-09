@@ -1,12 +1,11 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { CAR_TYPES, carSpec } from './config.js';
 import { createCarModel, drawCarProfile } from './CarModel.js';
-import conceptHi from './models/concept.glb?url';
-import conceptLo from './models/concept-lo.glb?url';
-import hyperHi from './models/hyper.glb?url';
-import hyperLo from './models/hyper-lo.glb?url';
+import conceptHi from './models/concept.glb.gz?url';
+import conceptLo from './models/concept-lo.glb.gz?url';
+import hyperHi from './models/hyper.glb.gz?url';
+import hyperLo from './models/hyper-lo.glb.gz?url';
 
 /**
  * Real 3D models (scanned-quality glTF, prepared by tools/models.mjs) for the
@@ -33,17 +32,63 @@ export const hasRealModel = (type) => !!loaded[type];
 
 /** Loads every model named by a car type; resolves even if some fail (they fall back). */
 export async function loadRealModels() {
-  const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+  const loader = new GLTFLoader().register(inlineImages);
   const jobs = CAR_TYPES.filter((t) => t.model && SOURCES[t.model]).map(async (t) => {
     const src = SOURCES[t.model];
     try {
-      const [hi, lo] = await Promise.all([loader.loadAsync(src.hi), loader.loadAsync(src.lo)]);
+      const [hi, lo] = await Promise.all([parseGz(loader, src.hi), parseGz(loader, src.lo)]);
       loaded[t.id] = prepare(hi.scene, lo.scene);
     } catch (e) {
       console.warn(`real model for ${t.id} did not load; using the procedural body`, e);
     }
   });
   await Promise.all(jobs);
+}
+
+/*
+ * The claude.ai artifact viewer runs the page in a sandbox whose policy refuses
+ * fetch() of data: and blob: addresses (and may refuse WebAssembly), which is
+ * how GLTFLoader normally reads an inlined model and its textures: there the
+ * cars silently fell back to their procedural bodies, while the same file opened
+ * from disk showed the real ones. So nothing here fetches: the inlined bytes are
+ * decoded from base64 by hand, unzipped with the browser's DecompressionStream,
+ * parsed from memory, and every texture is decoded straight from its bytes.
+ */
+
+/** A `data:…;base64,` address (what Vite inlines) or a plain URL → the model, parsed. */
+export async function parseGz(loader, src) {
+  let bytes;
+  if (src.startsWith('data:')) {
+    const bin = atob(src.slice(src.indexOf(',') + 1));
+    bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  } else {
+    bytes = new Uint8Array(await (await fetch(src)).arrayBuffer());
+  }
+  const raw = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+  return loader.parseAsync(raw, '');
+}
+
+/** GLTFLoader plugin: images embedded in the model become textures without an object URL or fetch. */
+export function inlineImages(parser) {
+  if (typeof createImageBitmap === 'undefined') return { name: 'inline-images' };
+  const base = parser.loadImageSource.bind(parser);
+  parser.loadImageSource = function (index, loader) {
+    const def = this.json.images[index];
+    if (def.bufferView === undefined) return base(index, loader);
+    if (!this.sourceCache[index]) {
+      this.sourceCache[index] = this.getDependency('bufferView', def.bufferView)
+        .then((view) => createImageBitmap(new Blob([view], { type: def.mimeType }), { premultiplyAlpha: 'none' }))
+        .then((bitmap) => {
+          const texture = new THREE.Texture(bitmap);
+          texture.needsUpdate = true;
+          texture.userData.mimeType = def.mimeType;
+          return texture;
+        });
+    }
+    return this.sourceCache[index].then((t) => t.clone());
+  };
+  return { name: 'inline-images' };
 }
 
 /** Splits a loaded scene into a still body and four wheel pivots (centred on each tyre). */

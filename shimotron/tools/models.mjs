@@ -1,16 +1,19 @@
 // Real 3D models for the game: downloads each source model (openly licensed,
 // see MODELS below), strips what the game never shows and every trademark
 // logo, slims the meshes and textures, and writes two levels of detail into
-// src/race/models/ (close up and far away), compressed for the web.
+// src/race/models/ (close up and far away), gzipped for the web. Not meshopt:
+// its decoder is WebAssembly, and the claude.ai artifact viewer's sandbox may
+// refuse it; the game unzips with the browser's own DecompressionStream.
 //   node tools/models.mjs
 // Sources are cached in .models/ (not committed); the outputs are committed.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { NodeIO } from '@gltf-transform/core';
-import { ALL_EXTENSIONS, EXTMeshoptCompression } from '@gltf-transform/extensions';
+import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { dedup, flatten, join, prune, quantize, simplify, textureCompress, weld } from '@gltf-transform/functions';
-import { MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer';
+import zlib from 'node:zlib';
+import { MeshoptSimplifier } from 'meshoptimizer';
 import sharp from 'sharp';
 import draco3d from 'draco3dgltf';
 import * as THREE from 'three';
@@ -56,8 +59,7 @@ export const MODELS = {
 };
 
 await MeshoptSimplifier.ready;
-await MeshoptEncoder.ready;
-const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.encoder': MeshoptEncoder, 'draco3d.decoder': await draco3d.createDecoderModule() });
+const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'draco3d.decoder': await draco3d.createDecoderModule() });
 
 /** A tiny solid-colour PNG (to paint over a logo). */
 const solid = (r, g, b) => sharp({ create: { width: 4, height: 4, channels: 3, background: { r, g, b } } }).png().toBuffer();
@@ -130,7 +132,7 @@ async function build(id, M, L) {
   const doc = await io.read(await source(id, M.url));
   const rootP = doc.getRoot();
   // Paint options are material variants: keep the default paint only.
-  // Draco only packs the download; the output is packed with meshopt instead.
+  // Draco only packs the download; the output is gzipped instead.
   for (const ext of rootP.listExtensionsUsed()) if (['KHR_materials_variants', 'KHR_draco_mesh_compression'].includes(ext.extensionName)) ext.dispose();
   for (const n of rootP.listNodes()) if (M.drop.test(n.getName())) n.dispose();
   for (const mat of rootP.listMaterials()) if (M.materials?.[mat.getName()]) mat.setName(M.materials[mat.getName()]);
@@ -196,11 +198,10 @@ async function build(id, M, L) {
     textureCompress({ encoder: sharp, targetFormat: 'webp', resize: [L.texture, L.texture], quality: 88 }),
     quantize(),
   );
-  doc.createExtension(EXTMeshoptCompression).setRequired(true).setEncoderOptions({ method: EXTMeshoptCompression.EncoderMethod.QUANTIZE });
   fs.mkdirSync(OUT, { recursive: true });
-  const file = path.join(OUT, `${L.name}.glb`);
-  await io.write(file, doc);
-  console.log(`${L.name}.glb`.padEnd(20), `${tris(doc)} triangles`, `${(fs.statSync(file).size / 1024).toFixed(0)} KB`, `${rootP.listMaterials().length} materials`);
+  const file = path.join(OUT, `${L.name}.glb.gz`);
+  fs.writeFileSync(file, zlib.gzipSync(await io.writeBinary(doc), { level: 9 }));
+  console.log(`${L.name}.glb.gz`.padEnd(20), `${tris(doc)} triangles`, `${(fs.statSync(file).size / 1024).toFixed(0)} KB`, `${rootP.listMaterials().length} materials`);
 }
 
 // node tools/models.mjs [id…]: rebuild only those (all by default).
