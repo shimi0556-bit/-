@@ -38,6 +38,7 @@ window.BG = window.BG || {};
 
   BG.KINDS = [
     { id: 'value', name: 'ערך', home: 'pfc' },
+    { id: 'belief', name: 'אמונה / מחשבה', home: 'pfc' },
     { id: 'goal', name: 'מטרה / חזון', home: 'pfc' },
     { id: 'habit', name: 'הרגל / שגרה', home: 'bg' },
     { id: 'emotion', name: 'רגש', home: 'amy' },

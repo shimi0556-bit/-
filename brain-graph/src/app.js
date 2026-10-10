@@ -252,13 +252,16 @@
       try { BG.toast('מכין ' + fmt.toUpperCase() + '…'); const name = await BG.runExport(fmt, { transparent: transparent.checked }); BG.toast('הורד: ' + name, 'ok'); }
       catch (e) { BG.toast('הייצוא נכשל: ' + e.message, 'err'); }
     };
+    const mfile = h('input', { type: 'file', accept: '.json', hidden: true });
+    mfile.addEventListener('change', async () => { try { importMapat(JSON.parse(await mfile.files[0].text())); } catch (e) { BG.toast('קובץ לא תקין: ' + e.message, 'err'); } });
+    const importMapat = (d) => { const s = BG.mapat.import(d); dlg.close(); BG.toast('מפת הנפש נקלטה: ' + s.added + ' חדשים, ' + s.merged + ' אוחדו, ' + s.links + ' קשרים, ' + s.stories + ' סיפורים', 'ok'); };
     const file = h('input', { type: 'file', accept: '.json', hidden: true });
     file.addEventListener('change', async () => {
-      try { const d = JSON.parse(await file.files[0].text()); if (!confirm('לטעון את הגיבוי? הגרף הנוכחי יוחלף (אפשר לבטל).')) return; BG.snapshot(); BG.load(d); BG.layout.kick(0.5); dlg.close(); BG.toast('הגיבוי נטען', 'ok'); }
+      try { const d = JSON.parse(await file.files[0].text()); if (BG.mapat.isBackup(d)) return importMapat(d); if (!confirm('לטעון את הגיבוי? הגרף הנוכחי יוחלף (אפשר לבטל).')) return; BG.snapshot(); BG.load(d); BG.layout.kick(0.5); dlg.close(); BG.toast('הגיבוי נטען', 'ok'); }
       catch (e) { BG.toast('קובץ לא תקין: ' + e.message, 'err'); }
     });
     openDialog([
-      h('h3', { text: 'ייצוא לתוכנות עריכה ועיצוב' }),
+      h('h3', { text: 'ייצוא, ייבוא וחיבורים' }),
       h('div', { class: 'grid2' },
         h('button', { class: 'exp', onclick: go('psd') }, h('b', { text: 'Photoshop (PSD)' }), h('span', { text: 'שכבה נפרדת לכל אזור, קשרים ורקע' })),
         h('button', { class: 'exp', onclick: go('svg') }, h('b', { text: 'SVG בשכבות' }), h('span', { text: 'Canva · Illustrator · Figma · Inkscape' })),
@@ -267,6 +270,12 @@
       h('label', { class: 'f' }, transparent, ' רקע שקוף (SVG/PNG)'),
       h('div', { class: 'hr' }),
       h('button', { onclick: () => file.click(), text: 'ייבוא גיבוי JSON…' }), file,
+      h('div', { class: 'hr' }), h('h3', { text: 'מפת הנפש' }),
+      h('p', { class: 'muted', text: 'מיבוא: בחר את קובץ הגיבוי שמורידים מ"מפת הנפש" (הגדרות, גיבוי ודוגמאות). הערכים, הרגשות והקשרים נכנסים לאזורים שלהם, והסיפורים נכנסים להיפוקמפוס. שמות שכבר קיימים מתאחדים. אפשר גם לבחור אותו בכפתור הייבוא שלמעלה.' }),
+      h('div', { class: 'row' },
+        h('button', { onclick: () => mfile.click(), text: 'ייבוא ממפת הנפש…' }),
+        h('button', { onclick: () => { try { BG.download(new Blob([JSON.stringify(BG.mapat.export(), null, 2)], { type: 'application/json' }), 'mapat-hanefesh-from-atlas.json'); BG.toast('הורד. אפשר לשחזר אותו במפת הנפש', 'ok'); } catch (e) { BG.toast(e.message, 'err'); } }, text: 'ייצוא למפת הנפש' })),
+      h('div', { style: 'margin-top:8px' }, h('button', { onclick: () => { const s = BG.mapat.addMyValues(); dlg.close(); BG.toast('הערכים שלי: ' + s.added + ' נוספו, ' + s.merged + ' כבר היו', 'ok'); }, text: 'הוסף את 11 הערכים שלי' })), mfile,
       h('div', { class: 'row', style: 'margin-top:12px' }, h('button', { class: 'danger', onclick: () => { if (confirm('לנקות את כל הגרף?')) { BG.snapshot(); BG.clearAll(); dlg.close(); } }, text: 'נקה הכל' }), h('button', { onclick: () => dlg.close(), text: 'סגור' }))
     ]);
   }
