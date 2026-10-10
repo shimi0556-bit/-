@@ -526,6 +526,8 @@
     if (!has) $('#tab-add').prepend(h('div', { class: 'demo drophint', style: 'margin:0 0 10px', onclick: loadDemo, text: 'הגרף ריק – לחץ לטעינת דוגמה קטנה (24 צמתים)' }));
   }
 
+  BG.ui = { showTab, indexFor, localSeeds, traversal, walk, describeAction, cleanActions, applyActions, regionChips, labelOf };
+
   // ---------- init ----------
   BG.on('change', () => { renderStats(); renderRegionsPanel(); if (BG.view.selected && !BG.nodeById(BG.view.selected)) BG.view.selected = null; renderNodePanel(); renderEmpty(); });
   BG.ai.loadSettings();
