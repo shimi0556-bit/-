@@ -17,9 +17,10 @@ const _n = new THREE.Vector3();
  * plank-and-rope bridge slung between two rims.
  */
 export class Canyon {
-  constructor(engine, terrain, track, stage, materials, colliders = null) {
+  constructor(engine, terrain, track, stage, materials, colliders = null, keepOut = null) {
     this.engine = engine;
     this.colliders = colliders; // boulders, spires and arch feet are solid
+    this.keepOut = keepOut; // bridge landings and the roads off them (Island.keepOut)
     this.terrain = terrain;
     this.track = track;
     this.stage = stage;
@@ -32,6 +33,15 @@ export class Canyon {
     // Red sandstone: the engine's triplanar rock, tinted.
     this.rock = new THREE.MeshStandardMaterial({ name: 'אבן חול', color: stage.gorge?.rock ?? 0xd9906a, roughness: 0.93, metalness: 0 });
     materials.triplanar(this.rock, T.rock, T.rockNormal, 0.16, 1.2);
+  }
+
+  /** Whether a rock of reach `r` at (x, z) would stand on a bridge landing or the road off it. */
+  _kept(x, z, r) {
+    const K = this.keepOut;
+    if (!K) return false;
+    if (K(x, z)) return true;
+    for (let k = 0; k < 8; k++) if (K(x + Math.cos(k * 0.785) * r, z + Math.sin(k * 0.785) * r)) return true;
+    return false;
   }
 
   build() {
@@ -290,7 +300,7 @@ export class Canyon {
       const clear = tr.clearance(x, z);
       if (clear < 9.5) continue;
       const h = t.heightAt(x, z);
-      if (h < 2) continue;
+      if (h < 2 || this._kept(x, z, 9)) continue;
       put(x, z, rng.range(1.2, clear > 25 ? 7 : 3.2));
       placed++;
     }
@@ -349,6 +359,8 @@ export class Canyon {
       const h = t.heightAt(x, z);
       if (h < 3 || h > 40) continue;
       if (t.normalAt(x, z, _n).y < 0.9) continue;
+      // The family spreads ±9 m round its first spire.
+      if (this._kept(x, z, 15)) continue;
       const H = rng.range(10, 26) * (clear > 60 ? 1.2 : 0.8);
       // Spires stand in little families.
       const family = 1 + Math.floor(rng.random() * 3);

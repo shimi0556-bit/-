@@ -215,7 +215,7 @@ export class Island {
     }
     if (st.gorge) {
       await progress(0.56, 'מפסל קשתות סלע ונקיקים…');
-      this.group.add(new Canyon(eng, terrain, track, st, this.materials, this.colliders).build());
+      this.group.add(new Canyon(eng, terrain, track, st, this.materials, this.colliders, this.keepOut).build());
       await nextFrame();
     }
 
