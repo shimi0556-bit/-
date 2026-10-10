@@ -189,6 +189,9 @@ function prepare(hiScene, loScene) {
     // Perfectly smooth coats mirror the sun as a single blinding point (and bloom); real lacquer is a touch softer.
     m.roughness = Math.max(m.roughness, 0.05);
     if (m.clearcoat > 0) m.clearcoatRoughness = Math.max(m.clearcoatRoughness, 0.06);
+    // Brushed-metal anisotropy needs the tangents the models ship without: the shader then
+    // writes NaN, which the bloom smears into a white glare over the whole car.
+    if (m.anisotropy) m.anisotropy = 0;
     for (const k of ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap', 'clearcoatNormalMap']) if (m[k]) m[k].userData.keep = true;
     return m;
   };
