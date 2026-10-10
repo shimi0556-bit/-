@@ -143,6 +143,7 @@ button { font: inherit; color: inherit; }
 .settings { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-end; }
 .help { color: var(--faint); font-size: 12.5px; display: flex; gap: 14px; flex-wrap: wrap; }
 .credits { color: var(--faint); font-size: 11.5px; margin: 10px 0 0; line-height: 1.5; }
+.model-status.bad { color: #ff8a65; }
 kbd { font: 600 11px var(--mono); padding: 1px 6px; border-radius: 5px; border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.05); color: var(--text); }
 
 /* ------------------------------------------------------------------ HUD */

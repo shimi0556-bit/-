@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { gunzipSync } from 'three/addons/libs/fflate.module.js';
 import { CAR_TYPES, carSpec } from './config.js';
 import { createCarModel, drawCarProfile } from './CarModel.js';
 import { loadMonster, hasMonster, createMonsterCar } from './MonsterTruck.js';
@@ -59,7 +60,9 @@ export async function loadRealModels() {
     try {
       const [hi, lo] = await Promise.all([parseGz(loader, src.hi), parseGz(loader, src.lo)]);
       loaded[t.id] = prepare(hi.scene, lo.scene);
+      modelStatus.ok.push(t.id);
     } catch (e) {
+      modelStatus.failed.push({ id: t.id, why: String(e?.message || e).slice(0, 90) });
       console.warn(`real model for ${t.id} did not load; using the procedural body`, e);
     }
   });
@@ -67,12 +70,19 @@ export async function loadRealModels() {
     if (loaded[type]) continue;
     jobs.push(
       parseGz(loader, K.src)
-        .then((g) => (loaded[type] = prepareKit(g.scene, K, carSpec(type))))
-        .catch((e) => console.warn(`real model for ${type} did not load; using the procedural body`, e)),
+        .then((g) => {
+          loaded[type] = prepareKit(g.scene, K, carSpec(type));
+          modelStatus.ok.push(type);
+        })
+        .catch((e) => {
+          modelStatus.failed.push({ id: type, why: String(e?.message || e).slice(0, 90) });
+          console.warn(`real model for ${type} did not load; using the procedural body`, e);
+        }),
     );
   }
   jobs.push(loadMonster((src) => parseGz(loader, src)), loadFish((src) => parseGz(loader, src)));
   await Promise.all(jobs);
+  (hasMonster() ? modelStatus.ok : modelStatus.failed).push(hasMonster() ? 'monster' : { id: 'monster', why: 'see console' });
 }
 
 /*
@@ -81,36 +91,68 @@ export async function loadRealModels() {
  * how GLTFLoader normally reads an inlined model and its textures: there the
  * cars silently fell back to their procedural bodies, while the same file opened
  * from disk showed the real ones. So nothing here fetches: the inlined bytes are
- * decoded from base64 by hand, unzipped with the browser's DecompressionStream,
- * parsed from memory, and every texture is decoded straight from its bytes.
+ * decoded from base64 by hand, unzipped in plain JavaScript (fflate), parsed
+ * from memory, and every texture is decoded straight from its bytes (with an
+ * <img> fallback where createImageBitmap refuses).
  */
 
-/** A `data:…;base64,` address (what Vite inlines) or a plain URL → the model, parsed. */
+/** Which models loaded and which did not (and why): shown in the menu when any failed. */
+export const modelStatus = { ok: [], failed: [] };
+
+/** A `data:…;base64,` address (what Vite inlines) or a plain URL → its bytes, without fetch() for data:. */
+async function bytesOf(src) {
+  if (!src.startsWith('data:')) return new Uint8Array(await (await fetch(src)).arrayBuffer());
+  const bin = atob(src.slice(src.indexOf(',') + 1));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+/**
+ * Unzips in plain JavaScript (fflate, shipped with three): no DecompressionStream, Blob
+ * stream or Response, any of which a sandboxed viewer may lack or refuse.
+ */
 export async function parseGz(loader, src) {
-  let bytes;
-  if (src.startsWith('data:')) {
-    const bin = atob(src.slice(src.indexOf(',') + 1));
-    bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  } else {
-    bytes = new Uint8Array(await (await fetch(src)).arrayBuffer());
+  const raw = gunzipSync(await bytesOf(src));
+  return loader.parseAsync(raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength), '');
+}
+
+/** Bytes → base64 (for a data: image address). */
+function base64(bytes) {
+  let s = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+
+/**
+ * An image from its encoded bytes: createImageBitmap when the viewer allows it, else an
+ * <img> from a data: address (which the artifact viewer always allows).
+ */
+export async function decodeImage(bytes, mime, opts = {}) {
+  if (typeof createImageBitmap !== 'undefined') {
+    try {
+      return await createImageBitmap(new Blob([bytes], { type: mime }), opts);
+    } catch (e) {
+      console.warn('createImageBitmap refused; decoding through <img>', e);
+    }
   }
-  const raw = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
-  return loader.parseAsync(raw, '');
+  const img = new Image();
+  img.src = `data:${mime};base64,${base64(bytes)}`;
+  await img.decode();
+  return img;
 }
 
 /** GLTFLoader plugin: images embedded in the model become textures without an object URL or fetch. */
 export function inlineImages(parser) {
-  if (typeof createImageBitmap === 'undefined') return { name: 'inline-images' };
   const base = parser.loadImageSource.bind(parser);
   parser.loadImageSource = function (index, loader) {
     const def = this.json.images[index];
     if (def.bufferView === undefined) return base(index, loader);
     if (!this.sourceCache[index]) {
       this.sourceCache[index] = this.getDependency('bufferView', def.bufferView)
-        .then((view) => createImageBitmap(new Blob([view], { type: def.mimeType }), { premultiplyAlpha: 'none' }))
-        .then((bitmap) => {
-          const texture = new THREE.Texture(bitmap);
+        .then((view) => decodeImage(new Uint8Array(view), def.mimeType, { premultiplyAlpha: 'none' }))
+        .then((image) => {
+          const texture = new THREE.Texture(image);
           texture.needsUpdate = true;
           texture.userData.mimeType = def.mimeType;
           return texture;

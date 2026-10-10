@@ -1,3 +1,4 @@
+import { decodeImage } from './RealModels.js';
 import grass from './textures/grass.jpg?url';
 import grassN from './textures/grass-n.jpg?url';
 import rock from './textures/rock.jpg?url';
@@ -38,18 +39,16 @@ export const PHOTO_CREDIT = 'הקרקע, הסלעים, החול, דרכי העפ
 
 /** Decodes an inlined image without fetch() (refused by the claude.ai viewer's sandbox for data: URLs). */
 async function bitmap(src) {
-  let blob;
+  let bytes;
   if (src.startsWith('data:')) {
     const bin = atob(src.slice(src.indexOf(',') + 1));
-    const bytes = new Uint8Array(bin.length);
+    bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    blob = new Blob([bytes], { type: 'image/jpeg' });
-  } else blob = await (await fetch(src)).blob();
-  return createImageBitmap(blob, { imageOrientation: 'none', premultiplyAlpha: 'none', colorSpaceConversion: 'none' });
+  } else bytes = new Uint8Array(await (await fetch(src)).arrayBuffer());
+  return decodeImage(bytes, 'image/jpeg', { imageOrientation: 'none', premultiplyAlpha: 'none', colorSpaceConversion: 'none' });
 }
 
 export async function applyPhotoTextures(materials) {
-  if (typeof createImageBitmap === 'undefined') return;
   await Promise.all(
     PHOTOS.map(async ([name, src, repeat]) => {
       try {

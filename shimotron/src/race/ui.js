@@ -1,6 +1,6 @@
 import { STAGES, AI, RACE, CAR, CAR_TYPES, CAREER, PODIUM, carRatings } from './config.js';
 import { Race } from './Race.js';
-import { drawProfile, MODEL_CREDIT } from './RealModels.js';
+import { drawProfile, MODEL_CREDIT, modelStatus } from './RealModels.js';
 import { PHOTO_CREDIT } from './PhotoTextures.js';
 import { ITEMS } from './Pickups.js';
 import { ROAM } from './Explore.js';
@@ -220,6 +220,8 @@ export class RaceUI {
           h('span', {}, 'תומך גם בג׳ויסטיק ובמסך מגע'),
         ),
         h('p', { class: 'credits' }, `${MODEL_CREDIT} ${PHOTO_CREDIT}`),
+        h('p', { class: 'credits model-status' + (modelStatus.failed.length ? ' bad' : '') },
+          `גרסה ${__BUILD_DATE__} · מודלים אמיתיים שנטענו: ${modelStatus.ok.length}${modelStatus.failed.length ? ` · לא נטענו: ${modelStatus.failed.map((f) => `${f.id} (${f.why})`).join(', ')}` : ' · הכול נטען'}`),
       ),
     );
     this.menuEl = menu;
