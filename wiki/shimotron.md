@@ -116,5 +116,7 @@ Browser 3D engine (Three.js r186 + cannon-es, Vite single-file builds) with a He
   - `RealModels.prepare()` now serves these (brake/head light materials optional); `prepareKit` and the kit files are gone. `config.js` wheel radius/track/front/rear and body/cabin colliders were re-measured per model.
   - Page size with all models ≈ 14.9 MB (limit 16 MB). Little headroom left: a new model needs another one shrunk.
 - **"Changes don't show in the link"**: the user was most likely opening the older public artifact `HsuwXFhn9PqP9RfuNaRCdg`. Every build is now published to both it and the main link `7ew7hyQg3f7YyJnCiCL1Je`. The menu shows `גרסה <build date> · מודלים אמיתיים שנטענו: N` (`__BUILD_DATE__` from vite.config.js) so the user can see which build and whether models loaded; checked under an artifact-like CSP (8 of 8).
+- **Falls bridge exit** (pines→falls): the car stopped dead at the deck end. A canyon boulder (r 6.2) and a spire family stood on the first metres of the access road: `Canyon` placed its scattered boulders and spires by circuit clearance only. It now takes `Island.keepOut` (bridge landings + 14 m round access roads) and checks 8 points round each rock (`_kept`). Autopilot test: the car now leaves the deck at 14 m/s.
+- **Challenger glare**: its chrome used KHR_materials_anisotropy, but the models ship without tangents, so the shader wrote NaN and the bloom smeared it into a white blob over the car. `RealModels.prepare` sets `anisotropy = 0`.
 - Open: moto still procedural; Canva billboards; irregular rocks beyond their colliders.
 
