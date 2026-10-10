@@ -48,13 +48,24 @@
       headers = { 'content-type': 'application/json', authorization: 'Bearer ' + key };
       body = { model, messages: [{ role: 'system', content: opt.system }, { role: 'user', content: opt.user }] };
       if (s.provider === 'openai') body.max_completion_tokens = opt.max || 4000; else body.max_tokens = opt.max || 4000;
-      if (s.provider === 'openai' || s.provider === 'mistral') body.response_format = { type: 'json_object' };
+      if (s.provider === 'openai' || s.provider === 'mistral') {
+        body.response_format = { type: 'json_object' };
+        // these APIs reject json mode unless the word "json" appears in the messages
+        if (!/json/i.test(opt.system + ' ' + opt.user)) body.messages[0].content += ' Respond with a JSON object.';
+      }
     }
-    let res;
-    try { res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal: opt.signal }); }
-    catch (e) {
-      if (e && e.name === 'AbortError') throw e;
-      throw new Error('שגיאת רשת: לא הצלחתי להתחבר לשרת ה-AI. בדוק אינטרנט, כתובת שרת, או שהשרת חוסם קריאות מהדפדפן (CORS).');
+    const send = async () => {
+      try { return await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal: opt.signal }); }
+      catch (e) {
+        if (e && e.name === 'AbortError') throw e;
+        throw new Error('שגיאת רשת: לא הצלחתי להתחבר לשרת ה-AI. בדוק אינטרנט, כתובת שרת, או שהשרת חוסם קריאות מהדפדפן (CORS).');
+      }
+    };
+    let res = await send();
+    if (!res.ok && body.response_format) {
+      // some models / compatible servers do not support json mode at all: retry once without it (parseJSON copes with plain text)
+      let t = ''; try { t = await res.clone().text(); } catch (e) { /* ignore */ }
+      if (res.status === 400 && /response_format|json/i.test(t)) { delete body.response_format; res = await send(); }
     }
     if (!res.ok) { let t = ''; try { t = await res.text(); } catch (e) { /* ignore */ } throw new Error(explain(res.status, t)); }
     const data = await res.json();
@@ -138,7 +149,7 @@
   };
 
   ai.ping = async function () {
-    const t = await ai.call({ system: 'Reply with the single word OK.', user: 'ping', max: 20 });
-    return t.trim().slice(0, 40);
+    const t = await ai.call({ system: 'Reply with the JSON object {"ok":true} and nothing else.', user: 'ping', max: 30 });
+    return /ok/i.test(t) ? 'OK' : t.trim().slice(0, 40);
   };
 })(window.BG);
