@@ -1,6 +1,6 @@
 /**
  * Shimotron Rally — every tunable number lives here.
- * Sections: race rules, car physics, car types, AI, camera, and the seven island stages.
+ * Sections: race rules, car physics, car types, AI, camera, and the island stages.
  */
 
 export const RACE = {
@@ -79,23 +79,31 @@ export const CAR = {
  */
 export const CAR_TYPES = [
   {
+    // Real models (tools/realcars.mjs) for this and the next four: the wheels, track and wheelbase
+    // match the model, and the chassis boxes its body; `shape` is only the fallback body.
     id: 'gt',
+    model: 'real-gt',
     name: 'GT ספורט',
-    desc: 'מאוזנת: מהירה, יציבה וסלחנית, טובה בכל מסלול',
+    desc: 'פורשה 911 אמיתית: מאוזנת, מהירה, יציבה וסלחנית, טובה בכל מסלול',
     price: 0,
-    spec: {},
+    spec: {
+      body: { half: [0.96, 0.3, 2.15], offset: [0, -0.16, 0.02] },
+      cabin: { half: [0.72, 0.24, 0.95], offset: [0, 0.34, -0.25] },
+      wheel: { radius: 0.334, width: 0.29, front: 1.225, rear: -1.225, track: 0.751 },
+    },
     shape: {},
   },
   {
     id: 'rally',
+    model: 'real-rally',
     name: 'ראלי',
     desc: 'תאוצה חדה, מתלים גבוהים ואחיזה מעולה בחצץ, בחול ובשלג',
     price: 6000,
     spec: {
       mass: 1150,
-      body: { half: [0.9, 0.34, 1.95], offset: [0, -0.1, 0] },
-      cabin: { half: [0.72, 0.28, 1.1], offset: [0, 0.4, -0.3] },
-      wheel: { radius: 0.35, front: 1.25, rear: -1.22, track: 0.8, restLength: 0.38, travel: 0.32, stiffness: 32, dampCompression: 4.2, grip: 1.62 },
+      body: { half: [0.9, 0.34, 2.2], offset: [0, -0.1, -0.08] },
+      cabin: { half: [0.72, 0.28, 1.0], offset: [0, 0.4, -0.3] },
+      wheel: { radius: 0.323, width: 0.26, front: 1.305, rear: -1.305, track: 0.713, restLength: 0.38, travel: 0.32, stiffness: 32, dampCompression: 4.2, grip: 1.62 },
       engine: { accel: 11.2, topSpeed: 58, frontShare: 0.5 },
       downforce: 0.35,
       offroad: 1.45,
@@ -104,14 +112,15 @@ export const CAR_TYPES = [
   },
   {
     id: 'muscle',
+    model: 'real-muscle',
     name: 'מאסל',
     desc: 'מנוע ענק ומהירות שיא גבוהה, הנעה אחורית — הזנב אוהב לברוח',
     price: 9000,
     spec: {
       mass: 1520,
-      body: { half: [0.95, 0.3, 2.32], offset: [0, -0.16, 0] },
-      cabin: { half: [0.74, 0.26, 1.0], offset: [0, 0.36, -0.45] },
-      wheel: { radius: 0.38, width: 0.3, front: 1.5, rear: -1.4, track: 0.84, grip: 1.55 },
+      body: { half: [0.92, 0.3, 2.33], offset: [0, -0.16, 0.04] },
+      cabin: { half: [0.74, 0.26, 1.0], offset: [0, 0.36, -0.35] },
+      wheel: { radius: 0.32, width: 0.24, front: 1.395, rear: -1.395, track: 0.735, grip: 1.55 },
       engine: { accel: 10.4, topSpeed: 67, frontShare: 0.06 },
       handbrake: { grip: 0.45 },
       downforce: 0.25,
@@ -122,14 +131,15 @@ export const CAR_TYPES = [
   },
   {
     id: 'buggy',
-    name: 'באגי שטח',
-    desc: 'גלגלים ענקיים וכלוב גלגול: לא מפחד מחול ודשא, איטי יותר על אספלט',
+    model: 'real-buggy',
+    name: 'ג׳יפ שטח',
+    desc: 'ג׳יפ רנגלר אמיתי: גלגלים גדולים ומתלים ארוכים, לא מפחד מחול ודשא, איטי יותר על אספלט',
     price: 7000,
     spec: {
       mass: 900,
-      body: { half: [0.9, 0.32, 1.7], offset: [0, -0.02, 0] },
-      cabin: { half: [0.62, 0.3, 0.72], offset: [0, 0.45, -0.2] },
-      wheel: { radius: 0.45, width: 0.34, front: 1.2, rear: -1.15, track: 0.88, height: 0.08, restLength: 0.44, travel: 0.4, stiffness: 26, dampCompression: 3.6, dampRelaxation: 2.6, grip: 1.52 },
+      body: { half: [0.97, 0.34, 2.3], offset: [0, -0.02, -0.1] },
+      cabin: { half: [0.85, 0.32, 1.0], offset: [0, 0.5, -0.3] },
+      wheel: { radius: 0.415, width: 0.3, front: 1.505, rear: -1.505, track: 0.844, height: 0.08, restLength: 0.44, travel: 0.4, stiffness: 26, dampCompression: 3.6, dampRelaxation: 2.6, grip: 1.52 },
       engine: { accel: 12, topSpeed: 59, frontShare: 0.45 },
       downforce: 0.15,
       drag: 0.0009,
@@ -139,14 +149,15 @@ export const CAR_TYPES = [
   },
   {
     id: 'formula',
+    model: 'real-formula',
     name: 'פורמולה',
     desc: 'אחיזה והצמדה מטורפות על אספלט — ומחוץ לכביש היא אבודה',
     price: 14000,
     spec: {
       mass: 780,
-      body: { half: [0.95, 0.24, 2.3], offset: [0, -0.2, 0] },
+      body: { half: [0.84, 0.24, 2.2], offset: [0, -0.2, 0.21] },
       cabin: { half: [0.3, 0.2, 0.6], offset: [0, 0.18, -0.35] },
-      wheel: { radius: 0.34, width: 0.36, front: 1.62, rear: -1.32, track: 0.82, restLength: 0.22, travel: 0.14, stiffness: 58, dampCompression: 5.5, grip: 1.9 },
+      wheel: { radius: 0.332, width: 0.37, front: 1.45, rear: -1.45, track: 0.856, restLength: 0.22, travel: 0.14, stiffness: 58, dampCompression: 5.5, grip: 1.9 },
       engine: { accel: 12, topSpeed: 71, frontShare: 0 },
       downforce: 1.25,
       drag: 0.00068,
@@ -175,21 +186,57 @@ export const CAR_TYPES = [
     shape: { halfL: 2.2, w: 1.0, flare: 0.08, floor: -0.44, belt: 0.06, hoodDrop: 0.2, roof: 0.52, cabin: [0.9, 0.25, -0.5, -1.55], cabinW: 0.8, wing: 'none' },
   },
   {
+    // A real 3D model (tools/models.mjs): "Ferrari 458 Italia" by vicent091036, CC BY 4.0.
+    // The wheels, track and wheelbase match the model; `shape` is only the fallback body.
     id: 'hyper',
+    model: 'hyper',
     name: 'היפרקאר',
-    desc: 'הכי מהירה שיש, עם כנף ענקית ומיכל ניטרו גדול',
+    desc: 'מודל תלת־ממד אמיתי של מכונית־על איטלקית. הכי מהירה שיש, עם מיכל ניטרו גדול',
     price: 22000,
     spec: {
       mass: 1380,
-      body: { half: [1.0, 0.28, 2.22], offset: [0, -0.18, 0] },
-      cabin: { half: [0.7, 0.22, 0.9], offset: [0, 0.3, -0.1] },
-      wheel: { radius: 0.37, width: 0.31, front: 1.4, rear: -1.38, track: 0.86, grip: 1.72 },
+      body: { half: [0.98, 0.28, 2.24], offset: [0, -0.18, 0.17] },
+      cabin: { half: [0.72, 0.2, 0.95], offset: [0, 0.3, -0.05] },
+      wheel: { radius: 0.358, width: 0.25, front: 1.33, rear: -1.33, track: 0.84, grip: 1.72 },
       engine: { accel: 12.4, topSpeed: 75, frontShare: 0.3 },
       downforce: 0.85,
       drag: 0.0007,
       nitro: { drain: 0.16 },
     },
     shape: { halfL: 2.3, w: 0.97, flare: 0.09, floor: -0.45, belt: 0.04, hoodDrop: 0.22, roof: 0.5, cabin: [0.95, 0.2, -0.35, -1.5], cabinW: 0.7, wing: 'big', extras: ['fins'] },
+  },
+  {
+    // The monster 4×4 (MonsterTruck.js): a downloaded truck body ("vehicle-truck" by Kenney, CC0)
+    // on giant lugged tyres, visible coil-over springs and solid axles. Long, soft suspension that
+    // soaks up the dirt tracks; heavy and tall, so it rolls in fast bends. `shape` is only the fallback body.
+    id: 'monster',
+    model: 'monster',
+    name: 'מפלצת 4×4',
+    desc: 'משאית שטח אימתנית על צמיגים ענקיים וקפיצים ארוכים: בולעת עפר, אבנים וקפיצות',
+    price: 12000,
+    spec: {
+      mass: 2300,
+      body: { half: [1.15, 0.45, 2.2], offset: [0, 0.05, 0] },
+      cabin: { half: [1.0, 0.8, 1.1], offset: [0, 1.3, 0.25] },
+      // Long, soft and well damped: it swallows the bumps and lands jumps on its springs instead of bouncing off.
+      wheel: { radius: 0.85, width: 0.7, front: 1.62, rear: -1.62, track: 1.3, height: 0.2, restLength: 0.8, travel: 0.66, stiffness: 15, dampCompression: 2.6, dampRelaxation: 2.3, rollInfluence: 0.012, grip: 1.38 },
+      engine: { accel: 12, topSpeed: 56, frontShare: 0.5, redline: 6200 },
+      steer: { max: 0.56 },
+      downforce: 0.05,
+      drag: 0.0011,
+      offroad: 2.05,
+      // Looser in the yaw (it slides and can be driven sideways), stiffer in the roll (it does not tip over).
+      assist: { yaw: 0.55, antiRoll: 22 },
+      airControl: 1,
+      skidY: -0.3,
+      // The tyres as boxes round each axle (hub at rest ~0.45 m under the centre), clear of the ground.
+      extra: [
+        [[1.68, 0.62, 0.86], [0, -0.4, 1.62]],
+        [[1.68, 0.62, 0.86], [0, -0.4, -1.62]],
+      ],
+      monster: { scale: 1.65, bodyY: -0.21, bodyZ: 0, lampX: 0.78, lampY: 0.75, front: 2.31, back: -2.31, roofY: 2.35, roofZ: 0.4 },
+    },
+    shape: { halfL: 2.3, w: 1.1, flare: 0.12, floor: -0.1, belt: 0.3, hoodDrop: 0.05, roof: 1.1, cabin: [1.0, 0.6, -0.4, -0.9], tailLen: 0.1, duck: 0, wing: 'none', lights: 'round', extras: ['lightbar'] },
   },
   {
     // The motocross bike (the dirt-trail race only: not in the garage).
@@ -426,5 +473,97 @@ export const STAGES = [
     roadGrip: 0.97,
     track: { radius: [0.38, 0.58], wiggle: 0.36, targetLength: [3100, 4400] },
     trail: true, // a motocross trail through the mesas (the motorbike race)
+  },
+  {
+    // The wild island: everything at once. A jungle round an active volcano, waterfalls off the
+    // cliffs, two gorges, table-top jumps in the road, rockfalls, lava flows across the road on
+    // causeways and eruptions throwing lava bombs (Wilds.js, Track._jumps).
+    id: 'falls',
+    name: 'אי המפלים',
+    tagline: 'ג׳ונגל סביב הר געש פעיל: מפלים מהצוקים, קפיצות, מפולות סלעים, נהרות לבה ופצצות לבה',
+    color: '#21c28a',
+    seed: 131,
+    size: 2400,
+    segments: 460,
+    island: {
+      radius: 850,
+      stretch: [1.04, 0.98],
+      base: 8,
+      hills: 9,
+      coastRough: 0.12,
+      ranges: [
+        { angle: 2.3, from: 0.45, to: 0.85, weight: 1 },
+        { angle: -0.7, from: 0.5, to: 0.88, weight: 0.85 },
+      ],
+      mountainHeight: 120,
+      volcano: { x: 20, z: -30, radius: 330, height: 200, craterRadius: 0.19, craterDepth: 50 },
+    },
+    biome: { grassTint: [0.72, 1.18, 0.7], sandTint: [1.15, 1.1, 0.98], dirtTint: [0.8, 0.68, 0.55], rockTint: [0.62, 0.66, 0.6] },
+    flora: { pine: 0.12, oak: 0.85, palm: 1, cactus: 0, deadTree: 0.05, trees: 1900, grass: 1.15, flowers: 1.3, foliageTint: '#e4ffd6' },
+    water: { shallow: [0.02, 0.6, 0.52], deep: [0.0, 0.07, 0.14], clarity: 0.1 },
+    life: { balloons: 5, boats: 6, reef: 1.3, fish: 1.6, dolphins: 2 },
+    sky: { time: 17.3, azimuth: 0.9, turbidity: 2.6, rayleigh: 1.35, clouds: 0.38, cloudDensity: 0.5, fog: 0.0011, wind: 1 },
+    weather: null,
+    lavaLake: true,
+    lavaGain: 0.4,
+    cut: 0.4,
+    gorge: { count: 2, length: 360, height: 34, ledge: 5, rock: 0x86917f }, // mossy basalt walls
+    jumps: { count: 3, height: 2.1 },
+    wilds: { waterfalls: 6, rockfalls: 3, lavaFlows: 3, bombs: true },
+    track: { radius: [0.5, 0.64], wiggle: 0.38, targetLength: [3500, 4500] },
+  },
+  {
+    // Across the islands: a big island of mountains, forest and waterfalls with two islets out to
+    // sea, joined by three glass tunnels under the sea (sharks, whales and shoals all round). The
+    // road leaves the asphalt for dirt tracks between the mountains and trees by the falls. The
+    // course is drawn by hand (`track.controls`) instead of searched for.
+    id: 'cross',
+    name: 'חוצה האיים',
+    vehicle: 'monster', // everyone races the monster 4×4s here
+    tagline: 'שלושה איים ושלוש מנהרות זכוכית מתחת לים, ודרכי עפר בין ההרים, העצים והמפלים',
+    color: '#2aa7e0',
+    seed: 157,
+    size: 3600,
+    segments: 600,
+    island: {
+      radius: 840,
+      stretch: [1.0, 1.0],
+      base: 8,
+      hills: 11,
+      coastRough: 0.1,
+      ranges: [
+        { angle: -2.4, from: 0.05, to: 0.6, weight: 1 },
+        { angle: 2.9, from: 0.25, to: 0.7, weight: 0.7 },
+      ],
+      mountainHeight: 210,
+      islets: [
+        { x: 1180, z: -260, radius: 380, height: 60 },
+        { x: 330, z: -1150, radius: 350, height: 50 },
+      ],
+    },
+    biome: { grassTint: [0.78, 1.12, 0.74], sandTint: [1.12, 1.08, 0.98], dirtTint: [0.86, 0.72, 0.58], rockTint: [0.7, 0.72, 0.68] },
+    flora: { pine: 0.35, oak: 0.9, palm: 0.8, cactus: 0, deadTree: 0.03, trees: 2600, grass: 1.2, flowers: 1.2, foliageTint: '#e8ffdc' },
+    water: { shallow: [0.02, 0.62, 0.6], deep: [0.0, 0.1, 0.2], clarity: 0.07 },
+    life: { balloons: 4, boats: 6, reef: 1.4, fish: 1.8, dolphins: 2, tunnels: true },
+    sky: { time: 15.8, azimuth: 0.7, turbidity: 2.3, rayleigh: 1.3, clouds: 0.32, cloudDensity: 0.45, fog: 0.0009, wind: 0.9 },
+    weather: null,
+    cut: 0.6,
+    jumps: { count: 2, height: 1.9 },
+    wilds: { waterfalls: 4 },
+    tunnels: { depth: 13 },
+    track: {
+      // Dirt: round the far side of the northern islet, and down through the mountains and the
+      // forest by the waterfalls on the big island.
+      offroad: [
+        [3560, 3980],
+        [4920, 5640],
+      ],
+      controls: [
+        [-220, 430], [-10, 470], [190, 440], [370, 320], [470, 130], [560, -60],
+        [760, -150], [950, -170], [1090, -90], [1270, -70], [1400, -220], [1380, -420], [1230, -520], [1060, -540],
+        [880, -660], [700, -840], [560, -960], [520, -1120], [450, -1310], [290, -1380], [150, -1290], [130, -1120],
+        [110, -930], [60, -740], [-80, -600], [-210, -450], [-310, -290], [-420, -130], [-470, 60], [-440, 230], [-370, 370],
+      ],
+    },
   },
 ];

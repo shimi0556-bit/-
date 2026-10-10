@@ -556,8 +556,8 @@ export function createMotoModel(materials, { color = '#e0262b', number = 1, stri
       // Rear: the swingarm swings.
       const dR = THREE.MathUtils.clamp(yR - restR, -0.2, 0.3);
       swing.rotation.x = Math.asin(THREE.MathUtils.clamp(dR / swingLen, -0.9, 0.9));
-      frontWheel.rotation.x = veh.wheelSpin[0] * (Wh.radius / FRONT_R);
-      rearWheel.rotation.x = veh.wheelSpin[2];
+      frontWheel.rotation.x = veh.wheelShown[0] * (Wh.radius / FRONT_R);
+      rearWheel.rotation.x = veh.wheelShown[2];
       // Lean into the turn: the angle that balances the cornering force, eased.
       const av = car.body.angularVelocity;
       const up = _v.set(0, 1, 0).applyQuaternion(car.object.quaternion);

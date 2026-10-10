@@ -1,5 +1,6 @@
 import * as CANNON from 'cannon-es';
 import { CAR } from './config.js';
+import { SolidGuard } from './Solid.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const _v = new CANNON.Vec3();
@@ -41,6 +42,9 @@ export function carMaterial(physics) {
  * handbrake and nitro booleans.
  */
 export class Vehicle {
+  /** Every vehicle in the world now (scenery that gives way — course stakes — looks for them here). */
+  static live = new Set();
+
   constructor(physics, { position, heading = 0, ground = null, spec = CAR } = {}) {
     this.physics = physics;
     this.spec = spec;
@@ -51,7 +55,9 @@ export class Vehicle {
     const c = S.cabin;
     // Boxes hit rails and other cars but skip the terrain heightfield (box-vs-heightfield
     // is by far the most expensive test in cannon); the four skid spheres touch the ground.
-    for (const [half, off] of [[b.half, b.offset], [c.half, c.offset]]) {
+    // `extra`: more boxes (a monster truck's giant tyres stand far outside its body: the
+    // raycast wheels alone would roll straight through rails and other cars).
+    for (const [half, off] of [[b.half, b.offset], [c.half, c.offset], ...(S.extra || [])]) {
       const box = new CANNON.Box(new CANNON.Vec3(...half));
       box.collisionFilterMask = ~GROUP.terrain;
       body.addShape(box, new CANNON.Vec3(...off));
@@ -61,7 +67,8 @@ export class Vehicle {
     // on the ground; they only touch the (cheap) terrain heightfield.
     // Floor spheres sit 10 cm above the tyres' contact patch at rest.
     const Wh = S.wheel;
-    const floorY = Wh.height - (Wh.restLength - 9.82 / (4 * Wh.stiffness)) - Wh.radius + 0.1 + 0.2;
+    // (A monster truck's long, soft springs squat and pitch far more: its spheres sit under the body instead, `skidY`.)
+    const floorY = S.skidY ?? Wh.height - (Wh.restLength - 9.82 / (4 * Wh.stiffness)) - Wh.radius + 0.1 + 0.2;
     const sx = Math.min(0.62, b.half[0] - 0.25);
     const sz = b.half[2] - 0.57;
     const top = c.offset[1] + c.half[1] - 0.12;
@@ -112,6 +119,8 @@ export class Vehicle {
     this.airborne = 0;
     this.upsideDown = 0;
     this.wheelSpin = [0, 0, 0, 0]; // accumulated rotation (rad)
+    this.wheelShown = [0, 0, 0, 0]; // what the models draw (see showSpin)
+    this._spinSeen = [0, 0, 0, 0];
     this.compression = [0, 0, 0, 0];
     this.onShift = null; // (gear, up) => void
     this.assist = 1; // stability-assist scale (AI and player settings)
@@ -133,12 +142,36 @@ export class Vehicle {
       world.raycastClosest(from, to, rayOpts, result);
     };
     vehicle.world = rayWorld;
+    // Continuous collision for the chassis: no driving into trunks, posts or rocks at speed.
+    this.guard = new SolidGuard(world, body, [S.body, S.cabin, ...(S.extra || []).map(([half, offset]) => ({ half, offset }))]);
+    this._post = () => this.guard.resolve();
+    world.addEventListener('postStep', this._post);
+    Vehicle.live.add(this);
   }
 
   /** Teleports the car, resets motion. heading: yaw in radians (0 = +z). */
+  /**
+   * Per drawn frame: the wheel rotation the models show. At speed a wheel
+   * turns further between frames than its spokes are apart, and the eye
+   * sees them stand still or run backwards (the wagon-wheel effect). So the
+   * turn shown per frame grows with the real one but eases off below half a
+   * spoke gap: the wheels always read as rolling forwards, faster and faster.
+   */
+  showSpin(dt) {
+    const cap = 0.42 * Math.min(2, Math.max(0.5, dt * 60));
+    for (let i = 0; i < 4; i++) {
+      const d = this.wheelSpin[i] - this._spinSeen[i];
+      this._spinSeen[i] = this.wheelSpin[i];
+      this.wheelShown[i] += dt > 0 ? cap * Math.tanh(d / cap) : 0;
+    }
+  }
+
   place(position, heading = 0) {
     const b = this.body;
-    b.position.set(position.x, position.y, position.z);
+    // Callers place a car's centre ~0.6 m over the road (where an ordinary car rides); a car that rides higher goes up by the difference.
+    const W = this.spec.wheel;
+    const lift = Math.max(0, W.radius + W.restLength - W.height - 9.82 / (4 * W.stiffness) - 0.62);
+    b.position.set(position.x, position.y + lift, position.z);
     b.quaternion.setFromEuler(0, heading, 0);
     b.velocity.setZero();
     b.angularVelocity.setZero();
@@ -158,6 +191,8 @@ export class Vehicle {
   }
 
   remove() {
+    Vehicle.live.delete(this);
+    this.physics.world.removeEventListener('postStep', this._post);
     this.vehicle.world = this.physics.world;
     this.vehicle.removeFromWorld(this.physics.world);
   }
@@ -368,7 +403,16 @@ export class Vehicle {
         av.y -= (_f.y * wr + _r.y * wp) * k;
         av.z -= (_f.z * wr + _r.z * wp) * k;
       }
+      // Off a jump, a big-wheeled truck can be turned in the air with the steering, to land pointing the right way.
+      if (grounded === 0 && S.airControl && this.airborne > 0.12 && !C.hold) {
+        const yr = av.dot(_u);
+        const ty = (-clamp(C.steer, -1, 1) * 1.4 * S.airControl - yr) * (b.inertia.y || m) * 3;
+        b.torque.x += _u.x * ty;
+        b.torque.y += _u.y * ty;
+        b.torque.z += _u.z * ty;
+      }
     }
+    this.guard.sweep(dt);
   }
 
   /** Signed lateral speed (m/s, + = sliding toward the car's right). */

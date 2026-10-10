@@ -1,10 +1,12 @@
 import { STAGES, AI, RACE, CAR, CAR_TYPES, CAREER, PODIUM, carRatings } from './config.js';
 import { Race } from './Race.js';
-import { drawProfile, MODEL_CREDIT } from './RealModels.js';
+import { drawProfile, MODEL_CREDIT, modelStatus } from './RealModels.js';
+import { PHOTO_CREDIT } from './PhotoTextures.js';
 import { ITEMS } from './Pickups.js';
 import { ROAM } from './Explore.js';
 import { DESIGNS, DESIGN_NAMES } from './CraftModels.js';
 import { WORLD } from './World.js';
+import { fmt as fmtRally } from './Rally.js';
 
 /** The island count in words (masculine, for 'איים'). */
 const ISLANDS = ['', 'אחד', 'שניים', 'שלושה', 'ארבעה', 'חמישה', 'שישה', 'שבעה', 'שמונה', 'תשעה', 'עשרה'][STAGES.length] || String(STAGES.length);
@@ -162,6 +164,7 @@ export class RaceUI {
           h('button', { class: 'btn big career-btn', type: 'button', onclick: () => g.startCareer() }, icon('coins'), g.career ? `המשך קריירה · ${money(g.career.money)} · ${STAGES[g.career.stage].name}` : 'קריירה · מצב מתמשך'),
           h('button', { class: 'btn big', type: 'button', onclick: () => g.startSingle() }, icon('flag'), `מירוץ ${KIND_LABEL[s.kind] || KIND_LABEL.car} · ${s.kind === 'moto' ? (STAGES.find((st) => st.trail) || STAGES[state.selected]).name : STAGES[state.selected].name}`),
           h('button', { class: 'btn big roam-btn', type: 'button', onclick: () => g.startExplore() }, `סיור חופשי בעולם · מ${STAGES[state.selected].name}`),
+          h('button', { class: 'btn big rally-btn', type: 'button', onclick: () => g.startRally() }, icon('flag'), `ראלי כל האיים · ${ISLANDS} איים בנסיעה אחת${g.rallyBest ? ` · שיא ${fmtRally(g.rallyBest)}` : ''}`),
           state.champ ? h('button', { class: 'btn', type: 'button', onclick: () => g.resetChampionship() }, 'אליפות חדשה') : null,
           g.career ? h('button', { class: 'btn', type: 'button', onclick: () => g.resetCareer() }, 'קריירה חדשה') : null,
         ),
@@ -216,7 +219,9 @@ export class RaceUI {
           h('span', {}, h('kbd', {}, 'Esc'), ' עצירה'),
           h('span', {}, 'תומך גם בג׳ויסטיק ובמסך מגע'),
         ),
-        h('p', { class: 'credits' }, MODEL_CREDIT),
+        h('p', { class: 'credits' }, `${MODEL_CREDIT} ${PHOTO_CREDIT}`),
+        h('p', { class: 'credits model-status' + (modelStatus.failed.length ? ' bad' : '') },
+          `גרסה ${__BUILD_DATE__} · מודלים אמיתיים שנטענו: ${modelStatus.ok.length}${modelStatus.failed.length ? ` · לא נטענו: ${modelStatus.failed.map((f) => `${f.id} (${f.why})`).join(', ')}` : ' · הכול נטען'}`),
       ),
     );
     this.menuEl = menu;
@@ -433,10 +438,21 @@ export class RaceUI {
       h('span', { class: 'key' }, g.isTouch ? '' : 'V'),
     );
     this.exploreEls = { speedo, map, place };
+    // The all-islands rally: clock, gates, and an arrow to the next one.
+    let rallyBox = null;
+    if (g.rally && g.rally.gates.length) {
+      const arrow = h('canvas', { width: 96, height: 96 });
+      const time = h('b', {}, '0:00.0');
+      const gate = h('span', { class: 'lbl' }, '');
+      const dist = h('span', { class: 'lbl' }, '');
+      rallyBox = h('div', { class: 'pill rallybox' }, arrow, h('div', {}, h('span', { class: 'lbl' }, 'ראלי כל האיים'), time, gate, dist));
+      Object.assign(this.exploreEls, { arrow, time, gate, dist });
+    }
     const hud = h(
       'div',
       { class: 'hud roam', 'aria-hidden': 'true' },
-      h('div', { class: 'tr' }, h('div', { class: 'pill roamwhere' }, h('span', { class: 'lbl' }, 'סיור חופשי'), place, what)),
+      h('div', { class: 'tr' }, h('div', { class: 'pill roamwhere' }, h('span', { class: 'lbl' }, g.rally ? 'ראלי' : 'סיור חופשי'), place, what)),
+      rallyBox ? h('div', { class: 'tc' }, rallyBox) : null,
       h('div', { class: 'bl' }, h('div', { class: 'speedo' }, speedo)),
       h('div', { class: 'br' }, map),
       kinds,
@@ -463,6 +479,8 @@ export class RaceUI {
     const els = this.exploreEls;
     if (!els || !ex.obj) return;
     this._drawSpeedo(els.speedo, ex.obj);
+    const R = this.game.rally;
+    if (R && els.arrow) this._rallyHud(R, ex, els);
     this._hudT -= dt;
     if (this._hudT > 0) return;
     this._hudT = 0.1;
@@ -478,6 +496,21 @@ export class RaceUI {
     const px = (wx + WORLD.span / 2) * k;
     const pz = (wz + WORLD.span / 2) * k;
     const f = ex.obj.forward;
+    // The rally's next gate (and the one after it, fainter).
+    const RT = this.game.rally?.target;
+    if (RT) {
+      const gates = this.game.rally.gates;
+      const nx = this.game.rally.next;
+      for (let q = Math.min(gates.length - 1, nx + 1); q >= nx; q--) {
+        g.beginPath();
+        g.arc((gates[q].x + WORLD.span / 2) * k, (gates[q].z + WORLD.span / 2) * k, q === nx ? 6 : 4, 0, Math.PI * 2);
+        g.fillStyle = q === nx ? '#39e07a' : 'rgba(255,176,32,0.8)';
+        g.fill();
+        g.strokeStyle = '#111';
+        g.lineWidth = 1.5;
+        g.stroke();
+      }
+    }
     g.save();
     g.translate(px, pz);
     g.rotate(Math.atan2(f.x, -f.z));
@@ -491,6 +524,47 @@ export class RaceUI {
     g.fill();
     g.lineWidth = 2;
     g.strokeStyle = '#111';
+    g.stroke();
+    g.restore();
+  }
+
+  _rallyHud(R, ex, els) {
+    els.time.textContent = fmtRally(R.time);
+    const T = R.target;
+    if (!T) {
+      els.gate.textContent = 'סיום!';
+      els.dist.textContent = '';
+      els.arrow.getContext('2d').clearRect(0, 0, 96, 96);
+      return;
+    }
+    els.gate.textContent = `שער ${R.next + 1}/${R.gates.length} · ${T.label}`;
+    const W = this.game.world;
+    const [wx, wz] = W.toWorld(ex.position.x, ex.position.z);
+    const dx = T.x - wx;
+    const dz = T.z - wz;
+    const d = Math.hypot(dx, dz);
+    els.dist.textContent = d > 1000 ? `${(d / 1000).toFixed(1)} ק"מ` : `${Math.round(d)} מ'`;
+    // Where the gate is relative to where the vehicle points.
+    const f = ex.obj.forward;
+    const rel = Math.atan2(dx, dz) - Math.atan2(f.x, f.z);
+    const g = els.arrow.getContext('2d');
+    g.clearRect(0, 0, 96, 96);
+    g.save();
+    g.translate(48, 48);
+    g.rotate(-rel);
+    g.beginPath();
+    g.moveTo(0, -34);
+    g.lineTo(22, 6);
+    g.lineTo(8, 2);
+    g.lineTo(8, 30);
+    g.lineTo(-8, 30);
+    g.lineTo(-8, 2);
+    g.lineTo(-22, 6);
+    g.closePath();
+    g.fillStyle = '#39e07a';
+    g.fill();
+    g.lineWidth = 3;
+    g.strokeStyle = '#0b1a10';
     g.stroke();
     g.restore();
   }

@@ -88,6 +88,24 @@ export class Explore {
   _decks() {
     const P = this.engine.physics;
     const obs = this.world.obstacles(3200);
+    // The deck surfaces themselves, in this island's coordinates, for the wheels.
+    this.island.deckLines = this.world.bridges.map((B) => {
+      const pts = B.samples.map((S) => {
+        const [x, z] = this.world.toLocal(S.p.x, S.p.z);
+        return { x, y: S.p.y, z };
+      });
+      let x0 = Infinity;
+      let x1 = -Infinity;
+      let z0 = Infinity;
+      let z1 = -Infinity;
+      for (const p of pts) {
+        x0 = Math.min(x0, p.x);
+        x1 = Math.max(x1, p.x);
+        z0 = Math.min(z0, p.z);
+        z1 = Math.max(z1, p.z);
+      }
+      return { pts, box: [x0 - 10, x1 + 10, z0 - 10, z1 + 10] };
+    });
     const byBridge = new Map();
     for (const D of obs.decks) {
       if (!byBridge.has(D.bridge)) byBridge.set(D.bridge, []);
@@ -110,7 +128,8 @@ export class Explore {
           const pitch = -Math.atan2(dy, len);
           const q = new CANNON.Quaternion().setFromEuler(pitch, yaw, 0, 'YXZ');
           const cx = (D.ax + D.bx) / 2 - o.ax;
-          const cy = (D.ay + D.by) / 2 - o.ay - 0.9;
+          // A hair under the deck's own surface: the wheels ride that (Island.deckY), the boxes catch the rest.
+          const cy = (D.ay + D.by) / 2 - o.ay - 0.96;
           const cz = (D.az + D.bz) / 2 - o.az;
           const shape = new CANNON.Box(new CANNON.Vec3(7.2, 0.9, len / 2 + 0.4));
           shape.collisionFilterGroup = GROUP.terrain;

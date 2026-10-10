@@ -1,21 +1,50 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { gunzipSync } from 'three/addons/libs/fflate.module.js';
 import { CAR_TYPES, carSpec } from './config.js';
 import { createCarModel, drawCarProfile } from './CarModel.js';
-import conceptHi from './models/concept.glb?url';
-import conceptLo from './models/concept-lo.glb?url';
+import { loadMonster, hasMonster, createMonsterCar } from './MonsterTruck.js';
+import { loadFish } from './TunnelLife.js';
+import conceptHi from './models/concept.glb.gz?url';
+import conceptLo from './models/concept-lo.glb.gz?url';
+import hyperHi from './models/hyper.glb.gz?url';
+import hyperLo from './models/hyper-lo.glb.gz?url';
+import gtHi from './models/real-gt.glb.gz?url';
+import gtLo from './models/real-gt-lo.glb.gz?url';
+import rallyHi from './models/real-rally.glb.gz?url';
+import rallyLo from './models/real-rally-lo.glb.gz?url';
+import muscleHi from './models/real-muscle.glb.gz?url';
+import muscleLo from './models/real-muscle-lo.glb.gz?url';
+import buggyHi from './models/real-buggy.glb.gz?url';
+import buggyLo from './models/real-buggy-lo.glb.gz?url';
+import formulaHi from './models/real-formula.glb.gz?url';
+import formulaLo from './models/real-formula-lo.glb.gz?url';
 
 /**
- * Real 3D models (scanned-quality glTF, prepared by tools/models.mjs) for the
- * car types that name one in config (`model`). Each is loaded once at start
- * in two levels of detail; every car on the grid is a light clone that only
- * owns its paint and brake lights. If a model cannot load, the type falls
- * back to its procedural body (CarModel.js), so the game never depends on it.
+ * Real 3D models for the car types that name one in config (`model`):
+ * prepared by tools/models.mjs (concept, hyper) and tools/realcars.mjs (the
+ * rest), each in two levels of detail. Every car on the grid is a light clone
+ * that only owns its paint and brake lights. If a model cannot load, the type
+ * falls back to its procedural body (CarModel.js), so the game never depends on it.
  */
-const SOURCES = { concept: { hi: conceptHi, lo: conceptLo } };
-/** Attribution the licence asks for (shown in the menu). */
-export const MODEL_CREDIT = 'המכונית "קונספט" היא מודל אמיתי: "Car Concept" מאת Eric Chadwick (Khronos glTF Sample Assets), ברישיון CC BY 4.0. שינויים: הוסרו סמלים והמודל הוקטן.';
+const SOURCES = {
+  concept: { hi: conceptHi, lo: conceptLo },
+  hyper: { hi: hyperHi, lo: hyperLo },
+  'real-gt': { hi: gtHi, lo: gtLo },
+  'real-rally': { hi: rallyHi, lo: rallyLo },
+  'real-muscle': { hi: muscleHi, lo: muscleLo },
+  'real-buggy': { hi: buggyHi, lo: buggyLo },
+  'real-formula': { hi: formulaHi, lo: formulaLo },
+};
+/** Attribution the licences ask for (shown in the menu). */
+export const MODEL_CREDIT =
+  'המכונית "קונספט" היא מודל אמיתי: "Car Concept" מאת Eric Chadwick (Khronos glTF Sample Assets), ברישיון CC BY 4.0. ' +
+  'ההיפרקאר היא מודל אמיתי: "Ferrari 458 Italia" מאת vicent091036 (מדוגמאות three.js), ברישיון CC BY 4.0. שינויים בשתיהן: הוסרו סמלים והמודל הוקטן. ' +
+  'GT ספורט: "Free Porsche 911 Carrera 4S" וראלי: "(FREE) 1972 Datsun 240k GT", שתיהן מאת Karol Miklas, ברישיון CC BY-SA 4.0. ' +
+  'מאסל: "Dodge Challenger 1970 R/T" מאת kryptonmedia, ברישיון CC0. ' +
+  'באגי שטח: "Jeep Wrangler Adventure Rubicon" מאת vecarz, ברישיון CC BY-NC-SA 4.0 (לשימוש לא מסחרי). ' +
+  'פורמולה: "McLaren MP4/5" מאת vecarz, ברישיון CC BY 4.0. בכולן הוסרו סמלים, לוחיות ופרסומות והמודל הוקטן. ' +
+  'גוף משאית המפלצת: "vehicle-truck" מאת Kenney, ברישיון CC0. הדגים ליד מנהרות הים: "Barramundi Fish" מאת Microsoft (Khronos glTF Sample Assets), ברישיון CC0.';
 const WHEELS = ['WheelFrontL', 'WheelFrontR', 'WheelRearL', 'WheelRearR']; // physics order: FL, FR, RL, RR (left = +x)
 const LOD_FAR = 24; // metres: beyond this the light version is drawn
 
@@ -25,21 +54,103 @@ const AXLE = new THREE.Vector3(1, 0, 0);
 const _qs = new THREE.Quaternion();
 const _qw = new THREE.Quaternion();
 
-export const hasRealModel = (type) => !!loaded[type];
+export const hasRealModel = (type) => !!loaded[type] || (type === 'monster' && hasMonster());
 
 /** Loads every model named by a car type; resolves even if some fail (they fall back). */
 export async function loadRealModels() {
-  const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+  const loader = new GLTFLoader().register(inlineImages);
   const jobs = CAR_TYPES.filter((t) => t.model && SOURCES[t.model]).map(async (t) => {
     const src = SOURCES[t.model];
     try {
-      const [hi, lo] = await Promise.all([loader.loadAsync(src.hi), loader.loadAsync(src.lo)]);
+      const [hi, lo] = await Promise.all([parseGz(loader, src.hi), parseGz(loader, src.lo)]);
       loaded[t.id] = prepare(hi.scene, lo.scene);
+      modelStatus.ok.push(t.id);
     } catch (e) {
+      modelStatus.failed.push({ id: t.id, why: String(e?.message || e).slice(0, 90) });
       console.warn(`real model for ${t.id} did not load; using the procedural body`, e);
     }
   });
+  jobs.push(loadMonster((src) => parseGz(loader, src)), loadFish((src) => parseGz(loader, src)));
   await Promise.all(jobs);
+  (hasMonster() ? modelStatus.ok : modelStatus.failed).push(hasMonster() ? 'monster' : { id: 'monster', why: 'see console' });
+}
+
+/*
+ * The claude.ai artifact viewer runs the page in a sandbox whose policy refuses
+ * fetch() of data: and blob: addresses (and may refuse WebAssembly), which is
+ * how GLTFLoader normally reads an inlined model and its textures: there the
+ * cars silently fell back to their procedural bodies, while the same file opened
+ * from disk showed the real ones. So nothing here fetches: the inlined bytes are
+ * decoded from base64 by hand, unzipped in plain JavaScript (fflate), parsed
+ * from memory, and every texture is decoded straight from its bytes (with an
+ * <img> fallback where createImageBitmap refuses).
+ */
+
+/** Which models loaded and which did not (and why): shown in the menu when any failed. */
+export const modelStatus = { ok: [], failed: [] };
+
+/** A `data:…;base64,` address (what Vite inlines) or a plain URL → its bytes, without fetch() for data:. */
+async function bytesOf(src) {
+  if (!src.startsWith('data:')) return new Uint8Array(await (await fetch(src)).arrayBuffer());
+  const bin = atob(src.slice(src.indexOf(',') + 1));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+/**
+ * Unzips in plain JavaScript (fflate, shipped with three): no DecompressionStream, Blob
+ * stream or Response, any of which a sandboxed viewer may lack or refuse.
+ */
+export async function parseGz(loader, src) {
+  const raw = gunzipSync(await bytesOf(src));
+  return loader.parseAsync(raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength), '');
+}
+
+/** Bytes → base64 (for a data: image address). */
+function base64(bytes) {
+  let s = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+
+/**
+ * An image from its encoded bytes: createImageBitmap when the viewer allows it, else an
+ * <img> from a data: address (which the artifact viewer always allows).
+ */
+export async function decodeImage(bytes, mime, opts = {}) {
+  if (typeof createImageBitmap !== 'undefined') {
+    try {
+      return await createImageBitmap(new Blob([bytes], { type: mime }), opts);
+    } catch (e) {
+      console.warn('createImageBitmap refused; decoding through <img>', e);
+    }
+  }
+  const img = new Image();
+  img.src = `data:${mime};base64,${base64(bytes)}`;
+  await img.decode();
+  return img;
+}
+
+/** GLTFLoader plugin: images embedded in the model become textures without an object URL or fetch. */
+export function inlineImages(parser) {
+  const base = parser.loadImageSource.bind(parser);
+  parser.loadImageSource = function (index, loader) {
+    const def = this.json.images[index];
+    if (def.bufferView === undefined) return base(index, loader);
+    if (!this.sourceCache[index]) {
+      this.sourceCache[index] = this.getDependency('bufferView', def.bufferView)
+        .then((view) => decodeImage(new Uint8Array(view), def.mimeType, { premultiplyAlpha: 'none' }))
+        .then((image) => {
+          const texture = new THREE.Texture(image);
+          texture.needsUpdate = true;
+          texture.userData.mimeType = def.mimeType;
+          return texture;
+        });
+    }
+    return this.sourceCache[index].then((t) => t.clone());
+  };
+  return { name: 'inline-images' };
 }
 
 /** Splits a loaded scene into a still body and four wheel pivots (centred on each tyre). */
@@ -78,6 +189,9 @@ function prepare(hiScene, loScene) {
     // Perfectly smooth coats mirror the sun as a single blinding point (and bloom); real lacquer is a touch softer.
     m.roughness = Math.max(m.roughness, 0.05);
     if (m.clearcoat > 0) m.clearcoatRoughness = Math.max(m.clearcoatRoughness, 0.06);
+    // Brushed-metal anisotropy needs the tangents the models ship without: the shader then
+    // writes NaN, which the bloom smears into a white glare over the whole car.
+    if (m.anisotropy) m.anisotropy = 0;
     for (const k of ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap', 'clearcoatNormalMap']) if (m[k]) m[k].userData.keep = true;
     return m;
   };
@@ -100,9 +214,10 @@ function prepare(hiScene, loScene) {
     });
   }
   const paint = byName.get('Paint 1 Carmine');
-  const tail = byName.get('Brakelight');
-  const head = byName.get('Headlight');
-  if (!paint || !tail || !head) throw new Error('model is missing its paint or lamps');
+  if (!paint) throw new Error('model is missing its paint');
+  // Lamps drawn into a texture (or not modelled) have no material of their own: those glow nowhere.
+  const tail = byName.get('Brakelight') || new THREE.MeshStandardMaterial({ name: 'Brakelight' });
+  const head = byName.get('Headlight') || new THREE.MeshStandardMaterial({ name: 'Headlight' });
   tail.emissive.set(0xff1a0a);
   head.emissive.set(0xe8f0ff);
   const front = (hi.centres[0].z + hi.centres[1].z) / 2;
@@ -121,8 +236,6 @@ function prepare(hiScene, loScene) {
   };
 }
 
-let tracked = false;
-
 /**
  * One car in the real model: { group (a LOD), paint, tailMat, headMat, pose(car) }.
  * The wheels steer, spin and ride the suspension like the physics wheels do.
@@ -130,11 +243,11 @@ let tracked = false;
 export function createRealCar(materials, { color = '#d42a2a', type }) {
   const R = loaded[type];
   const W = carSpec(type).wheel;
-  if (!tracked) {
+  if (!R.tracked) {
     // Shared lamps: exposure-compensated like every other emissive in the game.
     materials.trackEmissive(R.head, 0.6);
     for (const m of R.glow) materials.trackEmissive(m, 0.35);
-    tracked = true;
+    R.tracked = true;
   }
   const paint = R.paint.clone();
   paint.color.set(color);
@@ -143,7 +256,7 @@ export function createRealCar(materials, { color = '#d42a2a', type }) {
   const restY = W.height - (W.restLength - 9.82 / (4 * W.stiffness));
   const lod = new THREE.LOD();
   const pivots = [];
-  for (const [k, T] of [R.hi, R.lo].entries()) {
+  for (const [k, T] of (R.lo === R.hi ? [R.hi] : [R.hi, R.lo]).entries()) {
     const level = new THREE.Group();
     const body = T.body.clone();
     body.position.set(0, restY - R.ground, R.dz);
@@ -174,7 +287,7 @@ export function createRealCar(materials, { color = '#d42a2a', type }) {
         const info = infos[i];
         const len = info.isInContact ? info.suspensionLength : Math.min(info.suspensionRestLength + 0.05, info.suspensionLength + 0.2);
         _qs.setFromAxisAngle(UP, i < 2 ? -veh.steerAngle : 0);
-        _qw.setFromAxisAngle(AXLE, veh.wheelSpin[i]);
+        _qw.setFromAxisAngle(AXLE, veh.wheelShown[i]);
         _qs.multiply(_qw);
         for (const ps of pivots) {
           ps[i].position.y = W.height - len;
@@ -188,6 +301,7 @@ export function createRealCar(materials, { color = '#d42a2a', type }) {
 /** A car of each real model in the scene while the start-up shaders compile; returns the clean-up. */
 export function warmRealModels(scene, materials) {
   const cars = Object.keys(loaded).map((type) => createRealCar(materials, { type }));
+  if (hasMonster()) cars.push(createMonsterCar(materials, { spec: carSpec('monster') }));
   for (const c of cars) scene.add(c.group);
   return () => {
     for (const c of cars) {
@@ -200,7 +314,8 @@ export function warmRealModels(scene, materials) {
 
 /** The real model when its type has one (and it loaded), else the procedural body. */
 export function createVehicleModel(materials, opts) {
-  return hasRealModel(opts.type) ? createRealCar(materials, opts) : createCarModel(materials, opts);
+  if (opts.type === 'monster' && hasMonster()) return createMonsterCar(materials, { ...opts, spec: carSpec('monster') });
+  return loaded[opts.type] ? createRealCar(materials, opts) : createCarModel(materials, opts);
 }
 
 const _v = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
@@ -300,6 +415,6 @@ function drawRealProfile(canvas, type, color) {
 
 /** Garage card profile for any type. */
 export function drawProfile(canvas, type, color) {
-  if (hasRealModel(type)) drawRealProfile(canvas, type, color);
+  if (loaded[type]) drawRealProfile(canvas, type, color);
   else drawCarProfile(canvas, type, color);
 }

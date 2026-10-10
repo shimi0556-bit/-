@@ -4,6 +4,7 @@ import { Random } from '../engine/core/Random.js';
 import { waveAt } from '../engine/world/Water.js';
 import { coralShader } from './Corals.js';
 import { Megafauna } from './Megafauna.js';
+import { TunnelLife } from './TunnelLife.js';
 import { Wrecks } from './Wrecks.js';
 import { paint, coralGeometries, CORAL_HEIGHT, CORAL_MAT, CORAL_COLORS, CORAL_SCALE, ZONES, pickWeighted, SPECIES, fishGeometry, FISH_PATTERN_GLSL } from './Sealife.js';
 
@@ -31,6 +32,16 @@ const _v = new THREE.Vector3();
  *   herds    cows and sheep grazing the meadows, camels in the desert.
  * What appears where comes from the stage's `life` settings.
  */
+/**
+ * Is this sea floor the right depth for a species? The shore fish want the
+ * clear shallows just off the beach, where they can be seen from the road;
+ * everything else wants water deep enough to hold its school.
+ */
+function fits(sp, floor) {
+  if (sp.shore) return floor <= sp.depth[1] - 0.25 && floor >= sp.depth[0] - 1.5;
+  return floor <= sp.depth[1] - 1 && floor >= sp.depth[0] - 12;
+}
+
 export class Life {
   constructor(engine, island, materials) {
     this.engine = engine;
@@ -68,6 +79,11 @@ export class Life {
       this.giants = new Megafauna(this.engine, this);
       this.group.add(this.giants.build());
       this.solids.push(...this.giants.solids);
+    }
+    // Whales, sharks and real fish round the glass sea tunnels.
+    if (c.tunnels && this.track && this.track.tunnels && this.track.tunnels.length) {
+      this.tunnelLife = new TunnelLife(this.engine, this);
+      this.group.add(this.tunnelLife.build());
     }
     return this.group;
   }
@@ -323,12 +339,14 @@ export class Life {
       // A colony: a few of the same kind side by side, as corals settle and spread.
       // Wrecks keep their own ground: nothing grows through them.
       const W = this.wrecks ? this.wrecks.spots : [];
+      const tr = this.track;
       const onWreck = (px, pz) => W.some((w) => Math.abs(px - w.x) < (w.kind === 'freighter' ? 30 : 20) && Math.abs(pz - w.z) < (w.kind === 'freighter' ? 30 : 20));
       const colony = (kind, x, y, z, scale, n, spread, onTop = null) => {
         for (let j = 0; j < n && cell.length < cap; j++) {
           const px = x + (j ? rng.range(-spread, spread) : 0);
           const pz = z + (j ? rng.range(-spread, spread) : 0);
           if (W.length && onWreck(px, pz)) continue;
+          if (tr && tr.nearTunnel && tr.nearTunnel(px, pz)) continue;
           const py = onTop ? onTop(px, pz) : t.heightAt(px, pz);
           if (py === null || py > -0.8) continue;
           const it = this.coralItem(kind, px, py, pz, rng, scale * (j ? rng.range(0.6, 1) : 1));
@@ -344,6 +362,7 @@ export class Life {
         const h = t.heightAt(x, z);
         if (h > -2 || h < -40) continue;
         if (W.length && onWreck(x, z)) continue;
+        if (tr && tr.nearTunnel && tr.nearTunnel(x, z, 9)) continue;
         const cover = t.reefAt ? t.reefAt(x, z, h) : 0;
         if (cover < 0.12 && rng.random() > 0.15) continue;
         const rs = Math.min(rng.range(1.4, 3.6), (-h - 1.2) / H.rock);
@@ -520,12 +539,29 @@ export class Life {
         z = rng.range(-half, half);
       }
       const floor = t.heightAt(x, z);
-      if (floor > sp.depth[1] - 1 || floor < sp.depth[0] - 12) continue;
+      if (!fits(sp, floor)) continue;
       counts[sp.name] = (counts[sp.name] || 0) + 1;
       const n = Math.round(rng.range(sp.count[0], sp.count[1]));
       const fish = [];
       for (let k = 0; k < n; k++) fish.push({ ph: rng.range(0, 6.28), orbit: rng.range(0.3, 1), tilt: rng.range(-0.5, 0.5), rr: rng.range(0.3, 1), off: rng.range(-1, 1), s: sp.size * rng.range(0.85, 1.15), fx: 0, fy: 0, fz: 0 });
       schools.push({ sp, ax: x, az: z, floor, n, fish, ang: rng.range(0, 6.28), roam: rng.range(8, 26) * (sp.radius > 8 ? 2 : 1), dir: rng.random() < 0.5 ? 1 : -1, bob: rng.range(0, 6.28), x, y: 0, z });
+    }
+    // The shallows are a narrow band round the island and random points seldom
+    // land in it: the shore fish get schools of their own, so the clear water
+    // off every beach has fish in it.
+    const shore = SPECIES.filter((sp) => sp.shore);
+    const wantShore = Math.round(want * 0.4);
+    for (let guard = 0, got = 0; got < wantShore && guard < 40000; guard++) {
+      const sp = shore[got % shore.length];
+      const x = rng.range(-half, half);
+      const z = rng.range(-half, half);
+      const floor = t.heightAt(x, z);
+      if (!fits(sp, floor)) continue;
+      const n = Math.round(rng.range(sp.count[0], sp.count[1]));
+      const fish = [];
+      for (let k = 0; k < n; k++) fish.push({ ph: rng.range(0, 6.28), orbit: rng.range(0.3, 1), tilt: rng.range(-0.5, 0.5), rr: rng.range(0.3, 1), off: rng.range(-1, 1), s: sp.size * rng.range(0.85, 1.15), fx: 0, fy: 0, fz: 0 });
+      schools.push({ sp, ax: x, az: z, floor, n, fish, ang: rng.range(0, 6.28), roam: rng.range(5, 14), dir: rng.random() < 0.5 ? 1 : -1, bob: rng.range(0, 6.28), x, y: 0, z });
+      got++;
     }
     this.schools = schools;
     // One instanced mesh per species: its own body, fins and markings.
@@ -572,14 +608,15 @@ export class Life {
       this.fishCursor = ((this.fishCursor || 0) + 1) % this.schools.length;
       const s = this.schools[this.fishCursor];
       if (Math.hypot(s.ax - cam.x, s.az - cam.z) < 260) continue;
-      for (let tries = 0; tries < 6; tries++) {
+      // The shallows are a thin band: shore fish look harder for it.
+      for (let tries = 0, most = s.sp.shore ? 40 : 6; tries < most; tries++) {
         const a = Math.random() * Math.PI * 2;
         const r = 50 + Math.random() * 170;
         const x = cam.x + Math.cos(a) * r;
         const z = cam.z + Math.sin(a) * r;
         if (Math.abs(x) > half || Math.abs(z) > half) continue;
         const floor = t.heightAt(x, z);
-        if (floor > s.sp.depth[1] - 1 || floor < s.sp.depth[0] - 12) continue;
+        if (!fits(s.sp, floor)) continue;
         if (s.sp.reef && t.reefAt && t.reefAt(x, z, floor) < 0.3) continue;
         s.ax = x;
         s.az = z;
@@ -616,7 +653,7 @@ export class Life {
       s.x = s.ax + Math.cos(s.ang) * s.roam;
       s.z = s.az + Math.sin(s.ang * 0.8) * s.roam * 0.7;
       const floor = this.terrain.heightAt(s.x, s.z);
-      const top = -0.9 - sp.size * 0.3;
+      const top = -(sp.shore ? 0.3 : 0.9) - sp.size * 0.3;
       const bottom = floor + 0.6 + sp.size * (sp.floor ? 0.3 : 1);
       const mid = sp.floor ? 0.05 : 0.35;
       // Never out of the water, even where the floor comes up close to the surface.
@@ -651,7 +688,17 @@ export class Life {
         py = Math.min(top, py + f.fy);
         pz += f.fz;
         const yaw = heading + Math.sin(a) * (solo ? 0.15 : 0.35);
-        _q.setFromEuler(_e.set(Math.sin(a * 1.3) * (solo ? 0.05 : 0.15), yaw, sp.shape === 'ray' ? Math.sin(t * 0.5 + f.ph) * 0.08 : 0));
+        // Mullet and needlefish break the surface: a low arc, nose up and then down.
+        let pitch = Math.sin(a * 1.3) * (solo ? 0.05 : 0.15);
+        if (sp.leap && f.orbit > 0.82) {
+          const u = (t * 0.17 + f.ph) % 1;
+          if (u < 0.13) {
+            const v = u / 0.13;
+            py += (0.5 + sp.size * 1.6) * Math.sin(v * Math.PI) + 0.5;
+            pitch = Math.cos(v * Math.PI) * 0.9;
+          }
+        }
+        _q.setFromEuler(_e.set(pitch, yaw, sp.shape === 'ray' ? Math.sin(t * 0.5 + f.ph) * 0.08 : 0));
         _m.compose(_p.set(px, py, pz), _q, _s.set(f.s, f.s, f.s));
         mesh.setMatrixAt(k++, _m);
       }
@@ -1381,6 +1428,7 @@ export class Life {
     this._updateHerds(dt);
     this._updateSets();
     if (this.giants) this.giants.update(dt);
+    if (this.tunnelLife) this.tunnelLife.update(dt);
   }
 }
 

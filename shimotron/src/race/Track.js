@@ -26,8 +26,12 @@ export class Track {
     this.group.name = 'Track';
     this.bodies = [];
     this._buildPath(controls);
-    this._chooseStart();
+    // A course drawn by hand starts where it is drawn from; a generated one on its calmest straight.
+    if (!stage.track?.controls) this._chooseStart();
     this._buildProfile();
+    if (stage.tunnels) this._tunnels(stage.tunnels);
+    if (stage.track?.offroad) this._offroad(stage.track.offroad);
+    if (stage.jumps) this._jumps(stage.jumps);
     this._buildField();
     this._racingLine();
     if (stage.gorge) this._gorges(stage.gorge);
@@ -35,7 +39,8 @@ export class Track {
     this.splatModifier = (x, z, w, h) => this._splatModifier(x, z, w, h);
     this.clearance = (x, z) => {
       const q = this.nearest(x, z, this._q);
-      return q ? q.dist - this.W : 1e9;
+      // Off-road stretches run between the trees: they may grow up to a few metres from the edge.
+      return q ? q.dist - this.W + (this.dirt ? this.dirt[q.i] * 9 : 0) : 1e9;
     };
     this._q = {};
     // Physics surface rows: asphalt plus gravel shoulders, in ~200 m trimesh chunks.
@@ -181,6 +186,193 @@ export class Track {
     this.bank = this._smoothLoop(bank, 6, 2);
   }
 
+  /**
+   * Under-sea tunnels: wherever the drawn course crosses open water the road
+   * dives under the sea floor's surface instead of floating on it. It ramps
+   * down on land (at `grade`) through an open cut walled in concrete, then
+   * runs in a glass tube `depth` metres down, and climbs out the same way on
+   * the far shore. Fills:
+   *   this.sunk[i]  1 where the road is below the sea (cut or tube)
+   *   this.tube[i]  1 where the whole tube is under water (the glass part)
+   *   this.tunnels  [{a, b, t0, t1}]: each sunken stretch, and its tube part
+   *                 (sample indices, never wrapping past the start)
+   * and opens the barriers along them: the tunnel's own walls take over.
+   */
+  _tunnels({ depth = 13, grade = 0.075, crown = 7.5 } = {}) {
+    const n = this.n;
+    const ds = this.ds;
+    const nat = new Float32Array(n);
+    for (let i = 0; i < n; i++) nat[i] = this.terrain.height(this.x[i], this.z[i]);
+    // Open water under the course: runs of sea floor, ignoring blips shorter than 30 m.
+    const runs = [];
+    let cur = null;
+    for (let i = 0; i < n; i++) {
+      if (nat[i] < 0.8) {
+        if (cur && i - cur.b <= Math.round(30 / ds)) cur.b = i;
+        else runs.push((cur = { a: i, b: i }));
+      }
+    }
+    const env = new Float32Array(n).fill(Infinity);
+    const reach = Math.ceil((60 + depth) / (grade * ds));
+    for (const r of runs) {
+      if ((r.b - r.a) * ds < 40) continue;
+      for (let i = r.a - reach; i <= r.b + reach; i++) {
+        const d = i < r.a ? r.a - i : i > r.b ? i - r.b : 0;
+        const k = (i + n) % n;
+        env[k] = Math.min(env[k], -depth + d * ds * grade);
+      }
+    }
+    const h = Float32Array.from(this.h, (v, i) => Math.min(v, env[i]));
+    // Long vertical curves where the ramps meet the road above and the tube below (~100 m each),
+    // so nothing is launched over the top or bottoms out at the foot at racing speed.
+    const touched = Uint8Array.from(env, (e, i) => (e < this.h[i] + 8 ? 1 : 0));
+    const sm = this._smoothLoop(h, Math.round(26 / ds), 4);
+    for (let i = 0; i < n; i++) if (touched[i]) h[i] = sm[i];
+    this.ramps = touched;
+    this.h = h;
+    this.sunk = new Uint8Array(n);
+    this.tube = new Uint8Array(n);
+    this.crown = crown;
+    for (let i = 0; i < n; i++) {
+      if (h[i] < 0.6) this.sunk[i] = 1;
+      if (h[i] + crown < -0.4) this.tube[i] = 1;
+    }
+    this.tunnels = [];
+    for (let i = 0; i < n; i++) {
+      if (!this.sunk[i] || this.sunk[(i - 1 + n) % n]) continue;
+      let b = i;
+      while (this.sunk[(b + 1) % n] && b < i + n) b++;
+      let t0 = i;
+      while (t0 <= b && !this.tube[t0 % n]) t0++;
+      let t1 = b;
+      while (t1 >= t0 && !this.tube[t1 % n]) t1--;
+      this.tunnels.push({ a: i, b, t0, t1 });
+    }
+    // Their own walls are the barriers: the rails, boards and stands stay out.
+    this.gaps = this.gaps || [];
+    const pad = Math.round(6 / ds);
+    for (const T of this.tunnels) {
+      const half = Math.ceil((T.b - T.a) / 2) + pad;
+      for (const side of [-1, 1]) this.gaps.push({ i: Math.round((T.a + T.b) / 2) % n, side, half });
+    }
+    this.covered = this.covered || new Uint8Array(n);
+    for (let i = 0; i < n; i++) if (this.sunk[i]) this.covered[i] = 1;
+  }
+
+  /** Whether (x, z) is in a tunnel's open cut (walled, dry, below the sea): the sea is not drawn there. */
+  inCut(x, z) {
+    if (!this.sunk) return false;
+    const q = this.nearest(x, z, this._cq || (this._cq = {}));
+    return !!q && q.dist < this.W + 22 && this.sunk[q.i] === 1 && this.tube[q.i] === 0;
+  }
+
+  /** Whether (x, z) is on a tunnel's footprint (glass, walls, plinths) plus `pad` metres: sea life keeps off it. */
+  nearTunnel(x, z, pad = 4) {
+    if (!this.sunk) return false;
+    const q = this.nearest(x, z, this._cq || (this._cq = {}));
+    return !!q && q.dist < this.W + 4 + pad && this.sunk[q.i] === 1;
+  }
+
+  /** Whether (x, z, y) is inside a tunnel (cut or tube), between the walls and under the roof. */
+  inTunnel(x, y, z) {
+    if (!this.sunk) return false;
+    const q = this.nearest(x, z, this._cq || (this._cq = {}));
+    return !!q && q.dist < this.W + 2.2 && this.sunk[q.i] === 1 && y < q.h + this.crown + 0.5;
+  }
+
+  /**
+   * Off-road stretches (`ranges`: [from, to] in metres from the start): the
+   * road turns to packed dirt between the trees, with no kerbs or barriers,
+   * and rolls in long bumps (gentle enough to stay on the ground at the
+   * speeds the AI takes them, big enough to work the suspension).
+   * this.dirt[i] is 0..1, eased in and out over 20 m.
+   */
+  _offroad(ranges) {
+    const n = this.n;
+    const ds = this.ds;
+    const dirt = new Float32Array(n);
+    const ease = 20 / ds;
+    for (const [from, to] of ranges) {
+      const a = Math.round(from / ds);
+      const b = Math.round(to / ds);
+      for (let k = a - ease; k <= b + ease; k++) {
+        const i = ((Math.round(k) % n) + n) % n;
+        if (this.sunk && this.sunk[i]) continue;
+        const e = Math.min(k - (a - ease), b + ease - k) / ease;
+        dirt[i] = Math.max(dirt[i], smoothstep(0, 1, e));
+      }
+      this.gaps = this.gaps || [];
+      const mid = Math.round((a + b) / 2) % n;
+      for (const side of [-1, 1]) this.gaps.push({ i: mid, side, half: Math.ceil((b - a) / 2 + ease) });
+    }
+    this.dirt = dirt;
+    const N = this.terrain.noise;
+    for (let i = 0; i < n; i++) {
+      if (!dirt[i]) continue;
+      const d = i * ds;
+      const swell = 0.75 + 0.5 * (N.noise(d * 0.01, 3.7) * 0.5 + 0.5);
+      this.h[i] += dirt[i] * swell * (0.2 * Math.sin((d / 32) * Math.PI * 2) + 0.06 * Math.sin((d / 17.5) * Math.PI * 2 + 1.3) + 0.012 * Math.sin((d / 8.5) * Math.PI * 2 + 0.4));
+    }
+  }
+
+  /**
+   * Table-top jumps built into the road itself (so the asphalt, the ground
+   * under it, the wheel rays and the AI all see the same shape): a ramp up to
+   * a lip, a short flat table, and a long, gentle landing slope back down.
+   * Only on the straightest stretches, clear of the start and of each other.
+   */
+  _jumps({ count = 3, height = 1.7, up = 16, top = 9, down = 28 }) {
+    const n = this.n;
+    const ds = this.ds;
+    const len = up + top + down;
+    // The straight it needs: a run-up, the jump, and room to land and settle.
+    const before = Math.round(45 / ds);
+    const after = Math.round(70 / ds);
+    const body = Math.round(len / ds);
+    const from = Math.round(380 / ds);
+    const to = n - Math.round(260 / ds) - before - body - after;
+    const cands = [];
+    for (let i = from; i < to; i += 2) {
+      let k = 0;
+      let grade = 0;
+      for (let j = i; j < i + before + body + after; j++) {
+        if (this.ramps && this.ramps[j % n]) k = 1;
+        k = Math.max(k, Math.abs(this.kappa[j % n]));
+        grade = Math.max(grade, Math.abs(this.h[(j + 1) % n] - this.h[j % n]) / ds);
+      }
+      // Gentle bends only, and no steep downhill (a jump into a drop flies too far).
+      if (k < 1 / 170 && grade < 0.075) cands.push({ i, k: k + grade * 0.02 });
+    }
+    cands.sort((a, b) => a.k - b.k);
+    const gap = Math.round(Math.max(420, (this.length / (count + 1)) * 0.6) / ds);
+    this.jumps = [];
+    for (const c of cands) {
+      if (this.jumps.length >= count) break;
+      if (this.jumps.some((J) => Math.min(Math.abs(J.i0 - c.i), n - Math.abs(J.i0 - c.i)) < gap)) continue;
+      this.jumps.push({ i0: c.i + before, height });
+    }
+    const m = 1 / 0.9; // linear ramp with a rounded toe over its first 20 %
+    const lift = (s) => {
+      if (s <= 0 || s >= len) return 0;
+      if (s < up) {
+        const f = s / up;
+        return height * (f < 0.2 ? (m * f * f) / 0.4 : m * (f - 0.1));
+      }
+      if (s < up + top) return height;
+      const t = (s - up - top) / down;
+      return height * (1 - t * t * (3 - 2 * t));
+    };
+    for (const J of this.jumps) {
+      J.lip = (J.i0 + Math.round(up / ds)) % n;
+      J.end = (J.i0 + body) % n;
+      J.up = up;
+      J.top = top;
+      J.down = down;
+      for (let k = 0; k <= body; k++) this.h[(J.i0 + k) % n] += lift(k * ds);
+    }
+    this.jumps.sort((a, b) => a.i0 - b.i0);
+  }
+
   _buildField() {
     const cell = 24;
     this.cell = cell;
@@ -261,7 +453,8 @@ export class Track {
     const a = Math.abs(q.lat);
     if (a > W + 4.5) return false;
     // Where a side road or street leaves through the barriers the wheels follow the ground past the edge line.
-    if (a > W + 0.4 && this.gaps && this.inGap(q.i, Math.sign(q.lat))) return false;
+    // In a side road's mouth that starts right at the edge: the road answers from there, flush.
+    if (a > W && this.gaps && (this.inMouth(q.i, Math.sign(q.lat)) || (a > W + 0.4 && this.inGap(q.i, Math.sign(q.lat))))) return false;
     const n = this.n;
     const i = q.i;
     const j = (i + 1) % n;
@@ -367,6 +560,16 @@ export class Track {
     const q = this.nearest(x, z, this._q);
     if (!q || q.dist > this.W + 70) return h;
     const W = this.W;
+    if (this.sunk && this.sunk[q.i]) {
+      // Under-sea tunnels: a flat floor out to the walls, then straight back up to the land (behind
+      // the cut's retaining walls), or a dredged trench / rock berm the tube lies in out at sea.
+      const floor = q.h + THREE.MathUtils.clamp(q.lat, -W, W) * q.bank - 0.26;
+      // Flat well past the walls and only then rising, gently: the ground mesh (and its collision
+      // triangles) is coarse, and a slope starting at the wall would lift the floor under the road.
+      if (q.dist <= W + 9) return floor;
+      const k = smoothstep(W + 9, W + 14 + Math.abs(h - floor) * (this.tube[q.i] ? 1.6 : 2.2), q.dist);
+      return floor + (h - floor) * k;
+    }
     const lat = THREE.MathUtils.clamp(q.lat, -(W + 4.5), W + 4.5);
     const roadY = q.h + lat * q.bank;
     let target;
@@ -404,7 +607,8 @@ export class Track {
   _splatModifier(x, z, w) {
     const q = this.nearest(x, z, this._q);
     if (!q) return w;
-    const g = smoothstep(this.W + 5.5, this.W + 3.5, q.dist);
+    const wide = this.dirt ? this.dirt[q.i] * 2.5 : 0;
+    const g = smoothstep(this.W + 5.5 + wide, this.W + 3.5 + wide, q.dist);
     if (g <= 0) return w;
     return { sand: w.sand * (1 - g), dirt: Math.max(w.dirt, 0.92 * g), rock: w.rock * (1 - g) };
   }
@@ -454,7 +658,7 @@ export class Track {
       const cz = pz[b];
       const area = Math.abs((bx - ax) * (cz - az) - (cx - ax) * (bz - az)) / 2;
       const R = area > 1e-6 ? (Math.hypot(bx - ax, bz - az) * Math.hypot(cx - bx, cz - bz) * Math.hypot(ax - cx, az - cz)) / (4 * area) : 1e6;
-      v[i] = Math.min(Math.sqrt(AI.grip * (this.stage.roadGrip || 1) * g * R), CAR.engine.topSpeed + 6);
+      v[i] = Math.min(Math.sqrt(AI.grip * (this.stage.roadGrip || 1) * (this.dirt ? 1 - 0.2 * this.dirt[i] : 1) * g * R), CAR.engine.topSpeed + 6);
       // Crests: stay planted (vertical curvature limits speed before the car goes light).
       const hv = (this.h[a] - 2 * this.h[i] + this.h[b]) / (16 * this.ds * this.ds);
       if (hv < -1e-5) v[i] = Math.min(v[i], Math.sqrt((0.75 * g) / -hv));
@@ -500,6 +704,9 @@ export class Track {
     const pos = new Float32Array(rows * cols * 3);
     const uv = new Float32Array(rows * cols * 2);
     const road = new Float32Array(rows * cols * 3);
+    const dirt = new Float32Array(rows * cols);
+    // Mouths where a side road joins: no edge line on that side there.
+    const gap = new Float32Array(rows * cols * 3);
     const vRep = this.length / Math.round(this.length / 2.5);
     for (let r = 0; r < rows; r++) {
       const i = r % n;
@@ -515,11 +722,16 @@ export class Track {
         pos[k + 1] = this.surfaceY(i, lc) - (skirt ? 0.4 : 0);
         pos[k + 2] = this.z[i] + rz * l;
         // Square 2.5 m texture tiles; markings come from aRoad, not the UVs.
-        uv[(r * cols + c) * 2] = lc / 2.5;
+        // The skirt carries on the texture down its face (not one texel smeared across it).
+        uv[(r * cols + c) * 2] = (skirt ? l + Math.sign(l) * 0.4 : l) / 2.5;
         uv[(r * cols + c) * 2 + 1] = d / vRep;
         road[k] = lc;
         road[k + 1] = d;
         road[k + 2] = this.line[i];
+        dirt[r * cols + c] = this.dirt ? this.dirt[i] : 0;
+        gap[k] = this.inMouth(i, -1) ? 1 : 0;
+        gap[k + 1] = this.inMouth(i, 1) ? 1 : 0;
+        gap[k + 2] = 1e4;
       }
     }
     const idx = [];
@@ -536,6 +748,8 @@ export class Track {
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
     geo.setAttribute('aRoad', new THREE.BufferAttribute(road, 3));
+    geo.setAttribute('aDirt', new THREE.BufferAttribute(dirt, 1));
+    geo.setAttribute('aGap', new THREE.BufferAttribute(gap, 3));
     geo.setIndex(idx);
     geo.computeVertexNormals();
     geo.computeBoundingSphere();
@@ -545,10 +759,10 @@ export class Track {
       shader.uniforms.uW = { value: W };
       shader.uniforms.uLen = { value: this.length };
       shader.vertexShader = shader.vertexShader
-        .replace('#include <common>', '#include <common>\nattribute vec3 aRoad; varying vec3 vRoad;')
-        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRoad = aRoad;');
+        .replace('#include <common>', '#include <common>\nattribute vec3 aRoad; varying vec3 vRoad; attribute float aDirt; varying float vDirt; attribute vec3 aGap; varying vec3 vGap;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRoad = aRoad; vDirt = aDirt; vGap = aGap;');
       shader.fragmentShader = shader.fragmentShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vRoad; uniform float uW; uniform float uLen; float rPaint; float rRubber;\nfloat rHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\nfloat rNoise(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(rHash(i), rHash(i + vec2(1.0, 0.0)), f.x), mix(rHash(i + vec2(0.0, 1.0)), rHash(i + vec2(1.0, 1.0)), f.x), f.y); }')
+        .replace('#include <common>', '#include <common>\nvarying vec3 vRoad; varying float vDirt; varying vec3 vGap; uniform float uW; uniform float uLen; float rPaint; float rRubber;\nfloat rHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\nfloat rNoise(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(rHash(i), rHash(i + vec2(1.0, 0.0)), f.x), mix(rHash(i + vec2(0.0, 1.0)), rHash(i + vec2(1.0, 1.0)), f.x), f.y); }')
         .replace(
           '#include <map_fragment>',
           `#include <map_fragment>
@@ -561,6 +775,14 @@ export class Track {
             // Edge lines, dashed centre line.
             float edge = smoothstep(uW - 0.5 - aw, uW - 0.5, abs(l)) * (1.0 - smoothstep(uW - 0.25, uW - 0.25 + aw, abs(l)));
             float dash = step(fract(d / 12.0), 0.45) * (1.0 - smoothstep(0.1, 0.1 + aw, abs(l)));
+            // A side road's mouth: the circuit's edge line breaks for it; on the side road, the centre
+            // line stops short and a dashed give-way line crosses the lane coming in (vGap.z: metres to the circuit).
+            edge *= 1.0 - (l < 0.0 ? vGap.x : vGap.y);
+            float jd = vGap.z;
+            dash *= step(3.5, jd);
+            float aj = fwidth(jd) * 1.2 + 0.01;
+            float giveWay = smoothstep(0.7 - aj, 0.7, jd) * (1.0 - smoothstep(1.2, 1.2 + aj, jd)) * step(0.35, l) * step(l, uW - 0.6) * step(0.45, fract(l / 1.1));
+            edge = max(edge, giveWay);
             // Start / finish chequers across the full width.
             float sd = mod(d + ${startLen / 2}, uLen);
             float inStart = step(sd, ${startLen});
@@ -573,9 +795,26 @@ export class Track {
             // Rubbered-in racing line.
             rRubber = exp(-pow((l - line) / 1.3, 2.0)) * 0.55;
             diffuseColor.rgb *= 1.0 - rRubber * 0.45;
+            // Off-road: packed earth instead of asphalt, worn into two ruts along the line, gravel and
+            // stones, puddle-dark dips, and grass creeping in from the edges.
+            if (vDirt > 0.001) {
+              float n1 = rNoise(vec2(d * 0.35, l * 0.9));
+              float n2 = rNoise(vec2(d * 1.7, l * 2.3));
+              float n3 = rNoise(vec2(d * 0.05, l * 0.18));
+              vec3 earth = mix(vec3(0.33, 0.25, 0.17), vec3(0.5, 0.4, 0.28), n3) * (0.78 + 0.38 * n1);
+              float rut = exp(-pow((abs(l - line) - 0.95) / 0.38, 2.0));
+              earth *= 1.0 - 0.28 * rut;
+              earth = mix(earth, vec3(0.6, 0.57, 0.52) * (0.7 + 0.5 * n2), step(0.9, rNoise(vec2(d * 3.1, l * 3.7))) * 0.75);
+              earth = mix(earth, earth * 0.55, smoothstep(0.62, 0.8, rNoise(vec2(d * 0.09 + 7.0, l * 0.3))) * (1.0 - rut));
+              float grassy = smoothstep(uW - 2.2, uW + 0.3, abs(l) + (n1 - 0.5) * 1.6);
+              earth = mix(earth, vec3(0.24, 0.31, 0.13) * (0.75 + 0.5 * n2), grassy * 0.8);
+              diffuseColor.rgb = mix(diffuseColor.rgb, earth, vDirt);
+              rPaint *= 1.0 - vDirt;
+              rRubber *= 1.0 - vDirt;
+            }
           }`,
         )
-        .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.55, rPaint * 0.8); roughnessFactor = mix(roughnessFactor, 0.62, rRubber);`);
+        .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.55, rPaint * 0.8); roughnessFactor = mix(roughnessFactor, 0.62, rRubber); roughnessFactor = mix(roughnessFactor, 0.97, vDirt);`);
     };
     mat.customProgramCacheKey = () => 'shimotron-road';
     const mesh = new THREE.Mesh(geo, mat);
@@ -591,10 +830,13 @@ export class Track {
     const W = this.W;
     const inCorner = new Uint8Array(n);
     for (let i = 0; i < n; i++) if (Math.abs(this.kappa[i]) > 1 / 160) inCorner[i] = 1;
+    // No kerbs off the asphalt, nor down in the tunnels.
+    for (let i = 0; i < n; i++) if ((this.dirt && this.dirt[i] > 0.05) || (this.sunk && this.sunk[i])) inCorner[i] = 0;
     // Extend each run so curbs start before and end after the bend.
     const ext = Math.round(14 / this.ds);
     const mark = new Uint8Array(n);
     for (let i = 0; i < n; i++) if (inCorner[i]) for (let k = -ext; k <= ext; k++) mark[(i + k + n) % n] = 1;
+    for (let i = 0; i < n; i++) if ((this.dirt && this.dirt[i] > 0.05) || (this.sunk && this.sunk[i])) mark[i] = 0;
     this.curbMark = mark;
     const profile = [
       [0.0, 0.0],
@@ -642,8 +884,16 @@ export class Track {
       }
       let len = 0;
       while (len < n && mark[(i + len) % n]) len++;
-      addRun(i, len, 1);
-      addRun(i, len, -1);
+      // Split round the mouths of side roads: no kerb across a junction.
+      for (const side of [1, -1]) {
+        let r0 = 0;
+        for (let r = 0; r <= len; r++) {
+          if (r === len || this.inMouth((i + r) % n, side)) {
+            if (r - r0 > 1) addRun((i + r0) % n, r - r0 - 1, side);
+            r0 = r + 1;
+          }
+        }
+      }
       k += len;
     }
     if (!pos.length) return;
@@ -660,6 +910,17 @@ export class Track {
 
   _groundY(x, z) {
     return this.terrain.height(x, z);
+  }
+
+  /** Is sample i on `side` in the mouth of a side road (flush with it: no edge line, kerb or shoulder)? */
+  inMouth(i, side) {
+    for (const g of this.gaps || []) {
+      if (!g.road || g.side !== side) continue;
+      let d = Math.abs(i - g.i);
+      d = Math.min(d, this.n - d);
+      if (d <= g.open) return true;
+    }
+    return false;
   }
 
   /** Is sample i on `side` inside an opening in the barriers (where a side road joins)? */
@@ -885,8 +1146,13 @@ export class Track {
   /** Physics boxes along both guard rails (6 m chords), independent of the visuals. */
   _layoutRails() {
     const n = this.n;
-    const off = this.W + 6.5;
-    const every = 3; // 6 m chords stay within ~0.1 m of the curved rail
+    // A Jersey barrier's foot reaches 0.4 m in toward the road (armco: 0.07 m): the box covers the whole profile.
+    const concrete = this.stage.barrier === 'concrete';
+    const off = this.W + 6.5 - (concrete ? 0.08 : 0);
+    this.railHalf = concrete ? 0.34 : 0.2;
+    // One chord per drawn rail section (_rails: rows every 2 samples, a section skipped when
+    // either end is in a gap), so the solid rail starts and ends exactly where the drawn one does.
+    const every = 2;
     this.railBoxes = [];
     for (const side of [-1, 1]) {
       for (let i = 0; i < n; i += every) {
@@ -1003,6 +1269,11 @@ export class Track {
     });
   }
 
+  /** A box that stops cars (scenery around the circuit), added to the physics with the rails. */
+  _solid(x, y, z, hx, hy, hz, yaw = 0, material = 'default') {
+    (this.solidBoxes || (this.solidBoxes = [])).push({ x, y, z, hx, hy, hz, yaw, material });
+  }
+
   _grandstand(materials) {
     const L = materials.lib;
     const g = new THREE.Group();
@@ -1025,6 +1296,7 @@ export class Track {
         box.rotateY(yaw);
         box.translate(q.x, base, q.z);
         blocks.push(box);
+        this._solid(q.x, base + (top - base) / 2 - 0.75, q.z, segLen / 2, (top - base + 1.5) / 2, 0.65, yaw);
         for (let c = 0; c < 9; c++) {
           if (Math.random() < 0.18) continue;
           const along = -segLen / 2 + (c + 0.5) * (segLen / 9) + (Math.random() - 0.5) * 0.4;
@@ -1043,6 +1315,7 @@ export class Track {
       const col = new THREE.BoxGeometry(0.3, tiers * 0.62 + 5.5, 0.3);
       col.translate(back.x, this.h[p.index] + (tiers * 0.62 + 5.5) / 2 - 0.3, back.z);
       blocks.push(col);
+      this._solid(back.x, this.h[p.index] + (tiers * 0.62 + 5.5) / 2 - 0.3, back.z, 0.15, (tiers * 0.62 + 5.5) / 2, 0.15, 0, 'metal');
     }
     const stand = new THREE.Mesh(mergeGeometries(blocks.map((b) => (b.index ? b.toNonIndexed() : b))), L.stone);
     stand.castShadow = true;
@@ -1109,6 +1382,7 @@ export class Track {
         const pole = new THREE.Mesh(poleGeo, L.iron);
         pole.position.set(p.position.x, gy, p.position.z);
         this.group.add(pole);
+        this._solid(p.position.x, gy + 1.2, p.position.z, 0.06, 1.2, 0.06, 0, 'metal');
         const b = new THREE.Mesh(boardGeo, labels[num]);
         b.position.set(p.position.x, gy + 1.9, p.position.z);
         b.lookAt(b.position.clone().sub(p.tangent));
@@ -1174,6 +1448,17 @@ export class Track {
         if (o.isMesh) o.castShadow = true;
       });
       this.group.add(board);
+      // Solid: the panel and its two legs.
+      const by = Math.atan2(-p.right.x * side * 10 + p.tangent.x * 6, -p.right.z * side * 10 + p.tangent.z * 6);
+      const bc = Math.cos(by);
+      const bs = Math.sin(by);
+      const at = (lx, lz) => [board.position.x + lx * bc + lz * bs, board.position.z - lx * bs + lz * bc];
+      const [px, pz] = at(0, -0.12);
+      this._solid(px, gy + 3.6, pz, 4.6, 1.8, 0.12, by, 'metal');
+      for (const x of [-3.5, 3.5]) {
+        const [lx, lz] = at(x, -0.12);
+        this._solid(lx, gy + 1.1, lz, 0.14, 1.1, 0.14, by, 'metal');
+      }
     });
   }
 
@@ -1189,6 +1474,7 @@ export class Track {
         const p = this.pose(s / this.n, side * (this.W + 5.3));
         const gy = this._groundY(p.position.x, p.position.z);
         for (let h = 0; h < 3; h++) mats.push(new THREE.Matrix4().setPosition(p.position.x, gy + 0.15 + h * 0.3, p.position.z));
+        this._solid(p.position.x, gy + 0.45, p.position.z, 0.47, 0.45, 0.47, 0, 'default');
       }
     }
     if (!mats.length) return;
@@ -1220,6 +1506,7 @@ export class Track {
       const p = this.pose(i / n, side * (this.W + 8.2));
       const gy = this._groundY(p.position.x, p.position.z);
       poles.push(new THREE.Matrix4().setPosition(p.position.x, gy, p.position.z));
+      this._solid(p.position.x, gy + 6, p.position.z, 0.17, 6, 0.17, 0, 'metal');
       const yaw = Math.atan2(-p.right.x * side, -p.right.z * side);
       heads.push(new THREE.Matrix4().makeRotationY(yaw).setPosition(p.position.x - p.right.x * side * 0.6, gy + 12, p.position.z - p.right.z * side * 0.6));
     }
@@ -1261,8 +1548,23 @@ export class Track {
       body.position.set(o.x, o.y, o.z);
       for (const b of group) {
         const q = new CANNON.Quaternion().setFromEuler(0, b.yaw, 0);
-        body.addShape(new CANNON.Box(new CANNON.Vec3(0.2, 0.75, b.len / 2)), new CANNON.Vec3(b.x - o.x, b.y - o.y, b.z - o.z), q);
+        body.addShape(new CANNON.Box(new CANNON.Vec3(this.railHalf || 0.2, 0.75, b.len / 2)), new CANNON.Vec3(b.x - o.x, b.y - o.y, b.z - o.z), q);
       }
+      physics.world.addBody(body);
+      this.bodies.push(body);
+    }
+    // Stands, boards, tyre walls and light masts: compound bodies by ~100 m patch and material.
+    const patches = new Map();
+    for (const b of this.solidBoxes || []) {
+      const key = `${Math.floor(b.x / 100)},${Math.floor(b.z / 100)},${b.material}`;
+      if (!patches.has(key)) patches.set(key, []);
+      patches.get(key).push(b);
+    }
+    for (const list of patches.values()) {
+      const o = list[0];
+      const body = new CANNON.Body({ mass: 0, material: physics.materials[o.material] || physics.materials.default });
+      body.position.set(o.x, o.y, o.z);
+      for (const b of list) body.addShape(new CANNON.Box(new CANNON.Vec3(b.hx, b.hy, b.hz)), new CANNON.Vec3(b.x - o.x, b.y - o.y, b.z - o.z), new CANNON.Quaternion().setFromEuler(0, b.yaw, 0));
       physics.world.addBody(body);
       this.bodies.push(body);
     }
