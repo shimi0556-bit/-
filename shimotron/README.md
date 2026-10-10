@@ -2,7 +2,7 @@
 
 מנוע תלת־ממד לדפדפן, עם עורך מלא בעברית ומשחק מירוצים שבנוי עליו. כל העולם נבנה בזמן אמת בקוד: איים עם הרים, חופים, ים, יער, מסלולים ומכוניות, בלי קבצי תמונה או סאונד. יוצא דופן אחד: מכונית "קונספט", שהיא מודל תלת־ממד אמיתי (ראו "מודלים אמיתיים").
 
-A browser 3D engine (Three.js r186 + cannon-es) with a full Hebrew editor, plus **Shimotron Rally**, a racing game built on it. Everything is procedural (no image or audio files), except one real glTF car model ("Car Concept", CC BY 4.0).
+A browser 3D engine (Three.js r186 + cannon-es) with a full Hebrew editor, plus **Shimotron Rally**, a racing game built on it. Everything is procedural (no image or audio files), except the real glTF car models (credits in `src/race/models/`) and the photo ground textures.
 
 ![](https://img.shields.io/badge/WebGL-2-39d9ff) ![](https://img.shields.io/badge/three.js-r186-ffb020) ![](https://img.shields.io/badge/physics-cannon--es-3ddc97)
 
@@ -65,7 +65,7 @@ A browser 3D engine (Three.js r186 + cannon-es) with a full Hebrew editor, plus 
 
 **סוגי רכבים:** GT, ראלי, מאסל, באגי, פורמולה, קונספט והייפר — ואופנוע מוטוקרוס במירוץ אופנועי השטח ובסיור החופשי. לכל אחד מודל משלו ונתונים משלו (מהירות, תאוצה, אחיזה, נסיעה בשטח). בקריירה קונים אותם בכסף שהרווחתם.
 
-**מודלים אמיתיים:** מכונית **קונספט** היא מודל תלת־ממד אמיתי ומפורט ("Car Concept" מאת Eric Chadwick, מתוך Khronos glTF Sample Assets, ברישיון CC BY 4.0), עם פנים, מושבים, לוח מחוונים, מראות, חישוקים ודיסקים. הכלי `node tools/models.mjs` מוריד את המודל, מסיר חלקים שלא רואים וכל סמל מסחרי, מקטין אותו ודוחס אותו לשתי רמות פירוט (`src/race/models/`: כ־96 אלף משולשים מקרוב וכ־26 אלף מרחוק, מעל 24 מטר). במשחק (`RealModels.js`) הגלגלים שלו מסתובבים, פונים וקופצים עם המתלים, כל נהג מקבל צבע משלו ואורות בלמים משלו, והזכוכית שקופה כך שרואים את הפנים. גם בכרטיס בחירת הרכב מצויר צד המודל האמיתי. אם המודל לא נטען, המכונית נבנית בקוד כמו האחרות. בין היריבים תמיד יש אחת כזאת. גם **ההייפר** היא מודל אמיתי: מכונית־על איטלקית ("Ferrari 458 Italia" מאת vicent091036, מדוגמאות three.js, ברישיון CC BY 4.0), בלי הסמלים, מ־330 אלף משולשים ל־69 אלף מקרוב ו־11 אלף מרחוק. למודלים כמו שלה, שבנויים פעמיים (פנים וגב) ומפוצלים בכל קצה חד, הכלי בונה מחדש את הרשת לפני ההקטנה (`remesh` ב־`tools/models.mjs`).
+**מודלים אמיתיים:** מכונית **קונספט** היא מודל תלת־ממד אמיתי ומפורט ("Car Concept" מאת Eric Chadwick, מתוך Khronos glTF Sample Assets, ברישיון CC BY 4.0), עם פנים, מושבים, לוח מחוונים, מראות, חישוקים ודיסקים. הכלי `node tools/models.mjs` מוריד את המודל, מסיר חלקים שלא רואים וכל סמל מסחרי, מקטין אותו ודוחס אותו לשתי רמות פירוט (`src/race/models/`: כ־96 אלף משולשים מקרוב וכ־26 אלף מרחוק, מעל 24 מטר). במשחק (`RealModels.js`) הגלגלים שלו מסתובבים, פונים וקופצים עם המתלים, כל נהג מקבל צבע משלו ואורות בלמים משלו, והזכוכית שקופה כך שרואים את הפנים. גם בכרטיס בחירת הרכב מצויר צד המודל האמיתי. אם המודל לא נטען, המכונית נבנית בקוד כמו האחרות. בין היריבים תמיד יש אחת כזאת. גם **ההייפר** היא מודל אמיתי: מכונית־על איטלקית ("Ferrari 458 Italia" מאת vicent091036, מדוגמאות three.js, ברישיון CC BY 4.0), בלי הסמלים, מ־330 אלף משולשים ל־69 אלף מקרוב ו־11 אלף מרחוק. למודלים כמו שלה, שבנויים פעמיים (פנים וגב) ומפוצלים בכל קצה חד, הכלי בונה מחדש את הרשת לפני ההקטנה (`remesh` ב־`tools/models.mjs`). גם שאר הסוגים הם עכשיו מכוניות אמיתיות ומפורטות: **GT** היא פורשה 911 קאררה, **ראלי** דאטסון 240K משנות ה־70, **מאסל** דודג׳ צ׳לנג׳ר 1970, **ג׳יפ שטח** ג׳יפ רנגלר רוביקון ו**פורמולה** מקלארן MP4/5. הכלי `node tools/realcars.mjs` מוריד אותן, מסיר סמלים ולוחיות, מפריד את הגלגלים לצמתים שמסתובבים, מקטין, דוחס ומכין לכל אחת רמת פירוט רחוקה (`models/real-*.glb.gz`, הקרדיט ב־`models/CREDITS-real.md`). רק האופנוע עדיין נבנה בקוד.
 
 **הפתעות על המסלול:** קופסאות עם סימן שאלה בכמה מקומות בכל הקפה. נותנות יריות (עם היגוי עדין למטרה), מוקשים, טורבו או מגן. גם היריבים אוספים ומשתמשים בהן. שימוש: `Ctrl` (או `Enter`), כפתור במסך מגע או X בג׳ויסטיק.
 
@@ -231,12 +231,12 @@ src/
     Vehicle.js           פיזיקת הרכב ומערכת ההנעה
     CarModel.js · Car.js הדגם, הגלגלים ואפקטי הנהיגה
     RealModels.js        מודלים אמיתיים (glTF): טעינה, רמות פירוט, גלגלים, צבע וכרטיס הרכב
-    models/              קבצי המודלים הדחוסים (concept.glb, concept-lo.glb) והקרדיט
+    models/              קבצי המודלים הדחוסים (concept, hyper, real-*) והקרדיט
     Drivers.js           נהג אנושי ונהגי בינה מלאכותית
     Race.js              חוקי המירוץ, תזמון ודירוג
     RaceCamera.js · CarAudio.js · Effects.js · ui.js · main.js
   fonts/                 הגופנים (woff2) שנכנסים לתוך הקבצים הבנויים
-tools/                   כלי בדיקה וכיול שרצים ב־Node; usb.mjs ו־bake-ground.mjs לגרסת הדיסק און קי; models.mjs מכין את המודלים האמיתיים
+tools/                   כלי בדיקה וכיול שרצים ב־Node; usb.mjs ו־bake-ground.mjs לגרסת הדיסק און קי; models.mjs ו־realcars.mjs מכינים את המודלים האמיתיים
 ```
 
 ## ביצועים
@@ -257,4 +257,5 @@ tools/                   כלי בדיקה וכיול שרצים ב־Node; usb.m
 - מסוף הסקריפטים משתמש ב־`new Function`, ובסביבות עם מדיניות אבטחה קשוחה (למשל תצוגה מוטמעת) הוא עלול להיחסם. בקובץ המקומי הוא עובד.
 - קרדיט: מכונית "קונספט" היא "Car Concept" מאת Eric Chadwick (Khronos glTF Sample Assets), ברישיון [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). שינויים: הוסרו סמלים (Khronos, 3D Commerce) וחלקים שלא רואים, והמודל הוקטן ונדחס.
 - קרדיט: ההייפר היא "Ferrari 458 Italia" מאת vicent091036 (דרך דוגמאות three.js), ברישיון [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). שינויים: הוסרו הסמלים (מגיני הסוס הצהובים בגוף, בחישוקים ובהגה) והשטיח, והמודל הוקטן ונדחס.
+- קרדיט: GT היא "Free Porsche 911 Carrera 4S" וראלי היא "(FREE) 1972 Datsun 240k GT", שתיהן מאת Karol Miklas, ברישיון [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). מאסל היא "Dodge Challenger 1970 R/T" מאת kryptonmedia, ברישיון CC0. ג׳יפ השטח היא "Jeep Wrangler Adventure Rubicon" מאת vecarz, ברישיון [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) (לא לשימוש מסחרי). פורמולה היא "McLaren MP4/5" מאת vecarz, ברישיון [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). בכולן הוסרו סמלים, לוחיות ופרסומות, והמודלים הוקטנו ונדחסו.
 - הגופנים (Karantina, IBM Plex Sans Hebrew, JetBrains Mono, רק עברית ולטינית) נמצאים ב־`src/fonts` ונכנסים לתוך הקבצים הבנויים, כך ששני הקבצים עובדים גם בלי אינטרנט.

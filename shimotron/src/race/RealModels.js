@@ -9,37 +9,41 @@ import conceptHi from './models/concept.glb.gz?url';
 import conceptLo from './models/concept-lo.glb.gz?url';
 import hyperHi from './models/hyper.glb.gz?url';
 import hyperLo from './models/hyper-lo.glb.gz?url';
-import kitGt from './models/kit-gt.glb.gz?url';
-import kitRally from './models/kit-rally.glb.gz?url';
-import kitMuscle from './models/kit-muscle.glb.gz?url';
-import kitBuggy from './models/kit-buggy.glb.gz?url';
-import kitFormula from './models/kit-formula.glb.gz?url';
+import gtHi from './models/real-gt.glb.gz?url';
+import gtLo from './models/real-gt-lo.glb.gz?url';
+import rallyHi from './models/real-rally.glb.gz?url';
+import rallyLo from './models/real-rally-lo.glb.gz?url';
+import muscleHi from './models/real-muscle.glb.gz?url';
+import muscleLo from './models/real-muscle-lo.glb.gz?url';
+import buggyHi from './models/real-buggy.glb.gz?url';
+import buggyLo from './models/real-buggy-lo.glb.gz?url';
+import formulaHi from './models/real-formula.glb.gz?url';
+import formulaLo from './models/real-formula-lo.glb.gz?url';
 
 /**
- * Real 3D models (scanned-quality glTF, prepared by tools/models.mjs) for the
- * car types that name one in config (`model`). Each is loaded once at start
- * in two levels of detail; every car on the grid is a light clone that only
- * owns its paint and brake lights. If a model cannot load, the type falls
- * back to its procedural body (CarModel.js), so the game never depends on it.
+ * Real 3D models for the car types that name one in config (`model`):
+ * prepared by tools/models.mjs (concept, hyper) and tools/realcars.mjs (the
+ * rest), each in two levels of detail. Every car on the grid is a light clone
+ * that only owns its paint and brake lights. If a model cannot load, the type
+ * falls back to its procedural body (CarModel.js), so the game never depends on it.
  */
-const SOURCES = { concept: { hi: conceptHi, lo: conceptLo }, hyper: { hi: hyperHi, lo: hyperLo } };
-/**
- * Downloaded low-poly models (tools/carkit.mjs) for the other car types: their wheel nodes (front left,
- * front right, rear left, rear right, as named in the file), the material that takes the car's colour
- * (none for Kenney's, which are painted from one texture), lamps and glass.
- */
-const KIT = {
-  gt: { src: kitGt, wheels: ['Sports wheel front left', 'Sports wheel front right', 'Sports wheel rear left', 'Sports wheel rear right'], paint: 'body red' },
-  rally: { src: kitRally, wheels: ['Hatchback wheel front left', 'Hatchback wheel front right', 'Hatchback wheel rear left', 'Hatchback wheel rear right'], paint: 'body dark yellow' },
-  muscle: { src: kitMuscle, wheels: ['Muscle 2 wheel front left', 'Muscle 2 wheel front right', 'Muscle 2 wheel rear left', 'Muscle 2 wheel rear right'], paint: 'body grey' },
-  buggy: { src: kitBuggy, wheels: ['wheel-front-left', 'wheel-front-right', 'wheel-back-left', 'wheel-back-right'], paint: null },
-  formula: { src: kitFormula, wheels: ['wheel-front-left', 'wheel-front-right', 'wheel-back-left', 'wheel-back-right'], paint: null },
+const SOURCES = {
+  concept: { hi: conceptHi, lo: conceptLo },
+  hyper: { hi: hyperHi, lo: hyperLo },
+  'real-gt': { hi: gtHi, lo: gtLo },
+  'real-rally': { hi: rallyHi, lo: rallyLo },
+  'real-muscle': { hi: muscleHi, lo: muscleLo },
+  'real-buggy': { hi: buggyHi, lo: buggyLo },
+  'real-formula': { hi: formulaHi, lo: formulaLo },
 };
 /** Attribution the licences ask for (shown in the menu). */
 export const MODEL_CREDIT =
   'המכונית "קונספט" היא מודל אמיתי: "Car Concept" מאת Eric Chadwick (Khronos glTF Sample Assets), ברישיון CC BY 4.0. ' +
   'ההיפרקאר היא מודל אמיתי: "Ferrari 458 Italia" מאת vicent091036 (מדוגמאות three.js), ברישיון CC BY 4.0. שינויים בשתיהן: הוסרו סמלים והמודל הוקטן. ' +
-  'מכוניות הספורט, הראלי והמאסל: מודלים מ-"Free Low Poly Vehicles Pack" מאת Raphael Goncalves (rgsdev), והבאגי והפורמולה מ-"Car Kit" מאת Kenney, כולם ברישיון CC0. ' +
+  'GT ספורט: "Free Porsche 911 Carrera 4S" וראלי: "(FREE) 1972 Datsun 240k GT", שתיהן מאת Karol Miklas, ברישיון CC BY-SA 4.0. ' +
+  'מאסל: "Dodge Challenger 1970 R/T" מאת kryptonmedia, ברישיון CC0. ' +
+  'באגי שטח: "Jeep Wrangler Adventure Rubicon" מאת vecarz, ברישיון CC BY-NC-SA 4.0 (לשימוש לא מסחרי). ' +
+  'פורמולה: "McLaren MP4/5" מאת vecarz, ברישיון CC BY 4.0. בכולן הוסרו סמלים, לוחיות ופרסומות והמודל הוקטן. ' +
   'גוף משאית המפלצת: "vehicle-truck" מאת Kenney, ברישיון CC0. הדגים ליד מנהרות הים: "Barramundi Fish" מאת Microsoft (Khronos glTF Sample Assets), ברישיון CC0.';
 const WHEELS = ['WheelFrontL', 'WheelFrontR', 'WheelRearL', 'WheelRearR']; // physics order: FL, FR, RL, RR (left = +x)
 const LOD_FAR = 24; // metres: beyond this the light version is drawn
@@ -66,20 +70,6 @@ export async function loadRealModels() {
       console.warn(`real model for ${t.id} did not load; using the procedural body`, e);
     }
   });
-  for (const [type, K] of Object.entries(KIT)) {
-    if (loaded[type]) continue;
-    jobs.push(
-      parseGz(loader, K.src)
-        .then((g) => {
-          loaded[type] = prepareKit(g.scene, K, carSpec(type));
-          modelStatus.ok.push(type);
-        })
-        .catch((e) => {
-          modelStatus.failed.push({ id: type, why: String(e?.message || e).slice(0, 90) });
-          console.warn(`real model for ${type} did not load; using the procedural body`, e);
-        }),
-    );
-  }
   jobs.push(loadMonster((src) => parseGz(loader, src)), loadFish((src) => parseGz(loader, src)));
   await Promise.all(jobs);
   (hasMonster() ? modelStatus.ok : modelStatus.failed).push(hasMonster() ? 'monster' : { id: 'monster', why: 'see console' });
@@ -221,9 +211,10 @@ function prepare(hiScene, loScene) {
     });
   }
   const paint = byName.get('Paint 1 Carmine');
-  const tail = byName.get('Brakelight');
-  const head = byName.get('Headlight');
-  if (!paint || !tail || !head) throw new Error('model is missing its paint or lamps');
+  if (!paint) throw new Error('model is missing its paint');
+  // Lamps drawn into a texture (or not modelled) have no material of their own: those glow nowhere.
+  const tail = byName.get('Brakelight') || new THREE.MeshStandardMaterial({ name: 'Brakelight' });
+  const head = byName.get('Headlight') || new THREE.MeshStandardMaterial({ name: 'Headlight' });
   tail.emissive.set(0xff1a0a);
   head.emissive.set(0xe8f0ff);
   const front = (hi.centres[0].z + hi.centres[1].z) / 2;
@@ -241,106 +232,6 @@ function prepare(hiScene, loScene) {
     cards: new Map(),
   };
 }
-
-const key = (n) => n.replace(/[\s_.-]/g, '').toLowerCase();
-
-/**
- * A downloaded model brought to the game's terms: turned nose to +z, scaled
- * so its wheelbase is the physics one, every mesh baked into that frame, and
- * the wheels cut out into pivots centred on their hubs, resized to the
- * physics tyre. Then the same shape as prepare() returns.
- */
-function prepareKit(scene, K, spec) {
-  scene.updateMatrixWorld(true);
-  const W = spec.wheel;
-  const nodes = K.wheels.map((n) => {
-    let hit = null;
-    scene.traverse((o) => {
-      if (!hit && key(o.name) === key(n)) hit = o;
-    });
-    if (!hit) throw new Error(`model has no wheel ${n}`);
-    return hit;
-  });
-  const box = new THREE.Box3();
-  const raw = nodes.map((o) => box.setFromObject(o).getCenter(new THREE.Vector3()));
-  const front = (raw[0].z + raw[1].z) / 2;
-  const rear = (raw[2].z + raw[3].z) / 2;
-  const s = (W.front - W.rear) / Math.abs(front - rear);
-  const M = new THREE.Matrix4().makeRotationY(front < rear ? Math.PI : 0).multiply(new THREE.Matrix4().makeScale(s, s, s));
-  const inWheel = new Map();
-  nodes.forEach((n, w) => n.traverse((o) => inWheel.set(o, w)));
-  const body = new THREE.Group();
-  const pivots = [0, 1, 2, 3].map(() => new THREE.Group());
-  const geos = [[], [], [], []];
-  const m = new THREE.Matrix4();
-  scene.traverse((o) => {
-    if (!o.isMesh) return;
-    const g = o.geometry.clone().applyMatrix4(m.multiplyMatrices(M, o.matrixWorld));
-    const w = inWheel.get(o);
-    if (w === undefined) body.add(new THREE.Mesh(g, o.material));
-    else geos[w].push([g, o.material]);
-  });
-  // Which wheel is which once turned: front/rear by z, left (+x) / right by x.
-  const placed = geos.map((list) => {
-    const b = new THREE.Box3();
-    for (const [g] of list) {
-      g.computeBoundingBox();
-      b.union(g.boundingBox);
-    }
-    return { list, c: b.getCenter(new THREE.Vector3()), r: (b.max.y - b.min.y) / 2 };
-  });
-  const order = [...placed].sort((a, b) => b.c.z - a.c.z);
-  const fr = order.slice(0, 2).sort((a, b) => b.c.x - a.c.x);
-  const rr = order.slice(2).sort((a, b) => b.c.x - a.c.x);
-  const sorted = [fr[0], fr[1], rr[0], rr[1]];
-  const centres = sorted.map((P, i) => {
-    const k = THREE.MathUtils.clamp(W.radius / P.r, 0.75, 1.35);
-    for (const [g, mat] of P.list) {
-      g.translate(-P.c.x, -P.c.y, -P.c.z).scale(k, k, k);
-      pivots[i].add(new THREE.Mesh(g, mat));
-    }
-    return P.c;
-  });
-  const hi = { body, pivots, centres };
-  // Materials: the colour coat as lacquered paint, lamps that glow, tinted glass, rubber, alloy.
-  const byName = new Map();
-  const glass = new THREE.MeshStandardMaterial({ name: 'שמשה', color: 0x121a22, metalness: 0, roughness: 0.08, transparent: true, opacity: 0.62, envMapIntensity: 1.25, depthWrite: false });
-  const swap = (mat) => {
-    if (byName.has(mat)) return byName.get(mat);
-    const n = mat.name || '';
-    let out = mat;
-    if (K.paint && n === K.paint) out = new THREE.MeshPhysicalMaterial({ name: 'צבע', color: mat.color, metalness: 0.45, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.07 });
-    else if (/window/i.test(n)) out = glass;
-    else if (/tire/i.test(n)) out = new THREE.MeshStandardMaterial({ name: 'צמיג', color: 0x161616, roughness: 0.92, metalness: 0 });
-    else if (/^wheels$/i.test(n)) out = new THREE.MeshStandardMaterial({ name: 'חישוק', color: 0xc8ccd2, roughness: 0.28, metalness: 0.9 });
-    else if (/headlight/i.test(n)) out = new THREE.MeshStandardMaterial({ name: 'Headlight', color: 0xffffff, roughness: 0.2, emissive: 0xe8f0ff });
-    else if (/rear light/i.test(n)) out = new THREE.MeshStandardMaterial({ name: 'Brakelight', color: 0x400404, roughness: 0.3, emissive: 0xff1a0a });
-    else {
-      if (/black/i.test(n)) out.roughness = 0.55;
-      else out.roughness = Math.max(out.roughness ?? 0.6, 0.35);
-      if (out.map) out.map.userData.keep = true;
-    }
-    byName.set(mat, out);
-    return out;
-  };
-  for (const root of [body, ...pivots]) {
-    root.traverse((o) => {
-      if (!o.isMesh) return;
-      o.material = swap(o.material);
-      o.castShadow = true;
-      o.receiveShadow = true;
-    });
-  }
-  const mats = [...byName.values()];
-  // Painted from a texture (Kenney's): nothing takes the colour; lamps that aren't there glow nowhere.
-  const paint = mats.find((x) => x.name === 'צבע') || new THREE.MeshPhysicalMaterial({ name: 'צבע' });
-  const tail = mats.find((x) => x.name === 'Brakelight') || new THREE.MeshStandardMaterial({ name: 'Brakelight', emissive: 0xff1a0a });
-  const head = mats.find((x) => x.name === 'Headlight') || new THREE.MeshStandardMaterial({ name: 'Headlight', emissive: 0xe8f0ff });
-  const fz = (centres[0].z + centres[1].z) / 2;
-  const rz = (centres[2].z + centres[3].z) / 2;
-  return { hi, lo: hi, paint, tail, head, glass, glow: [], dz: -(fz + rz) / 2, ground: centres[0].y, cards: new Map(), kit: true };
-}
-
 
 /**
  * One car in the real model: { group (a LOD), paint, tailMat, headMat, pose(car) }.
