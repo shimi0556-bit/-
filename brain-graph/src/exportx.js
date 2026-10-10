@@ -47,7 +47,7 @@
   BG.buildLayers = function () {
     const L = [];
     L.push({ id: 'background', label: 'רקע', inner: '<rect width="' + BG.W + '" height="' + BG.H + '" fill="' + BGCOL + '"/>' });
-    if (BG.view.outline) L.push({ id: 'brain', label: 'מתאר מוח', inner: brainSVG() });
+    if (BG.effOutline()) L.push({ id: 'brain', label: 'מתאר מוח', inner: brainSVG() });
     L.push({ id: 'aura', label: 'זוהר הערכים', inner: aurasSVG() });
     L.push({ id: 'edges', label: 'קשרים', inner: edgesSVG() });
     if (BG.view.labels) L.push({ id: 'regions', label: 'שמות אזורים', inner: regionsSVG() });

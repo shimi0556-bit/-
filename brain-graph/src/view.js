@@ -3,9 +3,11 @@
   'use strict';
   const NS = 'http://www.w3.org/2000/svg';
   const mk = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
-  const V = (BG.view = { k: 1, x: 0, y: 0, selected: null, filter: null, focusRegion: null, outline: false, labels: true });
-  try { V.outline = localStorage.getItem('brain-graph:outline') === '1'; V.labels = localStorage.getItem('brain-graph:labels') !== '0'; } catch (e) { /* ignore */ }
-  BG.setOutline = (b) => { V.outline = !!b; if (gBrain) gBrain.setAttribute('opacity', V.outline ? 0.55 : 0); try { localStorage.setItem('brain-graph:outline', V.outline ? '1' : '0'); } catch (e) { /* ignore */ } };
+  const V = (BG.view = { k: 1, x: 0, y: 0, selected: null, filter: null, focusRegion: null, outline: null, labels: true });
+  try { { const o = localStorage.getItem('brain-graph:outline'); V.outline = o === '1' ? true : o === '0' ? false : null; } V.labels = localStorage.getItem('brain-graph:labels') !== '0'; } catch (e) { /* ignore */ }
+  // null = auto: a faint dotted contour while the graph is small, so the shape reads before the nodes fill it
+  BG.effOutline = () => (V.outline == null ? BG.state.nodes.length < 60 : V.outline);
+  BG.setOutline = (b) => { V.outline = !!b; BG.markDirty && BG.markDirty(); try { localStorage.setItem('brain-graph:outline', V.outline ? '1' : '0'); } catch (e) { /* ignore */ } };
   BG.setLabels = (b) => { V.labels = !!b; BG.markDirty && BG.markDirty(); try { localStorage.setItem('brain-graph:labels', V.labels ? '1' : '0'); } catch (e) { /* ignore */ } };
   let svg, vp, gEdges, gNodes, gRegions, gBrain, gAura, running = false;
   const nodeEls = new Map(), edgeEls = new Map(), regEls = new Map();
@@ -52,7 +54,7 @@
     // labels of regions are drawn above everything inside vp but below nodes? keep them above regions:
     vp.insertBefore(gEdges, gNodes);
     for (const { lab } of regEls.values()) vp.insertBefore(lab, gEdges);
-    BG.setOutline(V.outline); BG.setLabels(V.labels);
+    BG.setLabels(V.labels);
     bindInteraction();
     BG.on('change', sync);
     sync();
@@ -277,6 +279,7 @@
       if (o.lab._txt !== r.name) { o.lab.textContent = r.name; o.lab._txt = r.name; }
       if (Math.abs((r._ra || 0) - a) > 0.002) { r._ra = a; alive = true; }
     }
+    gBrain.setAttribute('opacity', BG.effOutline() ? 0.5 : 0);
     positionsDirty = false;
     if (alive) requestAnimationFrame(frame); else running = false;
   }

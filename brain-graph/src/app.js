@@ -187,7 +187,7 @@
     p.append(
       h('p', { class: 'muted', text: 'צורת המוח נוצרת מהצמתים עצמם: כל ערך נמצא באזור שמתאים לו. לחץ על אזור כדי להתמקד בו.' }),
       tg('שמות אזורים על המוח', BG.view.labels, BG.setLabels),
-      tg('מתאר מוח מקווקו (רמז לצורה)', BG.view.outline, BG.setOutline), h('div', { style: 'height:8px' }));
+      tg('מתאר מוח מקווקו (אוטומטי כשיש מעט צמתים)', BG.effOutline(), BG.setOutline), h('div', { style: 'height:8px' }));
     for (const r of BG.REGIONS) {
       const n = BG.state.nodes.filter((x) => x.region === r.id).length;
       p.append(h('div', { class: 'region-row' + (BG.view.focusRegion === r.id ? ' on' : ''), tabindex: '0', onclick: () => { BG.view.focusRegion = BG.view.focusRegion === r.id ? null : r.id; renderRegionsPanel(); BG.markDirty(); },
