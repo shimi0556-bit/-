@@ -22,16 +22,16 @@ window.BG = window.BG || {};
 
   // layer: 'surface' regions are clipped to the cortex, 'deep' regions are drawn on top as an x-ray overlay.
   BG.REGIONS = [
-    { id: 'pfc', name: 'קליפת המצח', en: 'Prefrontal cortex', does: 'ערכים, מטרות, תכנון, שיקול דעת, זהות עצמית, קבלת החלטות', color: '#6c8cff', cx: 790, cy: 268, rx: 98, ry: 118, rot: 0, layer: 'surface' },
-    { id: 'mot', name: 'האזור המוטורי', en: 'Motor cortex', does: 'פעולות מעשיות, ביצוע, תנועה, מעשים קונקרטיים', color: '#22d3c5', cx: 652, cy: 168, rx: 50, ry: 88, rot: 16, layer: 'surface' },
-    { id: 'par', name: 'האונה הקודקודית', en: 'Parietal lobe', does: 'קשב וריכוז, מרחב וניווט, מספרים, שילוב בין חושים', color: '#ffc247', cx: 505, cy: 176, rx: 92, ry: 74, rot: 0, layer: 'surface' },
-    { id: 'occ', name: 'האונה העורפית', en: 'Occipital lobe', does: 'ראייה, תמונות ודימויים, עיצוב, ויזואליה, וידאו', color: '#ff6fb5', cx: 246, cy: 290, rx: 66, ry: 104, rot: 0, layer: 'surface' },
-    { id: 'tem', name: 'האונה הרקתית', en: 'Temporal lobe', does: 'שפה, ידע ועובדות, משמעות ומושגים, שמיעה, אנשים ושמות', color: '#9be34d', cx: 450, cy: 414, rx: 150, ry: 48, rot: 0, layer: 'surface' },
-    { id: 'bg', name: 'גרעיני הבסיס', en: 'Basal ganglia', does: 'הרגלים, שגרות, דפוסי פעולה אוטומטיים, התמכרויות', color: '#ff8a3d', cx: 596, cy: 268, rx: 54, ry: 40, rot: 0, layer: 'deep' },
-    { id: 'acc', name: 'קליפת החגורה', en: 'Anterior cingulate', does: 'מוטיבציה, מאמץ, התנגשות בין רצונות, ניטור שגיאות, דחיינות', color: '#b388ff', cx: 706, cy: 208, rx: 46, ry: 24, rot: -10, layer: 'deep' },
-    { id: 'amy', name: 'האמיגדלה', en: 'Amygdala', does: 'רגשות, פחד, כעס, איום, המשמעות הרגשית של דברים', color: '#ff5a5a', cx: 684, cy: 396, rx: 38, ry: 28, rot: 0, layer: 'deep' },
-    { id: 'hip', name: 'ההיפוקמפוס', en: 'Hippocampus', does: 'זיכרונות, אירועים וסיפורים אישיים, למידה חדשה', color: '#4cc9ff', cx: 550, cy: 376, rx: 58, ry: 24, rot: -12, layer: 'deep' },
-    { id: 'hyp', name: 'ההיפותלמוס', en: 'Hypothalamus', does: 'צרכים בסיסיים, דחפים, גוף, רעב, שינה, בריאות', color: '#d4a373', cx: 628, cy: 328, rx: 40, ry: 22, rot: 0, layer: 'deep' },
+    { id: 'pfc', name: 'קליפת המצח', en: 'Prefrontal cortex', does: 'ערכים, מטרות, תכנון, שיקול דעת, זהות עצמית, קבלת החלטות', color: '#6c8cff', cx: 800, cy: 268, rx: 92, ry: 140, rot: 0, layer: 'surface' },
+    { id: 'mot', name: 'האזור המוטורי', en: 'Motor cortex', does: 'פעולות מעשיות, ביצוע, תנועה, מעשים קונקרטיים', color: '#22d3c5', cx: 690, cy: 170, rx: 56, ry: 86, rot: 14, layer: 'surface' },
+    { id: 'par', name: 'האונה הקודקודית', en: 'Parietal lobe', does: 'קשב וריכוז, מרחב וניווט, מספרים, שילוב בין חושים', color: '#ffc247', cx: 510, cy: 185, rx: 135, ry: 100, rot: 0, layer: 'surface' },
+    { id: 'occ', name: 'האונה העורפית', en: 'Occipital lobe', does: 'ראייה, תמונות ודימויים, עיצוב, ויזואליה, וידאו', color: '#ff6fb5', cx: 285, cy: 275, rx: 100, ry: 140, rot: 0, layer: 'surface' },
+    { id: 'tem', name: 'האונה הרקתית', en: 'Temporal lobe', does: 'שפה, ידע ועובדות, משמעות ומושגים, שמיעה, אנשים ושמות', color: '#9be34d', cx: 495, cy: 398, rx: 195, ry: 68, rot: 0, layer: 'surface' },
+    { id: 'bg', name: 'גרעיני הבסיס', en: 'Basal ganglia', does: 'הרגלים, שגרות, דפוסי פעולה אוטומטיים, התמכרויות', color: '#ff8a3d', cx: 600, cy: 275, rx: 64, ry: 48, rot: 0, layer: 'deep' },
+    { id: 'acc', name: 'קליפת החגורה', en: 'Anterior cingulate', does: 'מוטיבציה, מאמץ, התנגשות בין רצונות, ניטור שגיאות, דחיינות', color: '#b388ff', cx: 706, cy: 212, rx: 48, ry: 26, rot: -10, layer: 'deep' },
+    { id: 'amy', name: 'האמיגדלה', en: 'Amygdala', does: 'רגשות, פחד, כעס, איום, המשמעות הרגשית של דברים', color: '#ff5a5a', cx: 688, cy: 395, rx: 42, ry: 30, rot: 0, layer: 'deep' },
+    { id: 'hip', name: 'ההיפוקמפוס', en: 'Hippocampus', does: 'זיכרונות, אירועים וסיפורים אישיים, למידה חדשה', color: '#4cc9ff', cx: 545, cy: 372, rx: 62, ry: 28, rot: -12, layer: 'deep' },
+    { id: 'hyp', name: 'ההיפותלמוס', en: 'Hypothalamus', does: 'צרכים בסיסיים, דחפים, גוף, רעב, שינה, בריאות', color: '#d4a373', cx: 632, cy: 330, rx: 44, ry: 24, rot: 0, layer: 'deep' },
     { id: 'cer', name: 'המוחון', en: 'Cerebellum', does: 'מיומנויות, תרגול, למידה מוטורית, דיוק, שיפור מתמיד', color: '#7be0a0', cx: 328, cy: 490, rx: 86, ry: 46, rot: 8, layer: 'surface', own: true },
     { id: 'stem', name: 'גזע המוח', en: 'Brainstem', does: 'ערנות, אנרגיה, עייפות, נשימה, מצב הגוף הבסיסי', color: '#9aa5b8', cx: 538, cy: 556, rx: 34, ry: 86, rot: 4, layer: 'surface', own: true }
   ];

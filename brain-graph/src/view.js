@@ -3,8 +3,11 @@
   'use strict';
   const NS = 'http://www.w3.org/2000/svg';
   const mk = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
-  const V = (BG.view = { k: 1, x: 0, y: 0, selected: null, filter: null, focusRegion: null });
-  let svg, vp, gEdges, gNodes, gRegions, running = false;
+  const V = (BG.view = { k: 1, x: 0, y: 0, selected: null, filter: null, focusRegion: null, outline: false, labels: true });
+  try { V.outline = localStorage.getItem('brain-graph:outline') === '1'; V.labels = localStorage.getItem('brain-graph:labels') !== '0'; } catch (e) { /* ignore */ }
+  BG.setOutline = (b) => { V.outline = !!b; if (gBrain) gBrain.setAttribute('opacity', V.outline ? 0.55 : 0); try { localStorage.setItem('brain-graph:outline', V.outline ? '1' : '0'); } catch (e) { /* ignore */ } };
+  BG.setLabels = (b) => { V.labels = !!b; BG.markDirty && BG.markDirty(); try { localStorage.setItem('brain-graph:labels', V.labels ? '1' : '0'); } catch (e) { /* ignore */ } };
+  let svg, vp, gEdges, gNodes, gRegions, gBrain, gAura, running = false;
   const nodeEls = new Map(), edgeEls = new Map(), regEls = new Map();
   let positionsDirty = true;
 
@@ -26,26 +29,30 @@
     const grad = mk('linearGradient', { id: 'brainFill', x1: '0', y1: '0', x2: '0', y2: '1' }, defs);
     mk('stop', { offset: '0', 'stop-color': '#1b2447' }, grad); mk('stop', { offset: '1', 'stop-color': '#11172e' }, grad);
 
-    vp = mk('g', { id: 'viewport' }, svg);
-    const gBrain = mk('g', null, vp);
-    for (const d of [BG.STEM, BG.CEREBELLUM, BG.CEREBRUM]) mk('path', { d, fill: 'url(#brainFill)', stroke: '#3a4a86', 'stroke-width': 2.2, 'stroke-linejoin': 'round' }, gBrain);
-    const gS = mk('g', { 'clip-path': 'url(#brainClip)' }, gBrain);
-    BG.SULCI.forEach((d) => mk('path', { d, fill: 'none', stroke: '#2a376b', 'stroke-width': 1.5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', opacity: 0.8 }, gS));
-    gRegions = mk('g', null, vp);
     for (const r of BG.REGIONS) {
-      const g = mk('g', { 'data-region': r.id }, gRegions);
-      if (r.layer === 'surface' && !r.own) g.setAttribute('clip-path', 'url(#brainClip)');
-      const glowEl = mk('ellipse', { fill: r.color, opacity: 0, filter: 'url(#bigGlow)' }, g);
-      const el = mk('ellipse', { fill: r.color, 'fill-opacity': 0.09, stroke: r.color, 'stroke-opacity': 0.45, 'stroke-width': 1.4 }, g);
-      if (r.layer === 'deep') el.setAttribute('stroke-dasharray', '5 4');
-      const lab = mk('text', { 'text-anchor': 'middle', 'font-size': 11.5, fill: r.color, 'fill-opacity': 0.85, stroke: '#0b1020', 'stroke-width': 3, 'paint-order': 'stroke', 'pointer-events': 'none', 'font-weight': 600 }, vp);
-      regEls.set(r.id, { g, el, glowEl, lab });
+      const rg = mk('radialGradient', { id: 'aura-' + r.id }, defs);
+      mk('stop', { offset: '0', 'stop-color': r.color, 'stop-opacity': 0.5 }, rg);
+      mk('stop', { offset: '0.55', 'stop-color': r.color, 'stop-opacity': 0.2 }, rg);
+      mk('stop', { offset: '1', 'stop-color': r.color, 'stop-opacity': 0 }, rg);
+    }
+
+    vp = mk('g', { id: 'viewport' }, svg);
+    // optional faint cortex outline (a hint, off by default: the shape is meant to come from the nodes themselves)
+    gBrain = mk('g', { fill: 'none', stroke: '#6c8cff', 'stroke-width': 1.6, 'stroke-linejoin': 'round', 'stroke-dasharray': '2 6', 'stroke-linecap': 'round' }, vp);
+    for (const d of [BG.STEM, BG.CEREBELLUM, BG.CEREBRUM]) mk('path', { d }, gBrain);
+    gRegions = mk('g', null, vp);
+    gAura = mk('g', { style: 'mix-blend-mode:screen;pointer-events:none' }, vp);
+    for (const r of BG.REGIONS) {
+      const glowEl = mk('ellipse', { fill: r.color, opacity: 0, filter: 'url(#bigGlow)' }, gRegions);
+      const lab = mk('text', { 'text-anchor': 'middle', 'font-size': 11.5, fill: r.color, opacity: 0.55, stroke: '#0b1020', 'stroke-width': 2.4, 'paint-order': 'stroke', 'pointer-events': 'none', 'font-weight': 600 }, vp);
+      regEls.set(r.id, { glowEl, lab });
     }
     gEdges = mk('g', { fill: 'none' }, vp);
     gNodes = mk('g', null, vp);
     // labels of regions are drawn above everything inside vp but below nodes? keep them above regions:
     vp.insertBefore(gEdges, gNodes);
     for (const { lab } of regEls.values()) vp.insertBefore(lab, gEdges);
+    BG.setOutline(V.outline); BG.setLabels(V.labels);
     bindInteraction();
     BG.on('change', sync);
     sync();
@@ -135,7 +142,7 @@
   function sync() {
     const S = BG.state;
     const ids = new Set(S.nodes.map((n) => n.id));
-    for (const [id, o] of nodeEls) if (!ids.has(id)) { o.g.remove(); nodeEls.delete(id); }
+    for (const [id, o] of nodeEls) if (!ids.has(id)) { o.g.remove(); o.aura.remove(); nodeEls.delete(id); }
     for (const n of S.nodes) {
       if (nodeEls.has(n.id)) continue;
       const src = BG.kindById(n.kind).source;
@@ -146,7 +153,8 @@
       const ring = mk('circle', { fill: 'none', stroke: '#fff', 'stroke-width': 1.6, opacity: 0 }, inner);
       const label = mk('text', { 'text-anchor': 'middle', 'font-size': 10, fill: '#e8ecff', stroke: '#0b1020', 'stroke-width': 2.6, 'paint-order': 'stroke', 'pointer-events': 'none' }, g);
       const title = mk('title', null, g);
-      nodeEls.set(n.id, { g, inner, halo, body, ring, label, title, src });
+      const aura = mk('circle', {}, gAura);
+      nodeEls.set(n.id, { g, inner, halo, body, ring, label, title, src, aura });
     }
     const eids = new Set(S.edges.map((e) => e.id));
     for (const [id, o] of edgeEls) if (!eids.has(id)) { o.remove(); edgeEls.delete(id); }
@@ -163,6 +171,7 @@
       o.body.setAttribute('stroke', r.color);
       o.body.setAttribute('stroke-width', o.src ? 2 : 1);
       o.halo.setAttribute('fill', r.color);
+      o.aura.setAttribute('fill', 'url(#aura-' + r.id + ')');
       if (o.src) { o.body.setAttribute('x', -rad); o.body.setAttribute('y', -rad); o.body.setAttribute('width', rad * 2); o.body.setAttribute('height', rad * 2); }
       else o.body.setAttribute('r', rad);
       o.halo.setAttribute('r', rad + 7); o.ring.setAttribute('r', rad + 3);
@@ -210,6 +219,9 @@
     const showLabelsAll = V.k > 1.6;
     const topLabels = new Set(S.nodes.slice().sort((a, b) => (b.deg || 0) - (a.deg || 0)).slice(0, 36).map((n) => n.id));
     const filter = V.filter, focus = V.focusRegion;
+    const edgeBase = BG.clamp(70 / Math.max(1, S.edges.length), 0.35, 1);
+    const auraR = {};
+    for (const r of BG.REGIONS) auraR[r.id] = BG.auraR(r);
 
     for (const n of S.nodes) {
       const o = nodeEls.get(n.id);
@@ -227,6 +239,9 @@
       o.halo.setAttribute('opacity', (a * 0.95).toFixed(2));
       o.ring.setAttribute('opacity', isSel ? 1 : (a > 0.35 ? 0.85 : 0));
       o.g.setAttribute('opacity', dim ? 0.14 : 1);
+      o.aura.setAttribute('cx', n.x.toFixed(1)); o.aura.setAttribute('cy', n.y.toFixed(1));
+      o.aura.setAttribute('r', (auraR[n.region] * (1 + a * 0.25)).toFixed(1));
+      o.aura.setAttribute('opacity', dim ? 0.08 : Math.min(1, 0.75 + a * 0.6).toFixed(2));
       const showLabel = isSel || selNbrs.has(n.id) || a > 0.3 || showLabelsAll || topLabels.has(n.id) || (filter && filter.has(n.id)) || BG.hoverId === n.id;
       o.label.setAttribute('display', showLabel ? '' : 'none');
       o.label.setAttribute('font-size', (a > 0.3 || isSel ? 12 : 10));
@@ -246,25 +261,20 @@
       const col = a > 0.12 ? '#ffd45e' : BG.regionById(A.region).color;
       p.setAttribute('stroke', touchesSel ? '#ffffff' : col);
       p.setAttribute('stroke-width', (0.7 + (e.w || 1) * 0.35 + a * 2.6 + (touchesSel ? 0.8 : 0)).toFixed(2));
-      p.setAttribute('stroke-opacity', dim ? 0.04 : Math.min(1, (isSrc ? 0.1 : 0.3) + a * 0.75 + (touchesSel ? 0.5 : 0)).toFixed(2));
+      p.setAttribute('stroke-opacity', dim ? 0.04 : Math.min(1, (isSrc ? 0.08 : 0.28) * edgeBase + a * 0.75 + (touchesSel ? 0.5 : 0)).toFixed(2));
       if (isSrc && a < 0.1) p.setAttribute('stroke-dasharray', '3 4'); else p.removeAttribute('stroke-dasharray');
     }
     for (const r of BG.REGIONS) {
       const o = regEls.get(r.id), s = r.scale || 1, a = regAct.get(r.id) || 0;
-      const t = 'translate(' + r.cx + ' ' + r.cy + ') rotate(' + r.rot + ')';
-      o.el.setAttribute('transform', t); o.glowEl.setAttribute('transform', t);
-      o.el.setAttribute('rx', r.rx * s); o.el.setAttribute('ry', r.ry * s);
-      o.glowEl.setAttribute('rx', r.rx * s * 0.9); o.glowEl.setAttribute('ry', r.ry * s * 0.9);
-      o.el.setAttribute('fill-opacity', (0.09 + a * 0.42 + (focus === r.id ? 0.14 : 0)).toFixed(3));
-      o.el.setAttribute('stroke-opacity', (0.45 + a * 0.55).toFixed(2));
-      o.el.setAttribute('stroke-width', (1.4 + a * 2).toFixed(2));
-      o.glowEl.setAttribute('opacity', (a * 0.8).toFixed(2));
+      o.glowEl.setAttribute('transform', 'translate(' + r.cx + ' ' + r.cy + ') rotate(' + r.rot + ')');
+      o.glowEl.setAttribute('rx', r.rx * s * 0.85); o.glowEl.setAttribute('ry', r.ry * s * 0.85);
+      o.glowEl.setAttribute('opacity', (a * 0.55 + (focus === r.id ? 0.18 : 0)).toFixed(2));
       o.lab.setAttribute('x', r.cx);
-      o.lab.setAttribute('y', r.layer === 'deep' ? r.cy + r.ry * s + 12 : r.cy - r.ry * s - 4);
-      o.lab.setAttribute('fill-opacity', (0.7 + a * 0.3).toFixed(2));
-      o.lab.setAttribute('font-size', 11 + a * 2.5);
-      const c = r.count ? ' · ' + r.count : '';
-      if (o.lab._txt !== r.name + c) { o.lab.textContent = r.name + c; o.lab._txt = r.name + c; }
+      o.lab.setAttribute('y', r.cy + 4);
+      o.lab.setAttribute('display', V.labels && r.count ? '' : 'none');
+      o.lab.setAttribute('opacity', (0.4 + a * 0.6).toFixed(2));
+      o.lab.setAttribute('font-size', 11 + a * 3);
+      if (o.lab._txt !== r.name) { o.lab.textContent = r.name; o.lab._txt = r.name; }
       if (Math.abs((r._ra || 0) - a) > 0.002) { r._ra = a; alive = true; }
     }
     positionsDirty = false;
