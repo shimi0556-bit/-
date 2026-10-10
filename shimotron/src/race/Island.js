@@ -387,13 +387,20 @@ export class Island {
     return out;
   }
 
-  /** Height of paving the wheels roll on (access roads, city streets, bridge decks) at (x, z), or null. */
-  pavedY(x, z) {
-    const r = this.roads ? this.roads.pavedY(x, z) : null;
-    if (r !== null) return r;
-    const c = this.city ? this.city.pavedY(x, z) : null;
-    if (c !== null) return c;
-    return this.deckLines ? this.deckY(x, z) : null;
+  /**
+   * Height of paving the wheels roll on (access roads, city streets, bridge decks) at (x, z), or null.
+   * Where they overlap (a deck passing over the streets near its landing), the highest one at or
+   * below `ref` (a wheel's height): the deck for a car on the bridge, the street for one under it.
+   */
+  pavedY(x, z, ref = Infinity) {
+    let best = null;
+    const take = (v) => {
+      if (v !== null && v <= ref + 0.3 && (best === null || v > best)) best = v;
+    };
+    if (this.roads) take(this.roads.pavedY(x, z));
+    if (this.city) take(this.city.pavedY(x, z));
+    if (this.deckLines) take(this.deckY(x, z));
+    return best;
   }
 
   /** Height of a bridge deck's asphalt at (x, z) (explore mode sets the decks), or null off them. */
@@ -432,11 +439,11 @@ export class Island {
     if (tr.raycastRoad(from, to, result, tr.roadBody)) return true;
     if (this.trail && this.trail.raycastRoad(from, to, result, tr.roadBody)) return true;
     if (!this.roads && !this.city && !this.deckLines) return false;
-    const y = this.pavedY(from.x, from.z);
+    const y = this.pavedY(from.x, from.z, from.y);
     if (y === null || from.y - y > 3 || from.y < y - 0.3) return false;
     const e = 0.7;
     const at = (x, z) => {
-      const v = this.pavedY(x, z);
+      const v = this.pavedY(x, z, from.y);
       return v === null ? y : v;
     };
     const gx = (at(from.x + e, from.z) - at(from.x - e, from.z)) / (2 * e);

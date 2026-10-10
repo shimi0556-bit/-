@@ -36,7 +36,8 @@ export const MODELS = {
     resetWheels: true,
     lods: [
       { name: 'concept', ratio: 0.55, error: 0.0006, texture: 1024 },
-      { name: 'concept-lo', ratio: 0.07, error: 0.012, texture: 256 },
+      // The far version wears the near one's materials (RealModels matches them by name): no textures of its own.
+      { name: 'concept-lo', ratio: 0.07, error: 0.012, texture: 256, bare: true },
     ],
   },
   hyper: {
@@ -194,6 +195,7 @@ async function build(id, M, L) {
       simplify({ simplifier: MeshoptSimplifier, ratio: L.ratio, error: L.error, lockBorder: true }),
     );
   }
+  if (L.bare) for (const m of rootP.listMaterials()) for (const slot of ['BaseColor', 'MetallicRoughness', 'Normal', 'Occlusion', 'Emissive']) m[`set${slot}Texture`](null);
   await doc.transform(
     prune(),
     dedup(),
