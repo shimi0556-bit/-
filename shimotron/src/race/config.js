@@ -206,9 +206,9 @@ export const CAR_TYPES = [
     shape: { halfL: 2.3, w: 0.97, flare: 0.09, floor: -0.45, belt: 0.04, hoodDrop: 0.22, roof: 0.5, cabin: [0.95, 0.2, -0.35, -1.5], cabinW: 0.7, wing: 'big', extras: ['fins'] },
   },
   {
-    // The monster 4×4 (MonsterTruck.js): a downloaded truck body ("vehicle-truck" by Kenney, CC0)
-    // on giant lugged tyres, visible coil-over springs and solid axles. Long, soft suspension that
-    // soaks up the dirt tracks; heavy and tall, so it rolls in fast bends. `shape` is only the fallback body.
+    // The monster 4×4 (MonsterTruck.js): a real monster truck model ("Lunchbox Van" by Jorma Rysky,
+    // CC BY 4.0), a lifted van on giant lugged tyres, coil-overs and solid axles. Long, soft suspension
+    // that soaks up the dirt tracks; heavy and tall, so it rolls in fast bends. `shape` is only the fallback body.
     id: 'monster',
     model: 'monster',
     name: 'מפלצת 4×4',
@@ -216,10 +216,11 @@ export const CAR_TYPES = [
     price: 12000,
     spec: {
       mass: 2300,
-      body: { half: [1.15, 0.45, 2.2], offset: [0, 0.05, 0] },
-      cabin: { half: [1.0, 0.8, 1.1], offset: [0, 1.3, 0.25] },
+      // The van's chassis rails and bumpers, and the van itself above them.
+      body: { half: [1.08, 0.6, 2.95], offset: [0, 0.45, -0.09] },
+      cabin: { half: [1.08, 0.72, 2.5], offset: [0, 1.77, -0.09] },
       // Long, soft and well damped: it swallows the bumps and lands jumps on its springs instead of bouncing off.
-      wheel: { radius: 0.85, width: 0.7, front: 1.62, rear: -1.62, track: 1.3, height: 0.2, restLength: 0.8, travel: 0.66, stiffness: 15, dampCompression: 2.6, dampRelaxation: 2.3, rollInfluence: 0.012, grip: 1.38 },
+      wheel: { radius: 0.85, width: 0.7, front: 1.73, rear: -1.73, track: 1.34, height: 0.2, restLength: 0.8, travel: 0.66, stiffness: 15, dampCompression: 2.6, dampRelaxation: 2.3, rollInfluence: 0.012, grip: 1.38 },
       engine: { accel: 12, topSpeed: 56, frontShare: 0.5, redline: 6200 },
       steer: { max: 0.56 },
       downforce: 0.05,
@@ -231,10 +232,12 @@ export const CAR_TYPES = [
       skidY: -0.3,
       // The tyres as boxes round each axle (hub at rest ~0.45 m under the centre), clear of the ground.
       extra: [
-        [[1.68, 0.62, 0.86], [0, -0.4, 1.62]],
-        [[1.68, 0.62, 0.86], [0, -0.4, -1.62]],
+        [[1.9, 0.62, 0.86], [0, -0.4, 1.73]],
+        [[1.9, 0.62, 0.86], [0, -0.4, -1.73]],
       ],
-      monster: { scale: 1.65, bodyY: -0.21, bodyZ: 0, lampX: 0.78, lampY: 0.75, front: 2.31, back: -2.31, roofY: 2.35, roofZ: 0.4 },
+      // Lamps in the model's own coordinates: [x, y, z, width, height] (mirrored left and right).
+      chaseFar: 1.3, // the van stands 3.8 m tall: the chase camera sits further back and higher
+      monster: { lamps: { head: [0.69, 2.0, 2.12, 0.22, 0.2], tail: [0.78, 2.0, -2.03, 0.12, 0.3] } },
     },
     shape: { halfL: 2.3, w: 1.1, flare: 0.12, floor: -0.1, belt: 0.3, hoodDrop: 0.05, roof: 1.1, cabin: [1.0, 0.6, -0.4, -0.9], tailLen: 0.1, duck: 0, wing: 'none', lights: 'round', extras: ['lightbar'] },
   },

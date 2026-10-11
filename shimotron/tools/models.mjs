@@ -20,7 +20,11 @@ import * as THREE from 'three';
 import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const FISH = { url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/BarramundiFish/glTF-Binary/BarramundiFish.glb', credit: '"Barramundi Fish" by Microsoft (Khronos glTF Sample Assets), CC0 — modified: textures reduced' };
-const MONSTER = { url: 'https://raw.githubusercontent.com/KenneyNL/Starter-Kit-Racing/main/models/vehicle-truck-yellow.glb', credit: '"vehicle-truck" by Kenney (Starter Kit Racing, kenney.nl), CC0 — modified: wheels and underside removed' };
+// The monster truck and the bike come from tools/vehicles.mjs; their credits are listed here too.
+const VEHICLE_CREDITS = [
+  ['monster-van', '"[Monster Truck Game] Lunchbox Van" by Jorma Rysky, CC BY 4.0 — modified: textures shrunk, compressed', 'https://sketchfab.com/3d-models/monster-truck-game-lunchbox-van-70a16d116a594328a701a7c079044ad6'],
+  ['moto-yz', '"Yz250" by e-restrepo1114 (sketchfab.com/EmanuelRestrepoVelez), CC BY 4.0 — modified: cut into moving parts, simplified, compressed', 'https://sketchfab.com/3d-models/yz250-127c9d767260468f821da3cba9d7db7e'],
+];
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CACHE = path.join(root, '.models');
 const OUT = path.join(root, 'src/race/models');
@@ -35,7 +39,7 @@ export const MODELS = {
     // The wheels were modelled turned and spun: undo it.
     resetWheels: true,
     lods: [
-      { name: 'concept', ratio: 0.55, error: 0.0006, texture: 1024 },
+      { name: 'concept', ratio: 0.36, error: 0.0008, texture: 1024 },
       // The far version wears the near one's materials (RealModels matches them by name): no textures of its own.
       { name: 'concept-lo', ratio: 0.07, error: 0.012, texture: 256, bare: true },
     ],
@@ -216,5 +220,5 @@ for (const [id, M] of Object.entries(MODELS)) {
 }
 fs.writeFileSync(
   path.join(OUT, 'CREDITS.md'),
-  `# Models\n\n${Object.entries(MODELS).map(([id, M]) => `- **${id}**: ${M.credit}. Source: ${M.url}`).join('\n')}\n- **monster** (tools/monster.mjs): ${MONSTER.credit}. Source: ${MONSTER.url}\n- **fish** (tools/fish.mjs): ${FISH.credit}. Source: ${FISH.url}\n\nLicence texts: https://creativecommons.org/licenses/by/4.0/ and https://creativecommons.org/publicdomain/zero/1.0/\n`,
+  `# Models\n\n${Object.entries(MODELS).map(([id, M]) => `- **${id}**: ${M.credit}. Source: ${M.url}`).join('\n')}\n${VEHICLE_CREDITS.map(([id, c, u]) => `- **${id}** (tools/vehicles.mjs): ${c}. Source: ${u}`).join('\n')}\n- **fish** (tools/fish.mjs): ${FISH.credit}. Source: ${FISH.url}\n\nLicence texts: https://creativecommons.org/licenses/by/4.0/ and https://creativecommons.org/publicdomain/zero/1.0/\n`,
 );

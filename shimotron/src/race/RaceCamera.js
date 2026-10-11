@@ -136,8 +136,9 @@ export class RaceCamera {
         if (cam.position.y < gh) cam.position.y = gh;
       }
     } else if (view.distance > 0) {
-      // Chase: behind and above, looking ahead of the car (boats and submarines a little further back).
-      const far = car.kind ? 1.45 : 1;
+      // Chase: behind and above, looking ahead of the car (boats, submarines and the tall monster
+      // trucks a little further back).
+      const far = car.kind ? 1.45 : car.spec?.chaseFar || 1;
       _t.copy(p).addScaledVector(this.heading, -view.distance * far).add(_d.set(0, view.height * far, 0));
       const lookAt = _look.copy(p).addScaledVector(this.heading, view.lookAhead);
       lookAt.y += 0.9;
