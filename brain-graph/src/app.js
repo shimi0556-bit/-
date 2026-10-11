@@ -184,10 +184,16 @@
     const p = $('#tab-regions');
     p.textContent = '';
     const tg = (label, on, fn) => { const cb = h('input', { type: 'checkbox', style: 'width:auto' }); cb.checked = on; cb.addEventListener('change', () => fn(cb.checked)); return h('label', { class: 'muted', style: 'display:block;margin:4px 0' }, cb, ' ' + label); };
+    const sl = (label, key, min, max, step) => { const i = h('input', { type: 'range', min, max, step, style: 'width:100%;padding:0' }); i.value = BG.display[key]; i.addEventListener('input', () => BG.setDisplay(key, +i.value)); return h('label', { class: 'muted', style: 'display:block;margin:6px 0' }, label, i); };
     p.append(
-      h('p', { class: 'muted', text: 'צורת המוח נוצרת מהצמתים עצמם: כל ערך נמצא באזור שמתאים לו. לחץ על אזור כדי להתמקד בו.' }),
+      h('h3', { text: 'תצוגה' }),
+      tg('מסמכי מקור וקשריהם', BG.display.sources, (b) => { BG.setDisplay('sources', b); }),
+      tg('זוהר צבע סביב הצמתים', BG.display.glow, (b) => BG.setDisplay('glow', b)),
       tg('שמות אזורים על המוח', BG.view.labels, BG.setLabels),
-      tg('מתאר מוח מקווקו (אוטומטי כשיש מעט צמתים)', BG.effOutline(), BG.setOutline), h('div', { style: 'height:8px' }));
+      tg('מתאר מוח מקווקו (אוטומטי כשיש מעט צמתים)', BG.effOutline(), BG.setOutline),
+      sl('גודל צמתים', 'nodeSize', 0.5, 2, 0.05), sl('בהירות קשרים', 'linkOpacity', 0.3, 3, 0.1),
+      h('div', { class: 'hr' }),
+      h('p', { class: 'muted', text: 'צורת המוח נוצרת מהצמתים עצמם: כל ערך נמצא באזור שמתאים לו. לחץ על אזור כדי להתמקד בו.' }));
     for (const r of BG.REGIONS) {
       const n = BG.state.nodes.filter((x) => x.region === r.id).length;
       p.append(h('div', { class: 'region-row' + (BG.view.focusRegion === r.id ? ' on' : ''), tabindex: '0', onclick: () => { BG.view.focusRegion = BG.view.focusRegion === r.id ? null : r.id; renderRegionsPanel(); BG.markDirty(); },
@@ -195,6 +201,20 @@
       h('i', { style: 'background:' + r.color }), h('div', null, h('b', { text: r.name }), h('span', { class: 'muted', text: r.does })), h('span', { class: 'n', text: n })));
     }
   }
+
+  // ---------- legend (like Obsidian's groups): which colour is which region, click to focus ----------
+  function renderLegend() {
+    const box = $('#legend'); if (!box) return;
+    box.textContent = '';
+    const counts = new Map();
+    for (const n of BG.state.nodes) if (!BG.isHidden(n)) counts.set(n.region, (counts.get(n.region) || 0) + 1);
+    for (const r of BG.REGIONS) {
+      if (!counts.get(r.id)) continue;
+      box.append(h('button', { class: 'lg' + (BG.view.focusRegion === r.id ? ' on' : ''), title: r.does, onclick: () => { BG.view.focusRegion = BG.view.focusRegion === r.id ? null : r.id; renderLegend(); renderRegionsPanel(); BG.markDirty(); } },
+        h('i', { style: 'background:' + r.color }), r.name, h('span', { text: counts.get(r.id) })));
+    }
+  }
+  BG.on('change', renderLegend); BG.on('display', () => { renderLegend(); });
 
   // ---------- search ----------
   $('#search').addEventListener('input', (e) => {

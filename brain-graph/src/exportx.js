@@ -15,7 +15,7 @@
   function aurasSVG() {
     const R = {};
     BG.REGIONS.forEach((r) => { R[r.id] = BG.auraR(r); });
-    return BG.state.nodes.map((n) => '<circle cx="' + n.x.toFixed(1) + '" cy="' + n.y.toFixed(1) + '" r="' + R[n.region].toFixed(1) + '" fill="url(#aura-' + n.region + ')"/>').join('');
+    return BG.state.nodes.filter((n) => !BG.isHidden(n)).map((n) => '<circle cx="' + n.x.toFixed(1) + '" cy="' + n.y.toFixed(1) + '" r="' + R[n.region].toFixed(1) + '" fill="url(#aura-' + n.region + ')"/>').join('');
   }
   function regionsSVG() {
     return BG.REGIONS.filter((r) => r.count).map((r) =>
@@ -25,16 +25,15 @@
     const out = [];
     BG.state.edges.forEach((e, i) => {
       const a = BG.nodeById(e.from), b = BG.nodeById(e.to);
-      if (!a || !b) return;
-      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, dx = b.x - a.x, dy = b.y - a.y, c = 0.12 * (i % 2 ? 1 : -1);
+      if (!a || !b || BG.isHidden(a) || BG.isHidden(b)) return;
       const src = BG.kindById(a.kind).source || BG.kindById(b.kind).source;
-      out.push('<path d="M' + a.x.toFixed(1) + ',' + a.y.toFixed(1) + ' Q' + (mx - dy * c).toFixed(1) + ',' + (my + dx * c).toFixed(1) + ' ' + b.x.toFixed(1) + ',' + b.y.toFixed(1) +
-        '" fill="none" stroke="' + BG.regionById(a.region).color + '" stroke-opacity="' + (src ? 0.18 : 0.5) + '" stroke-width="' + (0.8 + (e.w || 1) * 0.4).toFixed(2) + '"' + (src ? ' stroke-dasharray="3 4"' : '') + '/>');
+      out.push('<path d="M' + a.x.toFixed(1) + ',' + a.y.toFixed(1) + ' L' + b.x.toFixed(1) + ',' + b.y.toFixed(1) +
+        '" fill="none" stroke="#8791bd" stroke-opacity="' + (src ? 0.3 : 0.45) + '" stroke-width="' + (0.6 + (e.w || 1) * 0.2).toFixed(2) + '"' + (src ? ' stroke-dasharray="3 4"' : '') + '/>');
     });
     return out.join('');
   }
   function nodesSVG(regionId) {
-    return BG.state.nodes.filter((n) => n.region === regionId).map((n) => {
+    return BG.state.nodes.filter((n) => n.region === regionId && !BG.isHidden(n)).map((n) => {
       const r = BG.radius(n), col = BG.regionById(n.region).color, src = BG.kindById(n.kind).source;
       const shape = src
         ? '<rect x="' + (-r) + '" y="' + (-r) + '" width="' + r * 2 + '" height="' + r * 2 + '" rx="2.5" fill="#0f1630" stroke="' + col + '" stroke-width="2"/>'
@@ -48,10 +47,10 @@
     const L = [];
     L.push({ id: 'background', label: 'רקע', inner: '<rect width="' + BG.W + '" height="' + BG.H + '" fill="' + BGCOL + '"/>' });
     if (BG.effOutline()) L.push({ id: 'brain', label: 'מתאר מוח', inner: brainSVG() });
-    L.push({ id: 'aura', label: 'זוהר הערכים', inner: aurasSVG() });
+    if (BG.display.glow) L.push({ id: 'aura', label: 'זוהר הערכים', inner: aurasSVG() });
     L.push({ id: 'edges', label: 'קשרים', inner: edgesSVG() });
     if (BG.view.labels) L.push({ id: 'regions', label: 'שמות אזורים', inner: regionsSVG() });
-    for (const r of BG.REGIONS) if (BG.state.nodes.some((n) => n.region === r.id)) L.push({ id: 'nodes-' + r.id, label: 'צמתים – ' + r.name, inner: nodesSVG(r.id) });
+    for (const r of BG.REGIONS) if (BG.state.nodes.some((n) => n.region === r.id && !BG.isHidden(n))) L.push({ id: 'nodes-' + r.id, label: 'צמתים – ' + r.name, inner: nodesSVG(r.id) });
     return L;
   };
   BG.layersToSVG = function (layers, opt) {

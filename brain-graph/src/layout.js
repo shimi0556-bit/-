@@ -106,7 +106,7 @@
   }
 
   L.step = function () {
-    const nodes = BG.state.nodes, edges = BG.state.edges;
+    const nodes = BG.state.nodes.filter((n) => !BG.isHidden(n)), edges = BG.state.edges.filter((e) => { const p = BG.nodeById(e.from), q = BG.nodeById(e.to); return p && q && !BG.isHidden(p) && !BG.isHidden(q); });
     const a = L.alpha;
     if (!nodes.length) { L.alpha = 0; return; }
     const counts = {};

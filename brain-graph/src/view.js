@@ -3,8 +3,14 @@
   'use strict';
   const NS = 'http://www.w3.org/2000/svg';
   const mk = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
-  const V = (BG.view = { k: 1, x: 0, y: 0, selected: null, filter: null, focusRegion: null, outline: null, labels: true });
-  try { { const o = localStorage.getItem('brain-graph:outline'); V.outline = o === '1' ? true : o === '0' ? false : null; } V.labels = localStorage.getItem('brain-graph:labels') !== '0'; } catch (e) { /* ignore */ }
+  // Obsidian-like defaults: crisp dots, thin neutral links, no colour glow, no source documents
+  const DISP_KEY = 'brain-graph:display';
+  const D = (BG.display = { glow: false, sources: false, nodeSize: 0.85, linkOpacity: 1 });
+  try { Object.assign(D, JSON.parse(localStorage.getItem(DISP_KEY) || '{}')); } catch (e) { /* ignore */ }
+  BG.setDisplay = (k, val) => { D[k] = val; try { localStorage.setItem(DISP_KEY, JSON.stringify(D)); } catch (e) { /* ignore */ } BG.layout.kick(0.3); positionsDirty = true; BG.wake(); BG.emit('display'); };
+  BG.isHidden = (n) => !D.sources && !!BG.kindById(n.kind).source;
+  const V = (BG.view = { k: 1, x: 0, y: 0, selected: null, filter: null, focusRegion: null, outline: null, labels: false });
+  try { { const o = localStorage.getItem('brain-graph:outline'); V.outline = o === '1' ? true : o === '0' ? false : null; } V.labels = localStorage.getItem('brain-graph:labels') === '1'; } catch (e) { /* ignore */ }
   // null = auto: a faint dotted contour while the graph is small, so the shape reads before the nodes fill it
   BG.effOutline = () => (V.outline == null ? BG.state.nodes.length < 60 : V.outline);
   BG.setOutline = (b) => { V.outline = !!b; BG.markDirty && BG.markDirty(); try { localStorage.setItem('brain-graph:outline', V.outline ? '1' : '0'); } catch (e) { /* ignore */ } };
@@ -153,7 +159,7 @@
       const halo = mk('circle', { r: 10, opacity: 0, filter: 'url(#glow)' }, inner);
       const body = src ? mk('rect', { rx: 2.5 }, inner) : mk('circle', {}, inner);
       const ring = mk('circle', { fill: 'none', stroke: '#fff', 'stroke-width': 1.6, opacity: 0 }, inner);
-      const label = mk('text', { 'text-anchor': 'middle', 'font-size': 10, fill: '#e8ecff', stroke: '#0b1020', 'stroke-width': 2.6, 'paint-order': 'stroke', 'pointer-events': 'none' }, g);
+      const label = mk('text', { 'text-anchor': 'middle', 'font-size': 10, fill: '#c3cae8', stroke: '#0b1020', 'stroke-width': 2, 'paint-order': 'stroke', 'pointer-events': 'none' }, g);
       const title = mk('title', null, g);
       const aura = mk('circle', {}, gAura);
       nodeEls.set(n.id, { g, inner, halo, body, ring, label, title, src, aura });
@@ -170,8 +176,8 @@
     for (const n of S.nodes) {
       const o = nodeEls.get(n.id), r = BG.regionById(n.region), rad = BG.radius(n);
       o.body.setAttribute('fill', o.src ? '#0f1630' : r.color);
-      o.body.setAttribute('stroke', r.color);
-      o.body.setAttribute('stroke-width', o.src ? 2 : 1);
+      o.body.setAttribute('stroke', o.src ? '#8791bd' : r.color);
+      o.body.setAttribute('stroke-width', o.src ? 1.4 : 0);
       o.halo.setAttribute('fill', r.color);
       o.aura.setAttribute('fill', 'url(#aura-' + r.id + ')');
       if (o.src) { o.body.setAttribute('x', -rad); o.body.setAttribute('y', -rad); o.body.setAttribute('width', rad * 2); o.body.setAttribute('height', rad * 2); }
@@ -206,74 +212,103 @@
   };
   BG.setFilter = function (set) { V.filter = set; positionsDirty = true; BG.wake(); };
 
-  function edgePath(a, b, i) {
-    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, dx = b.x - a.x, dy = b.y - a.y;
-    const c = 0.12 * (i % 2 ? 1 : -1);
-    return 'M' + a.x.toFixed(1) + ',' + a.y.toFixed(1) + ' Q' + (mx - dy * c).toFixed(1) + ',' + (my + dx * c).toFixed(1) + ' ' + b.x.toFixed(1) + ',' + b.y.toFixed(1);
+  function edgePath(a, b) { return 'M' + a.x.toFixed(1) + ',' + a.y.toFixed(1) + ' L' + b.x.toFixed(1) + ',' + b.y.toFixed(1); }
+
+  // label collision culling: highest-priority labels are placed first, the rest are hidden if they would overlap
+  function placeLabels(S, prio, fs) {
+    const boxes = [], shown = new Set();
+    const vis = S.nodes.filter((n) => !BG.isHidden(n)), rr = (n) => BG.radius(n) * D.nodeSize + 1;
+    const order = vis.slice().sort((a, b) => (prio(b) - prio(a)) || ((b.deg || 0) - (a.deg || 0)));
+    for (const n of order) {
+      const p = prio(n), w = Math.max(10, n.label.length * fs * 0.6 + 6), hgt = fs * 1.15, x = n.x - w / 2, y = n.y + BG.radius(n) * D.nodeSize + 2;
+      let hit = false;
+      if (p < 100) {
+        for (const bx of boxes) if (x < bx.x + bx.w && x + w > bx.x && y < bx.y + bx.h && y + hgt > bx.y) { hit = true; break; }
+        // a label must not sit on top of another node either
+        if (!hit) for (const o of vis) { if (o === n) continue; const r = rr(o); if (o.x + r > x && o.x - r < x + w && o.y + r > y && o.y - r < y + hgt) { hit = true; break; } }
+      }
+      if (hit) continue;
+      boxes.push({ x, y, w, h: hgt }); shown.add(n.id);
+    }
+    return shown;
   }
 
   function frame() {
     let alive = false;
     if (BG.layout.alpha > 0) { BG.layout.step(); positionsDirty = true; alive = true; }
     const S = BG.state, regAct = new Map();
-    const sel = V.selected, selNbrs = new Set();
-    if (sel) for (const e of S.edges) { if (e.from === sel) selNbrs.add(e.to); else if (e.to === sel) selNbrs.add(e.from); }
-    const showLabelsAll = V.k > 1.6;
-    const topLabels = new Set(S.nodes.slice().sort((a, b) => (b.deg || 0) - (a.deg || 0)).slice(0, 36).map((n) => n.id));
-    const filter = V.filter, focus = V.focusRegion;
-    const edgeBase = BG.clamp(70 / Math.max(1, S.edges.length), 0.35, 1);
+    const sel = V.selected, focusId = BG.hoverId || sel, filter = V.filter, focus = V.focusRegion;
+    const near = new Set();
+    if (focusId) { near.add(focusId); for (const e of S.edges) { if (e.from === focusId) near.add(e.to); else if (e.to === focusId) near.add(e.from); } }
+    const edgeBase = BG.clamp(80 / Math.max(1, S.edges.length), 0.4, 1) * D.linkOpacity;
     const auraR = {};
     for (const r of BG.REGIONS) auraR[r.id] = BG.auraR(r);
+    const m = svg.getScreenCTM(), pxPerUnit = m ? m.a : 1, fs = BG.clamp(11 / (V.k * pxPerUnit), 3.2, 14);
+    const prio = (n) => (n.id === sel || n.id === BG.hoverId ? 1000 : (n.act || 0) > 0.3 ? 500 : filter && filter.has(n.id) ? 300 : near.has(n.id) && focusId ? 200 : 0) + Math.min(60, (n.deg || 0) * 3);
+    const labelsOn = placeLabels(S, prio, fs);
 
     for (const n of S.nodes) {
       const o = nodeEls.get(n.id);
       if (!o) continue;
+      const hidden = BG.isHidden(n);
+      o.g.setAttribute('display', hidden ? 'none' : '');
+      o.aura.setAttribute('display', hidden || !D.glow ? 'none' : '');
+      if (hidden) continue;
       const hold = n.hold || 0, a0 = n.act || 0;
       let a = a0 + (hold - a0) * 0.045;
       if (Math.abs(a - hold) < 0.004) a = hold;
       if (a !== a0) alive = true;
       n.act = a;
       if (a > 0.02) regAct.set(n.region, Math.max(regAct.get(n.region) || 0, a));
-      const dim = (filter && !filter.has(n.id)) || (focus && n.region !== focus);
+      const dim = (filter && !filter.has(n.id)) || (focus && n.region !== focus) || (focusId && !near.has(n.id));
       const isSel = sel === n.id;
       o.g.setAttribute('transform', 'translate(' + n.x.toFixed(1) + ' ' + n.y.toFixed(1) + ')');
-      o.inner.setAttribute('transform', 'scale(' + (1 + a * 0.45).toFixed(3) + ')');
+      o.inner.setAttribute('transform', 'scale(' + (D.nodeSize * (1 + a * 0.45)).toFixed(3) + ')');
       o.halo.setAttribute('opacity', (a * 0.95).toFixed(2));
       o.ring.setAttribute('opacity', isSel ? 1 : (a > 0.35 ? 0.85 : 0));
-      o.g.setAttribute('opacity', dim ? 0.14 : 1);
-      o.aura.setAttribute('cx', n.x.toFixed(1)); o.aura.setAttribute('cy', n.y.toFixed(1));
-      o.aura.setAttribute('r', (auraR[n.region] * (1 + a * 0.25)).toFixed(1));
-      o.aura.setAttribute('opacity', dim ? 0.08 : Math.min(1, 0.75 + a * 0.6).toFixed(2));
-      const showLabel = isSel || selNbrs.has(n.id) || a > 0.3 || showLabelsAll || topLabels.has(n.id) || (filter && filter.has(n.id)) || BG.hoverId === n.id;
-      o.label.setAttribute('display', showLabel ? '' : 'none');
-      o.label.setAttribute('font-size', (a > 0.3 || isSel ? 12 : 10));
+      o.g.setAttribute('opacity', dim ? 0.16 : 1);
+      if (D.glow) {
+        o.aura.setAttribute('cx', n.x.toFixed(1)); o.aura.setAttribute('cy', n.y.toFixed(1));
+        o.aura.setAttribute('r', (auraR[n.region] * (1 + a * 0.25)).toFixed(1));
+        o.aura.setAttribute('opacity', dim ? 0.06 : Math.min(1, 0.6 + a * 0.6).toFixed(2));
+      }
+      const show = labelsOn.has(n.id);
+      o.label.setAttribute('display', show ? '' : 'none');
+      if (show) {
+        const big = a > 0.3 || isSel || n.id === BG.hoverId;
+        o.label.setAttribute('font-size', (fs * (big ? 1.12 : 1)).toFixed(2));
+        o.label.setAttribute('y', (BG.radius(n) * D.nodeSize + fs * 0.95).toFixed(1));
+        o.label.setAttribute('stroke-width', (fs * 0.28).toFixed(2));
+        o.label.setAttribute('fill', big ? '#ffffff' : '#c3cae8');
+      }
     }
     for (const e of S.edges) {
       const p = edgeEls.get(e.id), A = BG.nodeById(e.from), B = BG.nodeById(e.to);
       if (!p || !A || !B) continue;
+      const isSrc = BG.kindById(A.kind).source || BG.kindById(B.kind).source;
+      if (BG.isHidden(A) || BG.isHidden(B)) { p.setAttribute('display', 'none'); continue; }
+      p.removeAttribute('display');
       const hold = e.hold || 0, a0 = e.act || 0;
       let a = a0 + (hold - a0) * 0.045;
       if (Math.abs(a - hold) < 0.004) a = hold;
       if (a !== a0) alive = true;
       e.act = a;
-      if (positionsDirty) p.setAttribute('d', edgePath(A, B, parseInt(e.id.slice(1)) || 0));
-      const isSrc = BG.kindById(A.kind).source || BG.kindById(B.kind).source;
-      const touchesSel = sel && (e.from === sel || e.to === sel);
-      const dim = (filter && !(filter.has(e.from) && filter.has(e.to))) || (focus && (A.region !== focus && B.region !== focus));
-      const col = a > 0.12 ? '#ffd45e' : BG.regionById(A.region).color;
-      p.setAttribute('stroke', touchesSel ? '#ffffff' : col);
-      p.setAttribute('stroke-width', (0.7 + (e.w || 1) * 0.35 + a * 2.6 + (touchesSel ? 0.8 : 0)).toFixed(2));
-      p.setAttribute('stroke-opacity', dim ? 0.04 : Math.min(1, (isSrc ? 0.08 : 0.28) * edgeBase + a * 0.75 + (touchesSel ? 0.5 : 0)).toFixed(2));
-      if (isSrc && a < 0.1) p.setAttribute('stroke-dasharray', '3 4'); else p.removeAttribute('stroke-dasharray');
+      if (positionsDirty) p.setAttribute('d', edgePath(A, B));
+      const touches = focusId && (e.from === focusId || e.to === focusId);
+      const dim = (filter && !(filter.has(e.from) && filter.has(e.to))) || (focus && (A.region !== focus && B.region !== focus)) || (focusId && !touches);
+      p.setAttribute('stroke', a > 0.12 ? '#ffd45e' : touches ? '#e8ecff' : '#8791bd');
+      p.setAttribute('stroke-width', (0.55 + (e.w || 1) * 0.18 + a * 2.4 + (touches ? 0.7 : 0)).toFixed(2));
+      p.setAttribute('stroke-opacity', dim ? 0.035 : Math.min(1, (isSrc ? 0.16 : 0.26) * edgeBase + a * 0.75 + (touches ? 0.55 : 0)).toFixed(2));
+      if (isSrc && a < 0.1) p.setAttribute('stroke-dasharray', '2 3'); else p.removeAttribute('stroke-dasharray');
     }
     for (const r of BG.REGIONS) {
       const o = regEls.get(r.id), s = r.scale || 1, a = regAct.get(r.id) || 0;
       o.glowEl.setAttribute('transform', 'translate(' + r.cx + ' ' + r.cy + ') rotate(' + r.rot + ')');
       o.glowEl.setAttribute('rx', r.rx * s * 0.85); o.glowEl.setAttribute('ry', r.ry * s * 0.85);
-      o.glowEl.setAttribute('opacity', (a * 0.55 + (focus === r.id ? 0.18 : 0)).toFixed(2));
+      o.glowEl.setAttribute('opacity', (a * 0.55 + (focus === r.id ? 0.12 : 0)).toFixed(2));
       o.lab.setAttribute('x', r.cx);
       o.lab.setAttribute('y', r.cy + 4);
-      o.lab.setAttribute('display', V.labels && r.count ? '' : 'none');
+      o.lab.setAttribute('display', (V.labels && r.count) || a > 0.1 ? '' : 'none');
       o.lab.setAttribute('opacity', (0.4 + a * 0.6).toFixed(2));
       o.lab.setAttribute('font-size', 11 + a * 3);
       if (o.lab._txt !== r.name) { o.lab.textContent = r.name; o.lab._txt = r.name; }
