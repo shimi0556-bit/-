@@ -1,0 +1,4 @@
+# raw/ is other people's writing: keep it local (rebuild with tools/crawl.py),
+# commit only the manifests.
+raw/**/*.md
+!raw/**/manifest.md
