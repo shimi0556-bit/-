@@ -3,54 +3,55 @@
   'use strict';
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const FONT = 'Heebo, Arial, Helvetica, sans-serif';
-  const BGCOL = '#0b1020';
+  const BGCOL = '#16161a';
 
-  function defsSVG() {
-    return '<defs>' + BG.REGIONS.map((r) => '<radialGradient id="aura-' + r.id + '"><stop offset="0" stop-color="' + r.color + '" stop-opacity="0.5"/><stop offset="0.55" stop-color="' + r.color + '" stop-opacity="0.2"/><stop offset="1" stop-color="' + r.color + '" stop-opacity="0"/></radialGradient>').join('') + '</defs>';
-  }
-  function brainSVG() {
-    return '<g fill="none" stroke="#6c8cff" stroke-opacity="0.55" stroke-width="1.6" stroke-dasharray="2 6" stroke-linecap="round">' +
-      [BG.STEM, BG.CEREBELLUM, BG.CEREBRUM].map((d) => '<path d="' + d + '"/>').join('') + '</g>';
-  }
-  function aurasSVG() {
-    const R = {};
-    BG.REGIONS.forEach((r) => { R[r.id] = BG.auraR(r); });
-    return BG.state.nodes.filter((n) => !BG.isHidden(n)).map((n) => '<circle cx="' + n.x.toFixed(1) + '" cy="' + n.y.toFixed(1) + '" r="' + R[n.region].toFixed(1) + '" fill="url(#aura-' + n.region + ')"/>').join('');
-  }
-  function regionsSVG() {
-    return BG.REGIONS.filter((r) => r.count).map((r) =>
-      '<text x="' + r.cx + '" y="' + (r.cy + 4) + '" text-anchor="middle" font-size="11.5" font-weight="600" font-family="' + FONT + '" fill="' + r.color + '" fill-opacity="0.6" stroke="' + BGCOL + '" stroke-width="3" paint-order="stroke">' + esc(r.name) + '</text>').join('');
+  function defsSVG() { return '<defs></defs>'; }
+  const W3 = BG.W, H3 = BG.H;
+  const P = (n) => BG.projectExport(n.x, n.y, n.z || 0, W3, H3);
+  const depthA = (zc) => 0.4 + 0.6 * BG.clamp((zc + 330) / 660, 0, 1);
+  function cloudSVG() {
+    const out = [];
+    for (let x = 196; x < 898; x += 15) for (let y = 84; y < 652; y += 15) {
+      if (!BG.inBrain(x, y)) continue;
+      const r = BG.regionAt(x, y); if (!r) continue;
+      const g = r.layer === 'own' ? (r.id === 'cer' ? 1 : 2) : 0, h = BG.thickness(x, y, g);
+      if (h < 8) continue;
+      for (const z of [h * 0.97, -h * 0.97]) { const p = BG.projectExport(x, y, z, W3, H3); out.push('<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="0.8" fill="#8791bd" fill-opacity="' + (0.45 * depthA(p[3])).toFixed(2) + '"/>'); }
+    }
+    return out.join('');
   }
   function edgesSVG() {
     const out = [];
-    BG.state.edges.forEach((e, i) => {
+    for (const e of BG.state.edges) {
       const a = BG.nodeById(e.from), b = BG.nodeById(e.to);
-      if (!a || !b || BG.isHidden(a) || BG.isHidden(b)) return;
-      const src = BG.kindById(a.kind).source || BG.kindById(b.kind).source;
-      out.push('<path d="M' + a.x.toFixed(1) + ',' + a.y.toFixed(1) + ' L' + b.x.toFixed(1) + ',' + b.y.toFixed(1) +
-        '" fill="none" stroke="#8791bd" stroke-opacity="' + (src ? 0.3 : 0.45) + '" stroke-width="' + (0.6 + (e.w || 1) * 0.2).toFixed(2) + '"' + (src ? ' stroke-dasharray="3 4"' : '') + '/>');
-    });
+      if (!a || !b || BG.isHidden(a) || BG.isHidden(b)) continue;
+      const p = P(a), q = P(b);
+      out.push('<path d="M' + p[0].toFixed(1) + ',' + p[1].toFixed(1) + ' L' + q[0].toFixed(1) + ',' + q[1].toFixed(1) + '" fill="none" stroke="#78788c" stroke-opacity="' + (0.4 * depthA((p[3] + q[3]) / 2)).toFixed(2) + '" stroke-width="' + Math.min(3, 0.7 + (e.w || 1) * 0.3).toFixed(2) + '"/>');
+    }
     return out.join('');
   }
-  function nodesSVG(regionId) {
-    return BG.state.nodes.filter((n) => n.region === regionId && !BG.isHidden(n)).map((n) => {
-      const r = BG.radius(n), col = BG.regionById(n.region).color, src = BG.kindById(n.kind).source;
-      const shape = src
-        ? '<rect x="' + (-r) + '" y="' + (-r) + '" width="' + r * 2 + '" height="' + r * 2 + '" rx="2.5" fill="#0f1630" stroke="' + col + '" stroke-width="2"/>'
-        : '<circle r="' + r + '" fill="' + col + '" stroke="' + col + '"/>';
-      return '<g id="node-' + n.id + '" transform="translate(' + n.x.toFixed(1) + ' ' + n.y.toFixed(1) + ')">' + shape +
-        '<text y="' + (r + 11) + '" text-anchor="middle" font-size="10" font-family="' + FONT + '" fill="#e8ecff" stroke="' + BGCOL + '" stroke-width="2.6" paint-order="stroke">' + esc(n.label) + '</text></g>';
+  // nodes of one family, far to near, each with its label when the label has room
+  const taken = [];
+  function nodesSVG(ids) {
+    const ns = BG.state.nodes.filter((n) => ids.includes(n.region) && !BG.isHidden(n)).map((n) => ({ n, p: P(n) })).sort((u, v) => u.p[3] - v.p[3]);
+    return ns.map(({ n, p }) => {
+      const col = BG.regionById(n.region).color, src = BG.kindById(n.kind).source, r = BG.radius(n) * 0.8 * p[2], dp = depthA(p[3]);
+      const shape = src ? '<rect x="' + (-r).toFixed(1) + '" y="' + (-r).toFixed(1) + '" width="' + (r * 2).toFixed(1) + '" height="' + (r * 2).toFixed(1) + '" rx="' + (r * 0.35).toFixed(1) + '" fill="#2a2a33" stroke="#8e8e9b"/>' : '<circle r="' + r.toFixed(1) + '" fill="' + col + '"/>';
+      const w = n.label.length * 6.4 + 8, bx = p[0] - w / 2, by = p[1] + r + 2, show = !taken.some((t) => bx < t[0] + t[2] && bx + w > t[0] && by < t[1] + t[3] && by + 14 > t[1]);
+      if (show) taken.push([bx, by, w, 14]);
+      return '<g id="node-' + n.id + '" opacity="' + dp.toFixed(2) + '" transform="translate(' + p[0].toFixed(1) + ' ' + p[1].toFixed(1) + ')">' + shape +
+        (show ? '<text y="' + (r + 12).toFixed(1) + '" text-anchor="middle" font-size="11" font-family="' + FONT + '" fill="#8e8e9b">' + esc(n.label) + '</text>' : '') + '</g>';
     }).join('');
   }
-
   BG.buildLayers = function () {
     const L = [];
-    L.push({ id: 'background', label: 'רקע', inner: '<rect width="' + BG.W + '" height="' + BG.H + '" fill="' + BGCOL + '"/>' });
-    if (BG.effOutline()) L.push({ id: 'brain', label: 'מתאר מוח', inner: brainSVG() });
-    if (BG.display.glow) L.push({ id: 'aura', label: 'זוהר הערכים', inner: aurasSVG() });
+    taken.length = 0;
+    L.push({ id: 'background', label: 'רקע', inner: '<rect width="' + W3 + '" height="' + H3 + '" fill="#16161a"/>' });
+    if (BG.effOutline()) L.push({ id: 'brain', label: 'ענן המוח', inner: cloudSVG() });
     L.push({ id: 'edges', label: 'קשרים', inner: edgesSVG() });
-    if (BG.view.labels) L.push({ id: 'regions', label: 'שמות אזורים', inner: regionsSVG() });
-    for (const r of BG.REGIONS) if (BG.state.nodes.some((n) => n.region === r.id && !BG.isHidden(n))) L.push({ id: 'nodes-' + r.id, label: 'צמתים – ' + r.name, inner: nodesSVG(r.id) });
+    // most important (best connected) labels first so they win the room
+    BG.state.nodes.slice().sort((u, v) => (v.deg || 0) - (u.deg || 0));
+    for (const f of BG.FAMILIES) if (BG.state.nodes.some((n) => f.ids.includes(n.region) && !BG.isHidden(n))) L.push({ id: 'nodes-' + f.id, label: 'צמתים – ' + f.name, inner: nodesSVG(f.ids) });
     return L;
   };
   BG.layersToSVG = function (layers, opt) {

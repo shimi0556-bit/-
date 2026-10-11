@@ -35,7 +35,11 @@
     <section class="panel" id="tab-chat"></section>
   </aside>
   <section class="stage" id="stageWrap">
-    <svg id="stage" role="img" aria-label="גרף ידע בצורת מוח"></svg>
+    <canvas id="stage" role="img" aria-label="גרף ידע בצורת מוח"></canvas>
+    <div class="hud" id="hud">
+      <button data-v="side" title="מבט מהצד">צד</button><button data-v="front" title="מבט מלפנים">חזית</button><button data-v="back" title="מבט מאחור">אחור</button><button data-v="top" title="מבט מלמעלה">מלמעלה</button><button data-v="bottom" title="מבט מלמטה">מלמטה</button><button id="autoBtn" title="סיבוב אוטומטי">⟳ סיבוב</button>
+    </div>
+    <div id="tip" class="tip"></div>
     <div class="hint" id="hint"></div>
     <div class="legend" id="legend"></div>
     <div class="answer" id="answer" hidden></div>

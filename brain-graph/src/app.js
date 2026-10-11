@@ -35,7 +35,7 @@
   function renderStats() {
     const S = BG.state;
     $('#stats').textContent = S.nodes.length + ' צמתים · ' + S.edges.length + ' קשרים';
-    $('#hint').textContent = S.nodes.length ? 'גרור צומת לאזור אחר כדי לשייך מחדש · גלגלת = זום' : '';
+    $('#hint').textContent = S.nodes.length ? 'גרירה = סיבוב · Shift/ימני = הזזה · גלגלת = זום · גרור צומת לאזור אחר כדי לשייך מחדש' : '';
   }
 
   // ---------- ingest panel ----------
@@ -188,33 +188,32 @@
     p.append(
       h('h3', { text: 'תצוגה' }),
       tg('מסמכי מקור וקשריהם', BG.display.sources, (b) => { BG.setDisplay('sources', b); }),
-      tg('זוהר צבע סביב הצמתים', BG.display.glow, (b) => BG.setDisplay('glow', b)),
       tg('שמות אזורים על המוח', BG.view.labels, BG.setLabels),
-      tg('מתאר מוח מקווקו (אוטומטי כשיש מעט צמתים)', BG.effOutline(), BG.setOutline),
+      tg('ענן המוח (רמז לצורה, אוטומטי כשיש מעט צמתים)', BG.effOutline(), BG.setOutline),
       sl('גודל צמתים', 'nodeSize', 0.5, 2, 0.05), sl('בהירות קשרים', 'linkOpacity', 0.3, 3, 0.1),
       h('div', { class: 'hr' }),
       h('p', { class: 'muted', text: 'צורת המוח נוצרת מהצמתים עצמם: כל ערך נמצא באזור שמתאים לו. לחץ על אזור כדי להתמקד בו.' }));
     for (const r of BG.REGIONS) {
       const n = BG.state.nodes.filter((x) => x.region === r.id).length;
-      p.append(h('div', { class: 'region-row' + (BG.view.focusRegion === r.id ? ' on' : ''), tabindex: '0', onclick: () => { BG.view.focusRegion = BG.view.focusRegion === r.id ? null : r.id; renderRegionsPanel(); BG.markDirty(); },
+      p.append(h('div', { class: 'region-row' + (BG.view.focus && BG.view.focus.has(r.id) ? ' on' : ''), tabindex: '0', onclick: () => { BG.toggleFocus([r.id]); renderRegionsPanel(); },
         onkeydown: (e) => { if (e.key === 'Enter') e.currentTarget.click(); } },
       h('i', { style: 'background:' + r.color }), h('div', null, h('b', { text: r.name }), h('span', { class: 'muted', text: r.does })), h('span', { class: 'n', text: n })));
     }
   }
 
-  // ---------- legend (like Obsidian's groups): which colour is which region, click to focus ----------
+  // ---------- legend: one row per family of regions (click = focus the whole family) ----------
   function renderLegend() {
     const box = $('#legend'); if (!box) return;
     box.textContent = '';
-    const counts = new Map();
-    for (const n of BG.state.nodes) if (!BG.isHidden(n)) counts.set(n.region, (counts.get(n.region) || 0) + 1);
-    for (const r of BG.REGIONS) {
-      if (!counts.get(r.id)) continue;
-      box.append(h('button', { class: 'lg' + (BG.view.focusRegion === r.id ? ' on' : ''), title: r.does, onclick: () => { BG.view.focusRegion = BG.view.focusRegion === r.id ? null : r.id; renderLegend(); renderRegionsPanel(); BG.markDirty(); } },
-        h('i', { style: 'background:' + r.color }), r.name, h('span', { text: counts.get(r.id) })));
+    const FC = { frontal: '#6f8cff', parietal: '#ffc247', occipital: '#ff6fb5', temporal: '#8fe35a', limbic: '#ff5a5a', subcortical: '#ff8a3d', hindbrain: '#7be0a0' };
+    for (const f of BG.FAMILIES) {
+      const n = BG.state.nodes.filter((x) => !BG.isHidden(x) && f.ids.includes(x.region)).length;
+      if (!n) continue;
+      const on = BG.view.focus && f.ids.every((i) => BG.view.focus.has(i)) && BG.view.focus.size === f.ids.length;
+      box.append(h('button', { class: 'lg' + (on ? ' on' : ''), title: f.ids.map((i) => regionName(i)).join(' · '), onclick: () => { BG.toggleFocus(f.ids); } }, h('i', { style: 'background:' + FC[f.id] }), f.name, h('span', { text: n })));
     }
   }
-  BG.on('change', renderLegend); BG.on('display', () => { renderLegend(); });
+  BG.on('change', renderLegend); BG.on('display', renderLegend); BG.on('focus', () => { renderLegend(); renderRegionsPanel(); });
 
   // ---------- search ----------
   $('#search').addEventListener('input', (e) => {
@@ -229,7 +228,9 @@
 
   // ---------- top buttons ----------
   $('#btnAdd').addEventListener('click', () => { showTab('add'); $('#srcText').focus(); });
-  $('#btnFit').addEventListener('click', () => BG.resetView());
+  $('#btnFit').addEventListener('click', () => { BG.setView('side'); BG.resetView(); });
+  document.querySelectorAll('#hud button[data-v]').forEach((b) => b.addEventListener('click', () => { BG.setView(b.dataset.v); BG.resetView(); }));
+  $('#autoBtn').addEventListener('click', (e) => e.currentTarget.classList.toggle('on', BG.toggleAuto()));
   $('#btnUndo').addEventListener('click', () => { if (BG.undo()) BG.toast('הפעולה האחרונה בוטלה', 'ok'); });
   BG.on('undo-state', (n) => { $('#btnUndo').disabled = n === 0; });
   $('#btnOrganize').addEventListener('click', organizeAll);

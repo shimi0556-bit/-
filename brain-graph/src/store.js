@@ -49,15 +49,15 @@
 
   BG.addNode = function (o) {
     const kind = BG.kindById(o.kind) ? o.kind : 'concept';
-    const region = BG.regionById(o.region) ? o.region : BG.kindById(kind).home;
+    const region = BG.fixRegion(o.region, kind) || BG.kindById(kind).home;
     const r = BG.regionById(region);
-    const a = Math.random() * Math.PI * 2, d = Math.random() * 0.6;
     const n = {
       id: 'n' + S.seq++, label: String(o.label || 'ללא שם').trim().slice(0, 80), kind, region,
       summary: String(o.summary || '').slice(0, 500), notes: String(o.notes || ''),
-      x: o.x != null ? o.x : r.cx + Math.cos(a) * r.rx * d, y: o.y != null ? o.y : r.cy + Math.sin(a) * r.ry * d,
-      vx: 0, vy: 0, count: 1, created: Date.now(), deg: 0
+      x: o.x != null ? o.x : r.cx, y: o.y != null ? o.y : r.cy, z: o.z != null ? o.z : 0,
+      vx: 0, vy: 0, vz: 0, count: 1, created: Date.now(), deg: 0
     };
+    if (o.x == null) BG.spawn(n);
     if (o.url && /^https?:\/\//i.test(String(o.url))) n.url = String(o.url).slice(0, 500);
     if (o.excerpt) n.excerpt = String(o.excerpt).slice(0, 1800);
     S.nodes.push(n);
@@ -86,11 +86,11 @@
   };
   BG.edgesOf = (id) => S.edges.filter((e) => e.from === id || e.to === id);
   BG.otherEnd = (e, id) => (e.from === id ? e.to : e.from);
-  BG.radius = (n) => 5.5 + Math.min(7, Math.sqrt(Math.max(0, (n.deg || 0) * 0.6 + ((n.count || 1) - 1))) * 1.6);
+  BG.radius = (n) => (BG.kindById(n.kind).source ? 4 : 5) + Math.sqrt(n.deg || 0) * 2.4;   // same rule as in "המפה הנפשית": hubs are bigger
 
   // ---- persistence ----
   function serialize() {
-    return { format: 'brain-graph', version: 1, seq: S.seq, nodes: S.nodes.map((n) => { const c = Object.assign({}, n); delete c.vx; delete c.vy; delete c.act; delete c.hold; delete c.fixed; return c; }), edges: S.edges };
+    return { format: 'brain-graph', version: 1, seq: S.seq, nodes: S.nodes.map((n) => { const c = Object.assign({}, n); delete c.vx; delete c.vy; delete c.vz; delete c.act; delete c.hold; delete c.fixed; return c; }), edges: S.edges };
   }
   BG.serialize = serialize;
   function scheduleSave() {
@@ -105,7 +105,7 @@
   BG.load = function (data) {
     if (!data || !Array.isArray(data.nodes) || !Array.isArray(data.edges)) throw new Error('קובץ לא תקין');
     S.nodes = data.nodes.filter((n) => n && n.id).map((n) => Object.assign({ vx: 0, vy: 0, count: 1, summary: '', notes: '', deg: 0 }, n));
-    S.nodes.forEach((n) => { if (n.url && !/^https?:\/\//i.test(String(n.url))) delete n.url; if (!BG.regionById(n.region)) n.region = (BG.kindById(n.kind) || BG.kindById('concept')).home; if (!BG.kindById(n.kind)) n.kind = 'concept'; if (typeof n.x !== 'number') { n.x = 500; n.y = 300; } });
+    S.nodes.forEach((n) => { if (n.url && !/^https?:\/\//i.test(String(n.url))) delete n.url; if (!BG.kindById(n.kind)) n.kind = 'concept'; n.region = BG.fixRegion(n.region, n.kind) || BG.kindById(n.kind).home; if (typeof n.x !== 'number') { n.x = 500; n.y = 300; } if (typeof n.z !== 'number') n.z = 0; n.vz = 0; });
     const ids = new Set(S.nodes.map((n) => n.id));
     S.edges = data.edges.filter((e) => e && ids.has(e.from) && ids.has(e.to));
     S.seq = Math.max(+data.seq || 1, 1 + Math.max(0, ...S.nodes.map((n) => parseInt(String(n.id).slice(1)) || 0), ...S.edges.map((e) => parseInt(String(e.id).slice(1)) || 0)));

@@ -6,8 +6,8 @@
 <title>אטלס המוח</title>
 <style>
 :root {
-  --bg: #0b1020; --panel: #121936; --panel2: #182049; --line: #26305f; --text: #e8ecff; --mute: #98a2cf;
-  --accent: #6c8cff; --hot: #ffd45e; --ok: #4ade80; --err: #ff6b6b;
+  --bg: #16161a; --panel: #1e1e24; --panel2: #25252d; --line: #33333d; --text: #e6e6ea; --mute: #9a9aa6;
+  --accent: #8b7cf6; --hot: #ffd45e; --ok: #4ade80; --err: #ff6b6b;
   --r: 10px; color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -20,12 +20,12 @@ button:disabled { opacity: .4; cursor: default; }
 button.primary { background: var(--accent); border-color: var(--accent); color: #0b1020; font-weight: 700; }
 button.danger { border-color: #7a3040; color: #ff9b9b; }
 button.small { padding: 2px 8px; font-size: 12px; }
-input, select, textarea { background: #0d1330; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; width: 100%; }
+input, select, textarea { background: #18181d; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; width: 100%; }
 input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 textarea { resize: vertical; min-height: 64px; }
 label.f { display: block; margin: 10px 0 4px; color: var(--mute); font-size: 12px; }
 
-.top { display: flex; align-items: center; gap: 12px; padding: 8px 14px; border-bottom: 1px solid var(--line); background: #0d1330; flex: none; flex-wrap: wrap; }
+.top { display: flex; align-items: center; gap: 12px; padding: 8px 14px; border-bottom: 1px solid var(--line); background: var(--panel); flex: none; flex-wrap: wrap; }
 .brand { font-weight: 800; font-size: 18px; white-space: nowrap; }
 .brand small { font-weight: 400; color: var(--mute); font-size: 12px; margin-inline-start: 8px; }
 .logo { color: var(--accent); }
@@ -64,8 +64,9 @@ main { flex: 1; display: flex; min-height: 0; }
 .region-row i { width: 12px; height: 12px; border-radius: 50%; margin-top: 5px; flex: none; }
 .region-row .n { margin-inline-start: auto; color: var(--mute); }
 
-.stage { position: relative; flex: 1; min-width: 0; background: radial-gradient(ellipse at 55% 40%, #141c42 0%, #0b1020 70%); overflow: hidden; }
-#stage { width: 100%; height: 100%; display: block; touch-action: none; user-select: none; }
+.stage { position: relative; flex: 1; min-width: 0; background: #16161a; overflow: hidden; }
+#stage { width: 100%; height: 100%; display: block; touch-action: none; user-select: none; cursor: grab; }
+#stage.drag { cursor: grabbing; }
 .hint { position: absolute; top: 10px; inset-inline-start: 12px; color: var(--mute); font-size: 12px; pointer-events: none; }
 .cmd { position: absolute; bottom: 12px; inset-inline: 14px; display: flex; gap: 8px; background: #0d1330ee; border: 1px solid var(--line); border-radius: 12px; padding: 8px; backdrop-filter: blur(6px); }
 .cmd input { border: 0; background: transparent; }
@@ -121,6 +122,13 @@ dialog h3 { margin-top: 0; }
 .lg:hover, .lg.on { color: var(--text); border-color: var(--line); }
 @media (max-width: 860px) { .legend { display: none; } }
 
+.hud { position: absolute; top: 10px; inset-inline-end: 12px; display: flex; gap: 6px; flex-wrap: wrap; z-index: 2; }
+.hud button { font-size: 12px; background: rgba(30,30,36,.9); padding: 4px 9px; }
+.hud button.on { background: #2d2a45; border-color: var(--accent); }
+.tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; font-size: 12px; max-width: 260px; display: none; z-index: 3; }
+.tip span { color: var(--mute); }
+.legend { top: 46px !important; }
+
 </style>
 </head>
 <body>
@@ -150,7 +158,11 @@ dialog h3 { margin-top: 0; }
     <section class="panel" id="tab-chat"></section>
   </aside>
   <section class="stage" id="stageWrap">
-    <svg id="stage" role="img" aria-label="גרף ידע בצורת מוח"></svg>
+    <canvas id="stage" role="img" aria-label="גרף ידע בצורת מוח"></canvas>
+    <div class="hud" id="hud">
+      <button data-v="side" title="מבט מהצד">צד</button><button data-v="front" title="מבט מלפנים">חזית</button><button data-v="back" title="מבט מאחור">אחור</button><button data-v="top" title="מבט מלמעלה">מלמעלה</button><button data-v="bottom" title="מבט מלמטה">מלמטה</button><button id="autoBtn" title="סיבוב אוטומטי">⟳ סיבוב</button>
+    </div>
+    <div id="tip" class="tip"></div>
     <div class="hint" id="hint"></div>
     <div class="legend" id="legend"></div>
     <div class="answer" id="answer" hidden></div>
@@ -187,56 +199,126 @@ window.BG = window.BG || {};
     }
   })();
 
-  // layer: 'surface' regions are clipped to the cortex, 'deep' regions are drawn on top as an x-ray overlay.
+  // 30 regions. layer 'surface': a territory of the cortex (weighted Voronoi around a point or a strip `seg`);
+  // 'deep': an ellipse carved out of the cortex (limbic / subcortical); 'own': hindbrain parts that have their own outline.
+  // cx/cy/rx/ry/rot also give the size of the glow that lights up while the AI reads the region.
+  const mk = (id, name, does, color, layer, cx, cy, rx, ry, extra) => Object.assign({ id, name, does, color, layer, cx, cy, rx, ry, rot: 0, w: 1 }, extra || {});
   BG.REGIONS = [
-    { id: 'pfc', name: 'קליפת המצח', en: 'Prefrontal cortex', does: 'ערכים, מטרות, תכנון, שיקול דעת, זהות עצמית, קבלת החלטות', color: '#6c8cff', cx: 800, cy: 268, rx: 92, ry: 140, rot: 0, layer: 'surface' },
-    { id: 'mot', name: 'האזור המוטורי', en: 'Motor cortex', does: 'פעולות מעשיות, ביצוע, תנועה, מעשים קונקרטיים', color: '#22d3c5', cx: 690, cy: 170, rx: 56, ry: 86, rot: 14, layer: 'surface' },
-    { id: 'par', name: 'האונה הקודקודית', en: 'Parietal lobe', does: 'קשב וריכוז, מרחב וניווט, מספרים, שילוב בין חושים', color: '#ffc247', cx: 510, cy: 185, rx: 135, ry: 100, rot: 0, layer: 'surface' },
-    { id: 'occ', name: 'האונה העורפית', en: 'Occipital lobe', does: 'ראייה, תמונות ודימויים, עיצוב, ויזואליה, וידאו', color: '#ff6fb5', cx: 285, cy: 275, rx: 100, ry: 140, rot: 0, layer: 'surface' },
-    { id: 'tem', name: 'האונה הרקתית', en: 'Temporal lobe', does: 'שפה, ידע ועובדות, משמעות ומושגים, שמיעה, אנשים ושמות', color: '#9be34d', cx: 495, cy: 398, rx: 195, ry: 68, rot: 0, layer: 'surface' },
-    { id: 'bg', name: 'גרעיני הבסיס', en: 'Basal ganglia', does: 'הרגלים, שגרות, דפוסי פעולה אוטומטיים, התמכרויות', color: '#ff8a3d', cx: 600, cy: 275, rx: 64, ry: 48, rot: 0, layer: 'deep' },
-    { id: 'acc', name: 'קליפת החגורה', en: 'Anterior cingulate', does: 'מוטיבציה, מאמץ, התנגשות בין רצונות, ניטור שגיאות, דחיינות', color: '#b388ff', cx: 706, cy: 212, rx: 48, ry: 26, rot: -10, layer: 'deep' },
-    { id: 'amy', name: 'האמיגדלה', en: 'Amygdala', does: 'רגשות, פחד, כעס, איום, המשמעות הרגשית של דברים', color: '#ff5a5a', cx: 688, cy: 395, rx: 42, ry: 30, rot: 0, layer: 'deep' },
-    { id: 'hip', name: 'ההיפוקמפוס', en: 'Hippocampus', does: 'זיכרונות, אירועים וסיפורים אישיים, למידה חדשה', color: '#4cc9ff', cx: 545, cy: 372, rx: 62, ry: 28, rot: -12, layer: 'deep' },
-    { id: 'hyp', name: 'ההיפותלמוס', en: 'Hypothalamus', does: 'צרכים בסיסיים, דחפים, גוף, רעב, שינה, בריאות', color: '#d4a373', cx: 632, cy: 330, rx: 44, ry: 24, rot: 0, layer: 'deep' },
-    { id: 'cer', name: 'המוחון', en: 'Cerebellum', does: 'מיומנויות, תרגול, למידה מוטורית, דיוק, שיפור מתמיד', color: '#7be0a0', cx: 328, cy: 490, rx: 86, ry: 46, rot: 8, layer: 'surface', own: true },
-    { id: 'stem', name: 'גזע המוח', en: 'Brainstem', does: 'ערנות, אנרגיה, עייפות, נשימה, מצב הגוף הבסיסי', color: '#9aa5b8', cx: 538, cy: 556, rx: 34, ry: 86, rot: 4, layer: 'surface', own: true }
+    // frontal (blues)
+    mk('fpc', 'קוטב המצח', 'מטרות ארוכות טווח, חזון, זהות עצמית, תכנון העתיד', '#4f6bff', 'surface', 868, 270, 48, 80),
+    mk('dlpfc', 'קליפת המצח הגבית', 'תכנון, זיכרון עבודה, חשיבה לוגית, ארגון והחלטות מחושבות', '#6f8cff', 'surface', 800, 180, 60, 55, { seg: [770, 130, 830, 235] }),
+    mk('vmpfc', 'קליפת המצח התחתונה', 'ערכים, שיקול דעת מוסרי, הערכת תגמול וסיכון, החלטות רגשיות', '#8aa6ff', 'surface', 815, 372, 55, 38),
+    mk('broca', 'אזור ברוקה', 'ניסוח ודיבור, הבעת מחשבות ורגשות במילים', '#5aa0ff', 'surface', 748, 332, 40, 32, { w: 0.8 }),
+    mk('pmc', 'אזור קדם־מוטורי', 'תכנון תנועה, רצפי פעולות, יוזמה לפני ביצוע', '#4a86e8', 'surface', 712, 185, 28, 70, { seg: [720, 120, 705, 250], w: 0.6 }),
+    mk('m1', 'קליפה מוטורית', 'ביצוע פעולה, תנועה, מעשים קונקרטיים', '#3b6fd4', 'surface', 652, 195, 26, 100, { seg: [665, 105, 640, 290], w: 0.55 }),
+    // parietal (ambers)
+    mk('s1', 'קליפה תחושתית', 'תחושות מגע וגוף, כאב, תחושה פיזית של מצבים', '#ffb84a', 'surface', 592, 192, 26, 98, { seg: [605, 100, 580, 285], w: 0.55 }),
+    mk('spl', 'אונה קודקודית עליונה', 'קשב וריכוז, מרחב וניווט, תיאום עין־יד', '#ffc968', 'surface', 520, 140, 60, 40, { w: 1.1 }),
+    mk('ipl', 'אונה קודקודית תחתונה', 'מספרים וחישוב, קריאה, שילוב בין חושים ומשמעות', '#f5a623', 'surface', 440, 210, 50, 48),
+    mk('precun', 'פרקונאוס', 'התבוננות פנימית, דמיון, שוטטות מחשבות, תחושת עצמי', '#e8931a', 'surface', 505, 215, 36, 30, { w: 0.7 }),
+    mk('tpj', 'צומת רקתי־קודקודי', 'הבנת אחרים, אמפתיה, נקודת מבט, גבול בין עצמי לאחר', '#ffd27f', 'surface', 455, 305, 38, 32, { w: 0.8 }),
+    // occipital (pinks)
+    mk('v1', 'קליפה חזותית ראשית', 'ראייה, תמונות, צבעים ותנועה חזותית', '#ff6fb5', 'surface', 230, 305, 28, 70, { seg: [232, 240, 230, 370], w: 0.7 }),
+    mk('v2', 'קליפה חזותית משנית', 'זיהוי חפצים, פנים וצורות, דימויים ועיצוב', '#ff8fc8', 'surface', 300, 290, 42, 62, { w: 0.9 }),
+    // temporal (greens)
+    mk('wern', 'אזור ורניקה', 'הבנת שפה ושמיעה, משמעות של מילים ומשפטים', '#8fe35a', 'surface', 410, 380, 36, 28, { w: 0.8 }),
+    mk('mtg', 'אונה רקתית אמצעית', 'ידע ועובדות, משמעות של מושגים, שמות', '#6fd04a', 'surface', 500, 410, 50, 30, { w: 0.9 }),
+    mk('itg', 'אונה רקתית תחתונה', 'זיהוי פנים ואנשים, קטגוריות, ידע חזותי על העולם', '#a8e87a', 'surface', 585, 445, 46, 24, { w: 0.8 }),
+    mk('tpole', 'קוטב רקתי', 'זיכרון אישי וחברתי, הכרה של אנשים קרובים ושל משמעות רגשית', '#4fc46a', 'surface', 690, 440, 36, 24, { w: 0.7 }),
+    mk('insula', 'אינסולה', 'תחושות פנימיות בגוף, מודעות רגשית, גועל, חמלה', '#34d6a0', 'deep', 612, 378, 32, 17, { zf: [0.45, 0.7] }),
+    // limbic / medial (purples & reds)
+    mk('acc', 'קליפת החגורה הקדמית', 'מוטיבציה, מאמץ, התנגשות בין רצונות, ניטור שגיאות', '#b388ff', 'deep', 715, 212, 42, 20, { rot: -10 , zf: [0, 0.22] }),
+    mk('pcc', 'קליפת החגורה האחורית', 'זיכרון אוטוביוגרפי, רפלקציה עצמית, חיבור בין זיכרון לעצמי', '#9a6ff0', 'deep', 505, 255, 34, 16, { zf: [0, 0.22] }),
+    mk('amy', 'אמיגדלה', 'פחד, כעס, איום, המשמעות הרגשית של דברים', '#ff5a5a', 'deep', 692, 392, 30, 21, { zf: [0.45, 0.7] }),
+    mk('hip', 'היפוקמפוס', 'זיכרונות ואירועים, סיפורים אישיים, למידה חדשה', '#4cc9ff', 'deep', 535, 372, 46, 17, { rot: -12 , zf: [0.45, 0.7] }),
+    // subcortical (oranges & browns)
+    mk('str', 'סטריאטום (גרעיני הבסיס)', 'הרגלים, שגרות, דפוסי פעולה אוטומטיים', '#ff8a3d', 'deep', 630, 262, 52, 30, { zf: [0.15, 0.4] }),
+    mk('nac', 'גרעין האקומבנס', 'תגמול, חשק, הנאה, התמכרות', '#ff6a5a', 'deep', 702, 306, 28, 17, { zf: [0.15, 0.4] }),
+    mk('thal', 'תלמוס', 'סינון מידע, קשב, מעבר בין מצבי ערנות', '#e0a060', 'deep', 560, 305, 38, 25, { zf: [0, 0.22] }),
+    mk('hyp', 'היפותלמוס', 'צרכים בסיסיים, דחפים, רעב, שינה, בריאות הגוף', '#d4a373', 'deep', 622, 340, 34, 18, { zf: [0, 0.22] }),
+    // hindbrain (teal & greys) - own outlines
+    mk('cer', 'המוחון', 'מיומנויות, תרגול, למידה מוטורית, דיוק ושיפור מתמיד', '#7be0a0', 'own', 328, 490, 86, 46, { rot: 8 }),
+    mk('mid', 'המוח התיכון', 'דופמין ומוטיבציה בסיסית, ערנות, התמצאות', '#9aa5b8', 'own', 536, 487, 32, 28),
+    mk('pons', 'הגשר', 'שינה וחלימה, עוררות, מעבר בין עירות לשינה', '#8791a8', 'own', 537, 548, 32, 28),
+    mk('med', 'המוח המוארך', 'נשימה, דופק, מצב הגוף הבסיסי ואנרגיה', '#aab3c6', 'own', 538, 612, 30, 32)
   ];
 
+  BG.FAMILIES = [
+    { id: 'frontal', name: 'האונה המצחית', ids: ['fpc', 'dlpfc', 'vmpfc', 'broca', 'pmc', 'm1'] },
+    { id: 'parietal', name: 'האונה הקודקודית', ids: ['s1', 'spl', 'ipl', 'precun', 'tpj'] },
+    { id: 'occipital', name: 'האונה העורפית', ids: ['v1', 'v2'] },
+    { id: 'temporal', name: 'האונה הרקתית', ids: ['wern', 'mtg', 'itg', 'tpole', 'insula'] },
+    { id: 'limbic', name: 'המערכת הלימבית', ids: ['acc', 'pcc', 'amy', 'hip'] },
+    { id: 'subcortical', name: 'מבנים תת־קורטיקליים', ids: ['str', 'nac', 'thal', 'hyp'] },
+    { id: 'hindbrain', name: 'המוחון וגזע המוח', ids: ['cer', 'mid', 'pons', 'med'] }
+  ];
+
+  // old (12-region) ids found in saved data -> new ids
+  const OLD = { pfc: { value: 'vmpfc', goal: 'fpc', belief: 'dlpfc', _: 'dlpfc' }, mot: 'm1', par: 'spl', occ: 'v1', tem: { person: 'tpole', _: 'mtg' }, bg: 'str', cer: 'cer', stem: 'med' };
+  BG.fixRegion = function (region, kind) {
+    if (BG.REGIONS.some((r) => r.id === region)) return region;
+    const m = OLD[region];
+    if (!m) return null;
+    return typeof m === 'string' ? m : m[kind] || m._;
+  };
+
   BG.KINDS = [
-    { id: 'value', name: 'ערך', home: 'pfc' },
-    { id: 'belief', name: 'אמונה / מחשבה', home: 'pfc' },
-    { id: 'goal', name: 'מטרה / חזון', home: 'pfc' },
-    { id: 'habit', name: 'הרגל / שגרה', home: 'bg' },
+    { id: 'value', name: 'ערך', home: 'vmpfc' },
+    { id: 'goal', name: 'מטרה / חזון', home: 'fpc' },
+    { id: 'belief', name: 'אמונה / מחשבה', home: 'dlpfc' },
+    { id: 'plan', name: 'תכנון / החלטה', home: 'dlpfc' },
+    { id: 'speech', name: 'ביטוי / שפה', home: 'broca' },
+    { id: 'action', name: 'פעולה', home: 'm1' },
+    { id: 'body', name: 'תחושה בגוף', home: 's1' },
+    { id: 'space', name: 'קשב / מרחב', home: 'spl' },
+    { id: 'identity', name: 'זהות / עצמי', home: 'precun' },
+    { id: 'empathy', name: 'הבנת אחר', home: 'tpj' },
+    { id: 'image', name: 'דימוי / ויזואל', home: 'v2' },
+    { id: 'concept', name: 'מושג', home: 'mtg' },
+    { id: 'fact', name: 'עובדה / ידע', home: 'mtg' },
+    { id: 'person', name: 'אדם', home: 'tpole' },
     { id: 'emotion', name: 'רגש', home: 'amy' },
     { id: 'memory', name: 'זיכרון / אירוע', home: 'hip' },
-    { id: 'skill', name: 'מיומנות', home: 'cer' },
-    { id: 'concept', name: 'מושג', home: 'tem' },
-    { id: 'fact', name: 'עובדה / ידע', home: 'tem' },
-    { id: 'person', name: 'אדם', home: 'tem' },
-    { id: 'image', name: 'דימוי / ויזואל', home: 'occ' },
-    { id: 'need', name: 'צורך / דחף', home: 'hyp' },
-    { id: 'action', name: 'פעולה', home: 'mot' },
-    { id: 'space', name: 'קשב / מרחב', home: 'par' },
     { id: 'tension', name: 'מתח / מוטיבציה', home: 'acc' },
-    { id: 'state', name: 'מצב גוף', home: 'stem' },
-    { id: 'doc', name: 'מסמך', home: 'tem', source: true },
-    { id: 'url', name: 'אתר', home: 'tem', source: true }
+    { id: 'habit', name: 'הרגל / שגרה', home: 'str' },
+    { id: 'reward', name: 'תגמול / חשק', home: 'nac' },
+    { id: 'need', name: 'צורך / דחף', home: 'hyp' },
+    { id: 'skill', name: 'מיומנות', home: 'cer' },
+    { id: 'arousal', name: 'ערנות / שינה', home: 'pons' },
+    { id: 'state', name: 'מצב גוף', home: 'med' },
+    { id: 'doc', name: 'מסמך', home: 'mtg', source: true },
+    { id: 'url', name: 'אתר', home: 'mtg', source: true }
   ];
 
   // Cheap keyword lexicon for the offline (no-AI) extractor.
   BG.LEXICON = {
-    pfc: ['ערך', 'ערכים', 'מטרה', 'מטרות', 'תכנון', 'החלטה', 'אחריות', 'חזון', 'עקרון', 'זהות', 'goal', 'value', 'values', 'plan', 'decision', 'vision', 'principle'],
-    bg: ['הרגל', 'הרגלים', 'שגרה', 'אוטומטי', 'התמכרות', 'חזרתי', 'habit', 'habits', 'routine', 'addiction', 'automatic'],
+    fpc: ['מטרה', 'מטרות', 'חזון', 'זהות', 'goal', 'vision', 'identity'],
+    vmpfc: ['ערך', 'ערכים', 'מוסר', 'עקרון', 'value', 'values', 'moral', 'principle'],
+    dlpfc: ['תכנון', 'החלטה', 'אחריות', 'plan', 'decision', 'logic'],
+    broca: ['דיבור', 'לדבר', 'ניסוח', 'כתיבה', 'speech', 'speaking', 'writing'],
+    m1: ['לעשות', 'פעולה', 'ביצוע', 'תנועה', 'action', 'execute', 'movement'],
+    s1: ['כאב', 'מגע', 'תחושה', 'pain', 'touch', 'sensation'],
+    spl: ['קשב', 'ריכוז', 'מרחב', 'מפה', 'attention', 'focus', 'space', 'map'],
+    ipl: ['מספר', 'חישוב', 'קריאה', 'number', 'math', 'reading'],
+    tpj: ['אמפתיה', 'הבנת אחרים', 'נקודת מבט', 'empathy', 'perspective'],
+    precun: ['דמיון', 'התבוננות', 'imagination', 'reflection'],
+    v2: ['תמונה', 'צבע', 'עיצוב', 'ויזואלי', 'וידאו', 'ציור', 'image', 'color', 'design', 'visual', 'video', 'drawing'],
+    wern: ['שמיעה', 'שפה', 'מילים', 'language', 'hearing', 'words'],
+    mtg: ['ידע', 'מושג', 'עובדה', 'knowledge', 'concept', 'fact'],
+    tpole: ['חבר', 'משפחה', 'אמא', 'אבא', 'friend', 'family'],
+    insula: ['גועל', 'חמלה', 'disgust', 'compassion'],
+    acc: ['מוטיבציה', 'מאמץ', 'קונפליקט', 'התנגשות', 'דחיינות', 'motivation', 'effort', 'conflict', 'procrastination'],
+    pcc: ['זיכרון אישי', 'עצמי', 'autobiographical'],
     amy: ['פחד', 'כעס', 'חרדה', 'שמחה', 'רגש', 'רגשות', 'בושה', 'אשמה', 'עצב', 'תסכול', 'fear', 'anger', 'anxiety', 'emotion', 'joy', 'shame', 'guilt', 'sadness'],
     hip: ['זיכרון', 'זיכרונות', 'זוכר', 'ילדות', 'אירוע', 'סיפור', 'memory', 'memories', 'remember', 'childhood', 'story', 'episode'],
+    str: ['הרגל', 'הרגלים', 'שגרה', 'אוטומטי', 'habit', 'habits', 'routine', 'automatic'],
+    nac: ['תגמול', 'חשק', 'הנאה', 'התמכרות', 'reward', 'craving', 'pleasure', 'addiction'],
+    thal: ['סינון', 'filter'],
+    hyp: ['רעב', 'אוכל', 'גוף', 'בריאות', 'ספורט', 'צורך', 'hunger', 'food', 'body', 'health', 'need'],
     cer: ['תרגול', 'מיומנות', 'אימון', 'כושר', 'דיוק', 'practice', 'skill', 'training', 'precision'],
-    occ: ['תמונה', 'צבע', 'עיצוב', 'ויזואלי', 'וידאו', 'ציור', 'image', 'color', 'design', 'visual', 'video', 'drawing'],
-    hyp: ['שינה', 'רעב', 'אוכל', 'גוף', 'בריאות', 'ספורט', 'צורך', 'sleep', 'hunger', 'food', 'body', 'health', 'need'],
-    mot: ['לעשות', 'פעולה', 'ביצוע', 'תנועה', 'action', 'execute', 'movement', 'doing'],
-    par: ['קשב', 'ריכוז', 'מספר', 'מרחב', 'מפה', 'attention', 'focus', 'space', 'map', 'number'],
-    acc: ['מוטיבציה', 'מאמץ', 'קונפליקט', 'התנגשות', 'דחיינות', 'motivation', 'effort', 'conflict', 'procrastination'],
-    stem: ['ערנות', 'נשימה', 'עייפות', 'אנרגיה', 'alertness', 'breathing', 'fatigue', 'energy']
+    mid: ['התמצאות', 'orientation'],
+    pons: ['שינה', 'חלום', 'sleep', 'dream'],
+    med: ['נשימה', 'עייפות', 'אנרגיה', 'דופק', 'breathing', 'fatigue', 'energy']
   };
 })(window.BG);
 
@@ -291,15 +373,15 @@ window.BG = window.BG || {};
 
   BG.addNode = function (o) {
     const kind = BG.kindById(o.kind) ? o.kind : 'concept';
-    const region = BG.regionById(o.region) ? o.region : BG.kindById(kind).home;
+    const region = BG.fixRegion(o.region, kind) || BG.kindById(kind).home;
     const r = BG.regionById(region);
-    const a = Math.random() * Math.PI * 2, d = Math.random() * 0.6;
     const n = {
       id: 'n' + S.seq++, label: String(o.label || 'ללא שם').trim().slice(0, 80), kind, region,
       summary: String(o.summary || '').slice(0, 500), notes: String(o.notes || ''),
-      x: o.x != null ? o.x : r.cx + Math.cos(a) * r.rx * d, y: o.y != null ? o.y : r.cy + Math.sin(a) * r.ry * d,
-      vx: 0, vy: 0, count: 1, created: Date.now(), deg: 0
+      x: o.x != null ? o.x : r.cx, y: o.y != null ? o.y : r.cy, z: o.z != null ? o.z : 0,
+      vx: 0, vy: 0, vz: 0, count: 1, created: Date.now(), deg: 0
     };
+    if (o.x == null) BG.spawn(n);
     if (o.url && /^https?:\/\//i.test(String(o.url))) n.url = String(o.url).slice(0, 500);
     if (o.excerpt) n.excerpt = String(o.excerpt).slice(0, 1800);
     S.nodes.push(n);
@@ -328,11 +410,11 @@ window.BG = window.BG || {};
   };
   BG.edgesOf = (id) => S.edges.filter((e) => e.from === id || e.to === id);
   BG.otherEnd = (e, id) => (e.from === id ? e.to : e.from);
-  BG.radius = (n) => 5.5 + Math.min(7, Math.sqrt(Math.max(0, (n.deg || 0) * 0.6 + ((n.count || 1) - 1))) * 1.6);
+  BG.radius = (n) => (BG.kindById(n.kind).source ? 4 : 5) + Math.sqrt(n.deg || 0) * 2.4;   // same rule as in "המפה הנפשית": hubs are bigger
 
   // ---- persistence ----
   function serialize() {
-    return { format: 'brain-graph', version: 1, seq: S.seq, nodes: S.nodes.map((n) => { const c = Object.assign({}, n); delete c.vx; delete c.vy; delete c.act; delete c.hold; delete c.fixed; return c; }), edges: S.edges };
+    return { format: 'brain-graph', version: 1, seq: S.seq, nodes: S.nodes.map((n) => { const c = Object.assign({}, n); delete c.vx; delete c.vy; delete c.vz; delete c.act; delete c.hold; delete c.fixed; return c; }), edges: S.edges };
   }
   BG.serialize = serialize;
   function scheduleSave() {
@@ -347,7 +429,7 @@ window.BG = window.BG || {};
   BG.load = function (data) {
     if (!data || !Array.isArray(data.nodes) || !Array.isArray(data.edges)) throw new Error('קובץ לא תקין');
     S.nodes = data.nodes.filter((n) => n && n.id).map((n) => Object.assign({ vx: 0, vy: 0, count: 1, summary: '', notes: '', deg: 0 }, n));
-    S.nodes.forEach((n) => { if (n.url && !/^https?:\/\//i.test(String(n.url))) delete n.url; if (!BG.regionById(n.region)) n.region = (BG.kindById(n.kind) || BG.kindById('concept')).home; if (!BG.kindById(n.kind)) n.kind = 'concept'; if (typeof n.x !== 'number') { n.x = 500; n.y = 300; } });
+    S.nodes.forEach((n) => { if (n.url && !/^https?:\/\//i.test(String(n.url))) delete n.url; if (!BG.kindById(n.kind)) n.kind = 'concept'; n.region = BG.fixRegion(n.region, n.kind) || BG.kindById(n.kind).home; if (typeof n.x !== 'number') { n.x = 500; n.y = 300; } if (typeof n.z !== 'number') n.z = 0; n.vz = 0; });
     const ids = new Set(S.nodes.map((n) => n.id));
     S.edges = data.edges.filter((e) => e && ids.has(e.from) && ids.has(e.to));
     S.seq = Math.max(+data.seq || 1, 1 + Math.max(0, ...S.nodes.map((n) => parseInt(String(n.id).slice(1)) || 0), ...S.edges.map((e) => parseInt(String(e.id).slice(1)) || 0)));
@@ -376,98 +458,101 @@ window.BG = window.BG || {};
   BG.canUndo = () => undoStack.length > 0;
 })(window.BG);
 
-// Force layout: every node is pulled into the ellipse of its brain region; links add weak springs.
+// 3D layout. The brain is a volume: the cortex is a shell around both hemispheres, the limbic / subcortical regions sit inside,
+// the hindbrain hangs underneath. Every region owns a set of "slots" (points) and its nodes spring to them.
 (function (BG) {
   'use strict';
   const L = (BG.layout = { alpha: 0 });
   L.kick = function (a) { L.alpha = Math.max(L.alpha, a == null ? 1 : a); if (BG.wake) BG.wake(); };
+  BG.CENTER = { x: 545, y: 365, z: 0 };
 
-  // squared normalised distance from the region centre (<1 inside the ellipse)
-  BG.regNorm = function (x, y, r) {
-    const s = r.scale || 1, rad = (r.rot * Math.PI) / 180, c = Math.cos(rad), sn = Math.sin(rad);
-    const dx = x - r.cx, dy = y - r.cy;
-    const u = (dx * c + dy * sn) / (r.rx * s), v = (-dx * sn + dy * c) / (r.ry * s);
-    return u * u + v * v;
-  };
-  // which region is under a point; deep regions win, then the tightest fit
-  BG.regionAt = function (x, y) {
-    let best = null, bd = 1;
-    for (const r of BG.REGIONS) {
-      const d = BG.regNorm(x, y, r) * (r.layer === 'deep' ? 0.6 : 1);
-      if (d < bd) { bd = d; best = r; }
-    }
-    return best;
-  };
-
-  // The cortex silhouette is never drawn, but every node is kept inside it.
+  // ---- silhouette helpers (the lateral outline of the three parts) ----
   const probe = document.createElement('canvas').getContext('2d');
   const PATHS = [BG.CEREBRUM, BG.CEREBELLUM, BG.STEM].map((d) => new Path2D(d));
-  BG.inBrain = (x, y) => PATHS.some((p) => probe.isPointInPath(p, x, y));
-  const inSafe = (x, y) => BG.inBrain(x, y) && BG.inBrain(x + 9, y) && BG.inBrain(x - 9, y) && BG.inBrain(x, y + 9) && BG.inBrain(x, y - 9);
-  // radius of the soft glow a node casts: few nodes in a region => big glows, so the region still reads as a solid patch
-  BG.auraR = (r) => BG.clamp(0.8 * Math.sqrt((Math.PI * r.rx * r.ry * Math.pow(r.scale || 1, 2)) / Math.max(1, r.count || 1)), 24, 85);
+  const inP = (i, x, y) => probe.isPointInPath(PATHS[i], x, y);
+  BG.inBrain = (x, y) => inP(0, x, y) || inP(1, x, y) || inP(2, x, y);
+  const safe = (x, y, m) => BG.inBrain(x, y) && BG.inBrain(x + m, y) && BG.inBrain(x - m, y) && BG.inBrain(x, y + m) && BG.inBrain(x, y - m);
+  const group = (x, y) => (inP(0, x, y) ? 0 : inP(2, x, y) ? 2 : inP(1, x, y) ? 1 : -1);
 
-  // Slot order per region: a farthest-point sequence over (cortex outline + interior), outline first. The first
-  // nodes of a region therefore sit on the brain's contour, later ones fill inward - so the silhouette shows at any size.
+  // distance to the outline, per part (chamfer transform on a coarse raster) -> half thickness of the volume at (x, y)
+  const RES = 3, GW = Math.ceil(BG.W / RES), GH = Math.ceil(BG.H / RES);
+  let FIELD = null;
+  function buildField() {
+    FIELD = PATHS.map((path) => {
+      const c = document.createElement('canvas'); c.width = GW; c.height = GH;
+      const g = c.getContext('2d'); g.scale(1 / RES, 1 / RES); g.fillStyle = '#000'; g.fill(path);
+      const px = g.getImageData(0, 0, GW, GH).data, d = new Float32Array(GW * GH);
+      for (let i = 0; i < d.length; i++) d[i] = px[i * 4 + 3] > 127 ? 1e6 : 0;
+      for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) { const i = y * GW + x; if (!d[i]) continue; let v = d[i]; if (x) v = Math.min(v, d[i - 1] + 1); if (y) v = Math.min(v, d[i - GW] + 1); if (x && y) v = Math.min(v, d[i - GW - 1] + 1.41); if (x < GW - 1 && y) v = Math.min(v, d[i - GW + 1] + 1.41); d[i] = v; }
+      for (let y = GH - 1; y >= 0; y--) for (let x = GW - 1; x >= 0; x--) { const i = y * GW + x; if (!d[i]) continue; let v = d[i]; if (x < GW - 1) v = Math.min(v, d[i + 1] + 1); if (y < GH - 1) v = Math.min(v, d[i + GW] + 1); if (x < GW - 1 && y < GH - 1) v = Math.min(v, d[i + GW + 1] + 1.41); if (x && y < GH - 1) v = Math.min(v, d[i + GW - 1] + 1.41); d[i] = v; }
+      return d;
+    });
+  }
+  const PROFILE = [{ h: 250, R: 130 }, { h: 150, R: 70 }, { h: 46, R: 40 }];
+  BG.thickness = function (x, y, g) {
+    if (g < 0) return 0;
+    if (!FIELD) buildField();
+    const gx = BG.clamp(Math.round(x / RES), 0, GW - 1), gy = BG.clamp(Math.round(y / RES), 0, GH - 1);
+    const d = Math.min(FIELD[g][gy * GW + gx] * RES, PROFILE[g].R), t = 1 - d / PROFILE[g].R;
+    return PROFILE[g].h * Math.sqrt(Math.max(0, 1 - t * t));
+  };
+
+  // ---- which region owns a point of the lateral map ----
+  const norm = (x, y, r) => { const a = (r.rot * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a), dx = x - r.cx, dy = y - r.cy, u = (dx * c + dy * s) / r.rx, v = (-dx * s + dy * c) / r.ry; return u * u + v * v; };
+  const segDist = (x, y, q) => { const [x1, y1, x2, y2] = q, dx = x2 - x1, dy = y2 - y1, t = BG.clamp(((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy || 1), 0, 1); return Math.hypot(x - (x1 + t * dx), y - (y1 + t * dy)); };
+  const SURF = () => BG.REGIONS.filter((r) => r.layer === 'surface'), DEEP = () => BG.REGIONS.filter((r) => r.layer === 'deep');
+  BG.ownerAt = function (x, y) {
+    const g = group(x, y);
+    if (g < 0) return null;
+    if (g === 1) return BG.regionById('cer');
+    if (g === 2) return BG.regionById(y < 517 ? 'mid' : y < 580 ? 'pons' : 'med');
+    let best = null, bd = 1;
+    for (const r of DEEP()) { const d = norm(x, y, r); if (d < bd) { bd = d; best = r; } }
+    if (best) return best;
+    bd = 1e9;
+    for (const r of SURF()) { const d = (r.seg ? segDist(x, y, r.seg) : Math.hypot(x - r.cx, y - r.cy)) / (r.w || 1); if (d < bd) { bd = d; best = r; } }
+    return best;
+  };
+  BG.regionAt = BG.ownerAt;
+
+  // ---- slots: candidate points in 3D, ordered by farthest-point sampling over the whole brain ----
   let ORDER = null;
   function buildOrder() {
-    const SVGNS = 'http://www.w3.org/2000/svg';
     const cands = {};
     BG.REGIONS.forEach((r) => { cands[r.id] = []; });
-    const surface = BG.REGIONS.filter((r) => r.layer === 'surface' && !r.own), deep = BG.REGIONS.filter((r) => r.layer === 'deep');
-    const nearestSurface = (x, y) => { let best = null, bd = 1e9; for (const r of surface) { const d = BG.regNorm(x, y, Object.assign({}, r, { scale: 1 })); if (d < bd) { bd = d; best = r; } } return best; };
-    const inCer = (x, y) => probe.isPointInPath(PATHS[0], x, y);
-    const place = (x, y, outline) => {
-      if (inCer(x, y)) {
-        if (!outline) for (const r of deep) if (BG.regNorm(x, y, Object.assign({}, r, { scale: 1 })) < 1) { cands[r.id].push({ x, y, o: false }); return; }
-        const r = nearestSurface(x, y); cands[r.id].push({ x, y, o: outline });
-      } else if (probe.isPointInPath(PATHS[2], x, y)) cands.stem.push({ x, y, o: outline });
-      else if (probe.isPointInPath(PATHS[1], x, y)) cands.cer.push({ x, y, o: outline });
-    };
-    for (let x = 200; x < 900; x += 15) for (let y = 80; y < 660; y += 15) if (inSafe(x, y)) place(x, y, false);
-    // outline samples, nudged inward so a node and its glow sit inside the contour
-    [[BG.CEREBRUM, 0], [BG.CEREBELLUM, 1], [BG.STEM, 2]].forEach(([d, pi]) => {
-      const el = document.createElementNS(SVGNS, 'path');
-      el.setAttribute('d', d);
-      const len = el.getTotalLength();
-      for (let t = 0; t < len; t += 11) {
-        const pt = el.getPointAtLength(t), pn = el.getPointAtLength(Math.min(len, t + 1));
-        let nx = -(pn.y - pt.y), ny = pn.x - pt.x; const m = Math.hypot(nx, ny) || 1; nx /= m; ny /= m;
-        for (const sg of [1, -1]) {
-          const x = pt.x + nx * 11 * sg, y = pt.y + ny * 11 * sg;
-          if (probe.isPointInPath(PATHS[pi], x, y)) {
-            // skip bits of the cerebellum / stem outline that are hidden under the cerebrum
-            if (pi > 0 && inCer(x, y)) break;
-            place(x, y, true); break;
-          }
-        }
+    const add = (r, x, y, z) => cands[r.id].push({ x, y, z });
+    for (let x = 194; x < 900; x += 12) for (let y = 82; y < 656; y += 12) {
+      if (!safe(x, y, 5)) continue;
+      const r = BG.ownerAt(x, y); if (!r) continue;
+      const g = group(x, y), h = BG.thickness(x, y, g);
+      if (h < 6) continue;
+      if (r.layer === 'surface') { add(r, x, y, h * 0.95); add(r, x, y, -h * 0.95); }
+      else if (r.layer === 'own') {
+        if (g === 2) { add(r, x, y, 0); add(r, x, y, h * 0.7); add(r, x, y, -h * 0.7); } else { add(r, x, y, h * 0.92); add(r, x, y, -h * 0.92); }
+      } else {
+        const zf = r.zf || [0.1, 0.4];
+        for (const f of zf[0] === 0 ? [0, zf[1]] : zf) { if (f === 0) add(r, x, y, 0); else { add(r, x, y, f * h); add(r, x, y, -f * h); } }
       }
-    });
-    // One farthest-point sequence over ALL candidates (so slots of neighbouring regions never collide);
-    // each region then takes its own candidates in that global order.
+    }
     const all = [];
     for (const r of BG.REGIONS) for (const p of cands[r.id]) { p.r = r.id; all.push(p); }
-    const out = {};
-    BG.REGIONS.forEach((r) => { out[r.id] = []; });
+    const out = {}; BG.REGIONS.forEach((r) => { out[r.id] = []; });
     if (!all.length) return out;
     const used = new Uint8Array(all.length), best = new Float32Array(all.length).fill(1e9);
     let cur = 0;
-    all.forEach((p, i) => { if (p.o && (!all[cur].o || p.y < all[cur].y)) cur = i; });
     while (cur >= 0) {
       used[cur] = 1; out[all[cur].r].push(all[cur]);
       let nxt = -1, nv = -1;
       for (let i = 0; i < all.length; i++) {
         if (used[i]) continue;
-        const d = Math.hypot(all[i].x - all[cur].x, all[i].y - all[cur].y);
+        const dx = all[i].x - all[cur].x, dy = all[i].y - all[cur].y, dz = all[i].z - all[cur].z, d = dx * dx + dy * dy + dz * dz;
         if (d < best[i]) best[i] = d;
-        const v = best[i] * (all[i].o ? 1.6 : 1);
-        if (v > nv) { nv = v; nxt = i; }
+        if (best[i] > nv) { nv = best[i]; nxt = i; }
       }
       cur = nxt;
     }
     return out;
   }
-
   function assignSlots(nodes) {
     if (!ORDER) ORDER = buildOrder();
     const by = {};
@@ -476,74 +561,61 @@ window.BG = window.BG || {};
       const r = BG.regionById(id), seq = ORDER[id] || [];
       const arr = by[id].sort((a, b) => (parseInt(a.id.slice(1)) || 0) - (parseInt(b.id.slice(1)) || 0));
       arr.forEach((n, i) => {
-        if (i < seq.length) { n.sx = seq[i].x; n.sy = seq[i].y; return; }
-        const k = i - seq.length, rr = Math.sqrt((k + 0.5) / arr.length) * 0.8, th = k * 2.39996; // overflow: spiral near the centre
-        n.sx = r.cx + r.rx * rr * Math.cos(th); n.sy = r.cy + r.ry * rr * Math.sin(th);
+        if (i < seq.length) { n.sx = seq[i].x; n.sy = seq[i].y; n.sz = seq[i].z; return; }
+        const k = i - seq.length, a = k * 2.4, rr = 12 + Math.sqrt(k) * 9;   // overflow: a growing ring around the region's centre
+        n.sx = r.cx + Math.cos(a) * rr; n.sy = r.cy + Math.sin(a) * rr; n.sz = ((k % 2) ? 1 : -1) * (30 + (k % 5) * 12);
       });
     }
   }
+  BG.spawn = function (n) {          // starting spot of a new node: its region's centre, on a random side
+    const r = BG.regionById(n.region), a = Math.random() * 6.283;
+    n.x = r.cx + Math.cos(a) * 14; n.y = r.cy + Math.sin(a) * 14; n.z = (Math.random() < 0.5 ? -1 : 1) * (20 + Math.random() * 60); n.vx = n.vy = n.vz = 0;
+  };
 
   L.step = function () {
-    const nodes = BG.state.nodes.filter((n) => !BG.isHidden(n)), edges = BG.state.edges.filter((e) => { const p = BG.nodeById(e.from), q = BG.nodeById(e.to); return p && q && !BG.isHidden(p) && !BG.isHidden(q); });
+    const vis = (n) => !BG.isHidden(n);
+    const nodes = BG.state.nodes.filter(vis), byId = new Map(nodes.map((n) => [n.id, n]));
+    const edges = BG.state.edges.filter((e) => byId.has(e.from) && byId.has(e.to));
     const a = L.alpha;
     if (!nodes.length) { L.alpha = 0; return; }
     const counts = {};
-    for (const n of nodes) counts[n.region] = (counts[n.region] || 0) + 1;
-    for (const r of BG.REGIONS) {
-      r.scale = 1;
-      r.count = counts[r.id] || 0;
-    }
+    for (const n of nodes) { counts[n.region] = (counts[n.region] || 0) + 1; if (typeof n.z !== 'number') { n.z = 0; n.vz = 0; } }
+    for (const r of BG.REGIONS) { r.scale = 1; r.count = counts[r.id] || 0; }
     assignSlots(nodes);
-    const cell = 46, grid = new Map();
-    nodes.forEach((n, i) => {
-      n._i = i;
-      const k = (Math.floor(n.x / cell) + 500) * 1000 + (Math.floor(n.y / cell) + 500);
-      const arr = grid.get(k);
-      if (arr) arr.push(n); else grid.set(k, [n]);
-    });
+    const cell = 40, grid = new Map(), key = (x, y, z) => ((Math.floor(x / cell) + 60) * 128 + (Math.floor(y / cell) + 60)) * 128 + Math.floor(z / cell) + 60;
+    nodes.forEach((n, i) => { n._i = i; const k = key(n.x, n.y, n.z), arr = grid.get(k); if (arr) arr.push(n); else grid.set(k, [n]); });
     for (const n of nodes) {
-      const gx = Math.floor(n.x / cell) + 500, gy = Math.floor(n.y / cell) + 500, rn = BG.radius(n);
-      for (let ox = -1; ox <= 1; ox++) for (let oy = -1; oy <= 1; oy++) {
-        const arr = grid.get((gx + ox) * 1000 + gy + oy);
+      const gx = Math.floor(n.x / cell), gy = Math.floor(n.y / cell), gz = Math.floor(n.z / cell), rn = BG.radius(n) * 0.8;
+      for (let ox = -1; ox <= 1; ox++) for (let oy = -1; oy <= 1; oy++) for (let oz = -1; oz <= 1; oz++) {
+        const arr = grid.get(((gx + ox + 60) * 128 + (gy + oy + 60)) * 128 + gz + oz + 60);
         if (!arr) continue;
         for (const m of arr) {
           if (m._i <= n._i) continue;
-          let dx = m.x - n.x, dy = m.y - n.y, d = Math.sqrt(dx * dx + dy * dy);
-          const range = rn + BG.radius(m) + 14;
+          let dx = m.x - n.x, dy = m.y - n.y, dz = m.z - n.z, d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+          const range = rn + BG.radius(m) * 0.8 + 10;
           if (d >= range) continue;
-          if (d < 0.01) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; d = Math.sqrt(dx * dx + dy * dy) || 1; }
+          if (d < 0.01) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; dz = Math.random() - 0.5; d = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1; }
           const f = ((range - d) / range) * 0.8 * Math.max(a, 0.3);
-          n.vx -= (dx / d) * f; n.vy -= (dy / d) * f; m.vx += (dx / d) * f; m.vy += (dy / d) * f;
+          n.vx -= (dx / d) * f; n.vy -= (dy / d) * f; n.vz -= (dz / d) * f; m.vx += (dx / d) * f; m.vy += (dy / d) * f; m.vz += (dz / d) * f;
         }
       }
     }
-    for (const n of nodes) { n.vx += (n.sx - n.x) * 0.05; n.vy += (n.sy - n.y) * 0.05; }
-    const byId = new Map(nodes.map((n) => [n.id, n]));
+    for (const n of nodes) { n.vx += (n.sx - n.x) * 0.05; n.vy += (n.sy - n.y) * 0.05; n.vz += (n.sz - n.z) * 0.05; }
     for (const e of edges) {
       const p = byId.get(e.from), q = byId.get(e.to);
-      if (!p || !q) continue;
-      const dx = q.x - p.x, dy = q.y - p.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
+      const dx = q.x - p.x, dy = q.y - p.y, dz = q.z - p.z, d = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
       const k = (p.region === q.region ? 0.0015 : 0.0006) * Math.max(a, 0.3), f = d * k;
-      p.vx += (dx / d) * f; p.vy += (dy / d) * f; q.vx -= (dx / d) * f; q.vy -= (dy / d) * f;
+      p.vx += (dx / d) * f; p.vy += (dy / d) * f; p.vz += (dz / d) * f; q.vx -= (dx / d) * f; q.vy -= (dy / d) * f; q.vz -= (dz / d) * f;
     }
     for (const n of nodes) {
-      n.vx *= 0.74; n.vy *= 0.74;
-      if (n.fixed) { n.vx = n.vy = 0; continue; }
-      n.x += BG.clamp(n.vx, -9, 9); n.y += BG.clamp(n.vy, -9, 9);
-      if (!BG.inBrain(n.x, n.y)) { const r = BG.regionById(n.region); n.x += (r.cx - n.x) * 0.15; n.y += (r.cy - n.y) * 0.15; }
+      n.vx *= 0.74; n.vy *= 0.74; n.vz *= 0.74;
+      if (n.fixed) { n.vx = n.vy = n.vz = 0; continue; }
+      n.x += BG.clamp(n.vx, -9, 9); n.y += BG.clamp(n.vy, -9, 9); n.z += BG.clamp(n.vz, -9, 9);
     }
     L.alpha *= 0.986;
     if (L.alpha < 0.012) L.alpha = 0;
   };
-
-  // Spread all nodes out of their current spots (used after bulk changes / the "scatter" button).
-  L.reseed = function () {
-    for (const n of BG.state.nodes) {
-      const r = BG.regionById(n.region), a = Math.random() * 6.283, d = Math.sqrt(Math.random()) * 0.8;
-      n.x = r.cx + Math.cos(a) * r.rx * d; n.y = r.cy + Math.sin(a) * r.ry * d; n.vx = n.vy = 0;
-    }
-    L.kick(1);
-  };
+  L.reseed = function () { for (const n of BG.state.nodes) BG.spawn(n); L.kick(1); };
 })(window.BG);
 
 // AI connection (Anthropic or any OpenAI-compatible endpoint) and the prompts that drive the graph.
@@ -902,329 +974,262 @@ window.BG = window.BG || {};
   };
 })(window.BG);
 
-// SVG rendering of the brain, nodes and edges; pan / zoom / drag; activation (the coloured "memory in use" effect).
+// 3D canvas view of the brain graph. Same look as "המפה הנפשית שלי": flat nodes sized by connections, thin grey links,
+// purple highlight on hover, quiet labels that never overlap. The scene can be rotated, zoomed and panned.
 (function (BG) {
   'use strict';
-  const NS = 'http://www.w3.org/2000/svg';
-  const mk = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
-  // Obsidian-like defaults: crisp dots, thin neutral links, no colour glow, no source documents
   const DISP_KEY = 'brain-graph:display';
-  const D = (BG.display = { glow: false, sources: false, nodeSize: 0.85, linkOpacity: 1 });
+  const D = (BG.display = { sources: false, nodeSize: 0.8, linkOpacity: 1 });
   try { Object.assign(D, JSON.parse(localStorage.getItem(DISP_KEY) || '{}')); } catch (e) { /* ignore */ }
-  BG.setDisplay = (k, val) => { D[k] = val; try { localStorage.setItem(DISP_KEY, JSON.stringify(D)); } catch (e) { /* ignore */ } BG.layout.kick(0.3); positionsDirty = true; BG.wake(); BG.emit('display'); };
+  let positionsDirty = true, running = false;
+  BG.setDisplay = (k, val) => { D[k] = val; try { localStorage.setItem(DISP_KEY, JSON.stringify(D)); } catch (e) { /* ignore */ } BG.layout.kick(0.3); BG.wake(); BG.emit('display'); };
   BG.isHidden = (n) => !D.sources && !!BG.kindById(n.kind).source;
-  const V = (BG.view = { k: 1, x: 0, y: 0, selected: null, filter: null, focusRegion: null, outline: null, labels: false });
-  try { { const o = localStorage.getItem('brain-graph:outline'); V.outline = o === '1' ? true : o === '0' ? false : null; } V.labels = localStorage.getItem('brain-graph:labels') === '1'; } catch (e) { /* ignore */ }
-  // null = auto: a faint dotted contour while the graph is small, so the shape reads before the nodes fill it
-  BG.effOutline = () => (V.outline == null ? BG.state.nodes.length < 60 : V.outline);
-  BG.setOutline = (b) => { V.outline = !!b; BG.markDirty && BG.markDirty(); try { localStorage.setItem('brain-graph:outline', V.outline ? '1' : '0'); } catch (e) { /* ignore */ } };
-  BG.setLabels = (b) => { V.labels = !!b; BG.markDirty && BG.markDirty(); try { localStorage.setItem('brain-graph:labels', V.labels ? '1' : '0'); } catch (e) { /* ignore */ } };
-  let svg, vp, gEdges, gNodes, gRegions, gBrain, gAura, running = false;
-  const nodeEls = new Map(), edgeEls = new Map(), regEls = new Map();
-  let positionsDirty = true;
-
+  const V = (BG.view = { selected: null, filter: null, focus: null, outline: null, labels: false });
+  try { const o = localStorage.getItem('brain-graph:outline'); V.outline = o === '1' ? true : o === '0' ? false : null; V.labels = localStorage.getItem('brain-graph:labels') === '1'; } catch (e) { /* ignore */ }
+  BG.effOutline = () => (V.outline == null ? BG.state.nodes.length < 300 : V.outline);   // faint ghost of the brain while the graph is small
+  BG.setOutline = (b) => { V.outline = !!b; try { localStorage.setItem('brain-graph:outline', V.outline ? '1' : '0'); } catch (e) { /* ignore */ } BG.wake(); };
+  BG.setLabels = (b) => { V.labels = !!b; try { localStorage.setItem('brain-graph:labels', V.labels ? '1' : '0'); } catch (e) { /* ignore */ } BG.wake(); };
   BG.wake = function () { if (!running) { running = true; requestAnimationFrame(frame); } };
+  BG.markDirty = () => { positionsDirty = true; BG.wake(); };
 
-  BG.initView = function (svgEl) {
-    svg = svgEl;
-    svg.setAttribute('viewBox', '0 0 ' + BG.W + ' ' + BG.H);
-    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-    const defs = mk('defs', null, svg);
-    const clip = mk('clipPath', { id: 'brainClip' }, defs);
-    mk('path', { d: BG.CEREBRUM }, clip);
-    const glow = mk('filter', { id: 'glow', x: '-60%', y: '-60%', width: '220%', height: '220%' }, defs);
-    mk('feGaussianBlur', { stdDeviation: '4', result: 'b' }, glow);
-    const fm = mk('feMerge', null, glow);
-    mk('feMergeNode', { in: 'b' }, fm); mk('feMergeNode', { in: 'SourceGraphic' }, fm);
-    const bigGlow = mk('filter', { id: 'bigGlow', x: '-50%', y: '-50%', width: '200%', height: '200%' }, defs);
-    mk('feGaussianBlur', { stdDeviation: '14' }, bigGlow);
-    const grad = mk('linearGradient', { id: 'brainFill', x1: '0', y1: '0', x2: '0', y2: '1' }, defs);
-    mk('stop', { offset: '0', 'stop-color': '#1b2447' }, grad); mk('stop', { offset: '1', 'stop-color': '#11172e' }, grad);
-
-    for (const r of BG.REGIONS) {
-      const rg = mk('radialGradient', { id: 'aura-' + r.id }, defs);
-      mk('stop', { offset: '0', 'stop-color': r.color, 'stop-opacity': 0.5 }, rg);
-      mk('stop', { offset: '0.55', 'stop-color': r.color, 'stop-opacity': 0.2 }, rg);
-      mk('stop', { offset: '1', 'stop-color': r.color, 'stop-opacity': 0 }, rg);
-    }
-
-    vp = mk('g', { id: 'viewport' }, svg);
-    // optional faint cortex outline (a hint, off by default: the shape is meant to come from the nodes themselves)
-    gBrain = mk('g', { fill: 'none', stroke: '#6c8cff', 'stroke-width': 1.6, 'stroke-linejoin': 'round', 'stroke-dasharray': '2 6', 'stroke-linecap': 'round' }, vp);
-    for (const d of [BG.STEM, BG.CEREBELLUM, BG.CEREBRUM]) mk('path', { d }, gBrain);
-    gRegions = mk('g', null, vp);
-    gAura = mk('g', { style: 'mix-blend-mode:screen;pointer-events:none' }, vp);
-    for (const r of BG.REGIONS) {
-      const glowEl = mk('ellipse', { fill: r.color, opacity: 0, filter: 'url(#bigGlow)' }, gRegions);
-      const lab = mk('text', { 'text-anchor': 'middle', 'font-size': 11.5, fill: r.color, opacity: 0.55, stroke: '#0b1020', 'stroke-width': 2.4, 'paint-order': 'stroke', 'pointer-events': 'none', 'font-weight': 600 }, vp);
-      regEls.set(r.id, { glowEl, lab });
-    }
-    gEdges = mk('g', { fill: 'none' }, vp);
-    gNodes = mk('g', null, vp);
-    // labels of regions are drawn above everything inside vp but below nodes? keep them above regions:
-    vp.insertBefore(gEdges, gNodes);
-    for (const { lab } of regEls.values()) vp.insertBefore(lab, gEdges);
-    BG.setLabels(V.labels);
-    bindInteraction();
-    BG.on('change', sync);
-    sync();
+  // ---------- camera ----------
+  const cam = (BG.cam = { yaw: 0.5, pitch: -0.12, zoom: 1, px: 0, py: 0, auto: false, vyaw: 0, vpitch: 0 });
+  const F = 1500;
+  let cv, ctx, W = 0, H = 0, DPR = 1;
+  const baseScale = (w, h) => Math.min(w / 820, h / 660) * 0.95;
+  function projWith(x, y, z, yaw, pitch, w, h, zoom, px, py) {
+    const C = BG.CENTER, X = x - C.x, Y = y - C.y, cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+    const X1 = X * cy + z * sy, Z1 = -X * sy + z * cy, Y2 = Y * cp - Z1 * sp, Z2 = Y * sp + Z1 * cp;
+    const s = F / (F - Z2), k = baseScale(w, h) * zoom * s;
+    return [w / 2 + px + X1 * k, h / 2 + py + Y2 * k, k, Z2];
+  }
+  const proj = (x, y, z) => projWith(x, y, z, cam.yaw, cam.pitch, W, H, cam.zoom, cam.px, cam.py);
+  // export helper: the current rotation, fitted into a w x h picture
+  BG.projectExport = (x, y, z, w, h) => projWith(x, y, z, cam.yaw, cam.pitch, w, h, 1, 0, 0);
+  const unproject = (dx, dy, k) => {   // a screen-plane move -> a world move
+    const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw), cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+    const X1 = dx / k, Y2 = dy / k, Z2 = 0, Y = Y2 * cp + Z2 * sp, Z1 = -Y2 * sp + Z2 * cp;
+    return [X1 * cy - Z1 * sy, Y, X1 * sy + Z1 * cy];
   };
-
-  function applyView() { vp.setAttribute('transform', 'translate(' + V.x + ' ' + V.y + ') scale(' + V.k + ')'); BG.wake(); }
-  BG.resetView = function () { V.k = 1; V.x = 0; V.y = 0; applyView(); };
-  // fit the view to a set of nodes (or the whole brain)
+  BG.setView = (name) => {
+    const t = { side: [0, 0], front: [-Math.PI / 2, 0], back: [Math.PI / 2, 0], top: [0, -1.5], bottom: [0, 1.5], other: [Math.PI, 0] }[name] || [0, 0];
+    cam.yaw = t[0]; cam.pitch = t[1]; cam.vyaw = cam.vpitch = 0; BG.wake();
+  };
+  BG.resetView = function () { cam.zoom = 1; cam.px = 0; cam.py = 0; BG.wake(); };
+  BG.toggleAuto = () => { cam.auto = !cam.auto; BG.wake(); return cam.auto; };
   BG.fitTo = function (ids) {
     const ns = ids && ids.length ? ids.map(BG.nodeById).filter(Boolean) : null;
     if (!ns || !ns.length) return BG.resetView();
     let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-    ns.forEach((n) => { x0 = Math.min(x0, n.x); x1 = Math.max(x1, n.x); y0 = Math.min(y0, n.y); y1 = Math.max(y1, n.y); });
-    const w = Math.max(160, x1 - x0 + 120), h = Math.max(120, y1 - y0 + 120);
-    const k = BG.clamp(Math.min(BG.W / w, BG.H / h), 0.8, 2.2);
-    V.k = k; V.x = BG.W / 2 - ((x0 + x1) / 2) * k; V.y = BG.H / 2 - ((y0 + y1) / 2) * k; applyView();
+    ns.forEach((n) => { const p = projWith(n.x, n.y, n.z || 0, cam.yaw, cam.pitch, W, H, 1, 0, 0); x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); });
+    const z = BG.clamp(Math.min(W / (x1 - x0 + 160), H / (y1 - y0 + 160)), 0.8, 2.2);
+    cam.zoom = z; cam.px = -((x0 + x1) / 2 - W / 2) * z; cam.py = -((y0 + y1) / 2 - H / 2) * z; BG.wake();
+  };
+  BG.select = function (id) { V.selected = id; BG.emit('select', id); BG.wake(); };
+  BG.setFilter = function (set) { V.filter = set; BG.wake(); };
+  BG.toggleFocus = function (ids) { const cur = V.focus, same = cur && cur.size === ids.length && ids.every((i) => cur.has(i)); V.focus = same ? null : new Set(ids); BG.emit('focus'); BG.wake(); };
+  BG.hoverId = null;
+
+  BG.initView = function (canvas) {
+    cv = canvas; ctx = cv.getContext('2d');
+    const resize = () => { const r = cv.getBoundingClientRect(); DPR = window.devicePixelRatio || 1; W = r.width; H = r.height; cv.width = Math.max(1, W * DPR); cv.height = Math.max(1, H * DPR); BG.wake(); };
+    new ResizeObserver(resize).observe(cv); resize();
+    bind();
+    BG.on('change', () => { positionsDirty = true; BG.layout.kick(0.6); });
+    BG.layout.kick(1);
   };
 
-  function toSvg(e) { const m = svg.getScreenCTM().inverse(); const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m); return { x: p.x, y: p.y }; }
-  function toGraph(e) { const p = toSvg(e); return { x: (p.x - V.x) / V.k, y: (p.y - V.y) / V.k }; }
-
-  function bindInteraction() {
-    const pts = new Map();
-    let pan = null, pinch = null, drag = null;
-    svg.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const p = toSvg(e), k2 = BG.clamp(V.k * Math.exp(-e.deltaY * 0.0015), 0.6, 6);
-      V.x = p.x - (p.x - V.x) * (k2 / V.k); V.y = p.y - (p.y - V.y) * (k2 / V.k); V.k = k2; applyView();
-    }, { passive: false });
-    svg.addEventListener('pointerdown', (e) => {
-      const ng = e.target.closest && e.target.closest('g.node');
-      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), k: V.k }; pan = null; drag = null; return; }
-      svg.setPointerCapture(e.pointerId);
-      if (ng) {
-        const n = BG.nodeById(ng.getAttribute('data-id'));
-        const g = toGraph(e);
-        drag = { n, sx: e.clientX, sy: e.clientY, moved: false, ox: n.x - g.x, oy: n.y - g.y };
-        n.fixed = true;
-      } else pan = { sx: e.clientX, sy: e.clientY, x: V.x, y: V.y, moved: false };
-    });
-    svg.addEventListener('pointermove', (e) => {
-      if (pts.has(e.pointerId)) pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (pinch && pts.size === 2) {
-        const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
-        const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, p = toSvg({ clientX: mx, clientY: my });
-        const k2 = BG.clamp(pinch.k * (d / pinch.d), 0.6, 6);
-        V.x = p.x - (p.x - V.x) * (k2 / V.k); V.y = p.y - (p.y - V.y) * (k2 / V.k); V.k = k2; applyView();
-        return;
-      }
-      if (drag) {
-        if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 4) drag.moved = true;
-        if (drag.moved) { const g = toGraph(e); drag.n.x = g.x + drag.ox; drag.n.y = g.y + drag.oy; BG.layout.kick(0.25); positionsDirty = true; BG.wake(); }
-      } else if (pan) {
-        const m = svg.getScreenCTM();
-        const dx = (e.clientX - pan.sx) / m.a, dy = (e.clientY - pan.sy) / m.d;
-        if (Math.abs(dx) + Math.abs(dy) > 2) pan.moved = true;
-        V.x = pan.x + dx; V.y = pan.y + dy; applyView();
-      } else {
-        const ng = e.target.closest && e.target.closest('g.node');
-        BG.emit('hover', ng ? ng.getAttribute('data-id') : null);
-      }
-    });
-    const end = (e) => {
-      pts.delete(e.pointerId);
-      if (pts.size < 2) pinch = null;
-      if (drag) {
-        const n = drag.n;
-        n.fixed = false;
-        if (!drag.moved) BG.select(n.id);
-        else {
-          const r = BG.regionAt(n.x, n.y);
-          if (r && r.id !== n.region) { BG.snapshot(); n.region = r.id; BG.touch(); BG.emit('node-moved', n); }
-          BG.scheduleSave();
-          BG.layout.kick(0.5);
-        }
-        drag = null;
-      } else if (pan) { if (!pan.moved) BG.select(null); pan = null; }
-    };
-    svg.addEventListener('pointerup', end);
-    svg.addEventListener('pointercancel', end);
-  }
-
-  BG.select = function (id) { V.selected = id; positionsDirty = true; BG.emit('select', id); BG.wake(); };
-
-  // ---- element sync ----
-  function sync() {
-    const S = BG.state;
-    const ids = new Set(S.nodes.map((n) => n.id));
-    for (const [id, o] of nodeEls) if (!ids.has(id)) { o.g.remove(); o.aura.remove(); nodeEls.delete(id); }
-    for (const n of S.nodes) {
-      if (nodeEls.has(n.id)) continue;
-      const src = BG.kindById(n.kind).source;
-      const g = mk('g', { class: 'node', 'data-id': n.id, style: 'cursor:pointer' }, gNodes);
-      const inner = mk('g', null, g);
-      const halo = mk('circle', { r: 10, opacity: 0, filter: 'url(#glow)' }, inner);
-      const body = src ? mk('rect', { rx: 2.5 }, inner) : mk('circle', {}, inner);
-      const ring = mk('circle', { fill: 'none', stroke: '#fff', 'stroke-width': 1.6, opacity: 0 }, inner);
-      const label = mk('text', { 'text-anchor': 'middle', 'font-size': 10, fill: '#c3cae8', stroke: '#0b1020', 'stroke-width': 2, 'paint-order': 'stroke', 'pointer-events': 'none' }, g);
-      const title = mk('title', null, g);
-      const aura = mk('circle', {}, gAura);
-      nodeEls.set(n.id, { g, inner, halo, body, ring, label, title, src, aura });
-    }
-    const eids = new Set(S.edges.map((e) => e.id));
-    for (const [id, o] of edgeEls) if (!eids.has(id)) { o.remove(); edgeEls.delete(id); }
-    for (const e of S.edges) {
-      if (edgeEls.has(e.id)) continue;
-      const p = mk('path', { 'stroke-linecap': 'round' }, gEdges);
-      const t = mk('title', null, p);
-      p._t = t;
-      edgeEls.set(e.id, p);
-    }
-    for (const n of S.nodes) {
-      const o = nodeEls.get(n.id), r = BG.regionById(n.region), rad = BG.radius(n);
-      o.body.setAttribute('fill', o.src ? '#0f1630' : r.color);
-      o.body.setAttribute('stroke', o.src ? '#8791bd' : r.color);
-      o.body.setAttribute('stroke-width', o.src ? 1.4 : 0);
-      o.halo.setAttribute('fill', r.color);
-      o.aura.setAttribute('fill', 'url(#aura-' + r.id + ')');
-      if (o.src) { o.body.setAttribute('x', -rad); o.body.setAttribute('y', -rad); o.body.setAttribute('width', rad * 2); o.body.setAttribute('height', rad * 2); }
-      else o.body.setAttribute('r', rad);
-      o.halo.setAttribute('r', rad + 7); o.ring.setAttribute('r', rad + 3);
-      o.label.setAttribute('y', rad + 11);
-      o.label.textContent = n.label;
-      o.title.textContent = n.label + ' · ' + BG.kindById(n.kind).name + ' · ' + r.name + (n.summary ? '\n' + n.summary : '');
-    }
-    for (const e of S.edges) { const p = edgeEls.get(e.id); p._t.textContent = e.rel || ''; }
-    positionsDirty = true;
-    BG.layout.kick(0.6);
-    BG.wake();
-  }
-
-  // ---- activation: the coloured trail of whatever the AI (or the user) is reading ----
+  // ---------- activation: the coloured trail of whatever the AI (or the user) is reading ----------
   BG.pulse = function (nodeId, viaEdgeId, hold) {
     const n = BG.nodeById(nodeId);
     if (n) { n.act = 1; n.hold = Math.max(n.hold || 0, hold == null ? 0.6 : hold); }
     if (viaEdgeId) { const e = BG.state.edges.find((x) => x.id === viaEdgeId); if (e) { e.act = 1; e.hold = Math.max(e.hold || 0, 0.55); } }
     BG.wake();
   };
-  BG.clearActivation = function () {
-    for (const n of BG.state.nodes) n.hold = 0;
-    for (const e of BG.state.edges) e.hold = 0;
-    BG.wake();
-  };
+  BG.clearActivation = function () { for (const n of BG.state.nodes) n.hold = 0; for (const e of BG.state.edges) e.hold = 0; BG.wake(); };
   BG.activeRegions = function () {
     const m = new Map();
     for (const n of BG.state.nodes) if ((n.hold || 0) > 0.05 || (n.act || 0) > 0.3) m.set(n.region, (m.get(n.region) || 0) + 1);
     return m;
   };
-  BG.setFilter = function (set) { V.filter = set; positionsDirty = true; BG.wake(); };
 
-  function edgePath(a, b) { return 'M' + a.x.toFixed(1) + ',' + a.y.toFixed(1) + ' L' + b.x.toFixed(1) + ',' + b.y.toFixed(1); }
-
-  // label collision culling: highest-priority labels are placed first, the rest are hidden if they would overlap
-  function placeLabels(S, prio, fs) {
-    const boxes = [], shown = new Set();
-    const vis = S.nodes.filter((n) => !BG.isHidden(n)), rr = (n) => BG.radius(n) * D.nodeSize + 1;
-    const order = vis.slice().sort((a, b) => (prio(b) - prio(a)) || ((b.deg || 0) - (a.deg || 0)));
-    for (const n of order) {
-      const p = prio(n), w = Math.max(10, n.label.length * fs * 0.6 + 6), hgt = fs * 1.15, x = n.x - w / 2, y = n.y + BG.radius(n) * D.nodeSize + 2;
-      let hit = false;
-      if (p < 100) {
-        for (const bx of boxes) if (x < bx.x + bx.w && x + w > bx.x && y < bx.y + bx.h && y + hgt > bx.y) { hit = true; break; }
-        // a label must not sit on top of another node either
-        if (!hit) for (const o of vis) { if (o === n) continue; const r = rr(o); if (o.x + r > x && o.x - r < x + w && o.y + r > y && o.y - r < y + hgt) { hit = true; break; } }
-      }
-      if (hit) continue;
-      boxes.push({ x, y, w, h: hgt }); shown.add(n.id);
+  // ---------- interaction ----------
+  let tip = null;
+  function pick(sx, sy) {
+    let best = null, bz = -1e9;
+    for (const n of BG.state.nodes) {
+      if (BG.isHidden(n) || n._sx == null) continue;
+      const d = Math.hypot(n._sx - sx, n._sy - sy);
+      if (d < n._r + 4 && n._zc > bz) { bz = n._zc; best = n; }
     }
-    return shown;
+    return best;
+  }
+  BG.pickNode = pick;
+  function bind() {
+    const pts = new Map();
+    let mode = null, drag = null, last = null, pinch = null, moved = false;
+    const pos = (e) => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    cv.addEventListener('contextmenu', (e) => e.preventDefault());
+    cv.addEventListener('pointerdown', (e) => {
+      const [sx, sy] = pos(e); pts.set(e.pointerId, [sx, sy]); cv.setPointerCapture(e.pointerId);
+      if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), z: cam.zoom }; mode = 'pinch'; return; }
+      moved = false; last = [sx, sy]; cam.vyaw = cam.vpitch = 0;
+      const n = pick(sx, sy);
+      if (n && e.button === 0) { mode = 'node'; drag = n; n.fixed = true; }
+      else mode = e.button === 2 || e.shiftKey || e.ctrlKey ? 'pan' : 'rotate';
+      cv.classList.add('drag');
+    });
+    cv.addEventListener('pointermove', (e) => {
+      const [sx, sy] = pos(e);
+      if (pts.has(e.pointerId)) pts.set(e.pointerId, [sx, sy]);
+      if (mode === 'pinch' && pts.size === 2) { const [a, b] = [...pts.values()]; cam.zoom = BG.clamp(pinch.z * Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch.d, 0.25, 6); BG.wake(); return; }
+      if (mode && last) {
+        const dx = sx - last[0], dy = sy - last[1];
+        if (Math.hypot(sx - last[0], sy - last[1]) > 0 && Math.abs(dx) + Math.abs(dy) > 0.5) moved = true;
+        if (mode === 'rotate') { cam.yaw += dx * 0.008; cam.pitch = BG.clamp(cam.pitch + dy * 0.008, -1.55, 1.55); cam.vyaw = BG.clamp(dx * 0.006, -0.06, 0.06); cam.vpitch = BG.clamp(dy * 0.006, -0.06, 0.06); }
+        else if (mode === 'pan') { cam.px += dx; cam.py += dy; }
+        else if (mode === 'node' && drag) { const k = drag._k || 1, [wx, wy, wz] = unproject(dx, dy, k); drag.x += wx; drag.y += wy; drag.z += wz; drag._moved = true; BG.layout.kick(0.25); }
+        last = [sx, sy]; BG.wake();
+      } else {
+        const n = pick(sx, sy);
+        if (n !== (BG.hoverId ? BG.nodeById(BG.hoverId) : null)) { BG.hoverId = n ? n.id : null; BG.wake(); }
+        if (n) { const r = BG.regionById(n.region); tip.innerHTML = '<b></b><br><span></span>'; tip.firstChild.textContent = n.label; tip.lastChild.textContent = r.name + ' · ' + BG.kindById(n.kind).name + ' · ' + (n.deg || 0) + ' קשרים'; tip.style.display = 'block'; tip.style.left = Math.min(sx + 14, W - 200) + 'px'; tip.style.top = sy + 14 + 'px'; }
+        else tip.style.display = 'none';
+      }
+    });
+    const end = (e) => {
+      pts.delete(e.pointerId);
+      if (mode === 'pinch') { if (pts.size < 2) mode = null; return; }
+      if (mode === 'node' && drag) {
+        const n = drag; n.fixed = false;
+        if (!moved) BG.select(n.id);
+        else {
+          const r = BG.ownerAt(n.x, n.y);
+          if (r && r.id !== n.region) { BG.snapshot(); n.region = r.id; BG.touch(); BG.emit('node-moved', n); }
+          BG.scheduleSave(); BG.layout.kick(0.6);
+        }
+      } else if (mode === 'rotate' && !moved) BG.select(null);
+      mode = null; drag = null; last = null; cv.classList.remove('drag'); BG.wake();
+    };
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+    cv.addEventListener('pointerleave', () => { BG.hoverId = null; tip.style.display = 'none'; BG.wake(); });
+    cv.addEventListener('dblclick', () => { BG.setView('side'); BG.resetView(); });
+    cv.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const [sx, sy] = pos(e), z0 = cam.zoom, z1 = BG.clamp(z0 * Math.exp(-e.deltaY * 0.0015), 0.25, 6);
+      cam.px = (sx - W / 2) - ((sx - W / 2) - cam.px) * (z1 / z0); cam.py = (sy - H / 2) - ((sy - H / 2) - cam.py) * (z1 / z0); cam.zoom = z1; BG.wake();
+    }, { passive: false });
+    tip = document.getElementById('tip');
   }
 
+  // ---------- drawing (same visual rules as the reference graph) ----------
+  const TXT = '#8e8e9b', TXT_FOCUS = '#cfcfd8', PURPLE = 'rgba(139,124,246,.9)';
+  let cloud = null;
+  function brainCloud() {      // a ghost of the brain's surface, so its shape reads while there are few nodes
+    if (cloud) return cloud;
+    cloud = [];
+    for (let x = 196; x < 898; x += 15) for (let y = 84; y < 652; y += 15) {
+      if (!BG.inBrain(x, y)) continue;
+      const grp = BG.regionAt(x, y); if (!grp) continue;
+      const gi = grp.layer === 'own' ? (grp.id === 'cer' ? 1 : 2) : 0, h = BG.thickness(x, y, gi);
+      if (h > 8) { cloud.push([x, y, h * 0.97]); cloud.push([x, y, -h * 0.97]); }
+    }
+    return cloud;
+  }
   function frame() {
     let alive = false;
     if (BG.layout.alpha > 0) { BG.layout.step(); positionsDirty = true; alive = true; }
-    const S = BG.state, regAct = new Map();
-    const sel = V.selected, focusId = BG.hoverId || sel, filter = V.filter, focus = V.focusRegion;
+    if (cam.auto) { cam.yaw += 0.004; alive = true; }
+    if (Math.abs(cam.vyaw) > 0.0004 || Math.abs(cam.vpitch) > 0.0004) { cam.yaw += cam.vyaw; cam.pitch = BG.clamp(cam.pitch + cam.vpitch, -1.55, 1.55); cam.vyaw *= 0.9; cam.vpitch *= 0.9; alive = true; }
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+    const S = BG.state, sel = V.selected, hoverN = BG.hoverId ? BG.nodeById(BG.hoverId) : null, focusId = hoverN ? hoverN.id : sel;
+    const filter = V.filter, fset = V.focus, q = filter;
     const near = new Set();
     if (focusId) { near.add(focusId); for (const e of S.edges) { if (e.from === focusId) near.add(e.to); else if (e.to === focusId) near.add(e.from); } }
-    const edgeBase = BG.clamp(80 / Math.max(1, S.edges.length), 0.4, 1) * D.linkOpacity;
-    const auraR = {};
-    for (const r of BG.REGIONS) auraR[r.id] = BG.auraR(r);
-    const m = svg.getScreenCTM(), pxPerUnit = m ? m.a : 1, fs = BG.clamp(11 / (V.k * pxPerUnit), 3.2, 14);
-    const prio = (n) => (n.id === sel || n.id === BG.hoverId ? 1000 : (n.act || 0) > 0.3 ? 500 : filter && filter.has(n.id) ? 300 : near.has(n.id) && focusId ? 200 : 0) + Math.min(60, (n.deg || 0) * 3);
-    const labelsOn = placeLabels(S, prio, fs);
-
-    for (const n of S.nodes) {
-      const o = nodeEls.get(n.id);
-      if (!o) continue;
-      const hidden = BG.isHidden(n);
-      o.g.setAttribute('display', hidden ? 'none' : '');
-      o.aura.setAttribute('display', hidden || !D.glow ? 'none' : '');
-      if (hidden) continue;
+    const vis = S.nodes.filter((n) => !BG.isHidden(n));
+    let zmin = 1e9, zmax = -1e9;
+    for (const n of vis) { const p = proj(n.x, n.y, n.z || 0); n._sx = p[0]; n._sy = p[1]; n._k = p[2]; n._zc = p[3]; n._r = BG.radius(n) * D.nodeSize * p[2]; zmin = Math.min(zmin, p[3]); zmax = Math.max(zmax, p[3]); }
+    const depth = (zc) => 0.4 + 0.6 * BG.clamp((zc + 330) / 660, 0, 1);   // far side of the brain is dimmer
+    // ghost surface
+    if (BG.effOutline()) {
+      ctx.fillStyle = '#8791bd';
+      for (const c of brainCloud()) { const p = proj(c[0], c[1], c[2]); ctx.globalAlpha = 0.42 * depth(p[3]); ctx.fillRect(p[0] - 0.9, p[1] - 0.9, 1.8, 1.8); }
+      ctx.globalAlpha = 1;
+    }
+    // activation: soft glow where the AI is reading
+    const regAct = new Map();
+    for (const n of vis) {
       const hold = n.hold || 0, a0 = n.act || 0;
-      let a = a0 + (hold - a0) * 0.045;
-      if (Math.abs(a - hold) < 0.004) a = hold;
-      if (a !== a0) alive = true;
-      n.act = a;
+      let a = a0 + (hold - a0) * 0.045; if (Math.abs(a - hold) < 0.004) a = hold; if (a !== a0) alive = true; n.act = a;
       if (a > 0.02) regAct.set(n.region, Math.max(regAct.get(n.region) || 0, a));
-      const dim = (filter && !filter.has(n.id)) || (focus && n.region !== focus) || (focusId && !near.has(n.id));
-      const isSel = sel === n.id;
-      o.g.setAttribute('transform', 'translate(' + n.x.toFixed(1) + ' ' + n.y.toFixed(1) + ')');
-      o.inner.setAttribute('transform', 'scale(' + (D.nodeSize * (1 + a * 0.45)).toFixed(3) + ')');
-      o.halo.setAttribute('opacity', (a * 0.95).toFixed(2));
-      o.ring.setAttribute('opacity', isSel ? 1 : (a > 0.35 ? 0.85 : 0));
-      o.g.setAttribute('opacity', dim ? 0.16 : 1);
-      if (D.glow) {
-        o.aura.setAttribute('cx', n.x.toFixed(1)); o.aura.setAttribute('cy', n.y.toFixed(1));
-        o.aura.setAttribute('r', (auraR[n.region] * (1 + a * 0.25)).toFixed(1));
-        o.aura.setAttribute('opacity', dim ? 0.06 : Math.min(1, 0.6 + a * 0.6).toFixed(2));
-      }
-      const show = labelsOn.has(n.id);
-      o.label.setAttribute('display', show ? '' : 'none');
-      if (show) {
-        const big = a > 0.3 || isSel || n.id === BG.hoverId;
-        o.label.setAttribute('font-size', (fs * (big ? 1.12 : 1)).toFixed(2));
-        o.label.setAttribute('y', (BG.radius(n) * D.nodeSize + fs * 0.95).toFixed(1));
-        o.label.setAttribute('stroke-width', (fs * 0.28).toFixed(2));
-        o.label.setAttribute('fill', big ? '#ffffff' : '#c3cae8');
+    }
+    for (const [rid, a] of regAct) {
+      const r = BG.regionById(rid), h = BG.thickness(r.cx, r.cy, r.layer === 'own' ? (rid === 'cer' ? 1 : 2) : 0);
+      for (const z of r.layer === 'deep' || rid === 'mid' || rid === 'pons' || rid === 'med' ? [0] : [h * 0.9, -h * 0.9]) {
+        const p = proj(r.cx, r.cy, z), rad = Math.max(r.rx, r.ry) * 1.5 * p[2];
+        const g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], rad); g.addColorStop(0, r.color + '66'); g.addColorStop(1, r.color + '00');
+        ctx.globalAlpha = Math.min(1, a) * depth(p[3]); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p[0], p[1], rad, 0, 6.2832); ctx.fill();
       }
     }
+    ctx.globalAlpha = 1;
+    // links
+    const edgeBase = BG.clamp(90 / Math.max(1, S.edges.length), 0.45, 1) * D.linkOpacity;
+    const byId = BG.nodeById;
     for (const e of S.edges) {
-      const p = edgeEls.get(e.id), A = BG.nodeById(e.from), B = BG.nodeById(e.to);
-      if (!p || !A || !B) continue;
-      const isSrc = BG.kindById(A.kind).source || BG.kindById(B.kind).source;
-      if (BG.isHidden(A) || BG.isHidden(B)) { p.setAttribute('display', 'none'); continue; }
-      p.removeAttribute('display');
+      const A = byId(e.from), B = byId(e.to);
+      if (!A || !B || BG.isHidden(A) || BG.isHidden(B)) continue;
       const hold = e.hold || 0, a0 = e.act || 0;
-      let a = a0 + (hold - a0) * 0.045;
-      if (Math.abs(a - hold) < 0.004) a = hold;
-      if (a !== a0) alive = true;
-      e.act = a;
-      if (positionsDirty) p.setAttribute('d', edgePath(A, B));
-      const touches = focusId && (e.from === focusId || e.to === focusId);
-      const dim = (filter && !(filter.has(e.from) && filter.has(e.to))) || (focus && (A.region !== focus && B.region !== focus)) || (focusId && !touches);
-      p.setAttribute('stroke', a > 0.12 ? '#ffd45e' : touches ? '#e8ecff' : '#8791bd');
-      p.setAttribute('stroke-width', (0.55 + (e.w || 1) * 0.18 + a * 2.4 + (touches ? 0.7 : 0)).toFixed(2));
-      p.setAttribute('stroke-opacity', dim ? 0.035 : Math.min(1, (isSrc ? 0.16 : 0.26) * edgeBase + a * 0.75 + (touches ? 0.55 : 0)).toFixed(2));
-      if (isSrc && a < 0.1) p.setAttribute('stroke-dasharray', '2 3'); else p.removeAttribute('stroke-dasharray');
+      let a = a0 + (hold - a0) * 0.045; if (Math.abs(a - hold) < 0.004) a = hold; if (a !== a0) alive = true; e.act = a;
+      const hot = focusId && (e.from === focusId || e.to === focusId);
+      const dim = (q && !(q.has(e.from) && q.has(e.to))) || (fset && !fset.has(A.region) && !fset.has(B.region)) || (focusId && !hot);
+      const dp = depth((A._zc + B._zc) / 2);
+      ctx.strokeStyle = a > 0.12 ? 'rgba(255,212,94,' + Math.min(1, 0.3 + a) + ')' : hot ? PURPLE : 'rgba(120,120,140,' + ((dim ? 0.1 : 0.35) * edgeBase * dp).toFixed(3) + ')';
+      ctx.lineWidth = Math.min(3, 0.7 + (e.w || 1) * 0.3) + (a > 0.12 ? a * 1.8 : 0);   // every line keeps the same thickness on screen
+      ctx.beginPath(); ctx.moveTo(A._sx, A._sy); ctx.lineTo(B._sx, B._sy); ctx.stroke();
     }
-    for (const r of BG.REGIONS) {
-      const o = regEls.get(r.id), s = r.scale || 1, a = regAct.get(r.id) || 0;
-      o.glowEl.setAttribute('transform', 'translate(' + r.cx + ' ' + r.cy + ') rotate(' + r.rot + ')');
-      o.glowEl.setAttribute('rx', r.rx * s * 0.85); o.glowEl.setAttribute('ry', r.ry * s * 0.85);
-      o.glowEl.setAttribute('opacity', (a * 0.55 + (focus === r.id ? 0.12 : 0)).toFixed(2));
-      o.lab.setAttribute('x', r.cx);
-      o.lab.setAttribute('y', r.cy + 4);
-      o.lab.setAttribute('display', (V.labels && r.count) || a > 0.1 ? '' : 'none');
-      o.lab.setAttribute('opacity', (0.4 + a * 0.6).toFixed(2));
-      o.lab.setAttribute('font-size', 11 + a * 3);
-      if (o.lab._txt !== r.name) { o.lab.textContent = r.name; o.lab._txt = r.name; }
-      if (Math.abs((r._ra || 0) - a) > 0.002) { r._ra = a; alive = true; }
+    // nodes, far to near
+    const ordered = vis.slice().sort((a, b) => a._zc - b._zc);
+    for (const n of ordered) {
+      const dim = (focusId && !near.has(n.id)) || (q && !q.has(n.id)) || (fset && !fset.has(n.region));
+      const dp = depth(n._zc), r = n._r * (1 + n.act * 0.35);
+      if (n.act > 0.02) { const g = ctx.createRadialGradient(n._sx, n._sy, r * 0.6, n._sx, n._sy, r * 3); g.addColorStop(0, '#ffd45e' + Math.round(Math.min(1, n.act) * 140).toString(16).padStart(2, '0')); g.addColorStop(1, '#ffd45e00'); ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(n._sx, n._sy, r * 3, 0, 6.2832); ctx.fill(); }
+      ctx.globalAlpha = dim ? 0.15 : dp; ctx.fillStyle = BG.kindById(n.kind).source ? '#2a2a33' : BG.regionById(n.region).color;
+      ctx.beginPath();
+      if (BG.kindById(n.kind).source) { if (ctx.roundRect) ctx.roundRect(n._sx - r, n._sy - r, r * 2, r * 2, r * 0.35); else ctx.rect(n._sx - r, n._sy - r, r * 2, r * 2); } else ctx.arc(n._sx, n._sy, r, 0, 6.2832);
+      ctx.fill();
+      if (BG.kindById(n.kind).source) { ctx.strokeStyle = '#8e8e9b'; ctx.lineWidth = 1.2; ctx.stroke(); }
+      if (n.id === sel) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke(); }
     }
-    gBrain.setAttribute('opacity', BG.effOutline() ? 0.5 : 0);
+    ctx.globalAlpha = 1;
+    // region names (optional)
+    if (V.labels) {
+      ctx.font = '600 11px "Segoe UI",Arial'; ctx.textAlign = 'center'; ctx.direction = 'rtl';
+      for (const r of BG.REGIONS) { if (!r.count) continue; const h = BG.thickness(r.cx, r.cy, r.layer === 'own' ? (r.id === 'cer' ? 1 : 2) : 0), p = proj(r.cx, r.cy, r.layer === 'surface' ? h : 0); if (p[3] < -60 && r.layer === 'surface') continue; ctx.fillStyle = r.color; ctx.globalAlpha = 0.55; ctx.fillText(r.name, p[0], p[1] - 8); }
+      ctx.globalAlpha = 1;
+    }
+    // labels: fade out when zoomed away, never overlap, the most important first (as in the reference)
+    ctx.font = '12px "Segoe UI",Arial'; ctx.textAlign = 'center'; ctx.direction = 'rtl';
+    const zz = baseScale(W, H) * cam.zoom, cand = [];
+    for (const n of vis) {
+      const imp = n.id === focusId || (focusId && near.has(n.id)) || (q && q.has(n.id)) || (n.act || 0) > 0.3;
+      if ((focusId || q) && !imp) continue;
+      let alpha = 1;
+      if (!imp) { const lo = (n.deg || 0) >= 4 ? 0.3 : 0.45; alpha = Math.min(1, Math.max(0, (zz - lo) / 0.25)); if (alpha < 0.03) continue; alpha *= depth(n._zc); }
+      if (n._sx < -80 || n._sx > W + 80 || n._sy < -20 || n._sy > H + 20) continue;
+      cand.push({ n, alpha, pr: (n.id === focusId ? 1e7 : 0) + (imp ? 1e6 : 0) + (n.deg || 0) * 10 + n._zc * 0.01 });
+    }
+    cand.sort((a, b) => b.pr - a.pr);
+    const boxes = [];
+    for (const c of cand) {
+      const n = c.n, text = n.label, w = ctx.measureText(text).width + 10, h = 15, x = n._sx - w / 2, y = n._sy + n._r + 3;
+      if (boxes.some((b) => x < b[0] + b[2] && x + w > b[0] && y < b[1] + b[3] && y + h > b[1])) continue;
+      boxes.push([x, y, w, h]);
+      ctx.globalAlpha = c.alpha; ctx.fillStyle = n.id === focusId ? TXT_FOCUS : TXT; ctx.fillText(text, n._sx, n._sy + n._r + 13);
+    }
+    ctx.globalAlpha = 1;
     positionsDirty = false;
     if (alive) requestAnimationFrame(frame); else running = false;
   }
-  BG.hoverId = null;
-  BG.on('hover', (id) => { if (BG.hoverId !== id) { BG.hoverId = id; BG.wake(); } });
-  BG.markDirty = () => { positionsDirty = true; BG.wake(); };
 })(window.BG);
 
 // Exports for drawing / editing programs: layered SVG (Canva, Illustrator, Figma, Inkscape), PNG, layered PSD (Photoshop), JSON backup.
@@ -1232,54 +1237,55 @@ window.BG = window.BG || {};
   'use strict';
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const FONT = 'Heebo, Arial, Helvetica, sans-serif';
-  const BGCOL = '#0b1020';
+  const BGCOL = '#16161a';
 
-  function defsSVG() {
-    return '<defs>' + BG.REGIONS.map((r) => '<radialGradient id="aura-' + r.id + '"><stop offset="0" stop-color="' + r.color + '" stop-opacity="0.5"/><stop offset="0.55" stop-color="' + r.color + '" stop-opacity="0.2"/><stop offset="1" stop-color="' + r.color + '" stop-opacity="0"/></radialGradient>').join('') + '</defs>';
-  }
-  function brainSVG() {
-    return '<g fill="none" stroke="#6c8cff" stroke-opacity="0.55" stroke-width="1.6" stroke-dasharray="2 6" stroke-linecap="round">' +
-      [BG.STEM, BG.CEREBELLUM, BG.CEREBRUM].map((d) => '<path d="' + d + '"/>').join('') + '</g>';
-  }
-  function aurasSVG() {
-    const R = {};
-    BG.REGIONS.forEach((r) => { R[r.id] = BG.auraR(r); });
-    return BG.state.nodes.filter((n) => !BG.isHidden(n)).map((n) => '<circle cx="' + n.x.toFixed(1) + '" cy="' + n.y.toFixed(1) + '" r="' + R[n.region].toFixed(1) + '" fill="url(#aura-' + n.region + ')"/>').join('');
-  }
-  function regionsSVG() {
-    return BG.REGIONS.filter((r) => r.count).map((r) =>
-      '<text x="' + r.cx + '" y="' + (r.cy + 4) + '" text-anchor="middle" font-size="11.5" font-weight="600" font-family="' + FONT + '" fill="' + r.color + '" fill-opacity="0.6" stroke="' + BGCOL + '" stroke-width="3" paint-order="stroke">' + esc(r.name) + '</text>').join('');
+  function defsSVG() { return '<defs></defs>'; }
+  const W3 = BG.W, H3 = BG.H;
+  const P = (n) => BG.projectExport(n.x, n.y, n.z || 0, W3, H3);
+  const depthA = (zc) => 0.4 + 0.6 * BG.clamp((zc + 330) / 660, 0, 1);
+  function cloudSVG() {
+    const out = [];
+    for (let x = 196; x < 898; x += 15) for (let y = 84; y < 652; y += 15) {
+      if (!BG.inBrain(x, y)) continue;
+      const r = BG.regionAt(x, y); if (!r) continue;
+      const g = r.layer === 'own' ? (r.id === 'cer' ? 1 : 2) : 0, h = BG.thickness(x, y, g);
+      if (h < 8) continue;
+      for (const z of [h * 0.97, -h * 0.97]) { const p = BG.projectExport(x, y, z, W3, H3); out.push('<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="0.8" fill="#8791bd" fill-opacity="' + (0.45 * depthA(p[3])).toFixed(2) + '"/>'); }
+    }
+    return out.join('');
   }
   function edgesSVG() {
     const out = [];
-    BG.state.edges.forEach((e, i) => {
+    for (const e of BG.state.edges) {
       const a = BG.nodeById(e.from), b = BG.nodeById(e.to);
-      if (!a || !b || BG.isHidden(a) || BG.isHidden(b)) return;
-      const src = BG.kindById(a.kind).source || BG.kindById(b.kind).source;
-      out.push('<path d="M' + a.x.toFixed(1) + ',' + a.y.toFixed(1) + ' L' + b.x.toFixed(1) + ',' + b.y.toFixed(1) +
-        '" fill="none" stroke="#8791bd" stroke-opacity="' + (src ? 0.3 : 0.45) + '" stroke-width="' + (0.6 + (e.w || 1) * 0.2).toFixed(2) + '"' + (src ? ' stroke-dasharray="3 4"' : '') + '/>');
-    });
+      if (!a || !b || BG.isHidden(a) || BG.isHidden(b)) continue;
+      const p = P(a), q = P(b);
+      out.push('<path d="M' + p[0].toFixed(1) + ',' + p[1].toFixed(1) + ' L' + q[0].toFixed(1) + ',' + q[1].toFixed(1) + '" fill="none" stroke="#78788c" stroke-opacity="' + (0.4 * depthA((p[3] + q[3]) / 2)).toFixed(2) + '" stroke-width="' + Math.min(3, 0.7 + (e.w || 1) * 0.3).toFixed(2) + '"/>');
+    }
     return out.join('');
   }
-  function nodesSVG(regionId) {
-    return BG.state.nodes.filter((n) => n.region === regionId && !BG.isHidden(n)).map((n) => {
-      const r = BG.radius(n), col = BG.regionById(n.region).color, src = BG.kindById(n.kind).source;
-      const shape = src
-        ? '<rect x="' + (-r) + '" y="' + (-r) + '" width="' + r * 2 + '" height="' + r * 2 + '" rx="2.5" fill="#0f1630" stroke="' + col + '" stroke-width="2"/>'
-        : '<circle r="' + r + '" fill="' + col + '" stroke="' + col + '"/>';
-      return '<g id="node-' + n.id + '" transform="translate(' + n.x.toFixed(1) + ' ' + n.y.toFixed(1) + ')">' + shape +
-        '<text y="' + (r + 11) + '" text-anchor="middle" font-size="10" font-family="' + FONT + '" fill="#e8ecff" stroke="' + BGCOL + '" stroke-width="2.6" paint-order="stroke">' + esc(n.label) + '</text></g>';
+  // nodes of one family, far to near, each with its label when the label has room
+  const taken = [];
+  function nodesSVG(ids) {
+    const ns = BG.state.nodes.filter((n) => ids.includes(n.region) && !BG.isHidden(n)).map((n) => ({ n, p: P(n) })).sort((u, v) => u.p[3] - v.p[3]);
+    return ns.map(({ n, p }) => {
+      const col = BG.regionById(n.region).color, src = BG.kindById(n.kind).source, r = BG.radius(n) * 0.8 * p[2], dp = depthA(p[3]);
+      const shape = src ? '<rect x="' + (-r).toFixed(1) + '" y="' + (-r).toFixed(1) + '" width="' + (r * 2).toFixed(1) + '" height="' + (r * 2).toFixed(1) + '" rx="' + (r * 0.35).toFixed(1) + '" fill="#2a2a33" stroke="#8e8e9b"/>' : '<circle r="' + r.toFixed(1) + '" fill="' + col + '"/>';
+      const w = n.label.length * 6.4 + 8, bx = p[0] - w / 2, by = p[1] + r + 2, show = !taken.some((t) => bx < t[0] + t[2] && bx + w > t[0] && by < t[1] + t[3] && by + 14 > t[1]);
+      if (show) taken.push([bx, by, w, 14]);
+      return '<g id="node-' + n.id + '" opacity="' + dp.toFixed(2) + '" transform="translate(' + p[0].toFixed(1) + ' ' + p[1].toFixed(1) + ')">' + shape +
+        (show ? '<text y="' + (r + 12).toFixed(1) + '" text-anchor="middle" font-size="11" font-family="' + FONT + '" fill="#8e8e9b">' + esc(n.label) + '</text>' : '') + '</g>';
     }).join('');
   }
-
   BG.buildLayers = function () {
     const L = [];
-    L.push({ id: 'background', label: 'רקע', inner: '<rect width="' + BG.W + '" height="' + BG.H + '" fill="' + BGCOL + '"/>' });
-    if (BG.effOutline()) L.push({ id: 'brain', label: 'מתאר מוח', inner: brainSVG() });
-    if (BG.display.glow) L.push({ id: 'aura', label: 'זוהר הערכים', inner: aurasSVG() });
+    taken.length = 0;
+    L.push({ id: 'background', label: 'רקע', inner: '<rect width="' + W3 + '" height="' + H3 + '" fill="#16161a"/>' });
+    if (BG.effOutline()) L.push({ id: 'brain', label: 'ענן המוח', inner: cloudSVG() });
     L.push({ id: 'edges', label: 'קשרים', inner: edgesSVG() });
-    if (BG.view.labels) L.push({ id: 'regions', label: 'שמות אזורים', inner: regionsSVG() });
-    for (const r of BG.REGIONS) if (BG.state.nodes.some((n) => n.region === r.id && !BG.isHidden(n))) L.push({ id: 'nodes-' + r.id, label: 'צמתים – ' + r.name, inner: nodesSVG(r.id) });
+    // most important (best connected) labels first so they win the room
+    BG.state.nodes.slice().sort((u, v) => (v.deg || 0) - (u.deg || 0));
+    for (const f of BG.FAMILIES) if (BG.state.nodes.some((n) => f.ids.includes(n.region) && !BG.isHidden(n))) L.push({ id: 'nodes-' + f.id, label: 'צמתים – ' + f.name, inner: nodesSVG(f.ids) });
     return L;
   };
   BG.layersToSVG = function (layers, opt) {
@@ -1601,7 +1607,7 @@ window.BG = window.BG || {};
   function renderStats() {
     const S = BG.state;
     $('#stats').textContent = S.nodes.length + ' צמתים · ' + S.edges.length + ' קשרים';
-    $('#hint').textContent = S.nodes.length ? 'גרור צומת לאזור אחר כדי לשייך מחדש · גלגלת = זום' : '';
+    $('#hint').textContent = S.nodes.length ? 'גרירה = סיבוב · Shift/ימני = הזזה · גלגלת = זום · גרור צומת לאזור אחר כדי לשייך מחדש' : '';
   }
 
   // ---------- ingest panel ----------
@@ -1754,33 +1760,32 @@ window.BG = window.BG || {};
     p.append(
       h('h3', { text: 'תצוגה' }),
       tg('מסמכי מקור וקשריהם', BG.display.sources, (b) => { BG.setDisplay('sources', b); }),
-      tg('זוהר צבע סביב הצמתים', BG.display.glow, (b) => BG.setDisplay('glow', b)),
       tg('שמות אזורים על המוח', BG.view.labels, BG.setLabels),
-      tg('מתאר מוח מקווקו (אוטומטי כשיש מעט צמתים)', BG.effOutline(), BG.setOutline),
+      tg('ענן המוח (רמז לצורה, אוטומטי כשיש מעט צמתים)', BG.effOutline(), BG.setOutline),
       sl('גודל צמתים', 'nodeSize', 0.5, 2, 0.05), sl('בהירות קשרים', 'linkOpacity', 0.3, 3, 0.1),
       h('div', { class: 'hr' }),
       h('p', { class: 'muted', text: 'צורת המוח נוצרת מהצמתים עצמם: כל ערך נמצא באזור שמתאים לו. לחץ על אזור כדי להתמקד בו.' }));
     for (const r of BG.REGIONS) {
       const n = BG.state.nodes.filter((x) => x.region === r.id).length;
-      p.append(h('div', { class: 'region-row' + (BG.view.focusRegion === r.id ? ' on' : ''), tabindex: '0', onclick: () => { BG.view.focusRegion = BG.view.focusRegion === r.id ? null : r.id; renderRegionsPanel(); BG.markDirty(); },
+      p.append(h('div', { class: 'region-row' + (BG.view.focus && BG.view.focus.has(r.id) ? ' on' : ''), tabindex: '0', onclick: () => { BG.toggleFocus([r.id]); renderRegionsPanel(); },
         onkeydown: (e) => { if (e.key === 'Enter') e.currentTarget.click(); } },
       h('i', { style: 'background:' + r.color }), h('div', null, h('b', { text: r.name }), h('span', { class: 'muted', text: r.does })), h('span', { class: 'n', text: n })));
     }
   }
 
-  // ---------- legend (like Obsidian's groups): which colour is which region, click to focus ----------
+  // ---------- legend: one row per family of regions (click = focus the whole family) ----------
   function renderLegend() {
     const box = $('#legend'); if (!box) return;
     box.textContent = '';
-    const counts = new Map();
-    for (const n of BG.state.nodes) if (!BG.isHidden(n)) counts.set(n.region, (counts.get(n.region) || 0) + 1);
-    for (const r of BG.REGIONS) {
-      if (!counts.get(r.id)) continue;
-      box.append(h('button', { class: 'lg' + (BG.view.focusRegion === r.id ? ' on' : ''), title: r.does, onclick: () => { BG.view.focusRegion = BG.view.focusRegion === r.id ? null : r.id; renderLegend(); renderRegionsPanel(); BG.markDirty(); } },
-        h('i', { style: 'background:' + r.color }), r.name, h('span', { text: counts.get(r.id) })));
+    const FC = { frontal: '#6f8cff', parietal: '#ffc247', occipital: '#ff6fb5', temporal: '#8fe35a', limbic: '#ff5a5a', subcortical: '#ff8a3d', hindbrain: '#7be0a0' };
+    for (const f of BG.FAMILIES) {
+      const n = BG.state.nodes.filter((x) => !BG.isHidden(x) && f.ids.includes(x.region)).length;
+      if (!n) continue;
+      const on = BG.view.focus && f.ids.every((i) => BG.view.focus.has(i)) && BG.view.focus.size === f.ids.length;
+      box.append(h('button', { class: 'lg' + (on ? ' on' : ''), title: f.ids.map((i) => regionName(i)).join(' · '), onclick: () => { BG.toggleFocus(f.ids); } }, h('i', { style: 'background:' + FC[f.id] }), f.name, h('span', { text: n })));
     }
   }
-  BG.on('change', renderLegend); BG.on('display', () => { renderLegend(); });
+  BG.on('change', renderLegend); BG.on('display', renderLegend); BG.on('focus', () => { renderLegend(); renderRegionsPanel(); });
 
   // ---------- search ----------
   $('#search').addEventListener('input', (e) => {
@@ -1795,7 +1800,9 @@ window.BG = window.BG || {};
 
   // ---------- top buttons ----------
   $('#btnAdd').addEventListener('click', () => { showTab('add'); $('#srcText').focus(); });
-  $('#btnFit').addEventListener('click', () => BG.resetView());
+  $('#btnFit').addEventListener('click', () => { BG.setView('side'); BG.resetView(); });
+  document.querySelectorAll('#hud button[data-v]').forEach((b) => b.addEventListener('click', () => { BG.setView(b.dataset.v); BG.resetView(); }));
+  $('#autoBtn').addEventListener('click', (e) => e.currentTarget.classList.toggle('on', BG.toggleAuto()));
   $('#btnUndo').addEventListener('click', () => { if (BG.undo()) BG.toast('הפעולה האחרונה בוטלה', 'ok'); });
   BG.on('undo-state', (n) => { $('#btnUndo').disabled = n === 0; });
   $('#btnOrganize').addEventListener('click', organizeAll);
