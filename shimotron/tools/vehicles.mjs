@@ -51,7 +51,62 @@ export const VEHICLES = {
     // Spoked wheels and a welded tube frame: half the triangles look the same at riding distance.
     simplify: { ratio: 0.5, error: 0.002 },
   },
+  // Boats, submarines and planes (folder README "Boats, subs, planes"): nose +z, y = 0 the lowest
+  // point; `prop`, `prop_L`, `prop_R` nodes sit on their hubs and spin about their own z.
+  'plane-geebee': {
+    file: 'plane/gee-bee-r1-racer/gee-bee-r1-racer.glb',
+    credit: '"Gee Bee R-1" by helijah (sketchfab.com), CC BY 4.0 — modified: simplified, textures shrunk, compressed',
+    tex: 256,
+    simplify: { ratio: 0.2, error: 0.012 },
+  },
+  'plane-p51': {
+    file: 'plane/p51-mustang-racer/p51-mustang-racer.glb',
+    credit: '"P-51 Mustang" (racer livery) by isabel_arauz (sketchfab.com), CC BY 4.0 — modified: simplified, textures shrunk, compressed',
+    tex: 512,
+    simplify: { ratio: 0.25, error: 0.005 },
+  },
+  'boat-cat': {
+    file: 'boat/offshore-catamaran/offshore-catamaran.glb',
+    // The beer-brand livery (a trademark) painted over with the colour beside it: rectangles
+    // [x0, y0, x1, y1, sample x, sample y] in pixels of the 1024² texture.
+    cover: {
+      BoatBody: [
+        [22, 118, 186, 162, 100, 100], // "SELECT Budweiser", deck front
+        [32, 625, 168, 668, 100, 617], // …deck back
+        [58, 225, 146, 292, 100, 347], // crown, in the canopy oval
+        [58, 545, 146, 604, 100, 540], // crown, behind it
+        [268, 228, 312, 386, 290, 212], // side lettering
+        [392, 535, 434, 688, 413, 520],
+        [218, 420, 276, 478, 247, 482], // round crown badges
+        [338, 420, 396, 478, 367, 413],
+      ],
+    },
+    credit: '"Boat" (offshore racing catamaran) by milamila (sketchfab.com), CC BY 4.0 — modified: simplified, textures shrunk, compressed',
+    tex: 512,
+    simplify: { ratio: 0.25, error: 0.005 },
+  },
+  'boat-sprint': {
+    file: 'boat/jet-sprint-boat/jet-sprint-boat.glb',
+    credit: '"Jet sprint boat" by csharp122705 (sketchfab.com), CC BY 4.0 — modified: simplified, compressed',
+    tex: 256,
+    simplify: { ratio: 0.25, error: 0.005 },
+  },
+  'sub-yellow': {
+    file: 'sub/yellow-research-sub/yellow-research-sub.glb',
+    credit: '"Submarine" (yellow research submersible) by tflexcad (sketchfab.com), CC BY 4.0 — modified: simplified, compressed',
+    tex: 256,
+    simplify: { ratio: 0.25, error: 0.005 },
+  },
+  'sub-excavator': {
+    file: 'sub/deep-sea-excavator-sub/deep-sea-excavator-sub.glb',
+    credit: '"Deep sea excavator" by Crysis007-94 (sketchfab.com), CC BY 4.0 — modified: simplified, textures shrunk, compressed',
+    tex: 512,
+    simplify: { ratio: 0.25, error: 0.005 },
+  },
 };
+
+// Nodes that move on their own (wheels turn, propellers spin): kept as nodes at their hubs.
+const MOVING = /^(wheel_|prop)/;
 
 /**
  * Cuts the body of a bike into body / steer / swing nodes (see VEHICLES['moto-yz'].split), and drops
@@ -175,7 +230,9 @@ function splitParts(doc, scene, body, wheels, source, S) {
 }
 
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
+const only = process.env.ONLY ? new RegExp(process.env.ONLY) : null;
 for (const [id, V] of Object.entries(VEHICLES)) {
+  if (only && !only.test(id)) continue;
   const doc = await io.read(path.join(SRC, V.file));
   const R = doc.getRoot();
   // Bake everything under `body` into it, so it is one node of merged meshes; wheels stay nodes.
@@ -185,10 +242,10 @@ for (const [id, V] of Object.entries(VEHICLES)) {
   const source = new Map(); // body primitive → the source node's name
   const wheels = [];
   for (const n of R.listNodes()) {
-    if (/^wheel_/.test(n.getName())) wheels.push(n);
+    if (MOVING.test(n.getName())) wheels.push(n);
   }
   for (const n of R.listNodes()) {
-    if (!n.getMesh() || /^wheel_/.test(n.getName()) || n === body) continue;
+    if (!n.getMesh() || MOVING.test(n.getName()) || n === body) continue;
     // flatten() put every mesh node at the scene root with its world transform.
     const m = n.getMesh();
     const M = n.getWorldMatrix();
@@ -243,6 +300,24 @@ for (const [id, V] of Object.entries(VEHICLES)) {
   }
   await doc.transform(prune());
   for (const t of R.listTextures()) {
+    const rects = V.cover && t.listParents().flatMap((m) => (m.propertyType === 'Material' && V.cover[m.getName()]) || []);
+    if (rects?.length) {
+      const src = sharp(Buffer.from(t.getImage()));
+      const { data, info } = await src.clone().raw().toBuffer({ resolveWithObject: true });
+      const k = info.width / 1024;
+      const px = (x, y) => {
+        const o = (Math.round(y * k) * info.width + Math.round(x * k)) * info.channels;
+        return { r: data[o], g: data[o + 1], b: data[o + 2] };
+      };
+      const tiles = await Promise.all(
+        rects.map(async ([x0, y0, x1, y1, sx, sy]) => ({
+          input: await sharp({ create: { width: Math.round((x1 - x0) * k), height: Math.round((y1 - y0) * k), channels: 3, background: px(sx, sy) } }).png().toBuffer(),
+          left: Math.round(x0 * k),
+          top: Math.round(y0 * k),
+        })),
+      );
+      t.setImage(await src.composite(tiles).png().toBuffer()).setMimeType('image/png');
+    }
     const img = await sharp(Buffer.from(t.getImage())).resize(V.tex, V.tex, { fit: 'inside' }).webp({ quality: 80 }).toBuffer();
     t.setImage(img).setMimeType('image/webp');
   }
@@ -250,7 +325,7 @@ for (const [id, V] of Object.entries(VEHICLES)) {
     await MeshoptSimplifier.ready;
     await doc.transform(weld(), simplify({ simplifier: MeshoptSimplifier, ...V.simplify }));
   }
-  await doc.transform(quantize());
+  await doc.transform(quantize({ quantizeNormal: 8 })); // 8-bit normals, as gltfpack does
   const out = path.join(root, `src/race/models/${id}.glb.gz`);
   fs.writeFileSync(out, zlib.gzipSync(await io.writeBinary(doc), { level: 9 }));
   console.log(id, fs.statSync(out).size, 'bytes,', R.listNodes().map((n) => n.getName()).join(' '));

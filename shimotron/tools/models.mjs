@@ -20,10 +20,16 @@ import * as THREE from 'three';
 import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const FISH = { url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/BarramundiFish/glTF-Binary/BarramundiFish.glb', credit: '"Barramundi Fish" by Microsoft (Khronos glTF Sample Assets), CC0 — modified: textures reduced' };
-// The monster truck and the bike come from tools/vehicles.mjs; their credits are listed here too.
+// The monster truck, the bike, the boats, subs and planes come from tools/vehicles.mjs; their credits are listed here too.
 const VEHICLE_CREDITS = [
   ['monster-van', '"[Monster Truck Game] Lunchbox Van" by Jorma Rysky, CC BY 4.0 — modified: textures shrunk, compressed', 'https://sketchfab.com/3d-models/monster-truck-game-lunchbox-van-70a16d116a594328a701a7c079044ad6'],
   ['moto-yz', '"Yz250" by e-restrepo1114 (sketchfab.com/EmanuelRestrepoVelez), CC BY 4.0 — modified: cut into moving parts, simplified, compressed', 'https://sketchfab.com/3d-models/yz250-127c9d767260468f821da3cba9d7db7e'],
+  ['plane-geebee', '"Gee Bee R-1" by helijah, CC BY 4.0 — modified: simplified, textures shrunk, compressed', 'https://sketchfab.com/3d-models/xgTLDRqv1tJyWDKl7ePtOwcWo0O'],
+  ['plane-p51', '"P-51 Mustang" (racer livery) by isabel_arauz, CC BY 4.0 — modified: simplified, textures shrunk, compressed', 'https://sketchfab.com/3d-models/484ca389c79b45c38d44ee224807e1ae'],
+  ['boat-cat', '"Boat" (offshore racing catamaran) by milamila, CC BY 4.0 — modified: sponsor logos painted over, simplified, compressed', 'https://sketchfab.com/3d-models/bd6166ae8e294bd4a7d4e46be7f80f5d'],
+  ['boat-sprint', 'jet sprint race boat by csharp122705, CC BY 4.0 — modified: simplified, compressed', 'https://sketchfab.com/3d-models/5b76557ed6384c5595f7a7c4e18d625d'],
+  ['sub-yellow', '"Submarine" (yellow research submersible) by tflexcad, CC BY 4.0 — modified: simplified, compressed', 'https://sketchfab.com/3d-models/bd23a5a794814e99b192b3e43775f140'],
+  ['sub-excavator', '"Deep sea excavator" by Crysis007-94, CC BY 4.0 — modified: simplified, textures shrunk, compressed', 'https://sketchfab.com/3d-models/20f2991d6a9c4ae4a18c6a9d920a89c0'],
 ];
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CACHE = path.join(root, '.models');
@@ -39,9 +45,9 @@ export const MODELS = {
     // The wheels were modelled turned and spun: undo it.
     resetWheels: true,
     lods: [
-      { name: 'concept', ratio: 0.36, error: 0.0008, texture: 1024 },
+      { name: 'concept', ratio: 0.22, error: 0.0015, texture: 1024 },
       // The far version wears the near one's materials (RealModels matches them by name): no textures of its own.
-      { name: 'concept-lo', ratio: 0.07, error: 0.012, texture: 256, bare: true },
+      { name: 'concept-lo', ratio: 0.035, error: 0.02, texture: 256, bare: true },
     ],
   },
   hyper: {
@@ -59,7 +65,7 @@ export const MODELS = {
     // The materials the game recolours and lights, named as in the concept car.
     materials: { Body_Color: 'Paint 1 Carmine', Taillight_Glass: 'Brakelight', Projector_Glass: 'Headlight', Glass_Gray: 'Glass', Turn_Signal_LED: 'Signallight' },
     lods: [
-      { name: 'hyper', ratio: 0.2, error: 0.0008, texture: 1024 },
+      { name: 'hyper', ratio: 0.13, error: 0.0012, texture: 1024 },
       { name: 'hyper-lo', ratio: 0.02, error: 0.03, texture: 256 },
     ],
   },
@@ -204,7 +210,7 @@ async function build(id, M, L) {
     prune(),
     dedup(),
     textureCompress({ encoder: sharp, targetFormat: 'webp', resize: [L.texture, L.texture], quality: 88 }),
-    quantize(),
+    quantize({ quantizeNormal: 8 }), // 8-bit normals, as gltfpack does: no visible difference, a tenth smaller
   );
   fs.mkdirSync(OUT, { recursive: true });
   const file = path.join(OUT, `${L.name}.glb.gz`);

@@ -4,7 +4,7 @@ import { drawProfile, MODEL_CREDIT, modelStatus } from './RealModels.js';
 import { PHOTO_CREDIT } from './PhotoTextures.js';
 import { ITEMS } from './Pickups.js';
 import { ROAM } from './Explore.js';
-import { DESIGNS, DESIGN_NAMES } from './CraftModels.js';
+import { DESIGNS, DESIGN_NAMES, designOf } from './CraftModels.js';
 import { WORLD } from './World.js';
 import { fmt as fmtRally } from './Rally.js';
 
@@ -186,7 +186,7 @@ export class RaceUI {
               h(
                 'div',
                 { class: 'seg' },
-                DESIGNS[s.kind].map((d) => h('button', { type: 'button', 'aria-pressed': String(((s.designs || {})[s.kind] || DESIGNS[s.kind][0]) === d), onclick: () => g.setDesign(s.kind, d) }, DESIGN_NAMES[d])),
+                DESIGNS[s.kind].map((d) => h('button', { type: 'button', 'aria-pressed': String(designOf(s.kind, (s.designs || {})[s.kind]) === d), onclick: () => g.setDesign(s.kind, d) }, DESIGN_NAMES[d])),
               ),
             )
           : null,

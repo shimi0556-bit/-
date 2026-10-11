@@ -6,6 +6,7 @@ import { createCarModel, drawCarProfile } from './CarModel.js';
 import { loadMonster, hasMonster, createMonsterCar, drawMonsterProfile, texelsOf, texelAt } from './MonsterTruck.js';
 import { loadFish } from './TunnelLife.js';
 import { loadMoto, hasMoto } from './MotoModel.js';
+import { loadCrafts } from './CraftReal.js';
 import conceptHi from './models/concept.glb.gz?url';
 import conceptLo from './models/concept-lo.glb.gz?url';
 import hyperHi from './models/hyper.glb.gz?url';
@@ -45,7 +46,7 @@ export const MODEL_CREDIT =
   'מאסל: "Dodge Challenger 1970 R/T" מאת kryptonmedia, ברישיון CC0. ' +
   'באגי שטח: "Jeep Wrangler Adventure Rubicon" מאת vecarz, ברישיון CC BY-NC-SA 4.0 (לשימוש לא מסחרי). ' +
   'פורמולה: "McLaren MP4/5" מאת vecarz, ברישיון CC BY 4.0. בכולן הוסרו סמלים, לוחיות ופרסומות והמודל הוקטן. ' +
-  'משאית המפלצת: "[Monster Truck Game] Lunchbox Van" מאת Jorma Rysky, ואופנוע המוטוקרוס: "Yz250" מאת e-restrepo1114, שתיהן ברישיון CC BY 4.0 (הוקטנו וחולקו לחלקים נעים). הדגים ליד מנהרות הים: "Barramundi Fish" מאת Microsoft (Khronos glTF Sample Assets), ברישיון CC0.';
+  'משאית המפלצת: "[Monster Truck Game] Lunchbox Van" מאת Jorma Rysky, ואופנוע המוטוקרוס: "Yz250" מאת e-restrepo1114, שתיהן ברישיון CC BY 4.0 (הוקטנו וחולקו לחלקים נעים). סירות, צוללות ומטוסים, כולם ברישיון CC BY 4.0 (הוקטנו, ובקטמרן הוסרו פרסומות): הקטמרן "Boat" מאת milamila, סירת הספרינט מאת csharp122705, הצוללת הצהובה "Submarine" מאת tflexcad, צוללת העבודה "Deep sea excavator" מאת Crysis007-94, המטוס "Gee Bee R-1" מאת helijah והמוסטנג "P-51 Mustang" מאת isabel_arauz. הדגים ליד מנהרות הים: "Barramundi Fish" מאת Microsoft (Khronos glTF Sample Assets), ברישיון CC0.';
 const WHEELS = ['WheelFrontL', 'WheelFrontR', 'WheelRearL', 'WheelRearR']; // physics order: FL, FR, RL, RR (left = +x)
 const LOD_FAR = 24; // metres: beyond this the light version is drawn
 
@@ -71,7 +72,7 @@ export async function loadRealModels() {
       console.warn(`real model for ${t.id} did not load; using the procedural body`, e);
     }
   });
-  jobs.push(loadMonster((src) => parseGz(loader, src)), loadMoto((src) => parseGz(loader, src)), loadFish((src) => parseGz(loader, src)));
+  jobs.push(loadMonster((src) => parseGz(loader, src)), loadMoto((src) => parseGz(loader, src)), loadFish((src) => parseGz(loader, src)), loadCrafts((src) => parseGz(loader, src), modelStatus));
   await Promise.all(jobs);
   (hasMonster() ? modelStatus.ok : modelStatus.failed).push(hasMonster() ? 'monster' : { id: 'monster', why: 'see console' });
   (hasMoto() ? modelStatus.ok : modelStatus.failed).push(hasMoto() ? 'moto' : { id: 'moto', why: 'see console' });

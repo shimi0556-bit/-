@@ -3,6 +3,7 @@ import * as CANNON from 'cannon-es';
 import { Car } from './Car.js';
 import { PlayerDriver } from './Drivers.js';
 import { Craft, CraftPlayer, roadSurface } from './Craft.js';
+import { designOf } from './CraftModels.js';
 import { waveAt } from '../engine/world/Water.js';
 import { GROUP } from './Vehicle.js';
 import { actionKeys } from './keys.js';
@@ -183,7 +184,7 @@ export class Explore {
       this.driver = new PlayerDriver(car, this.engine.input, g.touch);
       g.carAudio?.attachPlayer(car);
     } else {
-      const design = (g.settings.designs || {})[kind];
+      const design = designOf(kind, (g.settings.designs || {})[kind]);
       const craft = new Craft(this.env, { kind, color, stripe: '#111111', name: 'את/ה', number: 7, isPlayer: true, position: new THREE.Vector3(spot.x, spot.y, spot.z), heading: spot.yaw, seed: 3, design });
       if (kind === 'plane' || kind === 'glider') craft.chase3d = true;
       if (spot.park !== undefined) craft.park(spot.park);

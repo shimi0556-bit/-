@@ -490,7 +490,7 @@ async function build(id, C, L, lo) {
     const size = Math.min(cap, Math.max(meta.width, meta.height));
     t.setImage(await sharp(Buffer.from(t.getImage())).resize(size, size, { fit: 'inside' }).webp({ quality: 82 }).toBuffer()).setMimeType('image/webp');
   }
-  await doc.transform(quantize());
+  await doc.transform(quantize({ quantizeNormal: 8 }));
   for (const m of rootP.listMeshes())
     for (const p of m.listPrimitives()) {
       const I = p.getIndices();

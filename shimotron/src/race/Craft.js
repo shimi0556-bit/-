@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { buildCraft, designFor } from './CraftModels.js';
+import { buildCraft, designFor, designOf } from './CraftModels.js';
+import { createRealCraft } from './CraftReal.js';
 
 /**
  * Racing craft for the races that are not on wheels: powerboats on the
@@ -166,13 +167,18 @@ export class Craft {
       upsideDown: 0,
     };
     const seed = opts.seed || 1;
-    this.design = opts.design || designFor(this.kind, seed);
-    const parts = buildCraft(this.design, opts.color, opts.stripe || '#111111', seed);
+    this.design = opts.design ? designOf(this.kind, opts.design) : designFor(this.kind, seed);
+    // A real downloaded model when there is one for this design (CraftReal.js), else built from parts.
+    const real = createRealCraft(this.design, opts.color);
+    const parts = real ? real.parts : buildCraft(this.design, opts.color, opts.stripe || '#111111', seed);
     this.parts = parts;
     const M = craftMaterials(env.engine);
     this.mats = M;
     this.object = new THREE.Group();
     this.object.name = `${this.spec.short}: ${opts.name}`;
+    this.spinners = real ? real.spinners : [];
+    this.realGlass = real ? real.glass : [];
+    if (real) this.object.add(real.object);
     for (const key of ['body', 'matte', 'metal', 'pilot', 'fabric', 'glow', 'glass']) {
       if (!parts[key]) continue;
       const mesh = new THREE.Mesh(parts[key], M[key]);
@@ -232,6 +238,7 @@ export class Craft {
     const inside = id === 'hood';
     if (this.pilotMesh) this.pilotMesh.visible = !inside;
     if (this.glassMesh) this.glassMesh.material = inside ? this.mats.glassInside : this.mats.glass;
+    for (const g of this.realGlass) g.visible = !inside;
   }
 
   get kmh() {
@@ -886,6 +893,7 @@ export class Craft {
   update(dt) {
     this._pose();
     for (const d of this.props) d.rotation.z += dt * 60;
+    for (const p of this.spinners) p.rotation.z += dt * (this.kind === 'plane' ? 60 : 25 + Math.abs(this.speed) * 1.5);
     if (this.flames) {
       const C = this.vehicle.controls;
       const k = 0.6 + C.throttle * 1.2 - C.brake * 0.4 + Math.random() * 0.15;
