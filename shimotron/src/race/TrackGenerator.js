@@ -46,6 +46,12 @@ export function generateTrack(terrain, stage, { halfWidth = 7, attempts = 48, lo
   const R = I.radius;
   const [sx, sz] = I.stretch || [1, 1];
   const T = stage.track;
+  if (T.controls) {
+    // Drawn by hand: taken as it is.
+    const controls = T.controls.map(([x, z]) => new THREE.Vector3(x, 0, z));
+    const length = new THREE.CatmullRomCurve3(controls, true, 'centripetal', 0.5).getLength();
+    return { controls, length, minRadius: 0, corners: 0, tight: 0, maxGrade: 0, cutFill: 0, climb: 0, score: 100 };
+  }
   const volcanoes = I.volcanoes || (I.volcano ? [I.volcano] : []);
   const rng = new Random(stage.seed * 7919 + 13);
   let best = null;

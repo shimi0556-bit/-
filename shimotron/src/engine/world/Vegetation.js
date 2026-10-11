@@ -445,8 +445,14 @@ export class Vegetation {
     lists.forEach((list, vi) => {
       for (const it of list) {
         _q.setFromEuler(_e.set(this.rng.range(-0.3, 0.3), it.r, this.rng.range(-0.3, 0.3)));
-        it.matrix = new THREE.Matrix4().compose(new THREE.Vector3(it.x, it.y, it.z), _q.clone(), new THREE.Vector3(it.s * this.rng.range(0.9, 1.3), it.s, it.s * this.rng.range(0.9, 1.3)));
-        if (it.s > 1.2) this.colliders.push({ x: it.x, y: it.y, z: it.z, r: it.s * 0.8, type: 'sphere' });
+        const sx = this.rng.range(0.9, 1.3);
+        const sz = this.rng.range(0.9, 1.3);
+        it.matrix = new THREE.Matrix4().compose(new THREE.Vector3(it.x, it.y, it.z), _q.clone(), new THREE.Vector3(it.s * sx, it.s, it.s * sz));
+        // One sphere as wide as the rock (the mesh reaches ~1.2 of its scale), sunk so its top meets the
+        // rock's squashed top: every rock is solid, a pebble you bump over as well as a boulder.
+        const a = it.s * Math.max(sx, sz) * 1.2;
+        const b = it.s * 0.72 * 1.25;
+        this.colliders.push({ x: it.x, y: it.y - (a - b), z: it.z, r: a, type: 'sphere' });
       }
       this._chunked(variants[vi], this.materials.lib.rock, list, 'סלעים', { cast: true, cell: 220 });
     });

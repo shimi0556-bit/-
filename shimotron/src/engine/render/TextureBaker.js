@@ -76,6 +76,7 @@ export class TextureBaker {
     this.quad = new FullScreenQuad(null);
     this.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
     this.cache = new Map();
+    this.targets = new Map();
   }
 
   /**
@@ -124,7 +125,45 @@ export class TextureBaker {
     r.setRenderTarget(prev);
     mat.dispose();
     this.cache.set(name, rt.texture);
+    this.targets.set(name, rt);
     return rt.texture;
+  }
+
+  /**
+   * Overwrites a baked texture with an image (a photographed material),
+   * tiled `repeat` times across it, keeping the render target, so every
+   * material already using the texture shows the photo. The bytes go in as
+   * they are (an sRGB photo into an sRGB target, a normal map raw).
+   */
+  blit(name, image, { repeat = 1 } = {}) {
+    const rt = this.targets.get(name);
+    if (!rt) return false;
+    const src = new THREE.Texture(image);
+    src.colorSpace = THREE.NoColorSpace;
+    src.wrapS = src.wrapT = THREE.RepeatWrapping;
+    src.flipY = false;
+    src.generateMipmaps = true;
+    src.minFilter = THREE.LinearMipmapLinearFilter;
+    src.needsUpdate = true;
+    const mat = new THREE.ShaderMaterial({
+      uniforms: { tSrc: { value: src }, uRepeat: { value: repeat }, uDecode: { value: rt.texture.colorSpace === THREE.SRGBColorSpace ? 1 : 0 } },
+      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+      // An sRGB target encodes what is written to it, so a photo goes in decoded to linear (as the recipes write).
+      fragmentShader:
+        'uniform sampler2D tSrc; uniform float uRepeat; uniform float uDecode; varying vec2 vUv; void main(){ vec3 c = texture2D(tSrc, vUv * uRepeat).rgb; if (uDecode > 0.5) c = mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(0.04045, c)); gl_FragColor = vec4(c, 1.0); }',
+      depthTest: false,
+      depthWrite: false,
+      blending: THREE.NoBlending,
+    });
+    const r = this.renderer;
+    const prev = r.getRenderTarget();
+    this.quad.material = mat;
+    r.setRenderTarget(rt);
+    this.quad.render(r);
+    r.setRenderTarget(prev);
+    mat.dispose();
+    src.dispose();
+    return true;
   }
 }
 

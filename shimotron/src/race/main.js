@@ -31,6 +31,8 @@ import { loadRealModels, warmRealModels } from './RealModels.js';
 import { World, WORLD } from './World.js';
 import { SpaceScene } from './Space.js';
 import { Explore, ROAM } from './Explore.js';
+import { Rally } from './Rally.js';
+import { applyPhotoTextures } from './PhotoTextures.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -132,7 +134,7 @@ class Game {
     engine.particles = new Particles(engine, materials);
     engine.audio = new AudioEngine(engine);
     await progress(0.17, 'טוען מודלים תלת־ממדיים אמיתיים…');
-    await loadRealModels();
+    await Promise.all([loadRealModels(), applyPhotoTextures(materials)]);
     this.wheels = new WheelBatch(materials, 32);
     engine.scene.add(this.wheels.group);
     this.skid = new SkidMarks(engine.quality.presetName === 'low' ? 2500 : 5000);
@@ -434,6 +436,7 @@ class Game {
   // ------------------------------------------------------------- menu
 
   toMenu() {
+    this._endRally();
     this._endRace();
     this._endPodium();
     this._exitSpace();
@@ -678,6 +681,9 @@ class Game {
       if (color.toLowerCase() === this.settings.color.toLowerCase()) color = colors[(i + RACE.opponents) % colors.length];
       list.push({ id: `ai${i}`, name: names[i], color, stripe: i % 2 ? '#111111' : '#f2f2f2', number: [3, 11, 21, 44, 55, 88][i], isPlayer: false, type: mix[(i + this.selected * 2) % mix.length] });
     }
+    // Some islands have a vehicle of their own (the monster 4×4s across the islands): everyone drives it.
+    const only = STAGES[this.selected]?.vehicle;
+    if (only) for (const r of list) r.type = only;
     return list;
   }
 
@@ -991,7 +997,30 @@ class Game {
 
   startExplore() {
     this.mode = 'explore';
+    this._endRally();
     this._roam(this.selected);
+  }
+
+  /** "ראלי כל האיים": a timed run right round the archipelago, starting and finishing in the city. */
+  startRally() {
+    this.mode = 'explore';
+    this._endRally();
+    this.rally = new Rally(this);
+    this.roamKind = 'car';
+    this._roam(STAGES.findIndex((s) => s.id === WORLD.hub));
+  }
+
+  _endRally() {
+    if (this.rally) this.rally.dispose();
+    this.rally = null;
+  }
+
+  get rallyBest() {
+    return store.get('rallyBest', null);
+  }
+
+  saveRallyBest(t) {
+    store.set('rallyBest', t);
   }
 
   /** Free roam on an island (from the map, or arriving from another island at `at`). */
@@ -1028,6 +1057,11 @@ class Game {
     this._endRace();
     this._showMap(false);
     this.skid.clear();
+    // A rally just started: its gates go up now that every island on the way is built, and it starts on its line.
+    if (this.rally && !this.rally.gates.length && !at) {
+      if (this.rally.plan()) at = this.rally.start;
+      else this._endRally();
+    }
     const ex = new Explore(this, this.island);
     this.explore = ex;
     this.kind = null;
@@ -1399,12 +1433,14 @@ class Game {
     this._musicFrame();
     this._neighbours(dt);
     this._mapLabels();
+    if (this.state === 'explore' && this.explore && this.rally && !this.paused) this.rally.update(dt, this.explore);
     if (this.state === 'explore' && this.explore) this.ui.updateExplore(this.explore, dt);
     // Under the waves: water fog instead of air.
     const cam = this.engine.camera.position;
     const w = this.water;
     const surf = w && this.state !== 'menu' ? waveAt(cam.x, cam.z, this.engine.time.elapsed, w.uniforms.uWaveAmp.value, undefined, -this.floorAt(cam.x, cam.z)).y : -1e9;
-    this.engine.atmosphere.underwater = cam.y < surf - 0.05;
+    // (Not in a tunnel's walled cut, open to the sky below sea level.)
+    this.engine.atmosphere.underwater = cam.y < surf - 0.05 && !this.island?.track?.inCut(cam.x, cam.z);
     // Sun shafts and marine snow while under the surface.
     if (!this.underwaterFx) this.underwaterFx = new Underwater(this.engine);
     this.underwaterFx.update(dt, this.engine.atmosphere.underwater && this.state !== 'menu');

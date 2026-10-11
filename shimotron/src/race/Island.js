@@ -10,10 +10,12 @@ import { Life } from './Life.js';
 import { Spaceport } from './Launch.js';
 import { Weather } from './Effects.js';
 import { RACE } from './config.js';
-import { GROUP } from './Vehicle.js';
+import { GROUP, Vehicle } from './Vehicle.js';
 import { AccessRoads } from './AccessRoads.js';
 import { Colliders } from './Colliders.js';
 import { Bushes } from './Bushes.js';
+import { Wilds } from './Wilds.js';
+import { SeaTunnels } from './SeaTunnels.js';
 import { Trail, planTrail } from './Trail.js';
 import { bakedGround, bakedSegments } from './BakedGround.js';
 
@@ -141,11 +143,26 @@ export class Island {
       }
     }
 
+    let wildsKey = '';
+    if (st.wilds) {
+      // Rockfalls and lava crossings open the barriers where they cross, and the
+      // waterfalls cut their cliffs into the hillsides: all before the ground is baked.
+      this.wilds = new Wilds(eng, this);
+      this.wilds.plan();
+      wildsKey = this.wilds.groundKey();
+      if (wildsKey) {
+        const h0 = terrain.heightModifier;
+        terrain.heightModifier = (x, z, h) => this.wilds.carve(x, z, h0(x, z, h));
+        const s0 = terrain.splatModifier;
+        terrain.splatModifier = (x, z, w, h) => this.wilds.splat(x, z, s0(x, z, w, h));
+      }
+    }
+
     await progress(0.32, 'חוצב את הכביש בשטח…');
     // Heights and ground maps: from the cache when this island was built before, else baked in slices.
     const cache = this.opts.cache;
     const landings = ends.map((e) => [e.x, e.y, e.z].map((v) => Math.round(v * 10)).join(',')).join(';');
-    this.groundKey = `${st.id}|${plan.controls.length}|${Math.round(plan.length * 100)}|${this.trail ? Math.round(this.trail.length * 10) : 0}|${hash(landings)}`;
+    this.groundKey = `${st.id}|${plan.controls.length}|${Math.round(plan.length * 100)}|${this.trail ? Math.round(this.trail.length * 10) : 0}|${hash(landings)}${wildsKey ? `|${hash(wildsKey)}` : ''}`;
     const key = `${this.groundKey}|${terrain.segments}`;
     // Offline build: the ground ships pre-baked in the file.
     const hit = (cache && cache.get(key)) || (await bakedGround(st.id, this.groundKey, terrain));
@@ -179,6 +196,11 @@ export class Island {
     // Everything solid on the island (buildings, trunks, rocks) in one set: bodies for cars, shapes for craft.
     this.colliders = new Colliders(eng.physics);
     for (const b of this.trail?.solids || []) this.colliders.box(b.x, b.y, b.z, b.hx, b.hy, b.hz, b.yaw, 'wood');
+    if (track.tunnels?.length) {
+      await progress(0.52, 'מניח מנהרות זכוכית בקרקעית הים…');
+      this.tunnels = new SeaTunnels(eng, terrain, track, this.materials);
+      this.group.add(this.tunnels.build(this.colliders));
+    }
     if (this.city) {
       await progress(0.56, 'בונה את העיר…');
       this.city.colliders = this.colliders;
@@ -189,10 +211,17 @@ export class Island {
       // The spaceport, with its rocket on the mount.
       this.spaceport = new Spaceport(eng, this.materials, this.opts.pad);
       this.group.add(this.spaceport.build());
+      this.spaceport.solids(this.colliders);
     }
     if (st.gorge) {
       await progress(0.56, 'מפסל קשתות סלע ונקיקים…');
-      this.group.add(new Canyon(eng, terrain, track, st, this.materials, this.colliders).build());
+      this.group.add(new Canyon(eng, terrain, track, st, this.materials, this.colliders, this.keepOut).build());
+      await nextFrame();
+    }
+
+    if (this.wilds) {
+      await progress(0.58, 'מזרים מפלים ולבה, מכין מפולות…');
+      this.group.add(this.wilds.build(this.materials, this.colliders));
       await nextFrame();
     }
 
@@ -205,7 +234,7 @@ export class Island {
     this.group.add(flora.build());
     for (const c of flora.colliders) {
       if (c.type === 'tree') this.colliders.tree(c.x, c.y, c.z, c.r, c.h, c.crownR, c.top);
-      else if (c.type === 'sphere' && c.r > 0.7) this.colliders.sphere(c.x, c.y, c.z, c.r);
+      else if (c.type === 'sphere') this.colliders.sphere(c.x, c.y, c.z, c.r);
     }
     // Shrubs that give way: pushed aside, or flattened when driven over.
     this.bushes = new Bushes(eng, terrain, this.materials, st, track, flora, blocked);
@@ -246,6 +275,7 @@ export class Island {
     w.uniforms.uShallow.value.setRGB(...st.water.shallow);
     w.uniforms.uDeep.value.setRGB(...st.water.deep);
     w.uniforms.uClarity.value = st.water.clarity ?? 0.9;
+    w.setDry(this.tunnels ? this.tunnels.dry : [], this.track.W + 22);
   }
 
   _sky() {
@@ -357,11 +387,46 @@ export class Island {
     return out;
   }
 
-  /** Height of paving the wheels roll on (access roads, city streets) at (x, z), or null. */
-  pavedY(x, z) {
-    const r = this.roads ? this.roads.pavedY(x, z) : null;
-    if (r !== null) return r;
-    return this.city ? this.city.pavedY(x, z) : null;
+  /**
+   * Height of paving the wheels roll on (access roads, city streets, bridge decks) at (x, z), or null.
+   * Where they overlap (a deck passing over the streets near its landing), the highest one at or
+   * below `ref` (a wheel's height): the deck for a car on the bridge, the street for one under it.
+   */
+  pavedY(x, z, ref = Infinity) {
+    let best = null;
+    const take = (v) => {
+      if (v !== null && v <= ref + 0.3 && (best === null || v > best)) best = v;
+    };
+    if (this.roads) take(this.roads.pavedY(x, z));
+    if (this.city) take(this.city.pavedY(x, z));
+    if (this.deckLines) take(this.deckY(x, z));
+    return best;
+  }
+
+  /** Height of a bridge deck's asphalt at (x, z) (explore mode sets the decks), or null off them. */
+  deckY(x, z) {
+    let best = null;
+    let bd = 6.5;
+    for (const D of this.deckLines) {
+      const [x0, x1, z0, z1] = D.box;
+      if (x < x0 || x > x1 || z < z0 || z > z1) continue;
+      const P = D.pts;
+      for (let k = 0; k < P.length - 1; k++) {
+        const a = P[k];
+        const b = P[k + 1];
+        const vx = b.x - a.x;
+        const vz = b.z - a.z;
+        let u = ((x - a.x) * vx + (z - a.z) * vz) / (vx * vx + vz * vz);
+        if (u < -0.5 || u > 1.5) continue;
+        u = u < 0 ? 0 : u > 1 ? 1 : u;
+        const d = Math.hypot(x - a.x - vx * u, z - a.z - vz * u);
+        if (d < bd) {
+          bd = d;
+          best = a.y + (b.y - a.y) * u;
+        }
+      }
+    }
+    return best;
   }
 
   /**
@@ -373,12 +438,12 @@ export class Island {
     const tr = this.track;
     if (tr.raycastRoad(from, to, result, tr.roadBody)) return true;
     if (this.trail && this.trail.raycastRoad(from, to, result, tr.roadBody)) return true;
-    if (!this.roads && !this.city) return false;
-    const y = this.pavedY(from.x, from.z);
+    if (!this.roads && !this.city && !this.deckLines) return false;
+    const y = this.pavedY(from.x, from.z, from.y);
     if (y === null || from.y - y > 3 || from.y < y - 0.3) return false;
     const e = 0.7;
     const at = (x, z) => {
-      const v = this.pavedY(x, z);
+      const v = this.pavedY(x, z, from.y);
       return v === null ? y : v;
     };
     const gx = (at(from.x + e, from.z) - at(from.x - e, from.z)) / (2 * e);
@@ -410,11 +475,11 @@ export class Island {
   surface(x, z) {
     const tr = this.track;
     if (this.trail && this.trail.onDirt(x, z)) return 'dirt';
-    if (this.roads && this.roads.dist(x, z) < 6.8) return 'asphalt';
+    if (this.roads && this.roads.edgeDist(x, z) < 0.2) return 'asphalt';
     const q = tr.nearest(x, z, this._sq || (this._sq = {}));
     if (q) {
       const a = Math.abs(q.lat);
-      if (a < tr.W - 0.05) return 'asphalt';
+      if (a < tr.W - 0.05) return tr.dirt && tr.dirt[q.i] > 0.5 ? 'dirt' : 'asphalt';
       if (a < tr.W + 1.25 && tr.curbMark && tr.curbMark[q.i]) return 'curb';
       if (this.city && a < tr.W + 6.6) return 'asphalt'; // street circuit: tarmac run-off, no gravel
       if (a < tr.W + 4.6) return 'gravel';
@@ -432,10 +497,11 @@ export class Island {
   update(dt) {
     const eng = this.engine;
     this.track.update(dt, eng);
-    if (this.trail) this.trail.update(dt, eng);
+    if (this.trail) this.trail.update(dt, eng, Vehicle.live);
     if (this.city) this.city.update(dt);
     if (this.life) this.life.update(dt);
     if (this.weather) this.weather.update(dt);
+    if (this.wilds) this.wilds.update(dt);
     if (this.lava) {
       this.lava.uniforms.uTime.value = eng.time.elapsed;
       this.lava.uniforms.uGain.value = (eng.materials.emissiveScale || 1) * 0.6 * (this.stage.lavaGain ?? 1);
@@ -507,6 +573,7 @@ export class Island {
     this.bodies = [];
     for (const e of this.emitters) eng.particles.remove(e);
     if (this.city) this.city.dispose();
+    if (this.wilds) this.wilds.dispose();
     this.group.removeFromParent();
     this.group.traverse((o) => {
       if (o.isMesh || o.isPoints || o.isInstancedMesh) {

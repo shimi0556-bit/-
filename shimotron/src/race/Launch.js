@@ -43,15 +43,16 @@ export class Spaceport {
     const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, metalness: 0.2 });
     this.mat = mat;
     const parts = [];
-    // Launch mount: a ring table on six legs over the trench, on a concrete apron.
-    parts.push(paint(new THREE.CylinderGeometry(55, 58, 1.2, 40).translate(0, 0.6, 0), 0xb9b6ae));
+    // Launch mount: a ring table on six legs over the trench, on a concrete apron
+    // (flush with the ground, not a 1.2 m kerb a car would crash into).
+    parts.push(paint(new THREE.CylinderGeometry(55, 60, 4, 40).translate(0, -1.9, 0), 0xb9b6ae)); // a plinth: where the ground falls away its side shows, never a floating edge
     for (let k = 0; k < 6; k++) {
       const a = (k / 6) * Math.PI * 2;
       parts.push(paint(new THREE.BoxGeometry(2.4, 17, 2.4).translate(Math.cos(a) * 9, 8.5, Math.sin(a) * 9), 0x55595e));
     }
     parts.push(paint(new THREE.TorusGeometry(8.5, 1.4, 8, 24).rotateX(Math.PI / 2).translate(0, 17.3, 0), 0x6b6f75));
-    parts.push(paint(new THREE.BoxGeometry(12, 1.2, 60).translate(0, 0.9, 40), 0x2a2a2a)); // trench, both ways
-    parts.push(paint(new THREE.BoxGeometry(12, 1.2, 60).translate(0, 0.9, -40), 0x2a2a2a));
+    parts.push(paint(new THREE.BoxGeometry(12, 1.2, 60).translate(0, -0.46, 40), 0x2a2a2a)); // trench, both ways
+    parts.push(paint(new THREE.BoxGeometry(12, 1.2, 60).translate(0, -0.46, -40), 0x2a2a2a));
     // Tower: four columns, braces every 6 m, two swing arms.
     const tx = 20;
     const H = 110;
@@ -67,7 +68,7 @@ export class Spaceport {
     // Tank farm.
     for (let k = 0; k < 4; k++) {
       parts.push(paint(new THREE.SphereGeometry(7, 14, 10).translate(-40 + k * 16, 7, -44), 0xeeeeea));
-      parts.push(paint(new THREE.CylinderGeometry(3.5, 3.5, 22, 12).rotateZ(Math.PI / 2).translate(-38 + k * 14, 4, 46), 0xdcdcd6));
+      parts.push(paint(new THREE.CylinderGeometry(3.5, 3.5, 12, 12).rotateZ(Math.PI / 2).translate(-38 + k * 14, 4, 46), 0xdcdcd6)); // 12 long on a 14 m pitch: apart, not through each other
     }
     const pad = new THREE.Mesh(mergeGeometries(parts), mat);
     pad.castShadow = true;
@@ -91,6 +92,26 @@ export class Spaceport {
     this.reset();
     this.group.traverse((o) => (o.userData.noPick = true));
     return this.group;
+  }
+
+  /** Everything on the pad a car can reach is solid: mount legs, tower columns, the tank farm. */
+  solids(C) {
+    const { x, z } = this.pad;
+    const y = this.pad.h;
+    // The plinth's side, where it stands above falling ground: a ring of slabs.
+    for (let k = 0; k < 40; k++) {
+      const a = ((k + 0.5) / 40) * Math.PI * 2;
+      C.box(x + Math.cos(a) * 58.6, y - 1.9, z + Math.sin(a) * 58.6, 4.7, 2, 1.4, -a + Math.PI / 2, 'default', { craft: false });
+    }
+    for (let k = 0; k < 6; k++) {
+      const a = (k / 6) * Math.PI * 2;
+      C.box(x + Math.cos(a) * 9, y + 8.5, z + Math.sin(a) * 9, 1.2, 8.5, 1.2, 0, 'metal');
+    }
+    for (const [dx, dz] of [[-4, -4], [4, -4], [-4, 4], [4, 4]]) C.box(x + 20 + dx, y + 55, z + dz, 0.5, 55, 0.5, 0, 'metal');
+    for (let k = 0; k < 4; k++) {
+      C.sphere(x - 40 + k * 16, y + 7, z - 44, 7, 'metal');
+      C.box(x - 38 + k * 14, y + 4, z + 46, 6, 3.4, 3.4, 0, 'metal');
+    }
   }
 
   _rocket() {

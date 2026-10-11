@@ -892,7 +892,7 @@ export class City {
     }
     this.buildings = main;
     for (const b of main) this.colliders.box(b.x, b.y + b.h / 2, b.z, b.w / 2, b.h / 2, b.d / 2, b.yaw);
-    for (const t of this.roundTowers) this.colliders.box(t.x, t.y + t.h / 2, t.z, t.r * 0.86, t.h / 2, t.r * 0.86, 0);
+    for (const t of this.roundTowers) this.colliders.post(t.x, t.y, t.z, t.r, t.h);
     // One instanced mesh, one facade shader; style per instance.
     const boxGeo = new THREE.BoxGeometry(1, 1, 1);
     boxGeo.translate(0, 0.5, 0);

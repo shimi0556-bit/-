@@ -8,6 +8,8 @@ import { STAGES, RACE, AI, carSpec } from '../src/race/config.js';
 import { generateTrack } from '../src/race/TrackGenerator.js';
 import { Track } from '../src/race/Track.js';
 import { Vehicle, GROUP } from '../src/race/Vehicle.js';
+import { Colliders } from '../src/race/Colliders.js';
+import { SeaTunnels } from '../src/race/SeaTunnels.js';
 import { AIDriver, updateDrafts } from '../src/race/Drivers.js';
 
 const [, , stageId = 'pines', secs = '90', nCars = '6', skillArg = '0.95'] = process.argv;
@@ -27,6 +29,12 @@ physics.maxSubSteps = 10;
 terrain.addPhysics(physics);
 terrain.body.shapes[0].collisionFilterGroup = GROUP.terrain;
 track.buildPhysics(physics);
+// The glass sea tunnels' walls and roof (their meshes are built too, and dropped).
+if (track.tunnels && track.tunnels.length) {
+  const colliders = new Colliders(physics);
+  new SeaTunnels(stub, terrain, track, { trackEmissive() {} }).build(colliders);
+  colliders.build();
+}
 console.log(`${st.id}: ${track.length.toFixed(0)} m, built in ${Date.now() - t0} ms, bodies ${physics.world.bodies.length}`);
 
 const cars = [];
@@ -115,7 +123,7 @@ while (clock < total) {
     }
     if (v.upsideDown === 0) c._flip = false;
     if (v.upsideDown > 2.2) respawn(c, 'flipped');
-    else if (b.position.y < -0.6) respawn(c, 'water');
+    else if (b.position.y < -0.6 && !(track.sunk && q && track.sunk[q.i] && b.position.y > q.h - 3)) respawn(c, 'water');
     else if (!q || q.dist > track.W + 14) respawn(c, 'lost');
     else if (c.driver.needsRespawn) respawn(c, `ai:${c.driver.reason}`);
   }

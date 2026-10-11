@@ -31,6 +31,8 @@ function groundData(mode) {
 
 export default defineConfig(({ mode }) => ({
   base: './',
+  // Shown in the menu, so a player can tell which build a link is serving.
+  define: { __BUILD_DATE__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC') },
   plugins: [groundData(mode), viteSingleFile()],
   build: {
     target: 'es2022',

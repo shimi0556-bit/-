@@ -38,7 +38,7 @@ tab.on('pageerror', (e) => errors.push(e.message));
 const t0 = Date.now();
 await tab.goto(pathToFileURL(page).href + '#low');
 try {
-  await tab.waitForFunction(() => window.shimotron?.game?.state === 'menu' && window.shimotron.game.islands?.size >= 7, null, { timeout: 900000 });
+  await tab.waitForFunction((n) => window.shimotron?.game?.state === 'menu' && window.shimotron.game.islands?.size >= n, (await import('../src/race/config.js')).STAGES.length, { timeout: 900000 });
 } catch (e) {
   console.error('the game did not finish loading', errors.join('\n'));
   await browser.close();

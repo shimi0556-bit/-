@@ -18,24 +18,23 @@ import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometr
  * boats and the centre line for the rest.
  */
 
+// Boats, submarines and planes are real downloaded models (CraftReal.js); each design falls
+// back to a procedural one below if its model does not load.
 export const DESIGNS = {
-  boat: ['rib', 'offshore', 'runabout'],
-  sub: ['bubble', 'orca', 'manta'],
-  plane: ['racer', 'biplane', 'jet'],
+  boat: ['offshore', 'sprint'],
+  sub: ['bubble', 'excavator'],
+  plane: ['racer', 'mustang'],
   glider: ['para', 'speed', 'tandem', 'hang'],
   space: ['fighter', 'shuttle', 'needle'],
 };
 
 export const DESIGN_NAMES = {
-  rib: 'סירת גומי טורנדו',
   offshore: 'קטמרן אופשור',
-  runabout: 'סירת מנוע',
-  bubble: 'צוללת בועה',
-  orca: 'צוללת אורקה',
-  manta: 'צוללת מנטה',
-  racer: 'מטוס מרוץ',
-  biplane: 'דו־כנפי',
-  jet: 'סילון',
+  sprint: 'סירת ספרינט סילון',
+  bubble: 'צוללת מחקר צהובה',
+  excavator: 'צוללת עבודה',
+  racer: 'ג׳י בי R-1',
+  mustang: 'מוסטנג P-51',
   para: 'מצנח רחיפה',
   speed: 'כנף מהירות',
   tandem: 'מצנח זוגי',
@@ -1245,6 +1244,10 @@ const BUILDERS = {
   racer: racerPlane,
   biplane,
   jet: jetPlane,
+  // Fallbacks for the real-model designs that have no procedural twin of the same name.
+  sprint: runaboutBoat,
+  excavator: orcaSub,
+  mustang: racerPlane,
   para: (c, s, seed) => paraGlider(c, s, seed, 'para'),
   speed: (c, s, seed) => paraGlider(c, s, seed, 'speed'),
   tandem: (c, s, seed) => paraGlider(c, s, seed, 'tandem'),
@@ -1261,6 +1264,12 @@ export function buildCraft(design, color, stripe, seed = 1) {
   const key = `${design}|${color}|${stripe}|${seed % 7}`;
   if (!cache.has(key)) cache.set(key, BUILDERS[design](color, stripe, seed));
   return cache.get(key);
+}
+
+/** A design of this kind: the given one if the kind still has it (old saved choices), else the first. */
+export function designOf(kind, design) {
+  const list = DESIGNS[kind] || [];
+  return list.includes(design) ? design : list[0];
 }
 
 /** Picks a design for racer number k in a race of `kind` (the player's choice first when given). */

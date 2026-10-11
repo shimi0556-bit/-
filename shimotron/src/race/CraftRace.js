@@ -1,5 +1,5 @@
 import { Craft, CraftPlayer, CraftAI, KINDS, roadSurface } from './Craft.js';
-import { DESIGNS } from './CraftModels.js';
+import { DESIGNS, designOf } from './CraftModels.js';
 import { Course } from './Course.js';
 import { waveAt } from '../engine/world/Water.js';
 import { RACE, AI } from './config.js';
@@ -107,7 +107,7 @@ export class CraftRace {
       const heading = Math.atan2(pose.tangent.x, pose.tangent.z);
       // Every racer in a different design: the player's choice, the rest round the list.
       const list = DESIGNS[this.kind];
-      const mine = (this.game.settings.designs || {})[this.kind] || list[0];
+      const mine = designOf(this.kind, (this.game.settings.designs || {})[this.kind]);
       const design = r.isPlayer ? mine : list[(list.indexOf(mine) + 1 + (k % (list.length - 1 || 1))) % list.length];
       const craft = new Craft(env, { kind: this.kind, color: r.color, stripe: r.stripe, name: r.name, number: r.number, isPlayer: r.isPlayer, position: pos, heading, seed: k + 3, design });
       if (this.kind === 'plane') craft.smoke = true;

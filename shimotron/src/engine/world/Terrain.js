@@ -117,7 +117,8 @@ export class Terrain {
    * radius, stretch [sx, sz], base, hills, ranges [{angle, from, to, weight}],
    * mountainHeight, ridgeFreq, coastRough, volcano {x, z, radius, height,
    * craterRadius, craterDepth}, dunes {angle, height, wavelength},
-   * lagoon {inner, outer, depth}.
+   * lagoon {inner, outer, depth}, islets [{x, z, radius, height}] (smaller
+   * islands of their own round the main one, each with a rugged peak).
    */
   _islandHeight(x, z) {
     const I = this.island;
@@ -125,17 +126,26 @@ export class Terrain {
     const [sx, sz] = I.stretch || [1, 1];
     const warp = this.noise.noise(x * (0.75 / R) + 5.2, z * (0.75 / R) - 3.1);
     const coastN = this.noise.noise(x * (2.6 / R) - 7.7, z * (2.6 / R) + 1.3) * 0.5 + this.noise.noise(x * (6.5 / R), z * (6.5 / R) + 4.4) * 0.22;
-    const dist = Math.hypot(x / sx, z / sz) / R + warp * 0.16 + coastN * (I.coastRough ?? 0.12);
-    const island = smoothstep(1.02, 0.62, dist);
+    const mainDist = Math.hypot(x / sx, z / sz) / R + warp * 0.16 + coastN * (I.coastRough ?? 0.12);
+    let dist = mainDist;
     const hills = this._fbm(x * 0.0055, z * 0.0055, 5) * (I.hills ?? 9) + this._fbm(x * 0.021, z * 0.021, 3) * 1.4;
     const rf = I.ridgeFreq ?? 0.0035;
     const rid = this._ridged(x * rf, z * rf, 6);
+    // Islets: their own coasts (the sea between is open water) and a rugged peak each.
+    let peaks = 0;
+    for (const L of I.islets || []) {
+      const dl = Math.hypot(x - L.x, z - L.z) / L.radius + warp * 0.16 + coastN * (I.coastRough ?? 0.12);
+      if (dl < dist) dist = dl;
+      const p = Math.max(0, 1 - dl / 0.82);
+      peaks = Math.max(peaks, p * p * (3 - 2 * p) * (L.height ?? 40) * (0.55 + rid * 0.7));
+    }
+    const island = smoothstep(1.02, 0.62, dist);
     let mask = 0;
     for (const m of I.ranges || []) {
       const d = (x * Math.cos(m.angle) + z * Math.sin(m.angle)) / R + warp * 0.18;
       mask = Math.max(mask, smoothstep(m.from, m.to, d) * (m.weight ?? 1));
     }
-    let h = (I.base ?? 6) + hills + mask * Math.pow(rid, 1.6) * (I.mountainHeight ?? 110) * smoothstep(0.25, 0.7, 1 - dist * 0.85);
+    let h = (I.base ?? 6) + hills + mask * Math.pow(rid, 1.6) * (I.mountainHeight ?? 110) * smoothstep(0.25, 0.7, 1 - mainDist * 0.85) + peaks;
     if (I.dunes) {
       const D = I.dunes;
       const a = D.angle || 0;
@@ -635,6 +645,14 @@ export class Terrain {
               float layer = 0.5 + 0.5 * sin(band) * sin(band * 0.37 + 1.3);
               rock *= mix(vec3(1.0), mix(vec3(0.72, 0.62, 0.58), vec3(1.18, 1.06, 0.92), layer), uStrata);
             }
+            // Big, slow variation so no two hillsides look alike: sun-dried patches in the grass,
+            // moss and lichen on the tops of rock ledges (not on the vertical faces), darker in the hollows.
+            float dryN = texture2D(tGrass, wuv * 0.0021 + 7.3).g * 4.0;
+            grass *= mix(vec3(1.0), vec3(1.16, 1.06, 0.72), smoothstep(0.45, 0.85, dryN) * 0.45);
+            float mossN = texture2D(tGrass, wuv * 0.031 - 2.1).g * 3.0 + texture2D(tRock, wuv * 0.11).r * 0.6;
+            float moss = smoothstep(0.5, 0.85, n.y) * smoothstep(0.55, 1.1, mossN) * smoothstep(0.4, 2.0, vTPos.y);
+            rock = mix(rock, uTintGrass * vec3(0.24, 0.3, 0.14) * (0.7 + 0.5 * mossN), moss * 0.55);
+            rock *= 0.82 + 0.3 * smoothstep(0.2, 0.8, texture2D(tRock, vTPos.xz * 0.008 + 1.7).g);
             // Height-aware blending keeps transitions crisp instead of muddy.
             float hg = dot(grass, vec3(0.33)) + 0.2;
             float hs = dot(sand, vec3(0.33));

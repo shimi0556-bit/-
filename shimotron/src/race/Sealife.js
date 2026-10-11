@@ -183,6 +183,13 @@ export const SPECIES = [
   { name: 'shark', shape: 'shark', size: 2.1, count: [1, 2], color: 0x8a96a0, pattern: 8, speed: 2.6, radius: 14, depth: [-40, -6] },
   { name: 'ray', shape: 'ray', size: 1.5, count: [1, 3], color: 0x3a3a44, pattern: 10, speed: 1.4, radius: 10, depth: [-30, -3], floor: true },
   { name: 'turtle', shape: 'turtle', size: 1.0, count: [1, 2], color: 0x6a7a4a, pattern: 9, speed: 1.2, radius: 9, depth: [-20, -2], reef: true },
+  // The shallows right off the beach, where the water is clear enough to see
+  // them from the shore road. The mullet and the needlefish break the surface.
+  { name: 'mullet', shape: 'slim', size: 0.3, count: [20, 45], color: 0xbfcdd8, pattern: 0, speed: 2.6, radius: 4, depth: [-3.4, -0.5], shore: true, leap: true },
+  { name: 'needlefish', shape: 'slim', size: 0.5, count: [5, 12], color: 0xa9c4cf, pattern: 0, speed: 3.2, radius: 5, depth: [-1.6, -0.3], shore: true, leap: true },
+  { name: 'sergeant', shape: 'oval', size: 0.16, count: [14, 30], color: 0xf3e08a, pattern: 11, speed: 1.5, radius: 2.2, depth: [-4, -0.6], shore: true },
+  { name: 'goatfish', shape: 'slim', size: 0.26, count: [6, 14], color: 0xf0ddc8, pattern: 12, speed: 1.3, radius: 3, depth: [-5, -0.8], shore: true, floor: true },
+  { name: 'convict', shape: 'deep', size: 0.22, count: [10, 22], color: 0xf2e6c0, pattern: 13, speed: 1.8, radius: 2.6, depth: [-5, -0.8], shore: true },
 ];
 
 /**
@@ -424,13 +431,26 @@ export const FISH_PATTERN_GLSL = `
     // Turtle: shell plates.
     vec2 c = fract(fp.xz * 5.0) - 0.5;
     diffuseColor.rgb *= 0.75 + 0.35 * smoothstep(0.5, 0.3, max(abs(c.x), abs(c.y)));
-  } else if (pat > 9.5) {
+  } else if (pat < 10.5) {
     // Eagle ray: white spots on a dark back.
     vec2 c = fract(fp.xz * vec2(9.0, 11.0)) - 0.5;
     diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.92), smoothstep(0.16, 0.1, length(c)) * back);
+  } else if (pat < 11.5) {
+    // Sergeant major: five narrow black bars over a yellow back.
+    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0, 0.82, 0.12), back);
+    float bars = abs(fract(fp.z * 3.6 + 0.5) - 0.5);
+    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.05), smoothstep(0.12, 0.07, bars) * step(-0.3, fp.z) * step(fp.z, 0.36));
+  } else if (pat < 12.5) {
+    // Goatfish: a dark stripe from the eye to the tail, over pale sandy flanks.
+    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.45, 0.3, 0.26), smoothstep(0.045, 0.02, abs(fp.y - 0.01)));
+    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0, 0.86, 0.45), smoothstep(-0.3, -0.4, fp.z));
+  } else if (pat < 13.5) {
+    // Convict tang: six black bars on cream.
+    float bars = abs(fract(fp.z * 4.2) - 0.5);
+    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.08), smoothstep(0.14, 0.08, bars));
   }
   // The eye: a dark pupil in a pale ring, just behind the snout.
-  if (pat < 7.5) {
+  if (pat < 7.5 || pat > 10.5) {
     vec2 e = vec2(fp.z - 0.39, fp.y - 0.035);
     float r = length(e);
     diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.92, 0.88, 0.6), smoothstep(0.034, 0.028, r) * step(0.02, abs(fp.x)));

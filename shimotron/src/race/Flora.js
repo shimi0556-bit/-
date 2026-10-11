@@ -286,7 +286,19 @@ export class IslandFlora extends Vegetation {
           geo.computeBoundingBox();
           box.union(geo.boundingBox);
         }
-        return { top: box.max.y, crownR: Math.max(-box.min.x, box.max.x, -box.min.z, box.max.z) * 0.7 };
+        // How far the wood reaches out at car-body height (cactus arms, low dead branches, a palm's
+        // leaning trunk): the collider has to cover it, not just the trunk at the root.
+        let band = 0;
+        const solid = [parts[0]]; // the wood: trunk (the leaves are the second part), or the whole cactus / dead tree
+        for (const [geo] of solid) {
+          const pos = geo.attributes.position;
+          for (let i = 0; i < pos.count; i++) {
+            const y = pos.getY(i);
+            if (y < 0.2 || y > 1.5) continue;
+            band = Math.max(band, Math.hypot(pos.getX(i), pos.getZ(i)));
+          }
+        }
+        return { top: box.max.y, crownR: Math.max(-box.min.x, box.max.x, -box.min.z, box.max.z) * 0.7, band };
       });
     }
     const total = species.reduce((s, x) => s + x.w, 0);
@@ -344,7 +356,9 @@ export class IslandFlora extends Vegetation {
       lists[si][vi].push(it);
       // Solid: the trunk stops a car, the whole tree a low-flying craft.
       const d = sp.dims[vi] || sp.dims[0];
-      this.colliders.push({ type: 'tree', x, y: it.y, z, r: sp.collider * s, h: Math.min(d.top * 0.7, 6) * s, crownR: d.crownR * s, top: d.top * s });
+      // Colliders.tree() makes a box of half width r·0.8: sized so it reaches what the mesh does at bumper height.
+      const reach = Math.max(sp.collider * 0.8, d.band * 0.92);
+      this.colliders.push({ type: 'tree', x, y: it.y, z, r: (reach / 0.8) * s, h: Math.min(d.top * 0.7, 6) * s, crownR: d.crownR * s, top: d.top * s });
       placed++;
     }
     species.forEach((sp, si) => {

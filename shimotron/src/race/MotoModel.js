@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import yzGz from './models/moto-yz.glb.gz?url';
+import { bakeNode } from './MonsterTruck.js';
 
 /**
  * A motocross bike and its rider, modelled to the proportions of a real
@@ -221,6 +223,164 @@ function plateTexture(number) {
   return t;
 }
 
+// ------------------------------------------------------------ the real bike
+
+/**
+ * The real motocross bike ("Yz250" by e-restrepo1114, CC BY 4.0; see tools/vehicles.mjs), cut
+ * into its moving parts: body, steer (bars, fork tubes, front fender and plate), slider (fork
+ * lower legs), swing (swingarm), and the two wheels. Model coordinates: ground at y = 0, nose +z.
+ */
+let YZ = null;
+// The cut's own pivots (tools/vehicles.mjs): the steering head and axis, the swingarm pivot.
+const YZ_HEAD = new THREE.Vector3(0, 1.0, 0.303);
+const YZ_AXIS = new THREE.Vector3(0, 0.804, -0.595).normalize();
+const YZ_PIVOT = new THREE.Vector3(0, 0.42, -0.1);
+
+/** Loads the bike (parse: a function that turns the inlined, gzipped GLB into a scene). */
+export async function loadMoto(parse) {
+  try {
+    const gltf = await parse(yzGz);
+    const node = (n) => {
+      const o = gltf.scene.getObjectByName(n);
+      if (!o) throw new Error(`no ${n} in the bike`);
+      const parts = bakeNode(o);
+      for (const p of parts) if (p.mat.map) p.mat.map.userData.keep = true;
+      return parts;
+    };
+    const wheel = (n) => {
+      const parts = node(n);
+      const box = new THREE.Box3();
+      for (const p of parts) {
+        p.geo.computeBoundingBox();
+        box.union(p.geo.boundingBox);
+      }
+      const centre = box.getCenter(new THREE.Vector3());
+      for (const p of parts) p.geo.translate(-centre.x, -centre.y, -centre.z);
+      return { parts, centre, radius: (box.max.y - box.min.y) / 2 };
+    };
+    YZ = { body: node('body'), steer: node('steer'), slider: node('slider'), swing: node('swing'), front: wheel('wheel_F'), rear: wheel('wheel_R') };
+  } catch (e) {
+    console.warn('the real bike did not load; using the procedural bike', e);
+  }
+}
+
+export const hasMoto = () => !!YZ;
+
+/** The real bike with the rider on it; the same parts and pose() as the procedural one. */
+function createRealMoto(M, team, accent, white, black, number) {
+  const root = new THREE.Group();
+  root.name = 'אופנוע';
+  const lean = new THREE.Group();
+  lean.position.y = GROUND;
+  root.add(lean);
+  const body = new THREE.Group();
+  body.position.y = -GROUND;
+  lean.add(body);
+  const B = { gloss: [], metal: [], dark: [], rubber: [], fabric: [] };
+  riderParts(B, team, accent, white, black, (y, z, x = 0) => new THREE.Vector3(x, GROUND + y, z));
+  addBuckets(body, B, M);
+  // The bike, scaled to the physics wheelbase, its tyres on the ground and its axles on the physics wheels'.
+  const s = (AXLE_F.z - AXLE_R.z) / (YZ.front.centre.z - YZ.rear.centre.z);
+  const bike = new THREE.Group();
+  bike.scale.setScalar(s);
+  bike.position.set(0, GROUND, (AXLE_F.z + AXLE_R.z) / 2 - ((YZ.front.centre.z + YZ.rear.centre.z) / 2) * s);
+  body.add(bike);
+  // Its blue plastics take the team colour.
+  const paintMat = new Map();
+  const mat = (m) => {
+    if (m.name !== 'plastico_naranja') return m;
+    if (!paintMat.has(m)) {
+      const p = m.clone();
+      p.color.copy(team);
+      p.roughness = Math.max(p.roughness, 0.25);
+      paintMat.set(m, p);
+    }
+    return paintMat.get(m);
+  };
+  const add = (parent, parts, at) => {
+    for (const p of parts) {
+      const geo = at ? p.geo.clone().translate(-at.x, -at.y, -at.z) : p.geo;
+      parent.add(meshOf(geo, mat(p.mat)));
+    }
+  };
+  add(bike, YZ.body);
+  const steer = new THREE.Group();
+  steer.position.copy(YZ_HEAD);
+  bike.add(steer);
+  add(steer, YZ.steer, YZ_HEAD);
+  const slider = new THREE.Group();
+  steer.add(slider);
+  add(slider, YZ.slider, YZ_HEAD);
+  const frontWheel = new THREE.Group();
+  frontWheel.position.copy(YZ.front.centre).sub(YZ_HEAD);
+  slider.add(frontWheel);
+  add(frontWheel, YZ.front.parts);
+  // The race number on the front plate.
+  const numMat = new THREE.MeshStandardMaterial({ map: plateTexture(number), roughness: 0.4, polygonOffset: true, polygonOffsetFactor: -2 });
+  const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.12), numMat);
+  const n = new THREE.Vector3(0, -YZ_AXIS.z, YZ_AXIS.y); // forward, square to the fork
+  plate.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), n);
+  plate.position.set(0, YZ_PLATE[0], YZ_PLATE[1]).sub(YZ_HEAD);
+  steer.add(plate);
+  const swing = new THREE.Group();
+  swing.position.copy(YZ_PIVOT);
+  bike.add(swing);
+  add(swing, YZ.swing, YZ_PIVOT);
+  const rearWheel = new THREE.Group();
+  rearWheel.position.copy(YZ.rear.centre).sub(YZ_PIVOT);
+  swing.add(rearWheel);
+  add(rearWheel, YZ.rear.parts);
+  root.traverse((o) => {
+    if (o.isMesh) {
+      o.castShadow = true;
+      o.receiveShadow = true;
+    }
+  });
+  const state = { lean: 0 };
+  const axR = rearWheel.position;
+  const swingLen = Math.hypot(axR.y, axR.z);
+  const paint = paintMat.values().next().value || M.gloss;
+  return {
+    group: root,
+    paint,
+    tailMat: M.tail,
+    headMat: M.tail,
+    pose(car, dt) {
+      const veh = car.vehicle;
+      const infos = veh.vehicle.wheelInfos;
+      const Wh = car.spec.wheel;
+      const len = (i) => {
+        const w = infos[i];
+        return w.isInContact ? w.suspensionLength : Math.min(w.suspensionRestLength + 0.05, w.suspensionLength + 0.2);
+      };
+      // The hubs' rise above their rest height (metres → model units).
+      const rest = GROUND + Wh.radius;
+      const dF = THREE.MathUtils.clamp(Wh.height - (len(0) + len(1)) / 2 - rest, -0.2, 0.3) / s;
+      const dR = THREE.MathUtils.clamp(Wh.height - (len(2) + len(3)) / 2 - rest, -0.2, 0.3) / s;
+      slider.position.copy(YZ_AXIS).multiplyScalar(dF / YZ_AXIS.y);
+      steer.quaternion.setFromAxisAngle(YZ_AXIS, -veh.steerAngle * 0.9);
+      swing.rotation.x = Math.asin(THREE.MathUtils.clamp(dR / swingLen, -0.9, 0.9));
+      frontWheel.rotation.x = veh.wheelShown[0] * (Wh.radius / (YZ.front.radius * s));
+      rearWheel.rotation.x = veh.wheelShown[2] * (Wh.radius / (YZ.rear.radius * s));
+      leanInto(car, veh, state, dt);
+      lean.rotation.z = state.lean;
+    },
+  };
+}
+// Where the front number goes on the plate (model y, z).
+const YZ_PLATE = [1.0, 0.43];
+
+/** Lean into the turn: the angle that balances the cornering force, eased. */
+function leanInto(car, veh, state, dt) {
+  const av = car.body.angularVelocity;
+  const up = _v.set(0, 1, 0).applyQuaternion(car.object.quaternion);
+  const yawRate = av.x * up.x + av.y * up.y + av.z * up.z;
+  const v = veh.speed;
+  const grounded = veh.airborne < 0.15;
+  const want = grounded ? THREE.MathUtils.clamp(Math.atan((-v * yawRate) / 9.81), -0.85, 0.85) : state.lean * 0.9;
+  state.lean += (want - state.lean) * Math.min(1, dt * (grounded ? 7 : 2));
+}
+
 // ------------------------------------------------------------ the model
 
 /**
@@ -238,6 +398,7 @@ export function createMotoModel(materials, { color = '#e0262b', number = 1, stri
   const ti = col(0x9a9ca2);
   const dark = col(0x2b2d31);
   const rubber = col(0x161616);
+  if (YZ) return createRealMoto(M, team, accent, white, black, number);
 
   const root = new THREE.Group();
   root.name = 'אופנוע';
@@ -556,16 +717,9 @@ export function createMotoModel(materials, { color = '#e0262b', number = 1, stri
       // Rear: the swingarm swings.
       const dR = THREE.MathUtils.clamp(yR - restR, -0.2, 0.3);
       swing.rotation.x = Math.asin(THREE.MathUtils.clamp(dR / swingLen, -0.9, 0.9));
-      frontWheel.rotation.x = veh.wheelSpin[0] * (Wh.radius / FRONT_R);
-      rearWheel.rotation.x = veh.wheelSpin[2];
-      // Lean into the turn: the angle that balances the cornering force, eased.
-      const av = car.body.angularVelocity;
-      const up = _v.set(0, 1, 0).applyQuaternion(car.object.quaternion);
-      const yawRate = av.x * up.x + av.y * up.y + av.z * up.z;
-      const v = veh.speed;
-      const grounded = veh.airborne < 0.15;
-      const want = grounded ? THREE.MathUtils.clamp(Math.atan((-v * yawRate) / 9.81), -0.85, 0.85) : state.lean * 0.9;
-      state.lean += (want - state.lean) * Math.min(1, dt * (grounded ? 7 : 2));
+      frontWheel.rotation.x = veh.wheelShown[0] * (Wh.radius / FRONT_R);
+      rearWheel.rotation.x = veh.wheelShown[2];
+      leanInto(car, veh, state, dt);
       lean.rotation.z = state.lean;
     },
   };
