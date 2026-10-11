@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { gunzipSync } from 'three/addons/libs/fflate.module.js';
 import { CAR_TYPES, carSpec } from './config.js';
 import { createCarModel, drawCarProfile } from './CarModel.js';
-import { loadMonster, hasMonster, createMonsterCar, drawMonsterProfile } from './MonsterTruck.js';
+import { loadMonster, hasMonster, createMonsterCar, drawMonsterProfile, texelsOf, texelAt } from './MonsterTruck.js';
 import { loadFish } from './TunnelLife.js';
 import { loadMoto, hasMoto } from './MotoModel.js';
 import conceptHi from './models/concept.glb.gz?url';
@@ -366,7 +366,7 @@ const _e2 = new THREE.Vector3();
 /** Every visible triangle of the light version seen from the left side, far to near (once per model). */
 function sideTriangles(R) {
   if (R.tris) return R.tris;
-  const T = R.lo;
+  const T = R.hi; // the near version: its UVs give each triangle its texture colour
   const g = new THREE.Group();
   const body = T.body.clone();
   body.position.set(0, 0, R.dz);
@@ -385,8 +385,11 @@ function sideTriangles(R) {
     const idx = o.geometry.index;
     const n = idx ? idx.count : pos.count;
     const m = o.material;
-    const kind = m === R.paint ? 'paint' : m === R.glass ? 'glass' : null;
+    const kind = m === R.paint ? 'paint' : m === R.glass || /glass/i.test(m.name) ? 'glass' : null;
+    if (!kind && m.transparent && m.opacity < 0.7) return; // clear coat and lamp lenses: see-through in the game
     const base = kind ? null : m.emissive && m.emissive.getHex() && m.color.getHex() === 0 ? m.emissive : m.color;
+    const uv = o.geometry.attributes.uv;
+    const px = !kind && m.map && uv ? texelsOf(m.map) : null; // rims, tyres and trim take their texture's colour
     for (let t = 0; t < n; t += 3) {
       for (let k = 0; k < 3; k++) _v[k].fromBufferAttribute(pos, idx ? idx.getX(t + k) : t + k).applyMatrix4(o.matrixWorld);
       _e1.subVectors(_v[1], _v[0]);
@@ -394,7 +397,9 @@ function sideTriangles(R) {
       const nrm = _e1.cross(_e2).normalize();
       if (nrm.x <= 0.02) continue; // facing away from a viewer on the left
       const shade = 0.32 + 0.68 * Math.max(0, nrm.dot(L)) + 0.25 * Math.max(0, nrm.y) ** 4;
-      tris.push({ x: (_v[0].x + _v[1].x + _v[2].x) / 3, p: [_v[0].z, _v[0].y, _v[1].z, _v[1].y, _v[2].z, _v[2].y], shade, kind, base: base && base.clone(), metal: m.metalness > 0.5 });
+      const col = base && base.clone();
+      if (px) col.multiply(texelAt(px, uv, idx, t));
+      tris.push({ x: (_v[0].x + _v[1].x + _v[2].x) / 3, p: [_v[0].z, _v[0].y, _v[1].z, _v[1].y, _v[2].z, _v[2].y], shade, kind, base: col, metal: m.metalness > 0.5 });
     }
   });
   tris.sort((a, b) => a.x - b.x);

@@ -174,7 +174,7 @@ export function createMonsterCar(materials, { color = '#d42a2a', spec }) {
 }
 
 const texels = new Map(); // texture → its pixels, for the menu card
-function texelsOf(tex) {
+export function texelsOf(tex) {
   if (!texels.has(tex)) {
     let px = null;
     try {
@@ -191,6 +191,21 @@ function texelsOf(tex) {
     texels.set(tex, px);
   }
   return texels.get(tex);
+}
+
+/** The texture's colour at the centre of triangle t (first index t), from texelsOf pixels. */
+export function texelAt(px, uv, idx, t) {
+  let u = 0;
+  let w = 0;
+  for (let k = 0; k < 3; k++) {
+    const v = idx ? idx.getX(t + k) : t + k;
+    u += uv.getX(v) / 3;
+    w += uv.getY(v) / 3;
+  }
+  const x = Math.min(px.w - 1, Math.floor((u - Math.floor(u)) * px.w));
+  const y = Math.min(px.h - 1, Math.floor((w - Math.floor(w)) * px.h));
+  const o = (y * px.w + x) * 4;
+  return new THREE.Color().setRGB(px.data[o] / 255, px.data[o + 1] / 255, px.data[o + 2] / 255, THREE.SRGBColorSpace);
 }
 
 const cards = new Map();
