@@ -172,3 +172,117 @@ export function createMonsterCar(materials, { color = '#d42a2a', spec }) {
     },
   };
 }
+
+const texels = new Map(); // texture → its pixels, for the menu card
+function texelsOf(tex) {
+  if (!texels.has(tex)) {
+    let px = null;
+    try {
+      const im = tex.image;
+      const cv = document.createElement('canvas');
+      cv.width = Math.min(256, im.width);
+      cv.height = Math.min(256, im.height);
+      const g = cv.getContext('2d');
+      g.drawImage(im, 0, 0, cv.width, cv.height);
+      px = { data: g.getImageData(0, 0, cv.width, cv.height).data, w: cv.width, h: cv.height };
+    } catch (e) {
+      console.warn('monster card: texture not readable', e);
+    }
+    texels.set(tex, px);
+  }
+  return texels.get(tex);
+}
+
+const cards = new Map();
+const _p = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+const _e1 = new THREE.Vector3();
+const _e2 = new THREE.Vector3();
+const _pc = new THREE.Color();
+
+/**
+ * The truck's side view for the car picker: its triangles seen from the left, each in its texture's
+ * colour at that spot (the red paint in the driver's colour), lit from the front and above.
+ */
+export function drawMonsterProfile(canvas, color) {
+  let img = cards.get(color);
+  if (!img) {
+    const paint = new THREE.Color(color);
+    const L = new THREE.Vector3(0.55, 0.75, 0.35).normalize();
+    const tris = [];
+    const box = new THREE.Box3();
+    const c = new THREE.Color();
+    const add = (parts, off) => {
+      for (const { geo, mat } of parts) {
+        const pos = geo.attributes.position;
+        const uv = geo.attributes.uv;
+        const idx = geo.index;
+        const n = idx ? idx.count : pos.count;
+        const px = mat.map ? texelsOf(mat.map) : null;
+        for (let t = 0; t < n; t += 3) {
+          const id = [0, 1, 2].map((k) => (idx ? idx.getX(t + k) : t + k));
+          id.forEach((v, k) => _p[k].fromBufferAttribute(pos, v).add(off));
+          const nrm = _e1.subVectors(_p[1], _p[0]).cross(_e2.subVectors(_p[2], _p[0])).normalize();
+          if (nrm.x <= 0.02) continue;
+          c.copy(mat.color);
+          if (px && uv) {
+            let u = 0;
+            let w = 0;
+            for (const v of id) {
+              u += uv.getX(v) / 3;
+              w += uv.getY(v) / 3;
+            }
+            const x = Math.min(px.w - 1, Math.floor((u - Math.floor(u)) * px.w));
+            const y = Math.min(px.h - 1, Math.floor((w - Math.floor(w)) * px.h));
+            const o = (y * px.w + x) * 4;
+            const s = new THREE.Color().setRGB(px.data[o] / 255, px.data[o + 1] / 255, px.data[o + 2] / 255, THREE.SRGBColorSpace);
+            if (mat.name === 'Body') {
+              const red = THREE.MathUtils.smoothstep(s.r - Math.max(s.g, s.b), 0.05, 0.22);
+              s.lerp(_pc.copy(paint).multiplyScalar(0.25 + 1.6 * s.r), red);
+            }
+            c.multiply(s);
+          }
+          const shade = 0.32 + 0.68 * Math.max(0, nrm.dot(L)) + 0.25 * Math.max(0, nrm.y) ** 4;
+          c.multiplyScalar(shade).addScalar(0.012 * shade);
+          for (const q of _p) box.expandByPoint(q);
+          tris.push({ x: (_p[0].x + _p[1].x + _p[2].x) / 3, p: [_p[0].z, _p[0].y, _p[1].z, _p[1].y, _p[2].z, _p[2].y], style: `#${c.getHexString()}` });
+        }
+      }
+    };
+    add(VAN.body, new THREE.Vector3());
+    for (const w of VAN.wheels) add(w.parts, w.centre);
+    tris.sort((a, b) => a.x - b.x);
+    img = document.createElement('canvas');
+    img.width = canvas.width * 2;
+    img.height = canvas.height * 2;
+    const g = img.getContext('2d');
+    const len = box.max.z - box.min.z;
+    const scale = Math.min((img.width * 0.86) / (len + 0.4), (img.height * 0.82) / (box.max.y - box.min.y));
+    const cx = img.width / 2;
+    const cy = img.height * 0.92;
+    const zc = (box.max.z + box.min.z) / 2;
+    const X = (z) => cx - (z - zc) * scale; // nose to the left in the Hebrew (RTL) card
+    const Y = (y) => cy - (y - box.min.y) * scale;
+    g.fillStyle = 'rgba(0,0,0,0.35)';
+    g.beginPath();
+    g.ellipse(cx, cy + 4, (len / 2) * scale * 1.02, 10, 0, 0, Math.PI * 2);
+    g.fill();
+    g.lineJoin = 'round';
+    g.lineWidth = 1;
+    for (const t of tris) {
+      g.fillStyle = t.style;
+      g.strokeStyle = t.style;
+      const p = t.p;
+      g.beginPath();
+      g.moveTo(X(p[0]), Y(p[1]));
+      g.lineTo(X(p[2]), Y(p[3]));
+      g.lineTo(X(p[4]), Y(p[5]));
+      g.closePath();
+      g.fill();
+      g.stroke();
+    }
+    cards.set(color, img);
+  }
+  const g = canvas.getContext('2d');
+  g.clearRect(0, 0, canvas.width, canvas.height);
+  g.drawImage(img, 0, 0, canvas.width, canvas.height);
+}

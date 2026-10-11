@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { gunzipSync } from 'three/addons/libs/fflate.module.js';
 import { CAR_TYPES, carSpec } from './config.js';
 import { createCarModel, drawCarProfile } from './CarModel.js';
-import { loadMonster, hasMonster, createMonsterCar } from './MonsterTruck.js';
+import { loadMonster, hasMonster, createMonsterCar, drawMonsterProfile } from './MonsterTruck.js';
 import { loadFish } from './TunnelLife.js';
 import { loadMoto, hasMoto } from './MotoModel.js';
 import conceptHi from './models/concept.glb.gz?url';
@@ -457,5 +457,6 @@ function drawRealProfile(canvas, type, color) {
 /** Garage card profile for any type. */
 export function drawProfile(canvas, type, color) {
   if (loaded[type]) drawRealProfile(canvas, type, color);
+  else if (type === 'monster' && hasMonster()) drawMonsterProfile(canvas, color);
   else drawCarProfile(canvas, type, color);
 }
