@@ -1,16 +1,17 @@
+import { gunzipSync } from 'three/addons/libs/fflate.module.js';
 import { decodeImage } from './RealModels.js';
-import grass from './textures/grass.jpg?url';
-import grassN from './textures/grass-n.jpg?url';
-import rock from './textures/rock.jpg?url';
-import rockN from './textures/rock-n.jpg?url';
-import sand from './textures/sand.jpg?url';
-import sandN from './textures/sand-n.jpg?url';
-import dirt from './textures/dirt.jpg?url';
-import dirtN from './textures/dirt-n.jpg?url';
-import asphalt from './textures/asphalt.jpg?url';
-import asphaltN from './textures/asphalt-n.jpg?url';
-import bark from './textures/bark.jpg?url';
-import barkN from './textures/bark-n.jpg?url';
+import grass from './textures/grass.jpg.gz?url';
+import grassN from './textures/grass-n.jpg.gz?url';
+import rock from './textures/rock.jpg.gz?url';
+import rockN from './textures/rock-n.jpg.gz?url';
+import sand from './textures/sand.jpg.gz?url';
+import sandN from './textures/sand-n.jpg.gz?url';
+import dirt from './textures/dirt.jpg.gz?url';
+import dirtN from './textures/dirt-n.jpg.gz?url';
+import asphalt from './textures/asphalt.jpg.gz?url';
+import asphaltN from './textures/asphalt-n.jpg.gz?url';
+import bark from './textures/bark.jpg.gz?url';
+import barkN from './textures/bark-n.jpg.gz?url';
 
 /**
  * Photographed materials (Poly Haven scans, CC0; tools/photos.mjs) laid over
@@ -37,7 +38,11 @@ const PHOTOS = [
 
 export const PHOTO_CREDIT = 'הקרקע, הסלעים, החול, דרכי העפר, האספלט וקליפות העצים מצולמים: חומרים סרוקים מ-Poly Haven (Leafy Grass, Rock Face, Coast Sand 01, Gravel Road, Asphalt 02, Bark Willow 02), ברישיון CC0.';
 
-/** Decodes an inlined image without fetch() (refused by the claude.ai viewer's sandbox for data: URLs). */
+/**
+ * Decodes an inlined image without fetch() (refused by the claude.ai viewer's sandbox for data: URLs).
+ * The photos ship gzipped (tools/photos.mjs): content filters such as NetFree replace any image they
+ * find in a page with a placard, which would then cover the ground.
+ */
 async function bitmap(src) {
   let bytes;
   if (src.startsWith('data:')) {
@@ -45,7 +50,7 @@ async function bitmap(src) {
     bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
   } else bytes = new Uint8Array(await (await fetch(src)).arrayBuffer());
-  return decodeImage(bytes, 'image/jpeg', { imageOrientation: 'none', premultiplyAlpha: 'none', colorSpaceConversion: 'none' });
+  return decodeImage(gunzipSync(bytes), 'image/jpeg', { imageOrientation: 'none', premultiplyAlpha: 'none', colorSpaceConversion: 'none' });
 }
 
 export async function applyPhotoTextures(materials) {

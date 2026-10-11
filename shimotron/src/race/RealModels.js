@@ -153,6 +153,31 @@ export function inlineImages(parser) {
   return { name: 'inline-images' };
 }
 
+/** A texture image's average colour (linear), from an 8×8 shrink of it; white if it can't be read. */
+function averageColour(image) {
+  const c = new THREE.Color(1, 1, 1);
+  try {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 8;
+    const g = cv.getContext('2d', { willReadFrequently: true });
+    g.drawImage(image, 0, 0, 8, 8);
+    const d = g.getImageData(0, 0, 8, 8).data;
+    let r = 0;
+    let gr = 0;
+    let b = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      r += d[i];
+      gr += d[i + 1];
+      b += d[i + 2];
+    }
+    const n = (d.length / 4) * 255;
+    c.setRGB(r / n, gr / n, b / n, THREE.SRGBColorSpace);
+  } catch {
+    // Keep white.
+  }
+  return c;
+}
+
 /** Splits a loaded scene into a still body and four wheel pivots (centred on each tyre). */
 function split(scene) {
   scene.updateMatrixWorld(true);
@@ -204,11 +229,25 @@ function prepare(hiScene, loScene) {
       o.receiveShadow = true;
     });
   }
-  // The far version wears the same materials (one set of shaders and textures).
+  // The far version wears the same materials (one set of shaders and textures). Its meshes carry no
+  // UVs, though: a textured material would paint them all in the colour of one texel, so they get a
+  // plain twin in the texture's average colour.
+  const plain = new Map();
+  const flat = (m) => {
+    if (!m.map || m.name === 'Paint 1 Carmine') return m;
+    if (!plain.has(m)) {
+      const p = m.clone();
+      p.map = null;
+      p.color.multiply(averageColour(m.map.image));
+      plain.set(m, p);
+    }
+    return plain.get(m);
+  };
   for (const root of [lo.body, ...lo.pivots]) {
     root.traverse((o) => {
       if (!o.isMesh) return;
       o.material = byName.get(o.material.name) || fix(o.material);
+      if (!o.geometry.attributes.uv) o.material = flat(o.material);
       o.castShadow = true;
       o.receiveShadow = true;
     });

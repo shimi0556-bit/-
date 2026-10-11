@@ -3,6 +3,7 @@
 // filled (see its README and each CREDIT.txt).
 //   node tools/photos.mjs [/mnt/project-files/shimotron/textures-src]
 import fs from 'fs';
+import zlib from 'zlib';
 import sharp from 'sharp';
 
 const SRC = process.argv[2] || '/mnt/project-files/shimotron/textures-src';
@@ -45,8 +46,10 @@ let total = 0;
 for (const [slot, id] of Object.entries(SLOTS)) {
   const diff = await (await colour(slot, `${SRC}/${slot}/${id}_diff_1k.jpg`)).jpeg({ quality: 74, mozjpeg: true }).toBuffer();
   const nor = await sharp(`${SRC}/${slot}/${id}_nor_gl_1k.jpg`).resize(512, 512).jpeg({ quality: 86, mozjpeg: true }).toBuffer();
-  fs.writeFileSync(new URL(`${slot}.jpg`, OUT), diff);
-  fs.writeFileSync(new URL(`${slot}-n.jpg`, OUT), nor);
+  // Gzipped: a filter such as NetFree swaps every image it finds in a page (data:image/…) for its own
+  // "image sent for review" placard, which then tiles the roads and fields. Gzip bytes aren't an image.
+  fs.writeFileSync(new URL(`${slot}.jpg.gz`, OUT), zlib.gzipSync(diff, { level: 9 }));
+  fs.writeFileSync(new URL(`${slot}-n.jpg.gz`, OUT), zlib.gzipSync(nor, { level: 9 }));
   total += diff.length + nor.length;
   console.log(slot.padEnd(8), id, `${(diff.length / 1024).toFixed(0)} KB + ${(nor.length / 1024).toFixed(0)} KB`);
 }
