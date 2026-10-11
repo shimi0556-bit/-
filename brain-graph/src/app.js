@@ -190,7 +190,7 @@
       tg('מסמכי מקור וקשריהם', BG.display.sources, (b) => { BG.setDisplay('sources', b); }),
       tg('שמות אזורים על המוח', BG.view.labels, BG.setLabels),
       tg('ענן המוח (רמז לצורה, אוטומטי כשיש מעט צמתים)', BG.effOutline(), BG.setOutline),
-      sl('גודל צמתים', 'nodeSize', 0.5, 2, 0.05), sl('בהירות קשרים', 'linkOpacity', 0.3, 3, 0.1),
+      sl('גודל צמתים (קטן יותר = יותר מרווח)', 'nodeSize', 0.3, 1.6, 0.05), sl('בהירות קשרים', 'linkOpacity', 0.3, 3, 0.1),
       h('div', { class: 'hr' }),
       h('p', { class: 'muted', text: 'צורת המוח נוצרת מהצמתים עצמם: כל ערך נמצא באזור שמתאים לו. לחץ על אזור כדי להתמקד בו.' }));
     for (const r of BG.REGIONS) {
@@ -205,12 +205,11 @@
   function renderLegend() {
     const box = $('#legend'); if (!box) return;
     box.textContent = '';
-    const FC = { frontal: '#6f8cff', parietal: '#ffc247', occipital: '#ff6fb5', temporal: '#8fe35a', limbic: '#ff5a5a', subcortical: '#ff8a3d', hindbrain: '#7be0a0' };
-    for (const f of BG.FAMILIES) {
+        for (const f of BG.FAMILIES) {
       const n = BG.state.nodes.filter((x) => !BG.isHidden(x) && f.ids.includes(x.region)).length;
       if (!n) continue;
       const on = BG.view.focus && f.ids.every((i) => BG.view.focus.has(i)) && BG.view.focus.size === f.ids.length;
-      box.append(h('button', { class: 'lg' + (on ? ' on' : ''), title: f.ids.map((i) => regionName(i)).join(' · '), onclick: () => { BG.toggleFocus(f.ids); } }, h('i', { style: 'background:' + FC[f.id] }), f.name, h('span', { text: n })));
+      box.append(h('button', { class: 'lg' + (on ? ' on' : ''), title: f.ids.map((i) => regionName(i)).join(' · '), onclick: () => { BG.toggleFocus(f.ids); } }, h('i', { style: 'background:' + BG.familyColor(f.id) }), f.name, h('span', { text: n })));
     }
   }
   BG.on('change', renderLegend); BG.on('display', renderLegend); BG.on('focus', () => { renderLegend(); renderRegionsPanel(); });

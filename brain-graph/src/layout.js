@@ -28,7 +28,7 @@
       return d;
     });
   }
-  const PROFILE = [{ h: 250, R: 130 }, { h: 150, R: 70 }, { h: 46, R: 40 }];
+  const PROFILE = [{ h: 300, R: 150 }, { h: 170, R: 80 }, { h: 52, R: 44 }];
   BG.thickness = function (x, y, g) {
     if (g < 0) return 0;
     if (!FIELD) buildField();
@@ -60,12 +60,14 @@
   function buildOrder() {
     const cands = {};
     BG.REGIONS.forEach((r) => { cands[r.id] = []; });
-    const add = (r, x, y, z) => cands[r.id].push({ x, y, z });
+    let curH = 1;
+    const add = (r, x, y, z) => cands[r.id].push({ x, y, z, f: Math.min(1, Math.abs(z) / curH) });   // f: how close to the surface (1 = on the shell)
     for (let x = 194; x < 900; x += 12) for (let y = 82; y < 656; y += 12) {
       if (!safe(x, y, 5)) continue;
       const r = BG.ownerAt(x, y); if (!r) continue;
       const g = group(x, y), h = BG.thickness(x, y, g);
       if (h < 6) continue;
+      curH = h;
       if (r.layer === 'surface') { add(r, x, y, h * 0.95); add(r, x, y, -h * 0.95); }
       else if (r.layer === 'own') {
         if (g === 2) { add(r, x, y, 0); add(r, x, y, h * 0.7); add(r, x, y, -h * 0.7); } else { add(r, x, y, h * 0.92); add(r, x, y, -h * 0.92); }
@@ -101,9 +103,9 @@
       const r = BG.regionById(id), seq = ORDER[id] || [];
       const arr = by[id].sort((a, b) => (parseInt(a.id.slice(1)) || 0) - (parseInt(b.id.slice(1)) || 0));
       arr.forEach((n, i) => {
-        if (i < seq.length) { n.sx = seq[i].x; n.sy = seq[i].y; n.sz = seq[i].z; return; }
+        if (i < seq.length) { n.sx = seq[i].x; n.sy = seq[i].y; n.sz = seq[i].z; n.sf = seq[i].f; return; }
         const k = i - seq.length, a = k * 2.4, rr = 12 + Math.sqrt(k) * 9;   // overflow: a growing ring around the region's centre
-        n.sx = r.cx + Math.cos(a) * rr; n.sy = r.cy + Math.sin(a) * rr; n.sz = ((k % 2) ? 1 : -1) * (30 + (k % 5) * 12);
+        n.sx = r.cx + Math.cos(a) * rr; n.sy = r.cy + Math.sin(a) * rr; n.sz = ((k % 2) ? 1 : -1) * (30 + (k % 5) * 12); n.sf = 0.4;
       });
     }
   }
@@ -132,10 +134,10 @@
         for (const m of arr) {
           if (m._i <= n._i) continue;
           let dx = m.x - n.x, dy = m.y - n.y, dz = m.z - n.z, d = Math.sqrt(dx * dx + dy * dy + dz * dz);
-          const range = rn + BG.radius(m) * 0.8 + 10;
+          const range = rn + BG.radius(m) * 0.8 + 26;
           if (d >= range) continue;
           if (d < 0.01) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; dz = Math.random() - 0.5; d = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1; }
-          const f = ((range - d) / range) * 0.8 * Math.max(a, 0.3);
+          const f = ((range - d) / range) * 1.1 * Math.max(a, 0.3);
           n.vx -= (dx / d) * f; n.vy -= (dy / d) * f; n.vz -= (dz / d) * f; m.vx += (dx / d) * f; m.vy += (dy / d) * f; m.vz += (dz / d) * f;
         }
       }

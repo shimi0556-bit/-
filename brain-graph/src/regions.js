@@ -74,6 +74,17 @@ window.BG = window.BG || {};
     { id: 'hindbrain', name: 'המוחון וגזע המוח', ids: ['cer', 'mid', 'pons', 'med'] }
   ];
 
+  // One hue per family of regions (a few clear colours instead of 30 that blend into mud); regions differ only in lightness.
+  BG.FAMILY_COLORS = { frontal: 222, parietal: 38, occipital: 330, temporal: 125, limbic: 356, subcortical: 272, hindbrain: 182 };
+  BG.FAMILIES.forEach((f) => {
+    const hue = BG.FAMILY_COLORS[f.id];
+    f.ids.forEach((id, i) => {
+      const reg = BG.REGIONS.find((x) => x.id === id), l = 58 + (f.ids.length > 1 ? (i / (f.ids.length - 1)) * 14 : 6), sat = f.id === 'hindbrain' ? 55 : 78;
+      reg.color = 'hsl(' + hue + ',' + sat + '%,' + l.toFixed(0) + '%)';
+    });
+  });
+  BG.familyColor = (fid) => 'hsl(' + BG.FAMILY_COLORS[fid] + ',78%,64%)';
+
   // old (12-region) ids found in saved data -> new ids
   const OLD = { pfc: { value: 'vmpfc', goal: 'fpc', belief: 'dlpfc', _: 'dlpfc' }, mot: 'm1', par: 'spl', occ: 'v1', tem: { person: 'tpole', _: 'mtg' }, bg: 'str', cer: 'cer', stem: 'med' };
   BG.fixRegion = function (region, kind) {

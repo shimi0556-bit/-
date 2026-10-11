@@ -3,7 +3,7 @@
 (function (BG) {
   'use strict';
   const DISP_KEY = 'brain-graph:display';
-  const D = (BG.display = { sources: false, nodeSize: 0.8, linkOpacity: 1 });
+  const D = (BG.display = { sources: false, nodeSize: 0.5, linkOpacity: 1 });
   try { Object.assign(D, JSON.parse(localStorage.getItem(DISP_KEY) || '{}')); } catch (e) { /* ignore */ }
   let positionsDirty = true, running = false;
   BG.setDisplay = (k, val) => { D[k] = val; try { localStorage.setItem(DISP_KEY, JSON.stringify(D)); } catch (e) { /* ignore */ } BG.layout.kick(0.3); BG.wake(); BG.emit('display'); };
@@ -173,7 +173,8 @@
     const vis = S.nodes.filter((n) => !BG.isHidden(n));
     let zmin = 1e9, zmax = -1e9;
     for (const n of vis) { const p = proj(n.x, n.y, n.z || 0); n._sx = p[0]; n._sy = p[1]; n._k = p[2]; n._zc = p[3]; n._r = BG.radius(n) * D.nodeSize * p[2]; zmin = Math.min(zmin, p[3]); zmax = Math.max(zmax, p[3]); }
-    const depth = (zc) => 0.4 + 0.6 * BG.clamp((zc + 330) / 660, 0, 1);   // far side of the brain is dimmer
+    const outer = (n) => 0.24 + 0.76 * BG.clamp(((n.sf == null ? 1 : n.sf) - 0.35) / 0.55, 0, 1);   // nodes inside the brain are see-through, the shell is solid
+  const depth = (zc) => 0.4 + 0.6 * BG.clamp((zc + 330) / 660, 0, 1);   // far side of the brain is dimmer
     // ghost surface
     if (BG.effOutline()) {
       ctx.fillStyle = '#8791bd';
@@ -191,7 +192,7 @@
       const r = BG.regionById(rid), h = BG.thickness(r.cx, r.cy, r.layer === 'own' ? (rid === 'cer' ? 1 : 2) : 0);
       for (const z of r.layer === 'deep' || rid === 'mid' || rid === 'pons' || rid === 'med' ? [0] : [h * 0.9, -h * 0.9]) {
         const p = proj(r.cx, r.cy, z), rad = Math.max(r.rx, r.ry) * 1.5 * p[2];
-        const g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], rad); g.addColorStop(0, r.color + '66'); g.addColorStop(1, r.color + '00');
+        const g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], rad); g.addColorStop(0, r.color.replace('hsl(', 'hsla(').replace(')', ',0.4)')); g.addColorStop(1, r.color.replace('hsl(', 'hsla(').replace(')', ',0)'));
         ctx.globalAlpha = Math.min(1, a) * depth(p[3]); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p[0], p[1], rad, 0, 6.2832); ctx.fill();
       }
     }
@@ -206,7 +207,7 @@
       let a = a0 + (hold - a0) * 0.045; if (Math.abs(a - hold) < 0.004) a = hold; if (a !== a0) alive = true; e.act = a;
       const hot = focusId && (e.from === focusId || e.to === focusId);
       const dim = (q && !(q.has(e.from) && q.has(e.to))) || (fset && !fset.has(A.region) && !fset.has(B.region)) || (focusId && !hot);
-      const dp = depth((A._zc + B._zc) / 2);
+      const dp = depth((A._zc + B._zc) / 2) * Math.min(outer(A), outer(B));
       ctx.strokeStyle = a > 0.12 ? 'rgba(255,212,94,' + Math.min(1, 0.3 + a) + ')' : hot ? PURPLE : 'rgba(120,120,140,' + ((dim ? 0.1 : 0.35) * edgeBase * dp).toFixed(3) + ')';
       ctx.lineWidth = Math.min(3, 0.7 + (e.w || 1) * 0.3) + (a > 0.12 ? a * 1.8 : 0);   // every line keeps the same thickness on screen
       ctx.beginPath(); ctx.moveTo(A._sx, A._sy); ctx.lineTo(B._sx, B._sy); ctx.stroke();
@@ -217,7 +218,7 @@
       const dim = (focusId && !near.has(n.id)) || (q && !q.has(n.id)) || (fset && !fset.has(n.region));
       const dp = depth(n._zc), r = n._r * (1 + n.act * 0.35);
       if (n.act > 0.02) { const g = ctx.createRadialGradient(n._sx, n._sy, r * 0.6, n._sx, n._sy, r * 3); g.addColorStop(0, '#ffd45e' + Math.round(Math.min(1, n.act) * 140).toString(16).padStart(2, '0')); g.addColorStop(1, '#ffd45e00'); ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(n._sx, n._sy, r * 3, 0, 6.2832); ctx.fill(); }
-      ctx.globalAlpha = dim ? 0.15 : dp; ctx.fillStyle = BG.kindById(n.kind).source ? '#2a2a33' : BG.regionById(n.region).color;
+      ctx.globalAlpha = dim ? 0.15 : dp * outer(n); ctx.fillStyle = BG.kindById(n.kind).source ? '#2a2a33' : BG.regionById(n.region).color;
       ctx.beginPath();
       if (BG.kindById(n.kind).source) { if (ctx.roundRect) ctx.roundRect(n._sx - r, n._sy - r, r * 2, r * 2, r * 0.35); else ctx.rect(n._sx - r, n._sy - r, r * 2, r * 2); } else ctx.arc(n._sx, n._sy, r, 0, 6.2832);
       ctx.fill();
@@ -238,7 +239,7 @@
       const imp = n.id === focusId || (focusId && near.has(n.id)) || (q && q.has(n.id)) || (n.act || 0) > 0.3;
       if ((focusId || q) && !imp) continue;
       let alpha = 1;
-      if (!imp) { const lo = (n.deg || 0) >= 4 ? 0.3 : 0.45; alpha = Math.min(1, Math.max(0, (zz - lo) / 0.25)); if (alpha < 0.03) continue; alpha *= depth(n._zc); }
+      if (!imp) { const lo = (n.deg || 0) >= 4 ? 0.3 : 0.45; alpha = Math.min(1, Math.max(0, (zz - lo) / 0.25)); if (alpha < 0.03) continue; alpha *= depth(n._zc) * outer(n); }
       if (n._sx < -80 || n._sx > W + 80 || n._sy < -20 || n._sy > H + 20) continue;
       cand.push({ n, alpha, pr: (n.id === focusId ? 1e7 : 0) + (imp ? 1e6 : 0) + (n.deg || 0) * 10 + n._zc * 0.01 });
     }

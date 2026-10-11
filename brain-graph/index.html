@@ -253,6 +253,17 @@ window.BG = window.BG || {};
     { id: 'hindbrain', name: 'המוחון וגזע המוח', ids: ['cer', 'mid', 'pons', 'med'] }
   ];
 
+  // One hue per family of regions (a few clear colours instead of 30 that blend into mud); regions differ only in lightness.
+  BG.FAMILY_COLORS = { frontal: 222, parietal: 38, occipital: 330, temporal: 125, limbic: 356, subcortical: 272, hindbrain: 182 };
+  BG.FAMILIES.forEach((f) => {
+    const hue = BG.FAMILY_COLORS[f.id];
+    f.ids.forEach((id, i) => {
+      const reg = BG.REGIONS.find((x) => x.id === id), l = 58 + (f.ids.length > 1 ? (i / (f.ids.length - 1)) * 14 : 6), sat = f.id === 'hindbrain' ? 55 : 78;
+      reg.color = 'hsl(' + hue + ',' + sat + '%,' + l.toFixed(0) + '%)';
+    });
+  });
+  BG.familyColor = (fid) => 'hsl(' + BG.FAMILY_COLORS[fid] + ',78%,64%)';
+
   // old (12-region) ids found in saved data -> new ids
   const OLD = { pfc: { value: 'vmpfc', goal: 'fpc', belief: 'dlpfc', _: 'dlpfc' }, mot: 'm1', par: 'spl', occ: 'v1', tem: { person: 'tpole', _: 'mtg' }, bg: 'str', cer: 'cer', stem: 'med' };
   BG.fixRegion = function (region, kind) {
@@ -488,7 +499,7 @@ window.BG = window.BG || {};
       return d;
     });
   }
-  const PROFILE = [{ h: 250, R: 130 }, { h: 150, R: 70 }, { h: 46, R: 40 }];
+  const PROFILE = [{ h: 300, R: 150 }, { h: 170, R: 80 }, { h: 52, R: 44 }];
   BG.thickness = function (x, y, g) {
     if (g < 0) return 0;
     if (!FIELD) buildField();
@@ -520,12 +531,14 @@ window.BG = window.BG || {};
   function buildOrder() {
     const cands = {};
     BG.REGIONS.forEach((r) => { cands[r.id] = []; });
-    const add = (r, x, y, z) => cands[r.id].push({ x, y, z });
+    let curH = 1;
+    const add = (r, x, y, z) => cands[r.id].push({ x, y, z, f: Math.min(1, Math.abs(z) / curH) });   // f: how close to the surface (1 = on the shell)
     for (let x = 194; x < 900; x += 12) for (let y = 82; y < 656; y += 12) {
       if (!safe(x, y, 5)) continue;
       const r = BG.ownerAt(x, y); if (!r) continue;
       const g = group(x, y), h = BG.thickness(x, y, g);
       if (h < 6) continue;
+      curH = h;
       if (r.layer === 'surface') { add(r, x, y, h * 0.95); add(r, x, y, -h * 0.95); }
       else if (r.layer === 'own') {
         if (g === 2) { add(r, x, y, 0); add(r, x, y, h * 0.7); add(r, x, y, -h * 0.7); } else { add(r, x, y, h * 0.92); add(r, x, y, -h * 0.92); }
@@ -561,9 +574,9 @@ window.BG = window.BG || {};
       const r = BG.regionById(id), seq = ORDER[id] || [];
       const arr = by[id].sort((a, b) => (parseInt(a.id.slice(1)) || 0) - (parseInt(b.id.slice(1)) || 0));
       arr.forEach((n, i) => {
-        if (i < seq.length) { n.sx = seq[i].x; n.sy = seq[i].y; n.sz = seq[i].z; return; }
+        if (i < seq.length) { n.sx = seq[i].x; n.sy = seq[i].y; n.sz = seq[i].z; n.sf = seq[i].f; return; }
         const k = i - seq.length, a = k * 2.4, rr = 12 + Math.sqrt(k) * 9;   // overflow: a growing ring around the region's centre
-        n.sx = r.cx + Math.cos(a) * rr; n.sy = r.cy + Math.sin(a) * rr; n.sz = ((k % 2) ? 1 : -1) * (30 + (k % 5) * 12);
+        n.sx = r.cx + Math.cos(a) * rr; n.sy = r.cy + Math.sin(a) * rr; n.sz = ((k % 2) ? 1 : -1) * (30 + (k % 5) * 12); n.sf = 0.4;
       });
     }
   }
@@ -592,10 +605,10 @@ window.BG = window.BG || {};
         for (const m of arr) {
           if (m._i <= n._i) continue;
           let dx = m.x - n.x, dy = m.y - n.y, dz = m.z - n.z, d = Math.sqrt(dx * dx + dy * dy + dz * dz);
-          const range = rn + BG.radius(m) * 0.8 + 10;
+          const range = rn + BG.radius(m) * 0.8 + 26;
           if (d >= range) continue;
           if (d < 0.01) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; dz = Math.random() - 0.5; d = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1; }
-          const f = ((range - d) / range) * 0.8 * Math.max(a, 0.3);
+          const f = ((range - d) / range) * 1.1 * Math.max(a, 0.3);
           n.vx -= (dx / d) * f; n.vy -= (dy / d) * f; n.vz -= (dz / d) * f; m.vx += (dx / d) * f; m.vy += (dy / d) * f; m.vz += (dz / d) * f;
         }
       }
@@ -979,7 +992,7 @@ window.BG = window.BG || {};
 (function (BG) {
   'use strict';
   const DISP_KEY = 'brain-graph:display';
-  const D = (BG.display = { sources: false, nodeSize: 0.8, linkOpacity: 1 });
+  const D = (BG.display = { sources: false, nodeSize: 0.5, linkOpacity: 1 });
   try { Object.assign(D, JSON.parse(localStorage.getItem(DISP_KEY) || '{}')); } catch (e) { /* ignore */ }
   let positionsDirty = true, running = false;
   BG.setDisplay = (k, val) => { D[k] = val; try { localStorage.setItem(DISP_KEY, JSON.stringify(D)); } catch (e) { /* ignore */ } BG.layout.kick(0.3); BG.wake(); BG.emit('display'); };
@@ -1149,7 +1162,8 @@ window.BG = window.BG || {};
     const vis = S.nodes.filter((n) => !BG.isHidden(n));
     let zmin = 1e9, zmax = -1e9;
     for (const n of vis) { const p = proj(n.x, n.y, n.z || 0); n._sx = p[0]; n._sy = p[1]; n._k = p[2]; n._zc = p[3]; n._r = BG.radius(n) * D.nodeSize * p[2]; zmin = Math.min(zmin, p[3]); zmax = Math.max(zmax, p[3]); }
-    const depth = (zc) => 0.4 + 0.6 * BG.clamp((zc + 330) / 660, 0, 1);   // far side of the brain is dimmer
+    const outer = (n) => 0.24 + 0.76 * BG.clamp(((n.sf == null ? 1 : n.sf) - 0.35) / 0.55, 0, 1);   // nodes inside the brain are see-through, the shell is solid
+  const depth = (zc) => 0.4 + 0.6 * BG.clamp((zc + 330) / 660, 0, 1);   // far side of the brain is dimmer
     // ghost surface
     if (BG.effOutline()) {
       ctx.fillStyle = '#8791bd';
@@ -1167,7 +1181,7 @@ window.BG = window.BG || {};
       const r = BG.regionById(rid), h = BG.thickness(r.cx, r.cy, r.layer === 'own' ? (rid === 'cer' ? 1 : 2) : 0);
       for (const z of r.layer === 'deep' || rid === 'mid' || rid === 'pons' || rid === 'med' ? [0] : [h * 0.9, -h * 0.9]) {
         const p = proj(r.cx, r.cy, z), rad = Math.max(r.rx, r.ry) * 1.5 * p[2];
-        const g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], rad); g.addColorStop(0, r.color + '66'); g.addColorStop(1, r.color + '00');
+        const g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], rad); g.addColorStop(0, r.color.replace('hsl(', 'hsla(').replace(')', ',0.4)')); g.addColorStop(1, r.color.replace('hsl(', 'hsla(').replace(')', ',0)'));
         ctx.globalAlpha = Math.min(1, a) * depth(p[3]); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p[0], p[1], rad, 0, 6.2832); ctx.fill();
       }
     }
@@ -1182,7 +1196,7 @@ window.BG = window.BG || {};
       let a = a0 + (hold - a0) * 0.045; if (Math.abs(a - hold) < 0.004) a = hold; if (a !== a0) alive = true; e.act = a;
       const hot = focusId && (e.from === focusId || e.to === focusId);
       const dim = (q && !(q.has(e.from) && q.has(e.to))) || (fset && !fset.has(A.region) && !fset.has(B.region)) || (focusId && !hot);
-      const dp = depth((A._zc + B._zc) / 2);
+      const dp = depth((A._zc + B._zc) / 2) * Math.min(outer(A), outer(B));
       ctx.strokeStyle = a > 0.12 ? 'rgba(255,212,94,' + Math.min(1, 0.3 + a) + ')' : hot ? PURPLE : 'rgba(120,120,140,' + ((dim ? 0.1 : 0.35) * edgeBase * dp).toFixed(3) + ')';
       ctx.lineWidth = Math.min(3, 0.7 + (e.w || 1) * 0.3) + (a > 0.12 ? a * 1.8 : 0);   // every line keeps the same thickness on screen
       ctx.beginPath(); ctx.moveTo(A._sx, A._sy); ctx.lineTo(B._sx, B._sy); ctx.stroke();
@@ -1193,7 +1207,7 @@ window.BG = window.BG || {};
       const dim = (focusId && !near.has(n.id)) || (q && !q.has(n.id)) || (fset && !fset.has(n.region));
       const dp = depth(n._zc), r = n._r * (1 + n.act * 0.35);
       if (n.act > 0.02) { const g = ctx.createRadialGradient(n._sx, n._sy, r * 0.6, n._sx, n._sy, r * 3); g.addColorStop(0, '#ffd45e' + Math.round(Math.min(1, n.act) * 140).toString(16).padStart(2, '0')); g.addColorStop(1, '#ffd45e00'); ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(n._sx, n._sy, r * 3, 0, 6.2832); ctx.fill(); }
-      ctx.globalAlpha = dim ? 0.15 : dp; ctx.fillStyle = BG.kindById(n.kind).source ? '#2a2a33' : BG.regionById(n.region).color;
+      ctx.globalAlpha = dim ? 0.15 : dp * outer(n); ctx.fillStyle = BG.kindById(n.kind).source ? '#2a2a33' : BG.regionById(n.region).color;
       ctx.beginPath();
       if (BG.kindById(n.kind).source) { if (ctx.roundRect) ctx.roundRect(n._sx - r, n._sy - r, r * 2, r * 2, r * 0.35); else ctx.rect(n._sx - r, n._sy - r, r * 2, r * 2); } else ctx.arc(n._sx, n._sy, r, 0, 6.2832);
       ctx.fill();
@@ -1214,7 +1228,7 @@ window.BG = window.BG || {};
       const imp = n.id === focusId || (focusId && near.has(n.id)) || (q && q.has(n.id)) || (n.act || 0) > 0.3;
       if ((focusId || q) && !imp) continue;
       let alpha = 1;
-      if (!imp) { const lo = (n.deg || 0) >= 4 ? 0.3 : 0.45; alpha = Math.min(1, Math.max(0, (zz - lo) / 0.25)); if (alpha < 0.03) continue; alpha *= depth(n._zc); }
+      if (!imp) { const lo = (n.deg || 0) >= 4 ? 0.3 : 0.45; alpha = Math.min(1, Math.max(0, (zz - lo) / 0.25)); if (alpha < 0.03) continue; alpha *= depth(n._zc) * outer(n); }
       if (n._sx < -80 || n._sx > W + 80 || n._sy < -20 || n._sy > H + 20) continue;
       cand.push({ n, alpha, pr: (n.id === focusId ? 1e7 : 0) + (imp ? 1e6 : 0) + (n.deg || 0) * 10 + n._zc * 0.01 });
     }
@@ -1762,7 +1776,7 @@ window.BG = window.BG || {};
       tg('מסמכי מקור וקשריהם', BG.display.sources, (b) => { BG.setDisplay('sources', b); }),
       tg('שמות אזורים על המוח', BG.view.labels, BG.setLabels),
       tg('ענן המוח (רמז לצורה, אוטומטי כשיש מעט צמתים)', BG.effOutline(), BG.setOutline),
-      sl('גודל צמתים', 'nodeSize', 0.5, 2, 0.05), sl('בהירות קשרים', 'linkOpacity', 0.3, 3, 0.1),
+      sl('גודל צמתים (קטן יותר = יותר מרווח)', 'nodeSize', 0.3, 1.6, 0.05), sl('בהירות קשרים', 'linkOpacity', 0.3, 3, 0.1),
       h('div', { class: 'hr' }),
       h('p', { class: 'muted', text: 'צורת המוח נוצרת מהצמתים עצמם: כל ערך נמצא באזור שמתאים לו. לחץ על אזור כדי להתמקד בו.' }));
     for (const r of BG.REGIONS) {
@@ -1777,12 +1791,11 @@ window.BG = window.BG || {};
   function renderLegend() {
     const box = $('#legend'); if (!box) return;
     box.textContent = '';
-    const FC = { frontal: '#6f8cff', parietal: '#ffc247', occipital: '#ff6fb5', temporal: '#8fe35a', limbic: '#ff5a5a', subcortical: '#ff8a3d', hindbrain: '#7be0a0' };
-    for (const f of BG.FAMILIES) {
+        for (const f of BG.FAMILIES) {
       const n = BG.state.nodes.filter((x) => !BG.isHidden(x) && f.ids.includes(x.region)).length;
       if (!n) continue;
       const on = BG.view.focus && f.ids.every((i) => BG.view.focus.has(i)) && BG.view.focus.size === f.ids.length;
-      box.append(h('button', { class: 'lg' + (on ? ' on' : ''), title: f.ids.map((i) => regionName(i)).join(' · '), onclick: () => { BG.toggleFocus(f.ids); } }, h('i', { style: 'background:' + FC[f.id] }), f.name, h('span', { text: n })));
+      box.append(h('button', { class: 'lg' + (on ? ' on' : ''), title: f.ids.map((i) => regionName(i)).join(' · '), onclick: () => { BG.toggleFocus(f.ids); } }, h('i', { style: 'background:' + BG.familyColor(f.id) }), f.name, h('span', { text: n })));
     }
   }
   BG.on('change', renderLegend); BG.on('display', renderLegend); BG.on('focus', () => { renderLegend(); renderRegionsPanel(); });
