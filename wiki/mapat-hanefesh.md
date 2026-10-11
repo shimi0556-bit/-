@@ -1,9 +1,8 @@
 # mapat-hanefesh (מפת הנפש)
 
-Single-file Hebrew (RTL) Obsidian-style journal: stories with `[[concept]]` links, concept types (value/emotion/belief/need/behavior/person), relations (leads/supports/conflicts/protects/masks/related), graph + insights, Mistral suggestions and a "mirror". Originally built in a session on branch `claude/serene-cannon-p1evet` (never merged); copied here on 2026-10-10 so it can sit next to `brain-graph/`.
+Single-file Hebrew (RTL) Obsidian-style journal: stories with `[[concept]]` links, concept types (value/emotion/belief/need/behavior/person), relations (leads/supports/conflicts/protects/masks/related), graph + insights, Mistral suggestions and a "mirror". Originally built in a session on branch `claude/serene-cannon-p1evet` (never merged); copied here on 2026-10-10 so it sits next to `brain-graph/`.
 
 ## Notes
 
-- **2026-10-10, bridge to brain-graph.** Appended an IIFE at the end of the main script ("גשר לאטלס המוח"). It only reacts to `postMessage` from `window.parent`/`window.opener`, messages tagged `bridge:'atlas-bridge', from:'atlas'`. `hello` is answered without approval (counts only); `snapshot`, `ask`, `apply` first show an in-page approve dialog (private diary content leaves the app). `ask` builds a digest (concepts by type, 70 relations, last 6 stories clipped) and answers via `askAI`; with no key it forwards the prompt to the parent (`need-llm` -> `llm-result`). `apply` adds concepts (`auto:false`) and relations with dedupe, then `commit()`. The self-saving "standalone file" feature captures the script text, so the bridge survives it.
-- Tested with Playwright over a local http server (both apps in one origin tree), mocked Anthropic endpoint.
-- Open: the real Mistral path and a real cross-origin setup (two claude.ai artifacts) were not exercised; embedding a claude.ai artifact URL in an iframe is probably blocked, "open in window" is the fallback.
+- **2026-10-10.** A live postMessage bridge (with an approval dialog) was added to this file and then removed again the same day: the user did not want a bridge, only for the AIs to talk. The file is back to its original content. Its backup JSON is read by `brain-graph` (`src/mapat.js` and the "שיחה" room), see `wiki/brain-graph.md`.
+- Related, not in the repo: two other versions of the same idea built by other tools, "המפה הנפשית שלי" (one by Google, one by newer Claude; items[] with type/title/text/refs, GPT chat, `window.APP`). The user uploaded them in the session; Atlas reads their export files (a plain JSON array of items).

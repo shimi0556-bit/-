@@ -572,8 +572,8 @@ window.BG = window.BG || {};
   }
 
   ai.call = async function (opt) {
-    const s = ai.settings;
-    if (!ai.ready()) throw new Error('אין מפתח API. אפשר להוסיף אותו בהגדרות (⚙).');
+    const s = opt.settings || ai.settings; // a participant can bring its own provider / key / model
+    if (!(s.key && s.key.trim())) throw new Error('אין מפתח API. אפשר להוסיף אותו בהגדרות (⚙).');
     const key = s.key.replace(/[^\x21-\x7E]/g, '');
     const base = (s.base || (PRESETS[s.provider] || {}).base || '').replace(/\/+$/, '');
     const model = s.model || (PRESETS[s.provider] || {}).model;
@@ -2067,214 +2067,242 @@ window.BG = window.BG || {};
   });
 })(window.BG);
 
-// A conversation between the AI of Atlas and the AI of "מפת הנפש" (mapat-hanefesh), over postMessage.
-// Mapat runs in an iframe (or a window we opened); each side answers from its own data, and the user approves every change.
+// A room where the AIs of several journals talk to each other. No bridge, no live connection:
+// each journal is loaded from its export file (or from this browser's storage), and gets its own AI that knows only that data.
 (function (BG) {
   'use strict';
-  const TAG = 'atlas-bridge';
-  const U = () => BG.ui;
-  const h = BG.h;
-  const B = (BG.bridge = { win: null, ready: false, info: null, busy: false });
-  const waits = new Map();
-  let abort = null;
+  const h = BG.h, U = () => BG.ui;
+  const R = (BG.room = { parts: [], busy: false });
+  let abort = null, listEl, transcript, proposals, actEl, topicEl, roundsEl, atlasRow;
 
-  // Same-origin embedding: mapat's own "hub" hooks let it use Atlas' AI directly.
-  window.hubAI = async (user, opts) => ({ text: await BG.ai.call({ system: (opts && opts.system) || '', user, max: opts && opts.maxTokens, signal: opts && opts.signal }), model: BG.ai.settings.model });
-  window.hubAIInfo = () => ({ chosen: BG.ai.ready() ? 'atlas' : '', names: { atlas: 'אטלס המוח' }, model: BG.ai.settings.model });
-  window.hubAISetProvider = () => {};
+  // ---------- reading the different file formats ----------
+  const TYPE_OUT = { emotion: 'emotion', person: 'person', thought: 'belief', trigger: 'belief', body: 'need', coping: 'behavior', insight: 'belief', concept: 'belief' };
+  const TYPE_HE = { event: 'מקרה', emotion: 'רגש', person: 'אדם', trigger: 'טריגר', thought: 'מחשבה', body: 'תחושה בגוף', coping: 'התמודדות', insight: 'תובנה', concept: 'מושג', history: 'היסטוריה' };
+  const isJournal = (d) => Array.isArray(d) && d.some((x) => x && x.id && x.type && 'title' in x);
 
-  const post = (msg) => { if (B.win) { try { B.win.postMessage(Object.assign({ bridge: TAG, from: 'atlas', to: 'mapat' }, msg), '*'); } catch (e) { /* ignore */ } } };
-  function send(op, payload, timeout) {
-    return new Promise((resolve, reject) => {
-      if (!B.win || B.win.closed) return reject(new Error('מפת הנפש לא מחוברת'));
-      const id = 'q' + Math.random().toString(36).slice(2, 9);
-      const t = setTimeout(() => { waits.delete(id); reject(new Error('מפת הנפש לא ענתה בזמן (ייתכן שהאישור שם עדיין ממתין)')); }, timeout || 120000);
-      waits.set(id, { resolve: (v) => { clearTimeout(t); resolve(v); }, reject: (e) => { clearTimeout(t); reject(e); } });
-      post(Object.assign({ op, id }, payload || {}));
-    });
+  function parseAny(json) {
+    if (isJournal(json)) return { kind: 'journal', items: json.filter((x) => x && x.id && x.type) };
+    if (json && isJournal(json.items)) return { kind: 'journal', items: json.items };
+    if (BG.mapat.isBackup(json)) return { kind: 'mapat', data: json };
+    throw new Error('לא זיהיתי את הקובץ. צריך את קובץ הייצוא של המפה הנפשית או של מפת הנפש.');
   }
-  B.send = send;
 
-  window.addEventListener('message', async (e) => {
-    const m = e.data;
-    if (!m || m.bridge !== TAG || m.from !== 'mapat' || !B.win || e.source !== B.win) return;
-    if (m.op === 'hello-ack') { B.ready = true; B.info = m; render(); return; }
-    if (m.op === 'need-llm') {
-      // mapat has no key of its own: run its request with Atlas' AI
-      try { const text = await BG.ai.call({ system: m.system, user: m.user, max: m.maxTokens || 1500 }); post({ op: 'llm-result', id: m.id, text }); }
-      catch (err) { post({ op: 'llm-result', id: m.id, error: err.message }); }
-      return;
-    }
-    const w = waits.get(m.id);
-    if (!w) return;
-    waits.delete(m.id);
-    if (m.op === 'error') w.reject(new Error(m.message)); else if (m.op === 'denied') w.reject(new Error('האישור במפת הנפש נדחה')); else w.resolve(m);
-  });
-
-  // ---------- connection ----------
-  const box = () => document.getElementById('tab-chat');
-  let urlValue = 'mapat-hanefesh/index.html';
-  try { urlValue = localStorage.getItem('brain-graph:mapat-url') || '../mapat-hanefesh/index.html'; } catch (e) { urlValue = '../mapat-hanefesh/index.html'; }
-  let frameHolder = null, transcript = null, proposals = null, status = null;
-
-  function connect(mode, url) {
-    try { localStorage.setItem('brain-graph:mapat-url', url); } catch (e) { /* ignore */ }
-    B.ready = false; B.info = null;
-    if (mode === 'iframe') {
-      const f = h('iframe', { class: 'frame', title: 'מפת הנפש', src: url });
-      frameHolder.textContent = ''; frameHolder.append(f);
-      B.win = f.contentWindow;
-      f.addEventListener('load', () => { B.win = f.contentWindow; ping(); });
-    } else {
-      const w = window.open(url, 'mapat-hanefesh');
-      if (!w) return BG.toast('הדפדפן חסם פתיחת חלון. אפשר לאשר חלונות קופצים לדף הזה.', 'err');
-      B.win = w; frameHolder.textContent = '';
-      setTimeout(ping, 1200);
-    }
-    render();
+  // psychJournal items -> mapat backup shape (so it can be imported into the brain)
+  function journalToMapat(items) {
+    const real = items.filter((n) => !n.demo), by = new Map(real.map((n) => [n.id, n]));
+    const cs = real.filter((n) => n.type !== 'event' && n.type !== 'history');
+    const ids = new Set(cs.map((n) => n.id)), pairs = new Map();
+    const add = (a, b) => { if (!a || !b || a === b || !ids.has(a) || !ids.has(b)) return; const k = [a, b].sort().join('|'); const o = pairs.get(k) || { a, b, n: 0 }; o.n++; pairs.set(k, o); };
+    for (const e of real.filter((n) => n.type === 'event')) { const r = (e.refs || []).map((x) => x.id); for (let i = 0; i < r.length; i++) for (let j = i + 1; j < r.length; j++) add(r[i], r[j]); }
+    return {
+      app: 'mapat-hanefesh',
+      concepts: cs.map((n) => ({ id: n.id, name: n.title, type: TYPE_OUT[n.type] || 'belief', note: n.text || '' })),
+      relations: [...pairs.values()].sort((x, y) => y.n - x.n).slice(0, 200).map((p, i) => ({ id: 'r' + i, from: p.a, to: p.b, type: 'related', note: 'מופיעים יחד ב־' + p.n + ' מקרים' })),
+      stories: real.filter((n) => n.type === 'event').map((e) => ({ id: e.id, title: e.title || 'מקרה', text: [e.text, e.lesson ? 'תובנה: ' + e.lesson : '', (e.refs || []).map((r) => by.get(r.id)).filter(Boolean).map((n) => '[[' + n.title + ']]').join(' ')].filter(Boolean).join('\n') }))
+    };
   }
-  function ping() { let n = 0; const t = setInterval(() => { if (B.ready || ++n > 12) return clearInterval(t); post({ op: 'hello' }); }, 700); post({ op: 'hello' }); }
 
-  // ---------- the dialogue ----------
-  const PERSONA =
-    'You are the AI of "אטלס המוח" (Atlas), a personal knowledge graph laid out like a human brain (values, habits, emotions, memories, skills, facts). ' +
-    'You are in a dialogue with the AI of "מפת הנפש" (Mapat), a reflective journal that knows the user\'s stories, values, emotions, beliefs and the links between them. ' +
-    'Together you look for real connections between the knowledge in Atlas and the inner world in Mapat. Speak Hebrew, 2-4 concrete sentences, and name actual nodes/concepts. Reply with JSON {"say":"..."}.';
+  // ---------- what each AI is allowed to know: a compact text of its own data ----------
+  function journalDigest(items, limit) {
+    let real = items.filter((n) => !n.demo);
+    if (!real.length) real = items;
+    const by = new Map(real.map((n) => [n.id, n]));
+    const evs = real.filter((n) => n.type === 'event').sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+    const out = []; let size = 0;
+    for (const e of evs) {
+      const g = {};
+      for (const r of e.refs || []) { const n = by.get(r.id); if (n) (g[n.type] = g[n.type] || []).push(n.title + (r.v ? ' ' + r.v : '')); }
+      const line = [String(e.date || '') + ' | ' + (e.title || 'מקרה'), e.text ? 'מה קרה: ' + e.text.replace(/\s+/g, ' ').slice(0, 220) : '',
+        ...['emotion', 'person', 'trigger', 'thought', 'body', 'coping'].map((t) => g[t] ? TYPE_HE[t] + ': ' + g[t].join(', ') : ''), e.lesson ? 'תובנה: ' + e.lesson.replace(/\s+/g, ' ').slice(0, 160) : ''].filter(Boolean).join(' | ');
+      if (size + line.length > limit) break;
+      out.push(line); size += line.length;
+    }
+    const freq = new Map();
+    for (const e of evs) for (const r of e.refs || []) freq.set(r.id, (freq.get(r.id) || 0) + 1);
+    const pat = [...freq.entries()].sort((a, b) => b[1] - a[1]).slice(0, 18).map(([id, c]) => { const n = by.get(id); return n ? n.title + ' (' + TYPE_HE[n.type] + ') ×' + c : ''; }).filter(Boolean);
+    const others = real.filter((n) => n.type === 'insight' || n.type === 'concept').slice(0, 20).map((n) => n.title + (n.text ? ': ' + n.text.slice(0, 80) : ''));
+    return 'מקרים (מהחדש לישן):\n' + (out.reverse().join('\n') || '(אין)') + '\n\nדפוסים שחוזרים:\n' + (pat.join('; ') || '(אין)') + (others.length ? '\n\nתובנות ומושגים:\n' + others.join('\n') : '');
+  }
+  function mapatDigest(d, limit) {
+    const concepts = Array.isArray(d.concepts) ? d.concepts : Object.values(d.concepts || {});
+    const byId = new Map(concepts.map((c) => [c.id, c]));
+    const HE = { value: 'ערכים', emotion: 'רגשות', belief: 'אמונות ומחשבות', need: 'צרכים', behavior: 'התנהגויות', person: 'אנשים' };
+    const lines = Object.keys(HE).map((t) => { const l = concepts.filter((c) => c.type === t).slice(0, 40); return l.length ? HE[t] + ': ' + l.map((c) => c.name + (c.note ? ' (' + String(c.note).slice(0, 70) + ')' : '')).join('; ') : ''; }).filter(Boolean);
+    const rels = (d.relations || []).slice(0, 70).map((r) => { const a = byId.get(r.from), b = byId.get(r.to); return a && b ? a.name + ' ' + r.type + ' ' + b.name : ''; }).filter(Boolean);
+    const stories = (d.stories || []).slice(-8).map((s) => (s.title || '') + ': ' + String(s.text || '').replace(/\[\[([^\]|]*)\|?[^\]]*\]\]/g, '$1').slice(0, 260));
+    return (lines.join('\n') + '\n\nקשרים:\n' + rels.join('\n') + '\n\nסיפורים אחרונים:\n' + stories.join('\n')).slice(0, limit);
+  }
+  const digestOf = (p) => (p.kind === 'journal' ? journalDigest(p.items, 7000) : mapatDigest(p.data, 7000));
+  const countsOf = (p) => {
+    if (p.kind === 'journal') { const r = p.items.filter((n) => !n.demo); return r.filter((n) => n.type === 'event').length + ' מקרים, ' + r.filter((n) => n.type !== 'event' && n.type !== 'history').length + ' פריטים'; }
+    const c = Array.isArray(p.data.concepts) ? p.data.concepts.length : Object.keys(p.data.concepts || {}).length;
+    return c + ' מושגים, ' + (p.data.stories || []).length + ' סיפורים';
+  };
 
-  function addBubble(who, text) {
-    const label = who === 'atlas' ? 'אטלס המוח' : who === 'mapat' ? 'מפת הנפש' : '';
-    transcript.append(h('div', { class: 'bubble ' + who }, label ? h('b', { text: label }) : null, text));
-    transcript.scrollTop = transcript.scrollHeight;
+  // ---------- loading ----------
+  function addPart(name, parsed) {
+    const p = Object.assign({ id: 'q' + Date.now().toString(36) + R.parts.length, name, use: true, ai: null }, parsed);
+    R.parts.push(p); listEl.append(partRow(p));
+    return p;
+  }
+  async function loadFiles(files) {
+    for (const f of files) {
+      try { addPart(f.name.replace(/\.json$/i, ''), parseAny(JSON.parse(await f.text()))); }
+      catch (e) { BG.toast(f.name + ': ' + e.message, 'err'); }
+    }
+  }
+  function loadFromBrowser() {
+    const keys = [['psychJournal.modern.v1', 'המפה הנפשית (שמורה בדפדפן)'], ['psychJournal.v1', 'המפה הנפשית (שמורה בדפדפן, גרסה ישנה)'], ['mapat-hanefesh.v1', 'מפת הנפש (שמורה בדפדפן)']];
+    let found = 0;
+    for (const [k, name] of keys) {
+      try { const t = localStorage.getItem(k); if (t) { addPart(name, parseAny(JSON.parse(t))); found++; } } catch (e) { /* not readable or not the right shape */ }
+    }
+    if (!found) BG.toast('לא נמצא מידע של המפות בדפדפן הזה (הוא נשמר לפי כתובת הקובץ). אפשר לטעון את קובצי הייצוא שלהן.', 'err');
+  }
+
+  // ---------- one participant ----------
+  function partRow(p) {
+    const nameIn = h('input', { value: p.name }); nameIn.addEventListener('change', () => { p.name = nameIn.value.trim() || p.name; });
+    const use = h('input', { type: 'checkbox', style: 'width:auto' }); use.checked = true; use.addEventListener('change', () => { p.use = use.checked; });
+    // optional separate brain: lets one journal speak with Gemini and another with Claude, for example
+    const prov = h('select', null, h('option', { value: '' }, 'אותה בינה של האטלס'), Object.entries(BG.PRESETS).map(([k, v]) => h('option', { value: k }, v.name)));
+    const key = h('input', { type: 'password', placeholder: 'מפתח API לבינה הזו', dir: 'ltr', autocomplete: 'off' });
+    const model = h('input', { placeholder: 'מודל', dir: 'ltr' });
+    const sync = () => {
+      if (!prov.value) { p.ai = null; return; }
+      const pr = BG.PRESETS[prov.value];
+      p.ai = { provider: prov.value, key: key.value.trim(), model: model.value.trim() || pr.model, base: pr.base };
+    };
+    prov.addEventListener('change', () => { model.value = prov.value ? BG.PRESETS[prov.value].model : ''; sync(); });
+    key.addEventListener('input', sync); model.addEventListener('input', sync);
+    p.el = h('div', { class: 'region-row', style: 'display:block;cursor:default' },
+      h('div', { class: 'row' }, use, nameIn, h('button', { class: 'small danger', title: 'הסר', onclick: () => { R.parts = R.parts.filter((x) => x !== p); p.el.remove(); }, text: '✕' })),
+      h('div', { class: 'muted', text: (p.kind === 'journal' ? 'המפה הנפשית' : 'מפת הנפש') + ' · ' + countsOf(p) }),
+      h('details', null, h('summary', { class: 'muted', text: 'בינה משלה (ספק ומפתח נפרדים)' }), prov, h('div', { style: 'height:4px' }), key, h('div', { style: 'height:4px' }), model),
+      h('div', { style: 'margin-top:6px' }, h('button', { class: 'small', onclick: () => {
+        const s = BG.mapat.import(p.kind === 'journal' ? journalToMapat(p.items) : p.data);
+        BG.toast(p.name + ' נכנסה לאטלס: ' + s.added + ' חדשים, ' + s.merged + ' אוחדו, ' + s.links + ' קשרים, ' + s.stories + ' סיפורים', 'ok');
+      }, text: 'הכנס את הנתונים לאטלס' })));
+    return p.el;
+  }
+
+  // ---------- the conversation ----------
+  const personaFor = (p, others) =>
+    'You are the AI of "' + p.name + '", a personal journal app. You know ONLY the user\'s own data below. You are in a dialogue with the AI of ' + others.map((o) => '"' + o.name + '"').join(' and ') +
+    ', each of which knows different data about the same person. Goal: find real connections, contradictions and blind spots between what each of you knows about the user on the topic. ' +
+    'Answer in Hebrew, 2-4 concrete sentences, name actual items from YOUR data, and either answer the last question or ask the other a concrete one. Say plainly when your data does not cover something. This is reflection, not diagnosis. Reply with JSON {"say":"..."}.';
+
+  function addBubble(cls, label, text) {
+    transcript.append(h('div', { class: 'bubble ' + cls }, label ? h('b', { text: label }) : null, text));
     const p = document.getElementById('tab-chat'); if (p) p.scrollTop = p.scrollHeight;
   }
+  const histText = (hist) => hist.map((x) => x.name + ': ' + x.text).join('\n') || '(none yet)';
 
-  async function dialogue(topic, rounds) {
-    if (!BG.ai.ready()) return BG.toast('השיחה דורשת מפתח AI בהגדרות (⚙)', 'err');
-    if (!B.ready) return BG.toast('קודם צריך לחבר את מפת הנפש', 'err');
-    B.busy = true; abort = new AbortController(); render();
+  // the brain takes part by reading its own memory about the topic (the regions it reads light up)
+  async function atlasMemory(topic, last, signal) {
+    const query = topic + ' ' + (last || '');
+    let seeds = [];
+    if (BG.ai.ready()) { try { const r = await BG.ai.seeds(query, U().indexFor(query), signal); seeds = (r.seeds || []).map((s) => { const n = BG.getNode(s); return n && n.id; }).filter(Boolean); } catch (e) { if (e.name === 'AbortError') throw e; } }
+    if (!seeds.length) seeds = U().localSeeds(query);
+    const order = U().traversal(seeds, 18, 2);
+    if (order.length) await U().walk(order);
+    return order.map((o) => BG.nodeById(o.id)).filter(Boolean).map((n) => '- ' + n.label + ' [' + (BG.regionById(n.region) || {}).name + '] ' + (n.summary || '')).join('\n') || '(nothing relevant)';
+  }
+
+  async function run(topic, rounds) {
+    const active = R.parts.filter((p) => p.use);
+    const withAtlas = atlasRow.cb.checked;
+    const speakers = active.map((p) => ({ name: p.name, p, digest: digestOf(p), ai: p.ai }));
+    if (withAtlas) speakers.push({ name: 'אטלס המוח', atlas: true });
+    if (speakers.length < 2) return BG.toast('צריך לפחות שתי בינות: טען שתי מפות (או סמן גם את האטלס)', 'err');
+    for (const s of speakers) if (!s.atlas && !((s.ai && s.ai.key) || BG.ai.ready())) return BG.toast('אין מפתח AI ל"' + s.name + '". הוסף מפתח בהגדרות (⚙) או "בינה משלה" לשורה שלה.', 'err');
+    if (!BG.ai.ready()) return BG.toast('הסיכום נעשה בבינה של האטלס: צריך מפתח AI בהגדרות (⚙)', 'err');
+    R.busy = true; abort = new AbortController(); updateAct();
     transcript.textContent = ''; proposals.textContent = '';
     const hist = [];
     try {
-      addBubble('sys', 'האטלס סורק את הזיכרון שלו על "' + topic + '"…');
-      let seeds = [];
-      try {
-        const r = await BG.ai.seeds(topic, U().indexFor(topic), abort.signal);
-        seeds = (r.seeds || []).map((s) => { const n = BG.getNode(s); return n && n.id; }).filter(Boolean);
-      } catch (e) { if (e.name === 'AbortError') throw e; }
-      if (!seeds.length) seeds = U().localSeeds(topic);
-      const order = U().traversal(seeds, 22, 2);
-      if (order.length) await U().walk(order);
-      const mem = order.map((o) => BG.nodeById(o.id)).filter(Boolean).map((n) => '- ' + n.label + ' [' + (BG.regionById(n.region) || {}).name + '] ' + (n.summary || '')).join('\n');
       for (let r = 1; r <= rounds; r++) {
-        const last = r === rounds;
-        const turn = await BG.ai.json({
-          system: PERSONA,
-          user: 'Topic: ' + topic + '\n\nAtlas memory (what Atlas knows about it):\n' + (mem || '(nothing relevant)') + '\n\nConversation so far:\n' +
-            (hist.map((x) => (x.who === 'atlas' ? 'Atlas: ' : 'Mapat: ') + x.text).join('\n') || '(none yet)') + '\n\n' +
-            (r === 1 ? 'Open the dialogue: share the most relevant thing Atlas knows and ask Mapat one concrete question about the user\'s inner world on this topic.'
-              : last ? 'Final round: react to what Mapat said and state what you think should be connected or added on each side.' : 'React to what Mapat said and dig one level deeper with a concrete question.'),
-          max: 700, signal: abort.signal
-        });
-        const say = String(turn.say || '').trim() || '(…)';
-        hist.push({ who: 'atlas', text: say }); addBubble('atlas', say);
-        const ans = await send('ask', { question: say, topic, history: hist.slice(0, -1) });
-        hist.push({ who: 'mapat', text: ans.say }); addBubble('mapat', ans.say);
-        // light up whatever in Atlas matches what Mapat just said
-        const echo = U().localSeeds(ans.say).slice(0, 5);
-        if (echo.length) { const o2 = U().traversal(echo, 8, 1); await U().walk(o2); }
-        if (abort.signal.aborted) throw Object.assign(new Error('abort'), { name: 'AbortError' });
+        for (const s of speakers) {
+          const others = speakers.filter((o) => o !== s);
+          const last = hist.length ? hist[hist.length - 1].text : '';
+          const data = s.atlas ? await atlasMemory(topic, last, abort.signal) : s.digest;
+          const turn = await BG.ai.json({
+            system: personaFor({ name: s.name }, others) + '\n\nYOUR DATA:\n' + data,
+            user: 'Topic: ' + topic + '\n\nConversation so far:\n' + histText(hist) + '\n\n' +
+              (!hist.length ? 'You speak first: open with the most relevant thing your data shows about the topic and ask the other a concrete question.'
+                : r === rounds && s === speakers[speakers.length - 1] ? 'Final turn: say what you now think connects your data with theirs.' : 'Respond to the last message and move one step deeper.'),
+            max: 600, signal: abort.signal, settings: s.ai || null
+          });
+          const say = String(turn.say || '').trim() || '(…)';
+          hist.push({ name: s.name, text: say });
+          addBubble(s.atlas ? 'atlas' : speakers.indexOf(s) % 2 === 0 ? 'mapat' : 'atlas', s.name, say);
+        }
       }
-      addBubble('sys', 'שתי הבינות מסכמות…');
+      addBubble('sys', 'האטלס מסכם את השיחה…');
       const fin = await BG.ai.json({
-        system: PERSONA,
-        user: 'Topic: ' + topic + '\n\nAtlas memory:\n' + (mem || '(none)') + '\n\nDialogue:\n' + hist.map((x) => (x.who === 'atlas' ? 'Atlas: ' : 'Mapat: ') + x.text).join('\n') + '\n\n' +
-          'Summarise what the two AIs agreed on and propose concrete changes. Return JSON:\n' +
-          '{"summary":"3-4 Hebrew sentences","atlas_actions":[{"op":"add_node","label":"","kind":"","region":"","summary":"","links":[{"to":"existing label","rel":""}]},{"op":"link","from":"label","to":"label","rel":""}],' +
-          '"mapat_actions":{"concepts":[{"name":"","type":"value|emotion|belief|need|behavior|person","note":""}],"relations":[{"from":"concept name","to":"concept name","type":"leads|supports|conflicts|protects|masks|related","note":""}]}}\n' +
-          'Only propose what the dialogue actually supports; at most 6 atlas_actions, 6 concepts and 6 relations.',
-        max: 2500, signal: abort.signal
+        system: 'You moderate a dialogue between the AIs of several journals of one person, and also own "אטלס המוח", a brain-shaped knowledge graph. Reply with one JSON object, Hebrew text.',
+        user: 'Topic: ' + topic + '\n\nDialogue:\n' + histText(hist) + '\n\nReturn JSON:\n' +
+          '{"summary":"3-5 sentences: what connects the journals, what contradicts, what is missing",' +
+          '"suggestions":{"<participant name>":["short concrete thing worth adding or examining in that journal"]},' +
+          '"atlas_actions":[{"op":"add_node","label":"","kind":"","region":"","summary":"","links":[{"to":"existing label","rel":""}]}]}\n' +
+          'Participants: ' + speakers.map((s) => s.name).join('; ') + '. At most 4 suggestions per participant and 6 atlas_actions; only what the dialogue supports.',
+        max: 2200, signal: abort.signal
       });
       addBubble('sys', String(fin.summary || ''));
       showProposals(fin);
     } catch (e) {
-      if (e.name === 'AbortError') addBubble('sys', 'השיחה נעצרה.'); else addBubble('sys', '✗ ' + e.message);
-    } finally { B.busy = false; BG.clearActivation(); BG.resetView(); render(); }
+      addBubble('sys', e.name === 'AbortError' ? 'השיחה נעצרה.' : '✗ ' + e.message);
+    } finally { R.busy = false; BG.clearActivation(); BG.resetView(); updateAct(); }
   }
 
   function showProposals(fin) {
     proposals.textContent = '';
-    const atlas = U().cleanActions(fin.atlas_actions).filter((a) => a.op !== 'export' && a.op !== 'delete');
-    const mc = (fin.mapat_actions && Array.isArray(fin.mapat_actions.concepts) ? fin.mapat_actions.concepts : []).filter((c) => c && c.name).slice(0, 8);
-    const mr = (fin.mapat_actions && Array.isArray(fin.mapat_actions.relations) ? fin.mapat_actions.relations : []).filter((r) => r && r.from && r.to).slice(0, 8);
-    if (!atlas.length && !mc.length && !mr.length) return proposals.append(h('p', { class: 'muted', text: 'השיחה לא העלתה שינויים להצעה.' }));
-    const row = (text, checked) => { const cb = h('input', { type: 'checkbox' }); cb.checked = checked; return [cb, h('label', { style: 'display:flex;gap:8px;align-items:flex-start;padding:3px 0' }, cb, text)]; };
-    const A = atlas.map((a) => row('אטלס: ' + U().describeAction(a), true));
-    const MC = mc.map((c) => row('מפת הנפש: הוסף "' + c.name + '" (' + (c.type || 'belief') + ')', true));
-    const MR = mr.map((r) => row('מפת הנפש: ' + r.from + ' ← ' + (r.type || 'related') + ' → ' + r.to, true));
-    proposals.append(h('h3', { text: 'הצעות משותפות – סמן מה להחיל' }), A.map((x) => x[1]), MC.map((x) => x[1]), MR.map((x) => x[1]),
-      h('div', { class: 'row', style: 'margin-top:8px' }, h('button', { class: 'primary', onclick: async () => {
-        const okA = atlas.filter((_, i) => A[i][0].checked);
-        const okC = mc.filter((_, i) => MC[i][0].checked), okR = mr.filter((_, i) => MR[i][0].checked);
-        try {
-          if (okA.length) await U().applyActions(okA);
-          if (okC.length || okR.length) { const r = await send('apply', { concepts: okC, relations: okR }); BG.toast('במפת הנפש נוספו ' + r.added + ' מושגים ו־' + r.links + ' קשרים', 'ok'); }
-          proposals.textContent = '';
-        } catch (e) { BG.toast(e.message, 'err'); }
-      }, text: 'החל נבחרים' }), h('button', { onclick: () => { proposals.textContent = ''; }, text: 'התעלם' })));
+    const acts = U().cleanActions(fin.atlas_actions).filter((a) => a.op !== 'export' && a.op !== 'delete');
+    const boxes = acts.map(() => { const cb = h('input', { type: 'checkbox' }); cb.checked = true; return cb; });
+    const sug = fin.suggestions && typeof fin.suggestions === 'object' ? fin.suggestions : {};
+    const names = Object.keys(sug).filter((k) => Array.isArray(sug[k]) && sug[k].length);
+    if (names.length) {
+      proposals.append(h('h3', { text: 'מה כדאי להוסיף או לבדוק בכל מפה' }));
+      names.forEach((k) => proposals.append(h('div', { class: 'muted', style: 'margin:6px 0 2px;font-weight:700', text: k }), h('ul', { style: 'margin:0;padding-inline-start:18px' }, sug[k].slice(0, 5).map((t) => h('li', { text: String(t) })))));
+    }
+    if (acts.length) {
+      proposals.append(h('h3', { text: 'הצעות לאטלס – סמן מה להחיל' }), acts.map((a, i) => h('label', { style: 'display:flex;gap:8px;align-items:flex-start;padding:3px 0' }, boxes[i], U().describeAction(a))),
+        h('div', { class: 'row', style: 'margin-top:8px' }, h('button', { class: 'primary', onclick: async () => { await U().applyActions(acts.filter((_, i) => boxes[i].checked)); proposals.textContent = ''; }, text: 'החל נבחרים' }),
+          h('button', { onclick: () => { proposals.textContent = ''; }, text: 'התעלם' })));
+    }
   }
 
-  async function sync() {
-    try {
-      BG.toast('מבקש את הנתונים ממפת הנפש (צריך לאשר שם)…');
-      const r = await send('snapshot');
-      const s = BG.mapat.import(r.data);
-      BG.toast('נקלט: ' + s.added + ' חדשים, ' + s.merged + ' אוחדו, ' + s.links + ' קשרים, ' + s.stories + ' סיפורים', 'ok');
-    } catch (e) { BG.toast(e.message, 'err'); }
+  // ---------- panel ----------
+  function updateAct() {
+    actEl.textContent = '';
+    actEl.append(R.busy ? h('button', { onclick: () => abort && abort.abort(), text: 'עצור' })
+      : h('button', { class: 'primary', onclick: () => { const t = topicEl.value.trim(); if (!t) return BG.toast('כתוב נושא לשיחה'); run(t, +roundsEl.value); }, text: 'התחל שיחה' }));
   }
-
-  // ---------- panel (built once: re-attaching the iframe would reload it) ----------
-  let built = false, statusEl, actEl, syncBtn, topicEl, roundsEl;
   function build() {
-    const p = box(); if (!p) return;
-    built = true;
-    const url = h('input', { value: urlValue, dir: 'ltr', placeholder: 'כתובת הקובץ של מפת הנפש' });
-    url.addEventListener('change', () => { urlValue = url.value.trim(); });
-    statusEl = h('p', { class: 'muted' });
-    frameHolder = h('div');
-    transcript = h('div');
-    proposals = h('div');
-    topicEl = h('input', { placeholder: 'על מה שתי הבינות ידברו? (למשל: למה אני דוחה משימות)', id: 'chatTopic' });
-    roundsEl = h('select', null, [1, 2, 3, 4].map((n) => h('option', { value: n, selected: n === 2 }, n + ' סבבים')));
+    const p = document.getElementById('tab-chat'); if (!p) return;
+    listEl = h('div'); transcript = h('div'); proposals = h('div');
+    const file = h('input', { type: 'file', multiple: true, accept: '.json,application/json', hidden: true });
+    file.addEventListener('change', () => { loadFiles([...file.files]); file.value = ''; });
+    topicEl = h('input', { id: 'chatTopic', placeholder: 'על מה הבינות ידברו? (למשל: למה אני נלחץ מביקורת)' });
+    roundsEl = h('select', null, [1, 2, 3, 4, 5].map((n) => h('option', { value: n, selected: n === 3 }, n + ' סבבים')));
     actEl = h('div', { style: 'flex:none' });
-    syncBtn = h('button', { onclick: sync, text: 'משוך את כל הנתונים ממפת הנפש' });
+    const acb = h('input', { type: 'checkbox', style: 'width:auto' });
+    atlasRow = { cb: acb };
     p.append(
       h('h3', { text: 'שיחה בין הבינות' }),
-      h('p', { class: 'muted', text: 'הבינה של האטלס עוברת על הגרף, שואלת את הבינה של מפת הנפש, והן מסכמות יחד מה לחבר ומה להוסיף בכל צד. כל שינוי רק באישורך. מפת הנפש תבקש ממך אישור לפני שתענה.' }),
-      h('label', { class: 'f', text: 'מפת הנפש' }), url,
-      h('div', { class: 'row', style: 'margin-top:6px' },
-        h('button', { class: 'primary', onclick: () => connect('iframe', url.value.trim()), text: 'הטמע כאן' }),
-        h('button', { onclick: () => connect('window', url.value.trim()), text: 'פתח בחלון' })),
-      statusEl, frameHolder,
+      h('p', { class: 'muted', text: 'טוען את קובצי הייצוא של שתי המפות (בכל אחת: ייצוא / גיבוי). לכל מפה יש בינה משלה שמכירה רק את הנתונים שלה, והבינות מדברות ישירות זו עם זו, בלי חיבור ובלי אישורים. בסוף האטלס מסכם ומציע מה להוסיף.' }),
+      h('div', { class: 'row' }, h('button', { class: 'primary', onclick: () => file.click(), text: 'טען קובצי ייצוא…' }), h('button', { onclick: loadFromBrowser, text: 'קרא מהדפדפן' })), file,
+      listEl,
+      h('label', { class: 'muted', style: 'display:block;margin:8px 0' }, acb, ' גם האטלס משתתף בשיחה (עם הזיכרון שלו, והאזורים נצבעים)'),
       h('div', { class: 'hr' }),
       h('label', { class: 'f', text: 'נושא לשיחה' }), topicEl,
       h('div', { class: 'row', style: 'margin-top:6px' }, roundsEl, actEl),
-      h('div', { style: 'margin-top:8px' }, syncBtn),
-      transcript, proposals
-    );
+      transcript, proposals);
+    updateAct();
   }
-  function render() {
-    if (!built) build();
-    if (!built) return;
-    statusEl.textContent = '';
-    statusEl.append(h('span', { class: 'dot' + (B.ready ? ' on' : '') }),
-      B.ready ? 'מפת הנפש מחוברת · ' + B.info.counts.concepts + ' מושגים, ' + B.info.counts.relations + ' קשרים, ' + B.info.counts.stories + ' סיפורים' : (B.win ? 'ממתין לתשובה ממפת הנפש…' : 'לא מחובר'));
-    syncBtn.disabled = !B.ready;
-    actEl.textContent = '';
-    actEl.append(B.busy ? h('button', { onclick: () => abort && abort.abort(), text: 'עצור' })
-      : h('button', { class: 'primary', onclick: () => { const t = topicEl.value.trim(); if (!t) return BG.toast('כתוב נושא לשיחה'); dialogue(t, +roundsEl.value); }, text: 'התחל שיחה' }));
-  }
-  BG.on('change', () => { /* panel keeps its own state; only the status line may need a refresh */ });
-  render();
+  // drop export files straight onto the chat panel
+  BG.room.loadFiles = loadFiles;
+  build();
 })(window.BG);
 
 </script>

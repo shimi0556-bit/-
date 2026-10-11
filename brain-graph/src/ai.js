@@ -32,8 +32,8 @@
   }
 
   ai.call = async function (opt) {
-    const s = ai.settings;
-    if (!ai.ready()) throw new Error('אין מפתח API. אפשר להוסיף אותו בהגדרות (⚙).');
+    const s = opt.settings || ai.settings; // a participant can bring its own provider / key / model
+    if (!(s.key && s.key.trim())) throw new Error('אין מפתח API. אפשר להוסיף אותו בהגדרות (⚙).');
     const key = s.key.replace(/[^\x21-\x7E]/g, '');
     const base = (s.base || (PRESETS[s.provider] || {}).base || '').replace(/\/+$/, '');
     const model = s.model || (PRESETS[s.provider] || {}).model;
