@@ -23,9 +23,13 @@ Example output: [demo/bpe/LESSON.md](demo/bpe/LESSON.md) (the video's test, run 
 | 2 | Compile a wiki (LLM-wiki pattern): index, log, page per source, principles, methods, hot page < 500 words | [`wiki/`](wiki/index.md): 58 source pages, 9 principles, 6 methods, [`_hot.md`](wiki/_hot.md) |
 | 3 | Derive rules: only rules found in ≥2 places, each with an exact quote | [`wiki/rules.md`](wiki/rules.md): 7 rules + candidates |
 | 4 | Agent + skill | [`.claude/agents/karpathy.md`](../.claude/agents/karpathy.md), [`.claude/skills/karpathy-teach`](../.claude/skills/karpathy-teach/SKILL.md) (delegates, then grades against the 7 rules) |
-| 5 | Stop hook: "Karpathy rule, run it before you say it works" | [`.claude/hooks/karpathy_run_gate.py`](../.claude/hooks/karpathy_run_gate.py) + tests [`tools/test_run_gate.py`](tools/test_run_gate.py). **Activation:** merge [`hooks/settings.snippet.json`](hooks/settings.snippet.json) into `.claude/settings.json` |
+| 5 | Stop hook: "Karpathy rule, run it before you say it works" | [`.claude/hooks/karpathy_run_gate.py`](../.claude/hooks/karpathy_run_gate.py) + tests [`tools/test_run_gate.py`](tools/test_run_gate.py). Registered in `.claude/settings.json` (active from the next session) |
 | 6 | Test on a tiny BPE tokenizer | [`demo/bpe/`](demo/bpe/) |
 | + | Ingest new sources (shown in the video, but no creation prompt was given) | [`.claude/skills/karpathy-ingest`](../.claude/skills/karpathy-ingest/SKILL.md) |
+
+## Graph
+
+[`graph.html`](graph.html) shows the wiki as an interactive graph, like Obsidian's graph view: pages are nodes, links and quote citations are edges, and each rule is linked to the sources that back it. Regenerate after every ingest with `python3 karpathy-brain/tools/build_graph.py`.
 
 ## The seven rules
 

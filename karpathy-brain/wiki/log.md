@@ -10,3 +10,6 @@ Append-only. Newest at the bottom. `grep "^## \[" log.md | tail -5` shows the la
 
 ## [2026-10-11] package | agent, skills, run gate
 `.claude/agents/karpathy.md`, `.claude/skills/karpathy-teach`, `.claude/skills/karpathy-ingest`, `.claude/hooks/karpathy_run_gate.py` (Stop + SubagentStop). The hook's settings entry is in `karpathy-brain/hooks/settings.snippet.json`, waiting for the owner to approve it into `.claude/settings.json`.
+
+## [2026-10-12] package | hook registered, graph
+Owner approved the run-gate hook; it is now in `.claude/settings.json`. Added `tools/build_graph.py` → `graph.html` (interactive wiki graph, 82 nodes, 152 edges, 20 orphan sources).

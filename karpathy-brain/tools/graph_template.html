@@ -1,0 +1,269 @@
+<title>Karpathy Brain Graph</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Hebrew:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: full-height graph field; header strip on top; reading panel docked at the inline-start edge (bottom sheet on phones). */
+:root {
+  --bg: #eef1ee; --surface: #fbfcfa; --fg: #18211e; --muted: #5a6762; --line: #c9d1cc; --edge: rgba(40, 60, 54, .16);
+  --rule: #c2410c; --principle: #0e7466; --method: #6d3fc6; --source: #45689c; --core: #a16207;
+  --display: "IBM Plex Sans Hebrew", "Segoe UI", Arial, sans-serif;
+  --body: "IBM Plex Sans Hebrew", "Segoe UI", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1514; --surface: #161e1c; --fg: #e3ebe7; --muted: #92a19b; --line: #2a3632; --edge: rgba(190, 215, 205, .13);
+  --rule: #f97343; --principle: #2fb8a3; --method: #a78bfa; --source: #7d9fd6; --core: #e0a526; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1514; --surface: #161e1c; --fg: #e3ebe7; --muted: #92a19b; --line: #2a3632; --edge: rgba(190, 215, 205, .13);
+  --rule: #f97343; --principle: #2fb8a3; --method: #a78bfa; --source: #7d9fd6; --core: #e0a526; color-scheme: dark }
+
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+.app { height: 100%; display: grid; grid-template-rows: auto 1fr; padding-inline: 16px; padding-block: 12px; gap: 12px; box-sizing: border-box; }
+
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; }
+.brand { display: flex; flex-direction: column; min-width: 0; }
+h1 { font-family: var(--display); font-weight: 700; font-size: 1.35rem; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+.stats { font-family: var(--mono); font-size: .76rem; color: var(--muted); font-variant-numeric: tabular-nums; direction: ltr; text-align: end; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-inline-start: auto; }
+.search { font: inherit; font-size: .88rem; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--fg); width: 13rem; max-width: 100%; }
+.search:focus-visible, .chip:focus-visible, .nb:focus-visible, .rule-link:focus-visible { outline: 2px solid var(--rule); outline-offset: 2px; }
+.chip { font: inherit; font-size: .8rem; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--fg); cursor: pointer; }
+.chip .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
+.chip[aria-pressed="false"] { opacity: .45; }
+.chip[aria-pressed="false"] .dot { background: transparent; box-shadow: inset 0 0 0 1.5px var(--c); }
+
+.main { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: 12px; min-height: 0; }
+.field { position: relative; min-width: 0; min-height: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--bg); }
+svg { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; direction: ltr; }
+svg:active { cursor: grabbing; }
+.edge { stroke: var(--edge); stroke-width: 1; }
+.edge.hot { stroke: var(--fg); stroke-opacity: .55; stroke-width: 1.4; }
+.node circle { stroke: var(--bg); stroke-width: 1.5; cursor: pointer; }
+.node text { font-family: var(--mono); font-size: 10.5px; fill: var(--fg); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
+.node.kind-rule text { font-family: var(--body); font-weight: 600; font-size: 12.5px; }
+.node.src-label text { opacity: 0; transition: opacity .15s; }
+.zoomed .node.src-label text, .node.src-label.lit text { opacity: 1; }
+.dim .node:not(.lit) { opacity: .16; }
+.dim .edge:not(.hot) { stroke-opacity: .25; }
+.node.sel circle { stroke: var(--fg); stroke-width: 2.5; }
+.node.hidden, .edge.hidden { display: none; }
+.hint { position: absolute; inset-inline-start: 10px; bottom: 8px; font-size: .74rem; color: var(--muted); background: color-mix(in srgb, var(--bg) 82%, transparent); padding: 2px 8px; border-radius: 4px; pointer-events: none; }
+
+aside { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 16px 18px; overflow-y: auto; min-width: 0; min-height: 0; }
+.kind-tag { font-family: var(--mono); font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--c); }
+aside h2 { font-family: var(--display); font-size: 1.12rem; margin: 2px 0 8px; line-height: 1.3; text-wrap: balance; direction: ltr; text-align: start; unicode-bidi: plaintext; }
+aside p { margin: 0 0 12px; }
+.ltr { direction: ltr; unicode-bidi: plaintext; text-align: start; }
+.meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: .82rem; margin: 0 0 12px; }
+.meta dt { color: var(--muted); }
+.meta dd { margin: 0; font-family: var(--mono); font-size: .78rem; direction: ltr; text-align: start; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+h3 { font-size: .78rem; font-weight: 600; color: var(--muted); letter-spacing: .04em; margin: 14px 0 6px; }
+.nbs { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.nb, .rule-link { font: inherit; font-size: .84rem; text-align: start; background: none; border: 0; padding: 4px 6px; border-radius: 5px; color: var(--fg); cursor: pointer; display: flex; gap: 8px; align-items: baseline; width: 100%; }
+.nb:hover, .rule-link:hover { background: color-mix(in srgb, var(--line) 45%, transparent); }
+.nb .dot, .rule-link .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--c); transform: translateY(-1px); }
+.nb span:last-child { direction: ltr; unicode-bidi: plaintext; overflow-wrap: anywhere; }
+a.open { display: inline-block; font-size: .84rem; color: var(--rule); margin-top: 6px; }
+.back { font: inherit; font-size: .8rem; color: var(--muted); background: none; border: 0; padding: 0; cursor: pointer; margin-bottom: 8px; }
+.back:hover { color: var(--fg); }
+
+@media (max-width: 760px) {
+  .app { grid-template-rows: auto minmax(340px, 1fr); height: auto; min-height: 100%; }
+  .main { grid-template-columns: 1fr; grid-template-rows: 62vh auto; }
+  .field { order: -1; }
+  .controls { margin-inline-start: 0; }
+  .search { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .node.src-label text { transition: none; } }
+</style>
+
+<div class="app" dir="rtl">
+  <header>
+    <div class="brand">
+      <h1>המוח של קרפתי</h1>
+      <div class="stats" id="stats"></div>
+    </div>
+    <div class="controls">
+      <input class="search" id="q" type="search" placeholder="חיפוש עמוד…" aria-label="חיפוש עמוד בגרף">
+      <div id="chips" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+    </div>
+  </header>
+  <div class="main">
+    <aside id="panel" aria-live="polite"></aside>
+    <div class="field" id="field">
+      <svg id="svg" role="img" aria-label="גרף הוויקי: עמודים כצמתים, קישורים וציטוטים כקווים"></svg>
+      <div class="hint">גלילה לזום · גרירה להזזה · לחיצה על צומת לפרטים</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+const DATA = /*__GRAPH_DATA__*/null;
+const KINDS = {
+  rule:      { he: "כלל",         en: "rule" },
+  principle: { he: "עיקרון",      en: "principle" },
+  method:    { he: "שיטה",        en: "method" },
+  source:    { he: "מקור",        en: "source" },
+  core:      { he: "ליבה",        en: "core" },
+};
+const FAMILY = { blog: "בלוג karpathy.github.io", bearblog: "בלוג bearblog", medium: "Medium", github: "README ב-GitHub", gists: "Gist", interviews: "ראיון" };
+const cssVar = k => `var(--${k})`;
+const byId = new Map(DATA.nodes.map(n => [n.id, n]));
+const nbrs = new Map(DATA.nodes.map(n => [n.id, new Set()]));
+DATA.links.forEach(l => { nbrs.get(l.source).add(l.target); nbrs.get(l.target).add(l.source); });
+const visible = new Set(Object.keys(KINDS));
+const fmt = new Intl.NumberFormat("en-US");
+
+document.getElementById("stats").textContent =
+  `${DATA.stats.sources} sources · ${fmt.format(DATA.stats.words)} words · ${DATA.stats.quotes} verified quotes · ${DATA.nodes.length} nodes · ${DATA.stats.edges} links`;
+
+// chips
+const chips = document.getElementById("chips");
+for (const [k, v] of Object.entries(KINDS)) {
+  const b = document.createElement("button");
+  b.className = "chip"; b.type = "button"; b.setAttribute("aria-pressed", "true"); b.id = "chip-" + k;
+  b.style.setProperty("--c", cssVar(k));
+  const count = DATA.nodes.filter(n => n.kind === k).length;
+  b.innerHTML = `<span class="dot"></span>${v.he} <span style="font-family:var(--mono);color:var(--muted)">${count}</span>`;
+  b.onclick = () => { visible.has(k) ? visible.delete(k) : visible.add(k); b.setAttribute("aria-pressed", visible.has(k)); applyVisibility(); };
+  chips.appendChild(b);
+}
+
+// graph
+const svg = d3.select("#svg"), field = document.getElementById("field");
+const W = () => field.clientWidth, H = () => field.clientHeight;
+const g = svg.append("g");
+const radius = n => n.kind === "rule" ? 9 + Math.sqrt(n.degree) * 1.4
+  : n.kind === "core" ? 8 + Math.sqrt(n.degree) : 3.5 + Math.sqrt(n.degree) * 1.25;
+
+const nodes = DATA.nodes.map(n => ({ ...n }));
+const ORPHAN_R = 430;
+const links = DATA.links.map(l => ({ ...l }));
+const sim = d3.forceSimulation(nodes)
+  .force("link", d3.forceLink(links).id(d => d.id).distance(l => (l.source.kind === "rule" || l.target.kind === "rule") ? 95 : 70).strength(.4))
+  .force("charge", d3.forceManyBody().strength(d => d.degree === 0 ? -20 : d.kind === "source" ? -170 : -520))
+  .force("collide", d3.forceCollide(d => radius(d) + (d.kind === "source" ? 4 : 14)))
+  .force("x", d3.forceX(0).strength(d => d.degree === 0 ? 0 : .04)).force("y", d3.forceY(0).strength(d => d.degree === 0 ? 0 : .055))
+  // orphans (no links) sit on a ring just outside the connected cluster instead of drifting off
+  .force("ring", d3.forceRadial(ORPHAN_R, 0, 0).strength(d => d.degree === 0 ? .9 : 0))
+  .stop();
+// settle before the first paint so the page opens laid out
+for (let i = 0; i < 420; i++) sim.tick();
+
+const edge = g.append("g").selectAll("line").data(links).join("line").attr("class", "edge");
+const node = g.append("g").selectAll("g").data(nodes).join("g")
+  .attr("class", d => `node kind-${d.kind}` + (d.kind === "source" ? " src-label" : ""))
+  .attr("tabindex", 0).attr("role", "button").attr("aria-label", d => d.title);
+node.append("circle").attr("r", radius).attr("fill", d => cssVar(d.kind));
+node.append("text").text(d => d.kind === "source" ? shorten(d.title, 34) : d.kind === "rule" ? d.title : shorten(d.title, 40))
+  .attr("dx", d => radius(d) + 4).attr("dy", "0.35em");
+
+function shorten(s, n) { return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+function draw() {
+  edge.attr("x1", d => d.source.x).attr("y1", d => d.source.y).attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+  node.attr("transform", d => `translate(${d.x},${d.y})`);
+}
+draw();
+sim.on("tick", draw);
+
+const zoom = d3.zoom().scaleExtent([0.2, 5]).on("zoom", e => {
+  g.attr("transform", e.transform);
+  field.classList.toggle("zoomed", e.transform.k > 1.7);
+});
+svg.call(zoom).on("dblclick.zoom", null);
+function fit(duration = 0) {
+  const core = nodes.filter(n => n.degree > 0);
+  const xs = core.map(n => n.x), ys = core.map(n => n.y);
+  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  const k = Math.min(1.6, 0.94 / Math.max((x1 - x0 + 220) / W(), (y1 - y0 + 40) / H()));
+  const t = d3.zoomIdentity.translate(W() / 2, H() / 2).scale(k).translate(-(x0 + x1) / 2 - 40, -(y0 + y1) / 2);
+  (duration ? svg.transition().duration(duration) : svg).call(zoom.transform, t);
+}
+fit();
+new ResizeObserver(() => fit()).observe(field);
+
+node.call(d3.drag()
+  .on("start", (e, d) => { if (!e.active) sim.alphaTarget(.25).restart(); d.fx = d.x; d.fy = d.y; })
+  .on("drag", (e, d) => { d.fx = e.x; d.fy = e.y; })
+  .on("end", (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null; }));
+
+let selected = null;
+function light(id) {
+  const set = id ? new Set([id, ...nbrs.get(id)]) : null;
+  field.classList.toggle("dim", !!set);
+  node.classed("lit", d => !!set && set.has(d.id));
+  edge.classed("hot", d => !!id && (d.source.id === id || d.target.id === id));
+}
+node.on("mouseenter", (e, d) => light(d.id)).on("mouseleave", () => light(selected))
+  .on("click", (e, d) => select(d.id))
+  .on("keydown", (e, d) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(d.id); } });
+svg.on("click", e => { if (e.target === svg.node()) select(null); });
+
+function applyVisibility() {
+  node.classed("hidden", d => !visible.has(d.kind));
+  edge.classed("hidden", d => !visible.has(d.source.kind) || !visible.has(d.target.kind));
+}
+
+// search
+document.getElementById("q").addEventListener("input", e => {
+  const q = e.target.value.trim().toLowerCase();
+  if (!q) { light(selected); return; }
+  const hits = new Set(nodes.filter(n => (n.title + " " + (n.summary || "")).toLowerCase().includes(q)).map(n => n.id));
+  field.classList.add("dim");
+  node.classed("lit", d => hits.has(d.id));
+  edge.classed("hot", false);
+});
+
+// panel
+const panel = document.getElementById("panel");
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function nbButton(n) {
+  return `<li><button class="nb" type="button" data-id="${esc(n.id)}" style="--c:${cssVar(n.kind)}"><span class="dot"></span><span>${esc(n.title)}</span></button></li>`;
+}
+function home() {
+  const rules = nodes.filter(n => n.kind === "rule").sort((a, b) => a.title.localeCompare(b.title));
+  panel.innerHTML = `
+    <div class="kind-tag" style="--c:${cssVar("core")}">karpathy-brain / wiki</div>
+    <h2 style="direction:rtl;text-align:start">איך לקרוא את הגרף</h2>
+    <p>כל צומת הוא עמוד בוויקי. קו בין שני צמתים אומר שאחד מקשר לשני או מצטט את המקור שלו. הכללים (כתום) מחוברים לכל מקור שמגבה אותם, כך שאפשר לראות על כמה ראיות כל כלל נשען.</p>
+    <p>צמתים גדולים יותר = יותר חיבורים. הראיון אצל Dwarkesh והפוסט Recipe הם המרכזים הכבדים ביותר.</p>
+    <h3>שבעת הכללים</h3>
+    <ul class="nbs">${rules.map(r => `<li><button class="rule-link" type="button" data-id="${esc(r.id)}" style="--c:${cssVar("rule")}"><span class="dot"></span><span class="ltr">${esc(r.title)} <span style="font-family:var(--mono);color:var(--muted);font-size:.74rem">${nbrs.get(r.id).size - 1}</span></span></button></li>`).join("")}</ul>
+    <p style="font-size:.84rem;color:var(--muted)">${nodes.filter(n => n.degree === 0).length} מקורות עדיין לא מחוברים לשום עמוד (יתומים, כמו בגרף של Obsidian). אלה פוסטים פחות רלוונטיים להוראה, למשל biohacking ו-chemical hygiene.</p>
+    <h3>הכי מחוברים</h3>
+    <ul class="nbs">${[...nodes].filter(n => n.kind === "source").sort((a, b) => b.degree - a.degree).slice(0, 6).map(nbButton).join("")}</ul>`;
+}
+function select(id) {
+  selected = id;
+  node.classed("sel", d => d.id === id);
+  light(id);
+  if (!id) { home(); return; }
+  const n = byId.get(id);
+  const ns = [...nbrs.get(id)].map(x => byId.get(x)).sort((a, b) => Object.keys(KINDS).indexOf(a.kind) - Object.keys(KINDS).indexOf(b.kind) || b.degree - a.degree);
+  const meta = [];
+  if (n.kind === "source") {
+    meta.push(["סוג", n.type], ["תאריך", n.date], ["מילים", fmt.format(n.words)], ["משפחה", FAMILY[n.family] || n.family], ["ייחוס", n.attribution]);
+  }
+  if (n.quotes) meta.push(["ציטוטים", n.quotes]);
+  meta.push(["חיבורים", n.degree]);
+  panel.innerHTML = `
+    <button class="back" type="button" id="back">→ חזרה לסקירה</button>
+    <div class="kind-tag" style="--c:${cssVar(n.kind)}">${KINDS[n.kind].he} · ${KINDS[n.kind].en}</div>
+    <h2>${esc(n.title)}</h2>
+    ${n.summary ? `<p class="ltr">${esc(n.summary)}</p>` : ""}
+    <dl class="meta">${meta.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+    <a class="open" href="${esc(n.url)}" target="_blank" rel="noopener">פתיחת העמוד ב-GitHub ←</a>
+    <h3>מחובר אל (${ns.length})</h3>
+    <ul class="nbs">${ns.map(nbButton).join("")}</ul>`;
+  document.getElementById("back").onclick = () => select(null);
+}
+panel.addEventListener("click", e => {
+  const b = e.target.closest("[data-id]");
+  if (b) select(b.dataset.id);
+});
+home();
+applyVisibility();
+</script>
