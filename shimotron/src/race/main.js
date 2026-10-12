@@ -12,9 +12,10 @@ import { AudioEngine } from '../engine/audio/AudioEngine.js';
 import { Music } from '../engine/audio/Music.js';
 import { Terrain } from '../engine/world/Terrain.js';
 import { smoothstep } from '../engine/core/Random.js';
-import { STAGES, AI, RACE, CAREER, PODIUM, CAR_TYPES } from './config.js';
+import { STAGES, AI, RACE, CAREER, PODIUM, CAR_TYPES, RALLY } from './config.js';
 import { generateTrack, planSignature, packPlan, unpackPlan } from './TrackGenerator.js';
-import BAKED_PLANS from './plans.json';
+import WORLD_PLANS from './plans.json';
+import RALLY_PLANS from './plans-rally.json';
 import { Island } from './Island.js';
 import { Race } from './Race.js';
 import { CraftRace } from './CraftRace.js';
@@ -31,13 +32,18 @@ import { loadRealModels, warmRealModels } from './RealModels.js';
 import { World, WORLD } from './World.js';
 import { SpaceScene } from './Space.js';
 import { Explore, ROAM } from './Explore.js';
+import { PaceNotes, RallySfx, Stars, goldTime, starsFor } from './Rally.js';
+import SOUNDS from 'virtual:shimotron-sounds';
 
+const BAKED_PLANS = RALLY ? RALLY_PLANS : WORLD_PLANS;
+// The rally edition keeps its own saves (records, stars, settings) apart from the archipelago's.
+const PREFIX = RALLY ? 'shimotron-rally-islands' : 'shimotron-rally';
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const store = {
   get(k, d) {
     try {
-      const v = localStorage.getItem(`shimotron-rally:${k}`);
+      const v = localStorage.getItem(`${PREFIX}:${k}`);
       return v ? JSON.parse(v) : d;
     } catch {
       return d;
@@ -45,7 +51,7 @@ const store = {
   },
   set(k, v) {
     try {
-      localStorage.setItem(`shimotron-rally:${k}`, JSON.stringify(v));
+      localStorage.setItem(`${PREFIX}:${k}`, JSON.stringify(v));
     } catch {
       /* storage is optional */
     }
@@ -60,6 +66,12 @@ class Game {
   constructor() {
     this.settings = { difficulty: 'normal', laps: RACE.laps, quality: null, sound: true, color: '#e0262b', camera: 0, car: 'gt', items: true, podium: true, kind: 'car', ...store.get('settings', {}) };
     this.settings.audio = { engine: true, music: true, sfx: true, ambience: true, ...(this.settings.audio || {}) };
+    if (RALLY) {
+      // One car, on wheels only: the rally car (opponents drive it too, in their own colours).
+      Object.assign(this.settings, { kind: 'car', car: 'rally' });
+      if (this.settings.items === undefined || !store.get('settings', {}).itemsSet) this.settings.items = false;
+      this.stars = new Stars(store);
+    }
     this.records = store.get('records', {});
     this.champ = store.get('champ', null);
     this.career = store.get('career', null);
@@ -131,8 +143,11 @@ class Game {
     this.materials = materials;
     engine.particles = new Particles(engine, materials);
     engine.audio = new AudioEngine(engine);
-    await progress(0.17, 'טוען מודלים תלת־ממדיים אמיתיים…');
-    await loadRealModels();
+    engine.audio.loadSamples(SOUNDS);
+    if (!RALLY) {
+      await progress(0.17, 'טוען מודלים תלת־ממדיים אמיתיים…');
+      await loadRealModels();
+    }
     this.wheels = new WheelBatch(materials, 32);
     engine.scene.add(this.wheels.group);
     this.skid = new SkidMarks(engine.quality.presetName === 'low' ? 2500 : 5000);
@@ -188,7 +203,8 @@ class Game {
     await progress(0.9, 'מקמפל שיידרים…');
     const unwarm = warmRealModels(engine.scene, materials);
     try {
-      await Promise.race([engine.renderer.compileAsync(engine.scene, engine.camera), wait(12000)]);
+      // The rally edition shows its menu at once; anything not compiled yet compiles while it is up.
+      await Promise.race([engine.renderer.compileAsync(engine.scene, engine.camera), wait(RALLY ? 900 : 12000)]);
     } catch {
       /* first frames compile whatever is left */
     }
@@ -591,6 +607,7 @@ class Game {
 
   setSetting(key, value) {
     this.settings[key] = value;
+    if (key === 'items') this.settings.itemsSet = true;
     store.set('settings', this.settings);
     if (key === 'quality') {
       this.engine.quality.setPreset(value);
@@ -676,7 +693,7 @@ class Game {
     for (let i = 0; i < RACE.opponents; i++) {
       let color = colors[i];
       if (color.toLowerCase() === this.settings.color.toLowerCase()) color = colors[(i + RACE.opponents) % colors.length];
-      list.push({ id: `ai${i}`, name: names[i], color, stripe: i % 2 ? '#111111' : '#f2f2f2', number: [3, 11, 21, 44, 55, 88][i], isPlayer: false, type: mix[(i + this.selected * 2) % mix.length] });
+      list.push({ id: `ai${i}`, name: names[i], color, stripe: i % 2 ? '#111111' : '#f2f2f2', number: [3, 11, 21, 44, 55, 88][i], isPlayer: false, type: RALLY ? 'rally' : mix[(i + this.selected * 2) % mix.length] });
     }
     return list;
   }
@@ -903,7 +920,7 @@ class Game {
     this._endPodium();
     this._exitSpace();
     // The space race always lifts off from the city's spaceport.
-    const wantKind = this.mode === 'single' && (KINDS[this.settings.kind] || this.settings.kind === 'moto') ? this.settings.kind : 'car';
+    const wantKind = !RALLY && this.mode === 'single' && (KINDS[this.settings.kind] || this.settings.kind === 'moto') ? this.settings.kind : 'car';
     if (wantKind === 'space') index = Math.max(0, STAGES.findIndex((s) => s.id === WORLD.hub));
     // Motocross: on the dirt trail between the mesas of the volcano canyon.
     if (wantKind === 'moto') index = Math.max(0, STAGES.findIndex((s) => s.trail));
@@ -964,6 +981,12 @@ class Game {
       race = new CraftRace(this, this.island, { kind, laps: this.settings.laps, difficulty: this._difficulty(), roster: this._gridOrder(this.roster()), space: this.inSpace ? this.space : null });
     }
     this.race = race;
+    if (RALLY) {
+      // The co-driver's calls (a soft chime with each) and the recorded gravel, stones and landings.
+      this.pace = new PaceNotes(race.track, () => eng.audio.sample('chime', { vol: 0.3, verb: 0 }));
+      this.rallySfx = new RallySfx(eng.audio);
+      race.gold = goldTime(st, this.plans[st.id] || race.track, race.laps);
+    }
     try {
       await Promise.race([eng.renderer.compileAsync(eng.scene, eng.camera), wait(6000)]);
     } catch {
@@ -1123,6 +1146,11 @@ class Game {
   }
 
   _endRace() {
+    if (this.pace) {
+      this.pace.dispose();
+      this.pace = null;
+    }
+    this.rallySfx = null;
     if (this.race) {
       this.race.dispose();
       this.race = null;
@@ -1176,7 +1204,7 @@ class Game {
 
   /** Which piece fits the moment: the island's own style in a race, a calm one elsewhere. */
   _musicStyle() {
-    if (this.state === 'race' && this.stage) return this.stage.id;
+    if (this.state === 'race' && this.stage) return this.stage.music || this.stage.id;
     return 'menu';
   }
 
@@ -1208,6 +1236,8 @@ class Game {
         gravel: [0.72, 1.6],
         grass: [0.62, 2.0],
         dirt: [0.84, 0.45], // packed trail dirt
+        stageGravel: [0.8, 0.3], // rally stage road: loose but driven-in
+        stageSand: [0.74, 0.55],
         sand: [0.56, 2.8],
         snow: [0.55, 1.8],
         water: [0.3, 7],
@@ -1226,7 +1256,10 @@ class Game {
         this.camera.setMode('chase');
         this.ui.hideStageName();
       }
-      if (s === 'racing') this.ui.message('צא!', 'go', '', 900);
+      if (s === 'racing') {
+        this.ui.message('צא!', 'go', '', 900);
+        this.engine.audio.sample('crowd', { vol: 0.45 });
+      }
       if (s === 'done') {
         setTimeout(() => this._results(), 1400);
       }
@@ -1240,6 +1273,7 @@ class Game {
       this.ui.message(last ? 'הקפה אחרונה!' : `הקפה ${lap + 1}`, isBest ? 'gold' : '', `${Race.fmt(time)}${isBest ? ' · הקפה מהירה' : ''}`, 1600);
     });
     ev.on('race:finish', ({ place }) => {
+      this.engine.audio.sample('crowd', { vol: place <= 3 ? 0.7 : 0.4 });
       this.camera.setMode('podium');
       this.ui.message(place === 1 ? 'ניצחון!' : `מקום ${place}`, place === 1 ? 'gold' : '', 'קו הסיום', 2400);
     });
@@ -1294,7 +1328,10 @@ class Game {
     ev.on('car:impact', ({ car, speed, point, rail, other }) => {
       const eng = this.engine;
       if (speed > 4) eng.particles.impact(point, null, Math.min(1.4, speed / 12));
-      if (eng.audio.enabled) eng.audio.impact({ speed: speed * 0.9, point, material: rail ? 'metal' : other ? 'metal' : 'default' });
+      // A hard hit on the player's car: the recorded crash when there is one.
+      const mine = car.isPlayer || (other && other.isPlayer);
+      const recorded = mine && speed > 7 && eng.audio.sample('crash', { vol: Math.min(1, 0.35 + speed / 25), rate: 0.92 + Math.random() * 0.16 });
+      if (eng.audio.enabled && !recorded) eng.audio.impact({ speed: speed * 0.9, point, material: rail ? 'metal' : other ? 'metal' : 'default' });
       if (car.isPlayer || (other && other.isPlayer)) eng.events.emit('shake', { strength: Math.min(0.7, speed / 20) });
     });
   }
@@ -1372,7 +1409,7 @@ class Game {
   _musicFrame() {
     const M = this.music;
     if (!M) return;
-    const raceStyle = this.race && this.race.kind ? KINDS[this.race.kind].music : this.stage ? this.stage.id : 'menu';
+    const raceStyle = this.race && this.race.kind ? KINDS[this.race.kind].music : this.stage ? this.stage.music || this.stage.id : 'menu';
     const want = this.state === 'race' || this.state === 'podium' ? raceStyle : this.state === 'explore' ? (this.stage ? this.stage.id : 'world') : this.state === 'menu' ? 'world' : 'menu';
     M.setStyle(want);
     const r = this.race;
@@ -1414,6 +1451,8 @@ class Game {
     this.camera.lookBack = I.isDown('KeyB') || I.isDown('KeyQ');
     this.ui.updateHUD(r, dt);
     const P = r.player;
+    if (this.pace) this.pace.update(P, r.state === 'racing' && !P.finished && !this.paused);
+    if (this.rallySfx) this.rallySfx.update(dt, r);
     if (r.state === 'countdown') {
       const lit = r.lights;
       if (lit !== this._lastLit && lit > 0) this.ui.message('●'.repeat(lit) + '○'.repeat(5 - lit), 'lights', '', 850);
@@ -1453,6 +1492,11 @@ class Game {
       store.set('champ', champ);
     }
     const payout = mode === 'career' && this.career ? this._careerPayout(r) : null;
+    let rally = null;
+    if (RALLY && !P.estimated) {
+      const n = starsFor({ place: P.finishPlace || P.position, time: P.finishTime, gold: r.gold });
+      rally = { stars: n, gold: r.gold, time: P.finishTime, improved: this.stars.award(st.id, n), total: this.stars.total(), of: STAGES.length * 3 };
+    }
     const lastChamp = champ && champ.stage >= STAGES.length - 1;
     let due = this._seriesAdd(r);
     if (lastChamp) due = null; // the championship ceremony takes over
@@ -1478,6 +1522,7 @@ class Game {
       points: champ ? champ.points : null,
       newRecord,
       payout,
+      rally,
       primary,
       onRetry: payout
         ? null

@@ -3,6 +3,16 @@
  * Sections: race rules, car physics, car types, AI, camera, and the seven island stages.
  */
 
+/**
+ * Which game this build is: 'world' (Shimotron Rally, the seven-island
+ * archipelago with every vehicle) or 'rally' (ראלי האיים: five rally stages,
+ * one rally car). Set at build time by vite (--mode rally); tools may set
+ * globalThis.SHIMOTRON_EDITION before importing.
+ */
+// eslint-disable-next-line no-undef
+export const EDITION = typeof __SHIMOTRON_EDITION__ !== 'undefined' ? __SHIMOTRON_EDITION__ : globalThis.SHIMOTRON_EDITION || globalThis.process?.env?.SHIMOTRON_EDITION || 'world';
+export const RALLY = EDITION === 'rally';
+
 export const RACE = {
   roadHalfWidth: 7, // metres from centre line to each edge
   laps: 3,
@@ -283,7 +293,7 @@ export const CAMERA = {
  * `biome` its look, `flora` the vegetation mix, `sky` the atmosphere and
  * `track` the procedural circuit (seeded, validated, 3–4.5 km).
  */
-export const STAGES = [
+const WORLD_STAGES = [
   {
     id: 'pines',
     name: 'אי האורנים',
@@ -428,3 +438,124 @@ export const STAGES = [
     trail: true, // a motocross trail through the mesas (the motorbike race)
   },
 ];
+
+/**
+ * ראלי האיים: five rally stages, each its own island in a small
+ * archipelago (no city hub, no bridges). `road` is the stage surface:
+ * 'asphalt', 'gravel', 'sand' or 'mixed' (tarmac with gravel sections).
+ * `pace` sets the gold time (stars): the average speed of the fastest rivals.
+ */
+const RALLY_STAGES = [
+  {
+    id: 'harbour',
+    name: 'נמל הדייגים',
+    tagline: 'אספלט מהיר בין סירות דייגים, אורנים וחוף זהוב בשעת זהב',
+    color: '#f0a43a',
+    music: 'lagoon',
+    road: 'asphalt',
+    seed: 211,
+    size: 2400,
+    segments: 460,
+    island: { radius: 820, stretch: [1.1, 0.92], base: 6, hills: 7, ranges: [{ angle: -1.2, from: 0.2, to: 0.7, weight: 0.7 }], mountainHeight: 80, coastRough: 0.12 },
+    biome: { grassTint: [1.05, 1.02, 0.78], sandTint: [1.2, 1.08, 0.86], dirtTint: [1.15, 0.95, 0.75], rockTint: [1.1, 1.0, 0.9] },
+    flora: { pine: 0.8, oak: 0.6, palm: 0.25, cactus: 0, deadTree: 0, trees: 1300, grass: 0.9, flowers: 0.8, foliageTint: '#f2f0d8' },
+    water: { shallow: [0.04, 0.48, 0.5], deep: [0.003, 0.03, 0.07], clarity: 0.13 },
+    life: { balloons: 3, sheep: 40, boats: 14, reef: 0.7, fish: 1.2, dolphins: 1 },
+    sky: { time: 17.4, azimuth: 0.9, turbidity: 3, rayleigh: 1.3, clouds: 0.25, cloudDensity: 0.45, fog: 0.0008, wind: 0.9 },
+    weather: null,
+    roadGrip: 1,
+    pace: 41, // m/s a gold run averages (about the fastest rivals, tools/racesim.mjs)
+    track: { radius: [0.52, 0.66], wiggle: 0.34, targetLength: [3000, 3900] },
+  },
+  {
+    id: 'ridge',
+    name: 'רכס האורנים',
+    tagline: 'חצץ בין אורנים גבוהים, בערפל של בוקר מוקדם',
+    color: '#6fae5a',
+    music: 'pines',
+    road: 'gravel',
+    seed: 227,
+    size: 2400,
+    segments: 460,
+    island: { radius: 820, stretch: [0.96, 1.08], base: 10, hills: 12, ranges: [{ angle: 1.9, from: 0.15, to: 0.75, weight: 1 }], mountainHeight: 115 },
+    biome: { grassTint: [0.88, 1.0, 0.86], rockTint: [0.95, 0.95, 0.98], dirtTint: [1.05, 0.92, 0.8] },
+    flora: { pine: 1, oak: 0.35, palm: 0, cactus: 0, deadTree: 0.05, trees: 1700, grass: 1, flowers: 0.6, foliageTint: '#ffffff' },
+    water: { shallow: [0.05, 0.38, 0.4], deep: [0.004, 0.025, 0.05], clarity: 0.16 },
+    life: { balloons: 2, cows: 40, sheep: 50, boats: 5, reef: 0.4, fish: 1 },
+    sky: { time: 7.6, azimuth: -0.9, turbidity: 4, rayleigh: 1.4, clouds: 0.45, cloudDensity: 0.6, fog: 0.0026, wind: 0.6 },
+    weather: null,
+    roadGrip: 0.8, // the AI's speed profile on gravel (matches the stageGravel grip)
+    looseColor: [0.55, 0.47, 0.38],
+    pace: 36, // m/s a gold run averages (about the fastest rivals, tools/racesim.mjs)
+    track: { radius: [0.48, 0.64], wiggle: 0.42, targetLength: [3000, 3900] },
+  },
+  {
+    id: 'cliffs',
+    name: 'כביש הצוקים',
+    tagline: 'אספלט צר על שפת צוקים גבוהים מעל מים טורקיז, בשמש של צהריים',
+    color: '#2fb3d6',
+    music: 'canyon',
+    road: 'asphalt',
+    seed: 239,
+    size: 2400,
+    segments: 460,
+    island: { radius: 800, stretch: [1.15, 0.9], base: 12, hills: 9, ranges: [{ angle: 0.4, from: 0.1, to: 0.8, weight: 1 }, { angle: 3.4, from: 0.3, to: 0.85, weight: 0.6 }], mountainHeight: 135, coastRough: 0.16 },
+    biome: { grassTint: [1.0, 1.05, 0.8], sandTint: [1.25, 1.18, 1.02], rockTint: [1.2, 1.1, 0.98] },
+    flora: { pine: 0.5, oak: 0.5, palm: 0.4, cactus: 0.15, deadTree: 0, trees: 1100, grass: 0.8, flowers: 0.7, foliageTint: '#f4f6e2' },
+    water: { shallow: [0.02, 0.6, 0.6], deep: [0.0, 0.07, 0.15], clarity: 0.1 },
+    life: { balloons: 4, sheep: 30, boats: 9, reef: 1.1, fish: 1.4, dolphins: 2 },
+    sky: { time: 12.8, azimuth: 1.4, turbidity: 2.2, rayleigh: 1.1, clouds: 0.22, cloudDensity: 0.4, fog: 0.0006, wind: 1.1 },
+    weather: null,
+    roadGrip: 1,
+    pace: 41.5, // m/s a gold run averages (about the fastest rivals, tools/racesim.mjs)
+    track: { radius: [0.5, 0.68], wiggle: 0.38, targetLength: [3100, 4000] },
+  },
+  {
+    id: 'beach',
+    name: 'חוף הדיונות',
+    tagline: 'חול רך בין דיונות ודקלים, לאור שמש שוקעת',
+    color: '#e0703a',
+    music: 'dunes',
+    road: 'sand',
+    seed: 251,
+    size: 2400,
+    segments: 460,
+    island: { radius: 820, stretch: [1.12, 0.94], base: 6, hills: 6, ranges: [{ angle: 2.2, from: 0.3, to: 0.75, weight: 0.6 }], mountainHeight: 70, ridgeFreq: 0.005, dunes: { angle: 0.8, height: 6, wavelength: 80 } },
+    biome: { grassTint: [1.45, 1.2, 0.7], sandTint: [1.3, 1.08, 0.78], dirtTint: [1.3, 1.0, 0.72], rockTint: [1.3, 1.0, 0.78] },
+    flora: { pine: 0, oak: 0, palm: 0.9, cactus: 0.5, deadTree: 0.15, trees: 900, grass: 0.4, flowers: 0, foliageTint: '#dfe4a8' },
+    water: { shallow: [0.08, 0.5, 0.46], deep: [0.01, 0.05, 0.08], clarity: 0.12 },
+    life: { balloons: 6, camels: 16, boats: 6, reef: 0.8, fish: 1 },
+    sky: { time: 18.15, azimuth: 3.3, turbidity: 4.5, rayleigh: 1.7, clouds: 0.2, cloudDensity: 0.4, fog: 0.001, wind: 1.3 },
+    weather: 'dust',
+    roadGrip: 0.74,
+    looseColor: [0.8, 0.64, 0.44],
+    pace: 35.5, // m/s a gold run averages (about the fastest rivals, tools/racesim.mjs)
+    track: { radius: [0.5, 0.66], wiggle: 0.4, targetLength: [3000, 3900] },
+  },
+  {
+    id: 'crater',
+    name: 'מכתש הגעש',
+    tagline: 'אספלט וחצץ שחור סביב הר געש פעיל, בלילה לאור הלבה',
+    color: '#ff4a1a',
+    music: 'lava',
+    road: 'mixed',
+    seed: 263,
+    size: 2400,
+    segments: 460,
+    island: { radius: 820, stretch: [1.04, 1], base: 6, hills: 8, ranges: [], mountainHeight: 55, volcano: { x: 40, z: -60, radius: 360, height: 160, craterRadius: 0.2, craterDepth: 50 } },
+    biome: { grassTint: [0.55, 0.55, 0.42], sandTint: [0.34, 0.31, 0.3], dirtTint: [0.55, 0.42, 0.38], rockTint: [0.42, 0.38, 0.38] },
+    flora: { pine: 0.3, oak: 0, palm: 0, cactus: 0, deadTree: 1, trees: 800, grass: 0.35, flowers: 0, foliageTint: '#8f9a78' },
+    water: { shallow: [0.06, 0.18, 0.2], deep: [0.005, 0.015, 0.03], clarity: 0.24 },
+    life: { boats: 2, reef: 0.25, fish: 0.7 },
+    sky: { time: 20.4, azimuth: 0.4, turbidity: 6, rayleigh: 1.4, clouds: 0.45, cloudDensity: 0.65, fog: 0.0016, wind: 1.1 },
+    weather: 'ash',
+    lavaLake: true,
+    darkDust: true,
+    roadGrip: 0.9,
+    looseColor: [0.46, 0.32, 0.27], // red volcanic scoria
+    pace: 39, // m/s a gold run averages (about the fastest rivals, tools/racesim.mjs)
+    track: { radius: [0.52, 0.64], wiggle: 0.34, targetLength: [3000, 4000] },
+  },
+];
+
+export const STAGES = RALLY ? RALLY_STAGES : WORLD_STAGES;

@@ -16,6 +16,70 @@ export class AudioEngine {
     this._lastImpact = 0;
     this.sources = []; // positional loops: { panner, gain, position }
     this.busOn = { engine: true, music: true, sfx: true, ambience: true };
+    this.samples = {}; // recorded effects, decoded: name → [AudioBuffer]
+    this._sampleSrc = null; // name → [data: URI], decoded on unlock
+    this._lastPick = {};
+  }
+
+  /** Recorded effects (name → list of data: URIs, one per take); decoded once audio is unlocked. */
+  loadSamples(map) {
+    this._sampleSrc = map && Object.keys(map).length ? map : null;
+    if (this.ctx) this._decodeSamples();
+  }
+
+  _decodeSamples() {
+    const src = this._sampleSrc;
+    if (!src || !this.ctx) return;
+    this._sampleSrc = null;
+    for (const [key, list] of Object.entries(src)) {
+      this.samples[key] = [];
+      for (const url of list) {
+        try {
+          const bin = atob(url.slice(url.indexOf(',') + 1));
+          const bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          this.ctx.decodeAudioData(bytes.buffer).then((b) => this.samples[key].push(b), () => {});
+        } catch {
+          /* keep the synth fallback */
+        }
+      }
+    }
+  }
+
+  hasSample(key) {
+    const l = this.samples[key];
+    return !!(l && l.length);
+  }
+
+  /**
+   * Plays one take of a recorded effect (a different take from last time
+   * when there are several). Returns false when it is not available, so the
+   * caller can fall back to its synth sound.
+   */
+  sample(key, { vol = 1, rate = 1, verb = 0.12, dest = null, position = null } = {}) {
+    if (!this.enabled || !this.ctx || !this.hasSample(key)) return false;
+    const list = this.samples[key];
+    let i = Math.floor(Math.random() * list.length);
+    if (list.length > 1 && i === this._lastPick[key]) i = (i + 1) % list.length;
+    this._lastPick[key] = i;
+    const ctx = this.ctx;
+    const s = ctx.createBufferSource();
+    s.buffer = list[i];
+    s.playbackRate.value = rate;
+    const g = ctx.createGain();
+    g.gain.value = vol;
+    s.connect(g);
+    const out = position ? this._panner(position, 4, 140) : null;
+    if (out) g.connect(out).connect(dest || this.sfx);
+    else g.connect(dest || this.sfx);
+    if (verb > 0) {
+      const r = ctx.createGain();
+      r.gain.value = verb;
+      g.connect(r).connect(this.reverbSend);
+    }
+    s.start();
+    s.onended = () => g.disconnect();
+    return true;
   }
 
   /** Turns one mixer channel on or off ('engine' | 'music' | 'sfx' | 'ambience'). */
@@ -59,6 +123,7 @@ export class AudioEngine {
     this.brown = this._noiseBuffer(4, 'brown');
     this._ambience();
     this.enabled = true;
+    this._decodeSamples();
     this.engine.events.on('impact', (e) => this.impact(e));
   }
 

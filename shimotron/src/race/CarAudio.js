@@ -150,7 +150,10 @@ export class CarAudio {
       p.nitro.g.gain.setTargetAtTime(veh.nitroActive ? 0.09 : 0, t, 0.08);
       // Lift-off pops at high revs.
       p.popT -= dt;
-      if (p.lastThrottle > 0.7 && thr < 0.2 && rpm > 5200) p.popT = 0.6;
+      if (p.lastThrottle > 0.7 && thr < 0.2 && rpm > 5200) {
+        // A recorded backfire when there is one (rally edition); the synth pops otherwise.
+        p.popT = this.audio.sample('backfire', { vol: 0.55, rate: 0.95 + Math.random() * 0.1, dest: p.out }) ? 0 : 0.6;
+      }
       if (p.popT > 0 && Math.random() < dt * 14) this.audio._burst(p.out, { dur: 0.05, freq: 180 + Math.random() * 200, q: 0.7, gain: 0.35, type: 'lowpass' });
       p.lastThrottle = thr;
     }
