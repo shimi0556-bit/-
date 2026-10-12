@@ -1,5 +1,6 @@
 // Headless race simulation (no rendering): terrain + circuit + physics + AI.
 // Usage: node tools/racesim.mjs [stageId] [seconds] [cars]
+//        SHIMOTRON_EDITION=rally node tools/racesim.mjs ridge … (the rally stages)
 // Prints each car's progress and flags crashes, flips, stalls and respawns.
 import * as THREE from 'three';
 import { Terrain } from '../src/engine/world/Terrain.js';
@@ -106,6 +107,8 @@ while (clock < total) {
       void before;
     }
     const v = c.car.vehicle;
+    // Rally stages: loose sections of the road grip like stageGravel / stageSand in the game.
+    if (st.road && q) v.gripScale.fill(track.looseAt(q.i) > 0.5 ? (st.road === 'sand' ? 0.74 : 0.8) : st.roadGrip || 1);
     if (clock > 3) c.minV = Math.min(c.minV, Math.abs(v.speed));
     if (v.upsideDown > 0.05 && !c._flip) {
       c.flips++;

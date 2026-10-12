@@ -275,7 +275,7 @@ export class Island {
     const b = this.stage.biome;
     const tint = b.sandTint || [1, 1, 1];
     if (this.stage.weather === 'snow') return [0.92, 0.94, 0.98];
-    if (this.stage.id === 'lava') return [0.28, 0.26, 0.25];
+    if (this.stage.id === 'lava' || this.stage.darkDust) return [0.28, 0.26, 0.25];
     return [0.62 * tint[0], 0.55 * tint[1], 0.45 * tint[2]].map((v) => Math.min(1, v));
   }
 
@@ -414,7 +414,7 @@ export class Island {
     const q = tr.nearest(x, z, this._sq || (this._sq = {}));
     if (q) {
       const a = Math.abs(q.lat);
-      if (a < tr.W - 0.05) return 'asphalt';
+      if (a < tr.W - 0.05) return tr.looseAt(q.i) > 0.5 ? (this.stage.road === 'sand' ? 'stageSand' : 'stageGravel') : 'asphalt';
       if (a < tr.W + 1.25 && tr.curbMark && tr.curbMark[q.i]) return 'curb';
       if (this.city && a < tr.W + 6.6) return 'asphalt'; // street circuit: tarmac run-off, no gravel
       if (a < tr.W + 4.6) return 'gravel';

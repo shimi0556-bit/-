@@ -22,6 +22,12 @@ export const WORLD = {
     lava: [2550, 1500],
     canyon: [0, 2800],
     ice: [-2550, 1500],
+    // ראלי האיים: five islands on a ring, no hub.
+    harbour: [0, -2600],
+    ridge: [2473, -803],
+    cliffs: [1528, 2103],
+    beach: [-1528, 2103],
+    crater: [-2473, -803],
   },
   hub: 'city',
   span: 9400, // the world depth map covers ±span/2

@@ -1,10 +1,14 @@
 // Bakes every stage's circuit plan into src/race/plans.json so the game does not
 // have to search for it at run time. Run after changing a stage or the generator:
-//   node tools/plans.mjs
+//   node tools/plans.mjs            → src/race/plans.json        (the archipelago)
+//   node tools/plans.mjs rally      → src/race/plans-rally.json  (ראלי האיים)
 import fs from 'fs';
-import { Terrain } from '../src/engine/world/Terrain.js';
-import { STAGES, RACE } from '../src/race/config.js';
-import { generateTrack, planSignature, packPlan } from '../src/race/TrackGenerator.js';
+
+const edition = process.argv[2] === 'rally' ? 'rally' : 'world';
+globalThis.SHIMOTRON_EDITION = edition;
+const { Terrain } = await import('../src/engine/world/Terrain.js');
+const { STAGES, RACE } = await import('../src/race/config.js');
+const { generateTrack, planSignature, packPlan } = await import('../src/race/TrackGenerator.js');
 
 const out = {};
 for (const st of STAGES) {
@@ -16,6 +20,6 @@ for (const st of STAGES) {
   out[st.id] = packPlan(plan, planSignature(st, RACE.roadHalfWidth));
   console.log(st.id.padEnd(7), `${Math.round(plan.length)} m`, `${Date.now() - t0} ms`);
 }
-const file = new URL('../src/race/plans.json', import.meta.url);
+const file = new URL(edition === 'rally' ? '../src/race/plans-rally.json' : '../src/race/plans.json', import.meta.url);
 fs.writeFileSync(file, JSON.stringify(out) + '\n');
 console.log('wrote', file.pathname, fs.statSync(file).size, 'bytes');

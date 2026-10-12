@@ -399,3 +399,19 @@ body.is-touch .minimap { width: 130px; height: 130px; }
   .roambar button { padding: 6px 8px; font-size: 12px; }
   .roambar .key { display: none; }
 }
+
+/* ראלי האיים: road chips, stars and the results' goals. */
+.chip.road[data-road='gravel'] { background: rgba(176, 140, 96, 0.22); color: #e6c9a2; }
+.chip.road[data-road='sand'] { background: rgba(230, 170, 90, 0.22); color: #ffd39a; }
+.chip.road[data-road='mixed'] { background: rgba(255, 120, 60, 0.2); color: #ffb08a; }
+.chip.road[data-road='asphalt'] { background: rgba(160, 170, 190, 0.18); color: #d3d9e6; }
+.stars { color: var(--accent); letter-spacing: 2px; }
+.stars-line { display: flex; align-items: baseline; gap: 10px; margin-top: 6px; font-size: 13px; }
+.stars-line .stars { font-size: 16px; }
+.stars-line .gold { color: var(--muted); }
+.brand .stars-total { margin-top: 8px; font-weight: 600; }
+.rally-stars { margin: 14px 0 4px; text-align: center; }
+.rally-stars .stars.big { font-size: 44px; letter-spacing: 8px; line-height: 1; }
+.rally-stars ul { list-style: none; padding: 0; margin: 10px auto 6px; display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; color: var(--muted); }
+.rally-stars li.ok { color: var(--accent); }
+.rally-stars p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }

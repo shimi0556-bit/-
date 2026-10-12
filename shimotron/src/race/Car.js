@@ -221,13 +221,14 @@ export class Car {
       const lat = Math.abs(veh.lateralSpeed());
       const k = Math.max(veh.slip[i], Math.min(1, Math.max(0, (lat - 2.2) / 6)), i >= 2 && C.handbrake && v > 4 ? 0.8 : 0);
       if (i >= 2) slide = Math.max(slide, k);
-      const markable = !loose || s === 'snow' || s === 'sand' || s === 'dirt';
+      const stageRoad = s === 'stageGravel' || s === 'stageSand';
+      const markable = !loose || s === 'snow' || s === 'sand' || s === 'dirt' || stageRoad;
       if (k > 0.25 && v > 3 && markable) {
         const cur = _b.set(hp.x, hp.y + 0.025, hp.z);
         const last = this.lastMark[i];
         if (last && last.distanceToSquared(cur) > 0.36) {
           _side.subVectors(cur, last).cross(UP).normalize();
-          const tint = s === 'snow' ? [0.55, 0.6, 0.7] : s === 'sand' ? [0.55, 0.42, 0.3] : s === 'dirt' ? [0.6, 0.44, 0.32] : [1, 1, 1];
+          const tint = s === 'snow' ? [0.55, 0.6, 0.7] : s === 'sand' || s === 'stageSand' ? [0.55, 0.42, 0.3] : s === 'dirt' || s === 'stageGravel' ? [0.6, 0.44, 0.32] : [1, 1, 1];
           this.ctx.skid.add(last, cur, _side, this.spec.wheel.width * 0.9, Math.min(0.75, k * 0.9), tint);
           last.copy(cur);
         } else if (!last) this.lastMark[i] = cur.clone();
@@ -241,7 +242,9 @@ export class Car {
     const ability = this.spec.offroad;
     for (let i = 0; i < 4; i++) {
       const sf = this.surfaces[i];
-      const loose = sf !== 'asphalt' && sf !== 'curb';
+      // A rally stage's gravel or sand road is the road itself: every car slides on it alike.
+      const stageRoad = sf === 'stageGravel' || sf === 'stageSand';
+      const loose = sf !== 'asphalt' && sf !== 'curb' && !stageRoad;
       const base = G[sf]?.[0] ?? 1;
       veh.gripScale[i] = infos[i].isInContact ? (loose ? Math.min(1.02, base * ability) : base) : 1;
       drag += (G[sf]?.[1] ?? 0) / (loose ? ability * ability : 1);

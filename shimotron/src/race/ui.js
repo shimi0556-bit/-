@@ -1,4 +1,5 @@
-import { STAGES, AI, RACE, CAR, CAR_TYPES, CAREER, PODIUM, carRatings } from './config.js';
+import { STAGES, AI, RACE, CAR, CAR_TYPES, CAREER, PODIUM, carRatings, RALLY } from './config.js';
+import { ROAD_LABEL, goldTime, starText } from './Rally.js';
 import { Race } from './Race.js';
 import { drawProfile, MODEL_CREDIT } from './RealModels.js';
 import { ITEMS } from './Pickups.js';
@@ -113,6 +114,11 @@ export class RaceUI {
     this.clear();
     const g = this.game;
     const s = g.settings;
+    // Rally: the stars won on a stage and its gold time for the laps set.
+    const rallyLine = (st) => {
+      const gold = goldTime(st, g.plans[st.id], s.laps);
+      return h('span', { class: 'stars-line' }, h('span', { class: 'stars', 'aria-label': `${g.stars.get(st.id)} כוכבים` }, starText(g.stars.get(st.id))), gold ? h('span', { class: 'gold' }, 'זמן זהב ', h('span', { class: 'num' }, Race.fmt(gold).replace(/\.\d+$/, ''))) : null);
+    };
     const cards = STAGES.map((st, i) => {
       const cv = h('canvas', { width: 320, height: 200, 'aria-hidden': 'true' });
       const best = g.records[st.id];
@@ -130,9 +136,11 @@ export class RaceUI {
             'div',
             { class: 'chips' },
             h('span', { class: 'chip', 'data-len': st.id }, g.plans[st.id] ? `${(g.plans[st.id].length / 1000).toFixed(2)} ק״מ` : '…'),
+            RALLY ? h('span', { class: 'chip road', 'data-road': st.road }, ROAD_LABEL[st.road]) : null,
             h('span', { class: 'chip' }, hourLabel(st.sky.time)),
             st.weather ? h('span', { class: 'chip' }, WEATHER[st.weather]) : null,
           ),
+          RALLY ? rallyLine(st) : null,
           best ? h('span', { class: 'best' }, `שיא הקפה: `, h('span', { class: 'num' }, Race.fmt(best))) : null,
         ),
       );
@@ -154,8 +162,19 @@ export class RaceUI {
       h(
         'div',
         { class: 'menu-grid' },
-        h('div', { class: 'brand' }, h('div', { class: 'kicker' }, 'SHIMOTRON RALLY'), h('h1', {}, 'שימוטרון ראלי'), h('p', {}, `עולם שלם של ${ISLANDS} איים בים אחד, מחוברים בגשרים לעיר שבמרכז — מיערות ודיונות ועד קניון הרי געש. בחרו אי במפה או ברשימה, רכב, וצאו לדרך.`)),
-        h(
+        RALLY
+          ? h('div', { class: 'brand' }, h('div', { class: 'kicker' }, 'SHIMOTRON · RALLY ISLANDS'), h('h1', {}, 'ראלי האיים'), h('p', {}, `חמישה שלבי ראלי על ${ISLANDS} איים: אספלט בנמל, חצץ ביער בערפל, צוקים בצהריים, חול בשקיעה ומכתש געש בלילה. הנווט מקריא את הפניות על המסך, ובכל שלב אפשר לזכות בשלושה כוכבים.`), h('p', { class: 'stars-total' }, h('span', { class: 'stars' }, '★'), ` ${g.stars.total()} מתוך ${STAGES.length * 3} כוכבים`))
+          : h('div', { class: 'brand' }, h('div', { class: 'kicker' }, 'SHIMOTRON RALLY'), h('h1', {}, 'שימוטרון ראלי'), h('p', {}, `עולם שלם של ${ISLANDS} איים בים אחד, מחוברים בגשרים לעיר שבמרכז — מיערות ודיונות ועד קניון הרי געש. בחרו אי במפה או ברשימה, רכב, וצאו לדרך.`)),
+        RALLY
+          ? h(
+              'div',
+              { class: 'row' },
+              h('button', { class: 'btn primary big', type: 'button', onclick: () => g.startSingle() }, icon('flag'), `לשלב: ${STAGES[state.selected].name}`),
+              h('button', { class: 'btn big', type: 'button', onclick: () => g.startChampionship() }, icon('trophy'), state.champ ? `המשך אליפות · שלב ${state.champ.stage + 1}/${STAGES.length}` : `אליפות ראלי (${STAGES.length} שלבים)`),
+              state.champ ? h('button', { class: 'btn', type: 'button', onclick: () => g.resetChampionship() }, 'אליפות חדשה') : null,
+            )
+          : null,
+        RALLY ? null : h(
           'div',
           { class: 'row' },
           h('button', { class: 'btn primary big', type: 'button', onclick: () => g.startChampionship() }, icon('trophy'), state.champ ? `המשך אליפות · שלב ${state.champ.stage + 1}/${STAGES.length}` : `אליפות (${STAGES.length} איים)`),
@@ -165,7 +184,7 @@ export class RaceUI {
           state.champ ? h('button', { class: 'btn', type: 'button', onclick: () => g.resetChampionship() }, 'אליפות חדשה') : null,
           g.career ? h('button', { class: 'btn', type: 'button', onclick: () => g.resetCareer() }, 'קריירה חדשה') : null,
         ),
-        h(
+        RALLY ? null : h(
           'div',
           { class: 'field kinds' },
           h('span', {}, 'סוג מירוץ (במירוץ בודד)'),
@@ -175,7 +194,7 @@ export class RaceUI {
             Object.entries(KIND_LABEL).map(([k, label]) => h('button', { type: 'button', 'aria-pressed': String((s.kind || 'car') === k), onclick: () => g.selectKind(k) }, label)),
           ),
         ),
-        s.kind && DESIGNS[s.kind]
+        !RALLY && s.kind && DESIGNS[s.kind]
           ? h(
               'div',
               { class: 'field kinds' },
@@ -188,14 +207,14 @@ export class RaceUI {
             )
           : null,
         h('div', { class: 'islands', role: 'group', 'aria-label': 'בחירת אי' }, cards),
-        h('h2', { class: 'section-title', id: 'menu-cars' }, 'הרכב שלך'),
-        this.carPicker({ selected: s.car || 'gt', color: s.color, onPick: (id) => g.setSetting('car', id) }),
+        RALLY ? null : h('h2', { class: 'section-title', id: 'menu-cars' }, 'הרכב שלך'),
+        RALLY ? null : this.carPicker({ selected: s.car || 'gt', color: s.color, onPick: (id) => g.setSetting('car', id) }),
         h(
           'div',
-          { class: 'settings' },
+          { class: 'settings', id: RALLY ? 'menu-cars' : null },
           h('label', { class: 'field' }, h('span', {}, 'רמת יריבים'), h('div', { class: 'seg' }, Object.entries(AI.difficulty).map(([k, d]) => segBtn('difficulty', k, d.label)))),
           h('label', { class: 'field' }, h('span', {}, 'הפתעות על המסלול'), h('div', { class: 'seg' }, [[true, 'כן'], [false, 'לא']].map(([v, l]) => segBtn('items', v, l)))),
-          h('label', { class: 'field' }, h('span', {}, `במת מנצחים כל ${PODIUM.every} מירוצים`), h('div', { class: 'seg' }, [[true, 'כן'], [false, 'לא']].map(([v, l]) => segBtn('podium', v, l)))),
+          RALLY ? null : h('label', { class: 'field' }, h('span', {}, `במת מנצחים כל ${PODIUM.every} מירוצים`), h('div', { class: 'seg' }, [[true, 'כן'], [false, 'לא']].map(([v, l]) => segBtn('podium', v, l)))),
           h('label', { class: 'field' }, h('span', {}, 'הקפות'), h('div', { class: 'seg' }, [1, 2, 3, 5].map((n) => segBtn('laps', n, String(n))))),
           this.mixer(),
           h('label', { class: 'field' }, h('span', {}, 'גרפיקה'), h('div', { class: 'seg' }, [['low', 'נמוכה'], ['medium', 'בינונית'], ['high', 'גבוהה'], ['ultra', 'אולטרה']].map(([k, l]) => segBtn('quality', k, l)))),
@@ -212,11 +231,11 @@ export class RaceUI {
           h('span', {}, h('kbd', {}, 'C'), ' מצלמה'),
           h('span', {}, h('kbd', {}, 'F'), ' צילום תמונה (נשמרת בהורדות)'),
           h('span', {}, h('kbd', {}, 'AltGr'), ' חזרה למסלול'),
-          h('span', {}, h('kbd', {}, 'Ctrl'), ' ירייה / מוקש'),
+          RALLY && !s.items ? null : h('span', {}, h('kbd', {}, 'Ctrl'), ' ירייה / מוקש'),
           h('span', {}, h('kbd', {}, 'Esc'), ' עצירה'),
           h('span', {}, 'תומך גם בג׳ויסטיק ובמסך מגע'),
         ),
-        h('p', { class: 'credits' }, MODEL_CREDIT),
+        h('p', { class: 'credits' }, RALLY ? 'אפקטי הקול (חצץ, אבנים, פיצוצי אגזוז, נחיתה, התנגשות, קהל וצליל הנווט) נוצרו ב־ElevenLabs לשימוש אישי ולא מסחרי. המנוע, המוזיקה והעולם נוצרים בקוד.' : MODEL_CREDIT),
       ),
     );
     this.menuEl = menu;
@@ -237,7 +256,8 @@ export class RaceUI {
   _menuScroll(panel) {
     if (!panel) return;
     const cars = panel.querySelector('#menu-cars');
-    const jump = h('button', { class: 'btn primary jump', type: 'button', onclick: () => cars.scrollIntoView({ behavior: 'smooth', block: 'start' }) }, 'בחירת רכב והגדרות ↓');
+    if (!cars) return;
+    const jump = h('button', { class: 'btn primary jump', type: 'button', onclick: () => cars.scrollIntoView({ behavior: 'smooth', block: 'start' }) }, RALLY ? 'הגדרות ↓' : 'בחירת רכב והגדרות ↓');
     panel.append(jump);
     const update = () => {
       const top = cars.getBoundingClientRect().top - panel.getBoundingClientRect().top;
@@ -866,7 +886,7 @@ export class RaceUI {
 
   // ---------------------------------------------------------- results
 
-  showResults(race, { champ, points, primary, onRetry, onMenu, newRecord, payout }) {
+  showResults(race, { champ, points, primary, onRetry, onMenu, newRecord, payout, rally }) {
     if (this.resultsEl) this.resultsEl.remove();
     const leader = race.order[0];
     const rows = race.order.map((e, k) =>
@@ -890,6 +910,22 @@ export class RaceUI {
       h('tbody', {}, rows),
     );
     const kids = [h('h2', { style: P.position === 1 ? 'color:var(--accent)' : '' }, title), h('p', { class: 'sub' }, `${this.game.stage.name} · ${race.laps} הקפות · ${(race.track.length / 1000).toFixed(2)} ק״מ להקפה`), table];
+    if (rally) {
+      const goals = [
+        ['סיום השלב', true],
+        ['מקום על הפודיום', (P.finishPlace || P.position) <= 3],
+        [rally.gold ? `זמן זהב ${Race.fmt(rally.gold)}` : 'זמן זהב', rally.gold && rally.time <= rally.gold],
+      ];
+      kids.push(
+        h(
+          'div',
+          { class: 'rally-stars' },
+          h('div', { class: 'stars big' }, starText(rally.stars)),
+          h('ul', {}, goals.map(([t, ok]) => h('li', { class: ok ? 'ok' : '' }, ok ? '★ ' : '☆ ', t))),
+          h('p', {}, rally.improved ? `שיא כוכבים חדש לשלב · סה״כ ${rally.total}/${rally.of}` : `סה״כ ${rally.total}/${rally.of} כוכבים`),
+        ),
+      );
+    }
     if (newRecord) kids.push(h('p', { class: 'podium-note', style: 'color:var(--purple)' }, `שיא הקפה חדש לאי: ${Race.fmt(P.bestLap)}`));
     if (champ && points) kids.push(this._standings(points, champ));
     if (payout) kids.push(this._payout(payout));

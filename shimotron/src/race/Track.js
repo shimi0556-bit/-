@@ -480,6 +480,7 @@ export class Track {
 
   build(materials) {
     const T = materials.bakeRaceKit();
+    this._looseMap();
     this._road(T);
     this._curbs(T);
     this._rails(materials);
@@ -491,6 +492,32 @@ export class Track {
     return this.group;
   }
 
+  /**
+   * Rally stages: which samples are loose (gravel or sand) rather than tarmac.
+   * stage.road 'gravel' | 'sand' → the whole loop; 'mixed' → tarmac and gravel
+   * sections of a few hundred metres, blended over 30 m.
+   */
+  _looseMap() {
+    const n = this.n;
+    const road = this.stage.road;
+    const loose = (this.loose = new Float32Array(n));
+    if (!road || road === 'asphalt') return;
+    for (let i = 0; i < n; i++) {
+      if (road !== 'mixed') loose[i] = 1;
+      else {
+        const d = this.dist[i] / this.length;
+        // Three gravel sections; the start straight stays tarmac.
+        const w = Math.sin(d * Math.PI * 6 - 0.6);
+        loose[i] = smoothstep(-0.06, 0.06, w);
+      }
+    }
+  }
+
+  /** Loose amount (0 tarmac … 1 gravel) at sample i. */
+  looseAt(i) {
+    return this.loose ? this.loose[i] : 0;
+  }
+
   _road(T) {
     const n = this.n;
     const W = this.W;
@@ -500,6 +527,7 @@ export class Track {
     const pos = new Float32Array(rows * cols * 3);
     const uv = new Float32Array(rows * cols * 2);
     const road = new Float32Array(rows * cols * 3);
+    const looseA = new Float32Array(rows * cols);
     const vRep = this.length / Math.round(this.length / 2.5);
     for (let r = 0; r < rows; r++) {
       const i = r % n;
@@ -520,6 +548,7 @@ export class Track {
         road[k] = lc;
         road[k + 1] = d;
         road[k + 2] = this.line[i];
+        looseA[r * cols + c] = this.loose[i];
       }
     }
     const idx = [];
@@ -536,19 +565,22 @@ export class Track {
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
     geo.setAttribute('aRoad', new THREE.BufferAttribute(road, 3));
+    geo.setAttribute('aLoose', new THREE.BufferAttribute(looseA, 1));
     geo.setIndex(idx);
     geo.computeVertexNormals();
     geo.computeBoundingSphere();
     const mat = new THREE.MeshStandardMaterial({ name: 'אספלט', map: T.asphalt, normalMap: T.asphaltNormal, normalScale: new THREE.Vector2(0.3, 0.3), roughness: 0.86, metalness: 0 });
     const startLen = 2.4;
+    const looseCol = this.stage.looseColor || (this.stage.road === 'sand' ? [0.78, 0.64, 0.45] : [0.56, 0.48, 0.39]);
     mat.onBeforeCompile = (shader) => {
       shader.uniforms.uW = { value: W };
       shader.uniforms.uLen = { value: this.length };
+      shader.uniforms.uLooseCol = { value: new THREE.Color(...looseCol) };
       shader.vertexShader = shader.vertexShader
-        .replace('#include <common>', '#include <common>\nattribute vec3 aRoad; varying vec3 vRoad;')
-        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRoad = aRoad;');
+        .replace('#include <common>', '#include <common>\nattribute vec3 aRoad; varying vec3 vRoad; attribute float aLoose; varying float vLoose;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRoad = aRoad; vLoose = aLoose;');
       shader.fragmentShader = shader.fragmentShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vRoad; uniform float uW; uniform float uLen; float rPaint; float rRubber;\nfloat rHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\nfloat rNoise(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(rHash(i), rHash(i + vec2(1.0, 0.0)), f.x), mix(rHash(i + vec2(0.0, 1.0)), rHash(i + vec2(1.0, 1.0)), f.x), f.y); }')
+        .replace('#include <common>', '#include <common>\nvarying vec3 vRoad; varying float vLoose; uniform vec3 uLooseCol; uniform float uW; uniform float uLen; float rPaint; float rRubber;\nfloat rHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\nfloat rNoise(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(rHash(i), rHash(i + vec2(1.0, 0.0)), f.x), mix(rHash(i + vec2(0.0, 1.0)), rHash(i + vec2(1.0, 1.0)), f.x), f.y); }')
         .replace(
           '#include <map_fragment>',
           `#include <map_fragment>
@@ -573,9 +605,24 @@ export class Track {
             // Rubbered-in racing line.
             rRubber = exp(-pow((l - line) / 1.3, 2.0)) * 0.55;
             diffuseColor.rgb *= 1.0 - rRubber * 0.45;
+            // Rally stage: packed gravel or sand instead of tarmac. Stones at two scales,
+            // darker ruts where the wheels run, loose berms piled at the edges, no paint.
+            if (vLoose > 0.001) {
+              float st = rNoise(vec2(d * 3.1, l * 3.1)) * 0.5 + rNoise(vec2(d * 11.0, l * 11.0)) * 0.3 + rHash(floor(vec2(d, l) * 22.0)) * 0.2;
+              vec3 g = uLooseCol * (0.72 + st * 0.5) * (0.85 + macro * 0.3);
+              float rut = exp(-pow((abs(l - line * 0.5) - 0.85) / 0.45, 2.0));
+              g *= 1.0 - rut * 0.22;
+              float berm = smoothstep(uW - 1.4, uW, abs(l));
+              g = mix(g, uLooseCol * (1.08 + st * 0.25), berm * 0.6);
+              vec3 gravel = mix(g, mix(vec3(0.05), vec3(0.85), chk), inStart);
+              diffuseColor.rgb = mix(diffuseColor.rgb, gravel, min(1.0, vLoose * 1.6));
+              rPaint *= mix(1.0, inStart, vLoose);
+              rRubber *= 1.0 - vLoose;
+            }
           }`,
         )
-        .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.55, rPaint * 0.8); roughnessFactor = mix(roughnessFactor, 0.62, rRubber);`);
+        .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.55, rPaint * 0.8); roughnessFactor = mix(roughnessFactor, 0.62, rRubber); roughnessFactor = mix(roughnessFactor, 0.97, vLoose);`)
+        .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>\nnormal = normalize(mix(normal, normal * 0.6 + vNormal * 0.4, vLoose));`);
     };
     mat.customProgramCacheKey = () => 'shimotron-road';
     const mesh = new THREE.Mesh(geo, mat);
@@ -595,6 +642,7 @@ export class Track {
     const ext = Math.round(14 / this.ds);
     const mark = new Uint8Array(n);
     for (let i = 0; i < n; i++) if (inCorner[i]) for (let k = -ext; k <= ext; k++) mark[(i + k + n) % n] = 1;
+    for (let i = 0; i < n; i++) if (this.loose[i] > 0.2) mark[i] = 0; // gravel has no kerbs
     this.curbMark = mark;
     const profile = [
       [0.0, 0.0],
