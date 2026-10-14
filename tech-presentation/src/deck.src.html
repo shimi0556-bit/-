@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>כשהטכנולוגיה מתחילה לעבוד בשבילנו — Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&display=swap">
+<style>
+  :root{
+    --bg:#0A1630; --bg2:#0F2044; --panel:#12244A; --panel2:#1A3566;
+    --line:rgba(255,255,255,.13); --text:#F4F7FB; --sub:#B3C2D8;
+    --cyan:#22D3EE; --orange:#FF8A3D; --yellow:#FFC93C; --green:#3DDC97; --red:#FF5D73;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%; background:#000;}
+  body{
+    font-family:'Heebo','Segoe UI','Arial Hebrew','Noto Sans Hebrew',Arial,'Liberation Sans','DejaVu Sans',sans-serif;
+    overflow:hidden; display:flex; align-items:center; justify-content:center;
+    -webkit-font-smoothing:antialiased;
+  }
+  #stage{ width:100vw; height:100vh; display:flex; align-items:center; justify-content:center; }
+  #deck{
+    position:relative; width:1920px; height:1080px; flex:none;
+    background:var(--bg); color:var(--text);
+    transform-origin:center center; overflow:hidden;
+    box-shadow:0 40px 120px rgba(0,0,0,.6);
+  }
+  .slide{
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    padding:84px 120px 120px; direction:rtl;
+    opacity:0; visibility:hidden; pointer-events:none;
+    transition:opacity .35s ease, visibility 0s linear .35s;
+  }
+  .slide.active{ opacity:1; visibility:visible; pointer-events:auto; transition:opacity .35s ease, visibility 0s linear 0s; }
+  .slide > *{ position:relative; z-index:1; }
+  .slide > .bg-img{ position:absolute; z-index:0; inset:0; pointer-events:none; }
+
+  /* shared backgrounds */
+  .bgA{ background:
+    radial-gradient(900px 620px at 12% 8%, rgba(34,211,238,.20), transparent 62%),
+    radial-gradient(900px 640px at 92% 100%, rgba(255,138,61,.16), transparent 62%); }
+  .bgB{ background:
+    radial-gradient(800px 600px at 90% 6%, rgba(34,211,238,.17), transparent 62%),
+    radial-gradient(900px 600px at 6% 100%, rgba(120,90,255,.15), transparent 62%); }
+  .bgC{ background:
+    radial-gradient(1100px 700px at 50% 0%, rgba(34,211,238,.16), transparent 64%),
+    radial-gradient(900px 500px at 50% 110%, rgba(255,138,61,.14), transparent 64%); }
+  .ht{ position:absolute; z-index:0; inset:0; pointer-events:none; background-size:cover; background-position:center;
+       filter:invert(1) hue-rotate(180deg); mix-blend-mode:screen; opacity:.11;
+       -webkit-mask-image:linear-gradient(to right, #000 0%, transparent 62%); mask-image:linear-gradient(to right, #000 0%, transparent 62%); }
+
+  /* type */
+  .eyebrow{ font-size:26px; font-weight:800; color:var(--cyan); letter-spacing:.07em; }
+  .h1{ font-size:112px; line-height:1.0; font-weight:900; letter-spacing:-.01em; }
+  .h2{ font-size:68px; line-height:1.08; font-weight:900; letter-spacing:-.005em; }
+  .h3{ font-size:38px; line-height:1.15; font-weight:800; }
+  .lead{ font-size:35px; line-height:1.42; color:var(--sub); font-weight:400; }
+  .txt{ font-size:30px; line-height:1.45; color:var(--sub); }
+  .hl{ color:var(--orange); } .hc{ color:var(--cyan); } .hy{ color:var(--yellow); }
+  .grad{ background:linear-gradient(90deg,var(--cyan),var(--orange)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .chip{ display:inline-flex; align-items:center; gap:12px; padding:12px 26px; border-radius:999px;
+         background:rgba(34,211,238,.12); color:var(--cyan); font-weight:700; font-size:25px; border:1.5px solid rgba(34,211,238,.38); }
+  .chip.o{ background:rgba(255,138,61,.12); color:var(--orange); border-color:rgba(255,138,61,.4); }
+  .card{ background:linear-gradient(180deg,rgba(26,53,102,.75),rgba(18,36,74,.85)); border:1.5px solid var(--line); border-radius:30px; padding:36px 38px; }
+  .row{ display:flex; } .col{ display:flex; flex-direction:column; }
+  .gap-s{ gap:14px; } .gap-m{ gap:26px; } .gap-l{ gap:48px; }
+  svg{ display:block; }
+  .art svg{ width:100%; height:auto; }
+
+  /* entrance animation */
+  .anim{ animation:rise .75s cubic-bezier(.2,.7,.2,1) both; }
+  .anim.fade{ animation-name:fadeIn; } .anim.pop{ animation-name:pop; }
+  @keyframes rise{ from{ opacity:0; transform:translateY(34px); } to{ opacity:1; transform:none; } }
+  @keyframes fadeIn{ from{ opacity:0; } to{ opacity:1; } }
+  @keyframes pop{ from{ opacity:0; transform:scale(.9); } to{ opacity:1; transform:none; } }
+  @keyframes floaty{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-14px); } }
+  .float{ animation:floaty 5.5s ease-in-out infinite; }
+  .float > svg{ width:100%; height:auto; }
+  @media (prefers-reduced-motion:reduce){ .anim,.float{ animation:none !important; } }
+
+  /* chrome */
+  #progress-bar{ position:absolute; top:0; left:0; right:0; height:7px; z-index:50; background:linear-gradient(90deg,var(--cyan),var(--orange)); transform-origin:right center; transition:transform .45s ease; }
+  #nav{ position:absolute; bottom:34px; left:50%; transform:translateX(-50%); display:flex; gap:11px; z-index:50; }
+  .nav-dot{ width:12px; height:12px; border-radius:50%; border:0; background:rgba(255,255,255,.25); cursor:pointer; transition:all .25s; padding:0; }
+  .nav-dot.on{ background:var(--cyan); width:34px; border-radius:7px; }
+  .nav-btn{ position:absolute; bottom:22px; width:54px; height:54px; border-radius:50%; border:1.5px solid var(--line); background:rgba(18,36,74,.8);
+            color:var(--text); font-size:24px; cursor:pointer; z-index:50; display:flex; align-items:center; justify-content:center; }
+  .nav-btn:hover{ background:var(--panel2); border-color:var(--cyan); }
+  #btn-next{ left:56px; } #btn-prev{ left:122px; }
+  #btn-fs{ position:absolute; bottom:22px; right:104px; width:54px; height:54px; border-radius:50%; border:1.5px solid var(--line); background:rgba(18,36,74,.8); color:var(--text); font-size:22px; cursor:pointer; z-index:50; }
+  #slide-counter{ position:absolute; bottom:40px; right:176px; font-size:22px; font-weight:700; color:var(--sub); z-index:50; letter-spacing:.08em; direction:ltr; }
+
+  /* --- slide 1 --- */
+  .s-title{ flex-direction:row; align-items:center; padding-top:70px; }
+  .s-title .tcol{ width:880px; gap:32px; }
+  .s-title .acol{ flex:1; display:flex; justify-content:center; align-items:center; margin-inline-start:-60px; }
+  .s-title .acol .art{ width:900px; }
+
+  /* --- slide 2 --- */
+  .agenda{ display:grid; grid-template-columns:1fr 1fr; gap:34px; margin-top:54px; flex:1; }
+  .ag{ display:flex; gap:30px; align-items:center; padding:30px 40px; }
+  .ag .n{ font-size:150px; font-weight:900; line-height:1; color:transparent; -webkit-text-stroke:3.5px var(--cyan); min-width:200px; text-align:center; }
+  .ag:nth-child(2) .n{ -webkit-text-stroke-color:var(--orange); } .ag:nth-child(3) .n{ -webkit-text-stroke-color:var(--yellow); } .ag:nth-child(4) .n{ -webkit-text-stroke-color:var(--green); }
+  .ag .h3{ margin-bottom:12px; font-size:46px; } .ag .txt{ font-size:32px; }
+
+  /* --- slide 3 --- */
+  .world{ display:flex; gap:56px; align-items:center; margin-top:34px; flex:1; }
+  .world .art{ width:1040px; border-radius:34px; overflow:hidden; border:2px solid var(--line); box-shadow:0 30px 80px rgba(0,0,0,.45); flex:none; }
+  .world .tx{ flex:1; gap:26px; }
+  .pt{ display:flex; gap:20px; align-items:flex-start; }
+  .pt i{ flex:none; width:16px; height:16px; margin-top:16px; border-radius:50%; background:var(--cyan); box-shadow:0 0 0 7px rgba(34,211,238,.18); }
+  .pt:nth-child(2) i{ background:var(--orange); box-shadow:0 0 0 7px rgba(255,138,61,.18); } .pt:nth-child(3) i{ background:var(--yellow); box-shadow:0 0 0 7px rgba(255,201,60,.18); }
+  .pt .txt{ color:var(--text); font-size:30px; }
+  .callout{ margin-top:6px; padding:26px 30px; border-radius:26px; background:rgba(255,138,61,.12); border:1.5px solid rgba(255,138,61,.45); font-size:31px; font-weight:700; line-height:1.4; }
+
+  /* --- slide 4 --- */
+  .evo{ position:relative; display:grid; grid-template-columns:repeat(5,1fr); gap:20px; margin-top:80px; flex:1; align-items:start; }
+  .evo::before{ content:''; position:absolute; top:166px; right:6%; left:6%; height:7px; border-radius:4px; background:linear-gradient(270deg,var(--cyan),var(--orange)); opacity:.75; }
+  .evo::after{ content:''; position:absolute; top:155px; left:-1.2%; width:0; height:0; border-style:solid; border-width:15px 24px 15px 0; border-color:transparent var(--orange) transparent transparent; }
+  .st{ position:relative; display:flex; flex-direction:column; align-items:center; text-align:center; gap:14px; }
+  .st .ic{ width:262px; height:262px; border-radius:50%; background:radial-gradient(circle at 50% 40%, var(--panel2), var(--panel)); border:2px solid var(--line); display:flex; align-items:center; justify-content:center; position:relative; z-index:2; }
+  .st .ic svg{ width:216px; height:216px; }
+  .st .yr{ font-size:32px; font-weight:900; color:var(--bg); background:var(--yellow); padding:4px 22px; border-radius:999px; margin-top:10px; }
+  .st .h3{ font-size:40px; } .st .txt{ font-size:28px; line-height:1.4; max-width:320px; }
+  .st:nth-child(5) .yr{ background:var(--orange); }
+
+  /* --- slide 5 --- */
+  .anat{ position:absolute; z-index:1; left:560px; top:196px; width:800px; height:768px; }
+  .anat svg{ width:800px; height:768px; }
+  .lb{ position:absolute; z-index:2; width:470px; padding:18px 26px; border-radius:22px; background:linear-gradient(180deg,rgba(26,53,102,.92),rgba(18,36,74,.95)); border:1.5px solid var(--line); }
+  .lb b{ display:flex; align-items:center; gap:14px; font-size:30px; font-weight:800; margin-bottom:6px; }
+  .lb b em{ font-style:normal; flex:none; width:38px; height:38px; border-radius:50%; background:var(--orange); color:var(--bg); display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:900; }
+  .lb p{ font-size:23px; line-height:1.38; color:var(--sub); }
+  .lb.L{ left:70px; } .lb.R{ left:1380px; }
+  .s-anat .hd{ position:absolute; right:120px; top:84px; z-index:3; width:560px; }
+  .s-anat .hd .h2{ font-size:62px; margin-top:12px; }
+
+  /* --- slide 6 --- */
+  .s-story{ flex-direction:row; align-items:center; gap:70px; }
+  .s-story .acol{ width:860px; flex:none; }
+  .s-story .acol .art{ border-radius:34px; overflow:hidden; border:2px solid var(--line); box-shadow:0 30px 80px rgba(0,0,0,.45); }
+  .s-story .tcol{ flex:1; gap:28px; }
+  .look{ display:flex; flex-direction:column; gap:18px; margin-top:6px; }
+  .look div{ display:flex; gap:20px; align-items:center; font-size:31px; font-weight:700; }
+  .look b{ flex:none; width:54px; height:54px; border-radius:16px; background:rgba(34,211,238,.14); border:1.5px solid rgba(34,211,238,.45); color:var(--cyan); font-size:28px; display:flex; align-items:center; justify-content:center; }
+  .look div:nth-child(2) b{ background:rgba(255,138,61,.14); border-color:rgba(255,138,61,.5); color:var(--orange); }
+  .look div:nth-child(3) b{ background:rgba(255,201,60,.14); border-color:rgba(255,201,60,.5); color:var(--yellow); }
+
+  /* --- slide 7 (video) --- */
+  .s-video{ padding:54px 90px 110px; }
+  .vhead{ display:flex; align-items:baseline; gap:26px; }
+  .vhead .h2{ font-size:54px; direction:ltr; } .vhead .eyebrow{ font-size:24px; }
+  .vwrap{ display:flex; gap:36px; margin-top:54px; flex:1; align-items:stretch; }
+  .player{ position:relative; width:1240px; aspect-ratio:16/9; align-self:flex-start; flex:none; background:#000; border-radius:26px; overflow:hidden; border:2px solid var(--line); box-shadow:0 36px 90px rgba(0,0,0,.55); }
+  .player video{ width:100%; height:100%; display:block; background:#000; object-fit:contain; }
+  .chaps{ flex:1; display:flex; flex-direction:column; gap:10px; }
+  .chaps .lbl{ font-size:24px; font-weight:800; color:var(--sub); letter-spacing:.06em; margin-bottom:2px; }
+  .chap{ display:flex; align-items:center; gap:14px; text-align:right; direction:rtl; font-family:inherit; color:var(--text); cursor:pointer;
+         padding:11px 14px; border-radius:16px; background:rgba(18,36,74,.85); border:1.5px solid var(--line); font-size:25px; font-weight:700; transition:all .2s; }
+  .chap b{ flex:none; font-size:21px; font-weight:800; color:var(--cyan); background:rgba(34,211,238,.12); padding:4px 12px; border-radius:10px; direction:ltr; min-width:68px; text-align:center; }
+  .chap:hover{ border-color:var(--cyan); transform:translateX(-4px); }
+  .chap.on{ background:rgba(255,138,61,.16); border-color:var(--orange); } .chap.on b{ color:var(--bg); background:var(--orange); }
+  .credit{ margin-top:12px; font-size:21px; color:var(--sub); }
+
+  /* --- slide 8 --- */
+  .film{ display:grid; grid-template-columns:repeat(4,1fr); gap:26px; margin-top:34px; flex:1; align-content:start; }
+  .fr{ font-family:inherit; color:var(--text); text-align:right; direction:rtl; cursor:pointer; padding:0; border:1.5px solid var(--line); border-radius:22px; overflow:hidden; background:rgba(18,36,74,.9); transition:all .2s; }
+  .fr:hover{ transform:translateY(-6px); border-color:var(--cyan); box-shadow:0 18px 40px rgba(0,0,0,.4); }
+  .fr .im{ position:relative; display:block; aspect-ratio:426/240; width:100%; overflow:hidden; background:#000; }
+  .fr img{ width:100%; height:100%; display:block; object-fit:cover; }
+  .fr .t{ position:absolute; top:12px; left:12px; font-size:21px; font-weight:800; background:rgba(10,22,48,.85); color:var(--cyan); padding:3px 12px; border-radius:10px; direction:ltr; }
+  .fr .cp{ display:block; padding:14px 18px 18px; }
+  .fr .cp b{ display:block; font-size:27px; font-weight:800; margin-bottom:4px; }
+  .fr .cp span{ display:block; font-size:21px; line-height:1.35; color:var(--sub); }
+  .hint{ position:absolute !important; left:120px; top:112px; max-width:720px; font-size:24px; line-height:1.4; color:var(--sub); }
+
+  /* --- slide 9 --- */
+  .hard{ display:grid; grid-template-columns:repeat(3,1fr); gap:34px; margin-top:60px; }
+  .hd3{ position:relative; overflow:hidden; display:flex; flex-direction:column; gap:20px; padding:56px 38px 44px; }
+  .hd3::before{ content:''; position:absolute; top:0; right:0; left:0; height:10px; background:var(--c); }
+  .hd3 .big{ font-size:120px; font-weight:900; line-height:1; color:var(--c); }
+  .hd3 .txt{ font-size:32px; } .hd3 .h3{ font-size:44px; }
+  .quote{ margin-top:46px; display:flex; align-items:center; gap:30px; padding:30px 40px; border-radius:30px; background:rgba(34,211,238,.10); border:1.5px solid rgba(34,211,238,.4); }
+  .quote .q{ font-size:96px; line-height:.6; color:var(--cyan); font-weight:900; }
+  .quote p{ font-size:38px; font-weight:700; line-height:1.4; }
+
+  /* --- slide 10 --- */
+  .uses{ display:grid; grid-template-columns:1fr 1fr; gap:34px; margin-top:56px; }
+  .use{ display:flex; gap:32px; align-items:center; padding:42px 40px; }
+  .use .pic{ flex:none; width:160px; height:160px; border-radius:30px; background:radial-gradient(circle at 50% 40%, var(--panel2), var(--panel)); border:2px solid var(--line); display:flex; align-items:center; justify-content:center; }
+  .use .pic svg{ width:104px; height:104px; }
+  .use .h3{ margin-bottom:10px; font-size:44px; } .use .txt{ font-size:30px; }
+  .note{ margin-top:40px; font-size:28px; color:var(--sub); display:flex; align-items:center; gap:16px; }
+
+  /* --- slide 11 --- */
+  .s-two{ flex-direction:row; align-items:center; gap:64px; }
+  .s-two .acol{ width:780px; flex:none; }
+  .s-two .tcol{ flex:1; gap:26px; }
+  .q3{ display:flex; flex-direction:column; gap:22px; margin-top:8px; }
+  .q3 .card{ padding:26px 32px; display:flex; flex-direction:column; gap:6px; }
+  .q3 .card b{ font-size:34px; font-weight:800; } .q3 .card span{ font-size:27px; color:var(--sub); line-height:1.4; }
+  .q3 .card:nth-child(1) b{ color:var(--cyan); } .q3 .card:nth-child(2) b{ color:var(--orange); } .q3 .card:nth-child(3) b{ color:var(--yellow); }
+
+  /* --- slide 12 --- */
+  .future{ margin-top:22px; border-radius:34px; overflow:hidden; border:2px solid var(--line); box-shadow:0 30px 80px rgba(0,0,0,.45); }
+  .future .art{ width:100%; }
+  .three{ display:grid; grid-template-columns:repeat(3,1fr); gap:28px; margin-top:24px; }
+  .three .card{ padding:24px 30px; font-size:28px; font-weight:700; line-height:1.4; display:flex; gap:18px; align-items:flex-start; }
+  .three .card i{ flex:none; font-style:normal; width:46px; height:46px; border-radius:14px; background:var(--cyan); color:var(--bg); display:flex; align-items:center; justify-content:center; font-weight:900; font-size:26px; }
+  .three .card:nth-child(2) i{ background:var(--orange); } .three .card:nth-child(3) i{ background:var(--yellow); }
+
+  /* --- slide 13 --- */
+  .s-end{ align-items:center; justify-content:center; text-align:center; gap:34px; }
+  .s-end .h1{ font-size:170px; }
+  .s-end .ask{ font-size:44px; font-weight:800; line-height:1.35; max-width:1300px; }
+  .src{ position:absolute !important; bottom:104px; right:120px; left:120px; z-index:2; font-size:20px; line-height:1.6; color:var(--sub); text-align:center; direction:rtl; }
+  .src a{ color:var(--cyan); text-decoration:none; direction:ltr; unicode-bidi:embed; }
+</style>
+</head>
+<body>
+<div id="stage">
+<div id="deck">
+  <div id="progress-bar"></div>
+
+  <!-- 1 · Title -->
+  <section class="slide s-title active" data-title="פתיח">
+    <div class="bg-img bgA"></div>
+    <div class="ht" style="background-image:url({{IMG:halftone-cyan}})"></div>
+    <div class="col tcol">
+      <div class="eyebrow anim">טכנולוגיה · רובוטיקה · העתיד</div>
+      <h1 class="h1 anim" style="animation-delay:.08s">כשהטכנולוגיה<br>מתחילה לעבוד<br><span class="grad">בשבילנו</span></h1>
+      <p class="lead anim" style="animation-delay:.18s">מסע קצר מהמעבדה אל אתר הבנייה, עם רובוט ההומנואיד Atlas של Boston Dynamics</p>
+      <div class="row gap-s anim" style="animation-delay:.28s"><span class="chip o">▶ כולל סרטון: Atlas Gets a Grip</span><span class="chip">13 שקפים</span></div>
+    </div>
+    <div class="acol"><div class="art anim pop" style="animation-delay:.2s"><div class="float">{{SVG:hero}}</div></div></div>
+  </section>
+
+  <!-- 2 · Agenda -->
+  <section class="slide" data-title="סדר היום">
+    <div class="bg-img bgB"></div>
+    <div class="eyebrow anim">סדר היום</div>
+    <h2 class="h2 anim" style="animation-delay:.06s">ארבע תחנות, <span class="hc">שבע דקות</span></h2>
+    <div class="agenda">
+      <div class="card ag anim" style="animation-delay:.12s"><div class="n">01</div><div><div class="h3">טכנולוגיה בכל מקום</div><p class="txt">איך הגענו לעולם של חיישנים, ענן ורחפנים</p></div></div>
+      <div class="card ag anim" style="animation-delay:.2s"><div class="n">02</div><div><div class="h3">המסע אל ההומנואיד</div><p class="txt">מגלגל שיניים ועד רובוט שמאזן את עצמו</p></div></div>
+      <div class="card ag anim" style="animation-delay:.28s"><div class="n">03</div><div><div class="h3">הסרטון: Atlas Gets a Grip</div><p class="txt">פועל, תיק כלים, קרשים, ורובוט שעוזר</p></div></div>
+      <div class="card ag anim" style="animation-delay:.36s"><div class="n">04</div><div><div class="h3">מה זה אומר לנו</div><p class="txt">יתרונות, שאלות פתוחות ומבט אל העתיד</p></div></div>
+    </div>
+  </section>
+
+  <!-- 3 · Tech everywhere -->
+  <section class="slide" data-title="טכנולוגיה בכל מקום">
+    <div class="bg-img bgC"></div>
+    <div class="eyebrow anim">תחנה 1</div>
+    <h2 class="h2 anim" style="animation-delay:.06s">העולם כבר <span class="hc">מחובר</span></h2>
+    <div class="world">
+      <div class="art anim pop" style="animation-delay:.12s">{{SVG:world}}</div>
+      <div class="col tx">
+        <div class="pt anim" style="animation-delay:.2s"><i></i><p class="txt"><b>חיישנים ומצלמות</b> שרואים את הסביבה ומודדים אותה</p></div>
+        <div class="pt anim" style="animation-delay:.28s"><i></i><p class="txt"><b>ענן ובינה מלאכותית</b> שמבינים כמויות עצומות של נתונים</p></div>
+        <div class="pt anim" style="animation-delay:.36s"><i></i><p class="txt"><b>מכונות בעולם הפיזי</b>: רחפנים, רכבים ורובוטים</p></div>
+        <div class="callout anim" style="animation-delay:.46s">מה קורה כשהחכמה יוצאת מהמסך אל העולם הפיזי?</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · Evolution -->
+  <section class="slide" data-title="המסע">
+    <div class="bg-img bgB"></div>
+    <div class="eyebrow anim">תחנה 2</div>
+    <h2 class="h2 anim" style="animation-delay:.06s">מגלגל שיניים <span class="hl">להומנואיד</span></h2>
+    <div class="evo">
+      <div class="st anim" style="animation-delay:.12s"><div class="ic">{{SVG:icon-gear}}</div><span class="yr"><bdi dir="ltr">~1760</bdi></span><div class="h3">מכונות כוח</div><p class="txt">המהפכה התעשייתית: מנועי קיטור מחליפים כוח שרירים</p></div>
+      <div class="st anim" style="animation-delay:.2s"><div class="ic">{{SVG:icon-computer}}</div><span class="yr"><bdi dir="ltr">1946</bdi></span><div class="h3">מחשב אלקטרוני</div><p class="txt">ENIAC, אחד המחשבים האלקטרוניים הראשונים</p></div>
+      <div class="st anim" style="animation-delay:.28s"><div class="ic">{{SVG:icon-phone}}</div><span class="yr"><bdi dir="ltr">2007</bdi></span><div class="h3">סמארטפון</div><p class="txt">מחשב בכיס, עם חיישנים ואינטרנט תמיד זמין</p></div>
+      <div class="st anim" style="animation-delay:.36s"><div class="ic">{{SVG:icon-chip}}</div><span class="yr">משנות ה-2010</span><div class="h3">בינה מלאכותית</div><p class="txt">מערכות שלומדות מנתונים ומקבלות החלטות</p></div>
+      <div class="st anim" style="animation-delay:.44s"><div class="ic">{{SVG:icon-robot}}</div><span class="yr"><bdi dir="ltr">2013 – 2023</bdi></span><div class="h3">רובוט דינמי</div><p class="txt">Atlas: מאתגר DARPA ועד עבודה באתר בנייה</p></div>
+    </div>
+  </section>
+
+  <!-- 5 · Anatomy -->
+  <section class="slide s-anat" data-title="איך הרובוט עובד">
+    <div class="bg-img bgC"></div>
+    <div class="hd">
+      <div class="eyebrow anim">תחנה 2</div>
+      <h2 class="h2 anim" style="animation-delay:.06s">איך רובוט <span class="hc">נע</span>?</h2>
+    </div>
+    <div class="anat anim pop" style="animation-delay:.1s">{{SVG:anatomy}}</div>
+    <div class="lb R anim" style="top:{{Y1}}px;animation-delay:.3s"><b><em>1</em>עיניים</b><p>חיישני ראייה ועומק שמסרטטים את הסביבה</p></div>
+    <div class="lb L anim" style="top:{{Y2}}px;animation-delay:.38s"><b><em>2</em>המוח והתכנון</b><p>בקרה חזויה (MPC) שמחשבת את התנועה הבאה, כולל של העצם הנישא</p></div>
+    <div class="lb R anim" style="top:{{Y3}}px;animation-delay:.46s"><b><em>3</em>הליבה</b><p>סוללה ומחשוב על הגוף, בלי כבלים</p></div>
+    <div class="lb L anim" style="top:{{Y4}}px;animation-delay:.54s"><b><em>4</em>מפרקים</b><p>כוח ומהירות לקפיצות ולסלטות. באטלס של 2023 ההנעה הידראולית.</p></div>
+    <div class="lb R anim" style="top:{{Y5}}px;animation-delay:.62s"><b><em>5</em>הידיים</b><p>גריפר דמוי מלקחיים שאוחז בקרשים ובתיק הכלים</p></div>
+  </section>
+
+  <!-- 6 · Story -->
+  <section class="slide s-story" data-title="הסיפור">
+    <div class="bg-img bgA"></div>
+    <div class="col tcol">
+      <div class="eyebrow anim">תחנה 3 · לפני שמתחילים לצפות</div>
+      <h2 class="h2 anim" style="animation-delay:.06s;direction:ltr;text-align:right">Atlas Gets a Grip</h2>
+      <p class="lead anim" style="animation-delay:.14s">ינואר 2023. פועל על פיגום שכח את תיק הכלים, ובמקום לרדת הוא מקבל עזרה מרובוט.</p>
+      <div class="look anim" style="animation-delay:.24s">
+        <div><b>1</b>איך הרובוט <span class="hc">אוחז</span> בעצמים שונים</div>
+        <div><b>2</b>איך הוא שומר על <span class="hl">שיווי משקל</span> בתנועה</div>
+        <div><b>3</b>איך הוא <span class="hy">עובד לצד אדם</span></div>
+      </div>
+      <div class="row gap-s anim" style="animation-delay:.34s"><span class="chip">Atlas הוא פלטפורמת מחקר, לא מוצר למכירה</span></div>
+    </div>
+    <div class="acol"><div class="art anim pop" style="animation-delay:.16s">{{SVG:team}}</div></div>
+  </section>
+
+  <!-- 7 · Video -->
+  <section class="slide s-video" data-title="הסרטון">
+    <div class="bg-img bgB"></div>
+    <div class="vhead anim"><div class="h2">Atlas Gets a Grip</div><div class="eyebrow">Boston Dynamics · 2023</div></div>
+    <div class="vwrap">
+      <div class="player anim fade" style="animation-delay:.08s"><video id="atlas" controls playsinline preload="metadata" poster="{{IMG:ch_01}}"></video></div>
+      <div class="chaps anim" style="animation-delay:.16s">
+        <div class="lbl">פרקים, לחצו כדי לקפוץ</div>
+        <button class="chap" data-t="4"><b>0:04</b>הפועל על הפיגום</button>
+        <button class="chap" data-t="12"><b>0:12</b>מרים קרש</button>
+        <button class="chap" data-t="20"><b>0:20</b>נושא את הקרש</button>
+        <button class="chap" data-t="30"><b>0:30</b>אוחז בתיק הכלים</button>
+        <button class="chap" data-t="36"><b>0:36</b>קפיצה וטיפוס</button>
+        <button class="chap" data-t="43"><b>0:43</b>זורק את התיק לפועל</button>
+        <button class="chap" data-t="46"><b>0:46</b>דוחף את הארגז</button>
+        <button class="chap" data-t="56"><b>0:56</b>סלטה הפוכה</button>
+        <div class="credit">הסרטון: Boston Dynamics. כל הזכויות שמורות ליוצרים.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 · Film strip -->
+  <section class="slide" data-title="פריים אחרי פריים">
+    <div class="bg-img bgC"></div>
+    <div class="eyebrow anim">תחנה 3</div>
+    <h2 class="h2 anim" style="animation-delay:.06s">פריים אחרי <span class="hl">פריים</span></h2>
+    <div class="film">
+      <button class="fr anim" data-t="4" style="animation-delay:.10s"><span class="im"><img alt="" src="{{IMG:ch_01}}"><span class="t">0:04</span></span><span class="cp"><b>הפועל והתיק</b><span>פועל על הפיגום שכח את תיק הכלים. Atlas יוצא להביא אותו.</span></span></button>
+      <button class="fr anim" data-t="12" style="animation-delay:.16s"><span class="im"><img alt="" src="{{IMG:ch_02}}"><span class="t">0:12</span></span><span class="cp"><b>מרים קרש</b><span>אחיזה בקרש עץ בעזרת הגריפר.</span></span></button>
+      <button class="fr anim" data-t="20" style="animation-delay:.22s"><span class="im"><img alt="" src="{{IMG:ch_03}}"><span class="t">0:20</span></span><span class="cp"><b>נושא את הקרש</b><span>ממשיך ללכת עם הקרש בידיים, בלי להפיל אותו.</span></span></button>
+      <button class="fr anim" data-t="30" style="animation-delay:.28s"><span class="im"><img alt="" src="{{IMG:ch_04}}"><span class="t">0:30</span></span><span class="cp"><b>אוחז בתיק</b><span>מתכופף ותופס את תיק הכלים מהרצפה.</span></span></button>
+      <button class="fr anim" data-t="36" style="animation-delay:.34s"><span class="im"><img alt="" src="{{IMG:ch_05}}"><span class="t">0:36</span></span><span class="cp"><b>קפיצה וטיפוס</b><span>קופץ אל הארגז בדרך אל הפיגום.</span></span></button>
+      <button class="fr anim" data-t="43" style="animation-delay:.40s"><span class="im"><img alt="" src="{{IMG:ch_06}}"><span class="t">0:43</span></span><span class="cp"><b>זריקה</b><span>זורק את התיק למעלה, אל הפועל.</span></span></button>
+      <button class="fr anim" data-t="46" style="animation-delay:.46s"><span class="im"><img alt="" src="{{IMG:ch_07}}"><span class="t">0:46</span></span><span class="cp"><b>דחיפה</b><span>מפיל את הארגז מהפלטפורמה, בלי ליפול בעצמו.</span></span></button>
+      <button class="fr anim" data-t="56" style="animation-delay:.52s"><span class="im"><img alt="" src="{{IMG:ch_08}}"><span class="t">0:56</span></span><span class="cp"><b>הסלטה</b><span>סלטה הפוכה ונחיתה יציבה.</span></span></button>
+    </div>
+    <p class="hint anim" style="animation-delay:.6s">לחצו על פריים כדי לקפוץ אל הרגע בסרטון. צילומי המסך עובדו ב-Photoshop.</p>
+  </section>
+
+  <!-- 9 · What is hard -->
+  <section class="slide" data-title="מה קשה פה">
+    <div class="bg-img bgB"></div>
+    <div class="eyebrow anim">תחנה 3</div>
+    <h2 class="h2 anim" style="animation-delay:.06s">מה <span class="hc">כל כך קשה</span> כאן?</h2>
+    <div class="hard">
+      <div class="card hd3 anim" style="--c:var(--cyan);animation-delay:.12s"><div class="big">01</div><div class="h3">אחיזה בעולם האמיתי</div><p class="txt">קרש, תיק, ארגז: לכל עצם משקל ואחיזה אחרים, והרובוט משנה את התנועה בזמן אמת.</p></div>
+      <div class="card hd3 anim" style="--c:var(--orange);animation-delay:.22s"><div class="big">02</div><div class="h3">איזון תוך כדי תנועה</div><p class="txt">קפיצה, זריקה וסלטה הפוכה דורשות לחשב את הכוחות שוב ושוב, בכל רגע.</p></div>
+      <div class="card hd3 anim" style="--c:var(--yellow);animation-delay:.32s"><div class="big">03</div><div class="h3">כוח בלי ליפול</div><p class="txt">כדי להפיל ארגז מהפלטפורמה צריך מספיק כוח, בלי לשלוח את הרובוט אחריו.</p></div>
+    </div>
+    <div class="quote anim" style="animation-delay:.44s"><div class="q">”</div><p>אחרי פארקור וריקוד, הצוות של Atlas מתמקד בעבודה מועילה: לא רק לזוז יפה, אלא לעזור.</p></div>
+  </section>
+
+  <!-- 10 · Where useful -->
+  <section class="slide" data-title="איפה זה עוזר">
+    <div class="bg-img bgA"></div>
+    <div class="eyebrow anim">תחנה 4</div>
+    <h2 class="h2 anim" style="animation-delay:.06s">איפה רובוט כזה <span class="hl">יכול לעזור</span>?</h2>
+    <div class="uses">
+      <div class="card use anim" style="animation-delay:.12s"><div class="pic"><svg viewBox="0 0 96 96"><path d="M14 84h68M26 84V30l30-14v68M26 30l30-14M56 16h26M82 16v24" fill="none" stroke="#FF8A3D" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M82 40v10" stroke="#FFC93C" stroke-width="6" stroke-linecap="round"/><rect x="74" y="50" width="16" height="12" rx="3" fill="#FFC93C"/></svg></div><div><div class="h3">אתרי בנייה</div><p class="txt">נשיאת חומרים ועבודה בגובה: משימות מסוכנות ומתישות.</p></div></div>
+      <div class="card use anim" style="animation-delay:.2s"><div class="pic"><svg viewBox="0 0 96 96"><path d="M14 32l34-16 34 16v36L48 84 14 68z" fill="#1B3A6B" stroke="#22D3EE" stroke-width="6" stroke-linejoin="round"/><path d="M14 32l34 16 34-16M48 48v36" fill="none" stroke="#22D3EE" stroke-width="6" stroke-linejoin="round"/></svg></div><div><div class="h3">מחסנים ולוגיסטיקה</div><p class="txt">הרמה, מיון והעברה בסביבות שנבנו עבור בני אדם.</p></div></div>
+      <div class="card use anim" style="animation-delay:.28s"><div class="pic"><svg viewBox="0 0 96 96"><path d="M48 12l32 12v22c0 20-14 32-32 38C30 78 16 66 16 46V24z" fill="#1B3A6B" stroke="#FF5D73" stroke-width="6" stroke-linejoin="round"/><path d="M48 32v32M32 48h32" stroke="#FF5D73" stroke-width="9" stroke-linecap="round"/></svg></div><div><div class="h3">חירום וחילוץ</div><p class="txt">כניסה למקומות מסוכנים, עם מדרגות, שברים ופסולת.</p></div></div>
+      <div class="card use anim" style="animation-delay:.36s"><div class="pic"><svg viewBox="0 0 96 96"><circle cx="48" cy="48" r="30" fill="none" stroke="#3DDC97" stroke-width="12" stroke-dasharray="14 8"/><circle cx="48" cy="48" r="26" fill="#1B3A6B" stroke="#3DDC97" stroke-width="6"/><circle cx="48" cy="48" r="9" fill="#3DDC97"/></svg></div><div><div class="h3">תעשייה</div><p class="txt">עבודות חוזרות ומאומצות, לצד עובדים ולא במקומם.</p></div></div>
+    </div>
+    <div class="note anim" style="animation-delay:.46s"><span class="chip o">פוטנציאל, לא הבטחה</span>Atlas הוא כרגע פלטפורמת מחקר. אלה כיווני עבודה, לא מוצרים קיימים.</div>
+  </section>
+
+  <!-- 11 · Two sides -->
+  <section class="slide s-two" data-title="שני צדדים">
+    <div class="bg-img bgB"></div>
+    <div class="col tcol">
+      <div class="eyebrow anim">תחנה 4</div>
+      <h2 class="h2 anim" style="animation-delay:.06s">שני צדדים <span class="hy">למטבע</span></h2>
+      <p class="lead anim" style="animation-delay:.12s">טכנולוגיה חזקה מעלה שאלות שכדאי לשאול כבר עכשיו.</p>
+      <div class="q3">
+        <div class="card anim" style="animation-delay:.2s"><b>בטיחות</b><span>איך מבטיחים שרובוט חזק יעבוד בבטחה לצד אנשים?</span></div>
+        <div class="card anim" style="animation-delay:.28s"><b>עבודה</b><span>אילו משימות עוברות לרובוטים, ואיך מכשירים אנשים לתפקידים חדשים?</span></div>
+        <div class="card anim" style="animation-delay:.36s"><b>אחריות</b><span>מי אחראי כשמשהו משתבש, ומי מחליט מה מותר לרובוט לעשות?</span></div>
+      </div>
+    </div>
+    <div class="acol"><div class="art anim pop" style="animation-delay:.16s"><div class="float">{{SVG:balance}}</div></div></div>
+  </section>
+
+  <!-- 12 · Future -->
+  <section class="slide" data-title="העתיד">
+    <div class="bg-img bgC"></div>
+    <div class="eyebrow anim">מבט קדימה</div>
+    <h2 class="h2 anim" style="animation-delay:.06s">מה <span class="grad">הלאה</span>?</h2>
+    <div class="future anim pop" style="animation-delay:.12s"><div class="art">{{SVG:city}}</div></div>
+    <div class="three">
+      <div class="card anim" style="animation-delay:.24s"><i>1</i>יותר עבודה פיזית משותפת בין אדם למכונה</div>
+      <div class="card anim" style="animation-delay:.32s"><i>2</i>רובוטים שלומדים משימות חדשות מהר יותר</div>
+      <div class="card anim" style="animation-delay:.4s"><i>3</i>כללים ותקנים שמתעדכנים יחד עם הטכנולוגיה</div>
+    </div>
+  </section>
+
+  <!-- 13 · Thanks -->
+  <section class="slide s-end" data-title="תודה">
+    <div class="bg-img bgA"></div>
+    <div class="ht" style="background-image:url({{IMG:halftone-cyan}});-webkit-mask-image:none;mask-image:none;opacity:.07"></div>
+    <div class="eyebrow anim">שאלה לדיון</div>
+    <h1 class="h1 anim" style="animation-delay:.06s"><span class="grad">תודה!</span></h1>
+    <p class="ask anim" style="animation-delay:.16s">מה המשימה הראשונה שהייתם נותנים לרובוט כזה?</p>
+    <div class="src anim fade" style="animation-delay:.4s">הסרטון: Atlas Gets a Grip, Boston Dynamics, ינואר 2023. מקורות לתיאור: <a href="https://www.robotics247.com/article/atlas_humanoid_robot_gets_grip_new_boston_dynamics_videos">Robotics 24/7</a> · <a href="https://www.therobotreport.com/watch-boston-dynamics-atlas-humanoid-assist-on-a-construction-site/">The Robot Report</a> · <a href="https://www.euronews.com/2023/01/21/watch-boston-dynamics-humanoid-robot-atlas-jump-grab-throw-and-do-a-multi-axis-flip">Euronews</a><br>הקריקטורות מאוירות בקוד (SVG). צילומי המסך עובדו ב-Photoshop.</div>
+  </section>
+
+  <nav id="nav"></nav>
+  <button class="nav-btn" id="btn-next" aria-label="הבא">←</button>
+  <button class="nav-btn" id="btn-prev" aria-label="הקודם">→</button>
+  <div id="slide-counter">01 / 13</div>
+  <button id="btn-fs" aria-label="מסך מלא">⛶</button>
+</div>
+</div>
+
+<script id="atlas-b64" type="text/plain">{{VIDEO_B64}}</script>
+<script>
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var nav = document.getElementById('nav');
+  var counter = document.getElementById('slide-counter');
+  var progress = document.getElementById('progress-bar');
+  var vid = document.getElementById('atlas');
+  var cur = 0, blobURL = null;
+  var VIDEO_SLIDE = slides.indexOf(vid.closest('.slide'));
+
+  nav.innerHTML = ''; /* idempotent: a saved/reopened export already has these baked in from the live DOM */
+  slides.forEach(function(s, i){
+    var d = document.createElement('button');
+    d.type = 'button'; d.className = 'nav-dot' + (i === 0 ? ' on' : '');
+    d.setAttribute('aria-label', 'עבור לשקף ' + (i + 1) + ': ' + (s.getAttribute('data-title') || ''));
+    d.onclick = function(){ show(i); };
+    nav.appendChild(d);
+  });
+  var dots = Array.prototype.slice.call(nav.children);
+
+  /* the video lives in the file as base64 text so the deck stays a single self-contained file */
+  function ensureVideo(){
+    var node = document.getElementById('atlas-b64');
+    if(!blobURL && node){
+      try{
+        var bin = atob(node.textContent.trim()), len = bin.length, bytes = new Uint8Array(len);
+        for(var i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+        blobURL = URL.createObjectURL(new Blob([bytes], {type:'video/mp4'}));
+      }catch(e){}
+    }
+    if(blobURL && vid.getAttribute('src') !== blobURL) vid.src = blobURL;
+  }
+
+  function replay(slide){
+    var els = slide.querySelectorAll('.anim');
+    for(var i = 0; i < els.length; i++){ els[i].style.animation = 'none'; void els[i].offsetWidth; els[i].style.animation = ''; }
+  }
+
+  function show(i){
+    if(i < 0 || i >= slides.length) return;
+    if(cur === VIDEO_SLIDE && i !== VIDEO_SLIDE && vid) vid.pause();
+    slides[cur].classList.remove('active');
+    cur = i;
+    slides[cur].classList.add('active');
+    dots.forEach(function(d, idx){ d.classList.toggle('on', idx === cur); });
+    counter.textContent = String(cur + 1).padStart(2, '0') + ' / ' + String(slides.length).padStart(2, '0');
+    progress.style.transform = 'scaleX(' + ((cur + 1) / slides.length) + ')';
+    if(cur === VIDEO_SLIDE) ensureVideo();
+    replay(slides[cur]);
+  }
+  function next(){ show(Math.min(cur + 1, slides.length - 1)); }
+  function prev(){ show(Math.max(cur - 1, 0)); }
+  document.getElementById('btn-next').onclick = next;
+  document.getElementById('btn-prev').onclick = prev;
+
+  function seek(t, play){
+    ensureVideo();
+    var go = function(){ try{ vid.currentTime = t; }catch(e){} if(play) vid.play().catch(function(){}); };
+    if(vid.readyState >= 1) go(); else vid.addEventListener('loadedmetadata', go, {once:true});
+  }
+  /* chapter buttons + film-strip frames both jump into the video */
+  Array.prototype.forEach.call(document.querySelectorAll('.chap'), function(b){
+    b.onclick = function(){ seek(+b.getAttribute('data-t'), true); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.fr'), function(b){
+    b.onclick = function(){ show(VIDEO_SLIDE); seek(+b.getAttribute('data-t'), true); };
+  });
+  var chaps = Array.prototype.slice.call(document.querySelectorAll('.chap'));
+  vid.addEventListener('timeupdate', function(){
+    var t = vid.currentTime, on = -1;
+    chaps.forEach(function(c, i){ if(t + 0.25 >= +c.getAttribute('data-t')) on = i; });
+    chaps.forEach(function(c, i){ c.classList.toggle('on', i === on); });
+  });
+
+  function fs(){
+    var d = document.documentElement;
+    if(!document.fullscreenElement){ (d.requestFullscreen || d.webkitRequestFullscreen || function(){}).call(d); }
+    else { (document.exitFullscreen || document.webkitExitFullscreen || function(){}).call(document); }
+  }
+  document.getElementById('btn-fs').onclick = fs;
+
+  document.addEventListener('keydown', function(e){
+    var tag = (e.target && e.target.tagName) || '';
+    if(tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable)) return;
+    if(e.key === 'ArrowLeft' || e.key === 'PageDown') { next(); e.preventDefault(); }
+    else if(e.key === 'ArrowRight' || e.key === 'PageUp') { prev(); e.preventDefault(); }
+    else if(e.key === ' ' && cur === VIDEO_SLIDE && tag !== 'VIDEO' && tag !== 'BUTTON'){ vid.paused ? vid.play() : vid.pause(); e.preventDefault(); }
+    else if(e.key === ' ' && cur !== VIDEO_SLIDE && tag !== 'BUTTON'){ next(); e.preventDefault(); }
+    else if(e.key === 'f' || e.key === 'F') fs();
+    else if(e.key === 'Home') show(0);
+    else if(e.key === 'End') show(slides.length - 1);
+  });
+
+  function fit(){
+    var deck = document.getElementById('deck');
+    var s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    deck.style.transform = 'scale(' + s + ')';
+  }
+  window.addEventListener('resize', fit);
+  fit();
+  progress.style.transform = 'scaleX(' + (1 / slides.length) + ')';
+  var hash = parseInt((location.hash || '').replace('#', ''), 10);
+  if(hash >= 1 && hash <= slides.length) show(hash - 1);
+</script>
+</body>
+</html>
